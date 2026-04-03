@@ -1,0 +1,57 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c1f3b1badc60aba45b2861d417abf6b0, type: 3}
+  m_Name: Content Database
+  m_EditorClassIdentifier: Assembly-CSharp::ContentDatabaseSO
+  gladiatorClasses:
+  - {fileID: 11400000, guid: 6846407ed22928941b371aab2d355ecf, type: 2}
+  weapons:
+  - {fileID: 11400000, guid: 72083519813a3ab4098ce19d38d566cd, type: 2}
+  - {fileID: 11400000, guid: 1125cefdf7e96c04cb5c836ceef728b5, type: 2}
+  - {fileID: 11400000, guid: 57a45c0a1bc261f4486e00585a46083b, type: 2}
+  - {fileID: 11400000, guid: dbdb181f9c76fca4d932bbbdbf2ded9b, type: 2}
+  - {fileID: 11400000, guid: 3da7b72ba791cd940915b68cc3d6a124, type: 2}
+  - {fileID: 11400000, guid: 8f15a2a951e32fa44914883dd11d291f, type: 2}
+  weaponSkills:
+  - {fileID: 11400000, guid: 27bcb74d2b344cc4e9701b2f22f85abc, type: 2}
+  - {fileID: 11400000, guid: 44c252fd9a22320448bf341aec79d172, type: 2}
+  - {fileID: 11400000, guid: 8ffc13903d4335d4fac0c76e177c933c, type: 2}
+  - {fileID: 11400000, guid: 82f2af5af9c658143b8d32dd91f0c92f, type: 2}
+  - {fileID: 11400000, guid: e64268d0716392d4aa8452e35d691423, type: 2}
+  - {fileID: 11400000, guid: a29262d9df9728d4abb09387d1e75803, type: 2}
+  - {fileID: 11400000, guid: 2e3e3665bd408ef48affa80711ae41ce, type: 2}
+  - {fileID: 11400000, guid: 79744c8b83475fd4daa870e3a949c159, type: 2}
+  - {fileID: 11400000, guid: 3b92f76c713d1bf4fbedd91883bb8bab, type: 2}
+  - {fileID: 11400000, guid: df2363235a2e2e546888fcc928721739, type: 2}
+  - {fileID: 11400000, guid: 2a2ed57856d52b64fab1b64fac8d9c2e, type: 2}
+  - {fileID: 11400000, guid: 84d964c5594a7304c8eef7e047fdf610, type: 2}
+  traits:
+  - {fileID: 11400000, guid: 3df791ead025e7f4980bb6aaf12ac567, type: 2}
+  - {fileID: 11400000, guid: 7b505e01412dfdd46927f132de8e654b, type: 2}
+  - {fileID: 11400000, guid: 6401f519185e3bd47b546d897323aeb4, type: 2}
+  synergies:
+  - {fileID: 11400000, guid: 7787dc02d0d3d7740815b7650b3c0fb4, type: 2}
+  - {fileID: 11400000, guid: 880a6e6a08a46964ab8ebe1c42ddff13, type: 2}
+  - {fileID: 11400000, guid: 492eeff4b81f27f4288b2cbf0ece9b35, type: 2}
+  perks:
+  - {fileID: 11400000, guid: cc7252e511639af44aeb0334433db009, type: 2}
+  - {fileID: 11400000, guid: 342615a052314fb4f897c174d3d41fa3, type: 2}
+  - {fileID: 11400000, guid: c33c5a989764d5147950f62f543a7e45, type: 2}
+  - {fileID: 11400000, guid: 11eb4606b2203a9468ece057b027ceaf, type: 2}
+  - {fileID: 11400000, guid: 05e01ff5265684f408808db5009067d8, type: 2}
+  - {fileID: 11400000, guid: f8cdcd439d0802c4eaf1957b647f7695, type: 2}
+  - {fileID: 11400000, guid: c37015ed3c433614caf1737cbc7547ca, type: 2}
+  personalities:
+  - {fileID: 11400000, guid: dac4c43c7e634e04b819da567a5d3fe3, type: 2}
+  - {fileID: 11400000, guid: 54e4e273c565ffd4ab462c5138c03192, type: 2}
+  - {fileID: 11400000, guid: fc5ea12674271d44b9a6b53cb4a2fe19, type: 2}
+  balance: {fileID: 11400000, guid: 95d4a7f9b21c9634ba5bbfeb8c60dfe3, type: 2}

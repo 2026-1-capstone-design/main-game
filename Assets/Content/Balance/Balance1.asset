@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f16f1c1b9f0de404fbce71a05c45c8d0, type: 3}
+  m_Name: Balance1
+  m_EditorClassIdentifier: Assembly-CSharp::BalanceSO
+  initialGold: 1000
+  battleVictoryRewardPerDay: 100
+  gladiatorBuyPricePerLevel: 50
+  weaponBuyPricePerLevel: 50
+  gladiatorSellPricePerLevel: 40
+  weaponSellPricePerLevel: 40
+  upkeepPerLevel: 10
+  eodXpGainChance: 0.5
+  eodXpGainAmount: 500
+  xpPerLevelMultiplier: 100
+  loyaltyMin: 20
+  loyaltyMax: 100
+  gladiatorLevelVarianceMinPercent: -0.2
+  gladiatorLevelVarianceMaxPercent: 0.05
+  weaponLevelVarianceMinPercent: -0.05
+  weaponLevelVarianceMaxPercent: 0.05
+  weaponFinalStatVarianceMinPercent: -0.15
+  weaponFinalStatVarianceMaxPercent: 0.15
+  gladiatorFinalStatVarianceMinPercent: -0.15
+  gladiatorFinalStatVarianceMaxPercent: 0.15
+  equipmentAttackBonusPerLevel: 0.1
+  equipmentHealthBonusPerLevel: 0.1
+  equipmentAttackSpeedBonusPerLevel: 0.1
+  equipmentMoveSpeedBonusPerLevel: 0.1
+  marketGladiatorSlots: 4
+  marketWeaponSlots: 4

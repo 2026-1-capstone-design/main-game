@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 91ecfa8d70b03484ca21f220db70b39b, type: 3}
+  m_Name: Personality1
+  m_EditorClassIdentifier: Assembly-CSharp::PersonalitySO
+  icon: {fileID: 21300000, guid: 33d654125f38a06478a1b2dac2d0d715, type: 3}
+  personalityName: personal1
+  description: personal1 des

@@ -1,0 +1,761 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+[DisallowMultipleComponent]
+public sealed class MainFlowManager : MonoBehaviour
+{
+    private enum UiOwner
+    {
+        None = 0,
+        Main = 1,
+        Research = 2,
+        Gladiator = 3,
+        Market = 4,
+        BattlePreparation = 5
+    }
+
+    [Header("Scene Managers")]
+    [SerializeField] private MainUIManager mainUIManager;
+    [SerializeField] private ResourceManager resourceManager;
+    [SerializeField] private ResourceUIManager resourceUIManager;
+    [SerializeField] private ResearchManager researchManager;
+    [SerializeField] private ResearchUIManager researchUIManager;
+    [SerializeField] private BattleManager battleManager;
+    [SerializeField] private BattleUIManager battleUIManager;
+    [SerializeField] private GladiatorManager gladiatorManager;
+    [SerializeField] private GladiatorUIManager gladiatorUIManager;
+    [SerializeField] private InventoryManager inventoryManager;
+    [SerializeField] private MarketManager marketManager;
+    [SerializeField] private MarketUIManager marketUIManager;
+    [SerializeField] private RecruitFactory recruitFactory;
+    [SerializeField] private EquipmentFactory equipmentFactory;
+
+    [Header("Battle Scene")]
+    [SerializeField] private string battleSceneName = "BattleScene";
+
+    [Header("Debug")]
+    [SerializeField] private bool verboseLog = true;
+
+    private SessionManager _sessionManager;
+    private ContentDatabaseProvider _contentDatabaseProvider;
+    private RandomManager _randomManager;
+    private SceneLoader _sceneLoader;
+    private BattleSessionManager _battleSessionManager;
+    private UiOwner _uiOwner = UiOwner.None;
+    private bool _initialized;
+
+    private void Start()
+    {
+        InitializeScene();
+    }
+
+    private void InitializeScene()
+    {
+        if (_initialized)
+        {
+            return;
+        }
+
+        _sessionManager = SessionManager.Instance;
+        _contentDatabaseProvider = ContentDatabaseProvider.Instance;
+        _randomManager = RandomManager.Instance;
+        _sceneLoader = SceneLoader.Instance;
+        _battleSessionManager = BattleSessionManager.Instance;
+        
+        resourceManager = ResourceManager.Instance;
+        gladiatorManager = GladiatorManager.Instance;
+        inventoryManager = InventoryManager.Instance;
+        marketManager = MarketManager.Instance;
+
+        if (!ValidateDependencies())
+        {
+            return;
+        }
+
+        BalanceSO balance = _contentDatabaseProvider.Balance;
+
+        equipmentFactory.Initialize(_contentDatabaseProvider, _randomManager);
+        recruitFactory.Initialize(_contentDatabaseProvider, _sessionManager, _randomManager, equipmentFactory);
+        
+        inventoryManager.Initialize(_contentDatabaseProvider, _randomManager);
+        gladiatorManager.Initialize(balance, _randomManager);
+        resourceManager.Initialize(balance);
+        marketManager.Initialize(recruitFactory, equipmentFactory, gladiatorManager, inventoryManager, resourceManager);
+        marketManager.InitializeDay(_sessionManager.CurrentDay);
+
+
+        gladiatorManager.GrantRandomStarterGladiators(_contentDatabaseProvider, _sessionManager, 6);
+        inventoryManager.GrantRandomStarterWeapons(_contentDatabaseProvider);
+        researchManager.Initialize(_contentDatabaseProvider);
+
+        battleManager.Initialize(_sessionManager, balance, recruitFactory);
+        battleManager.InitializeDay(_sessionManager.CurrentDay);
+
+        resourceUIManager.Initialize(resourceManager);
+        researchUIManager.Initialize(this, researchManager);
+        gladiatorUIManager.Initialize(this, gladiatorManager, inventoryManager);
+        battleUIManager.Initialize(this, battleManager);
+        marketUIManager.Initialize(this, marketManager, resourceManager, gladiatorManager, inventoryManager);
+        mainUIManager.Initialize(this, _sessionManager);
+
+        TryGrantPendingBattleRewardOnMainSceneEnter();
+
+        _uiOwner = UiOwner.Main;
+        ApplyUiState();
+
+        _initialized = true;
+
+        if (verboseLog)
+        {
+            Debug.Log("[MainFlowManager] Main scene initialized.", this);
+        }
+    }
+
+    private bool ValidateDependencies()
+    {
+        bool ok = true;
+
+        if (_sessionManager == null)
+        {
+            Debug.LogError("[MainFlowManager] SessionManager.Instance is null. Boot Scene를 거치지 않았거나 DDOL 초기화가 안 된 상태임.", this);
+            ok = false;
+        }
+        if (_randomManager == null)
+        {
+            Debug.LogError("[MainFlowManager] RandomManager.Instance is null. Boot Scene를 거치지 않았거나 DDOL 초기화가 안 된 상태임.", this);
+            ok = false;
+        }
+
+        if (_sceneLoader == null)
+        {
+            Debug.LogError("[MainFlowManager] SceneLoader.Instance is null. Boot Scene를 거치지 않았거나 DDOL 초기화가 안 된 상태임.", this);
+            ok = false;
+        }
+
+        if (_battleSessionManager == null)
+        {
+            Debug.LogError("[MainFlowManager] BattleSessionManager.Instance is null. Boot Scene를 거치지 않았거나 DDOL 초기화가 안 된 상태임.", this);
+            ok = false;
+        }
+
+        if (string.IsNullOrWhiteSpace(battleSceneName))
+        {
+            Debug.LogError("[MainFlowManager] battleSceneName is empty.", this);
+            ok = false;
+        }
+
+        if (_contentDatabaseProvider == null)
+        {
+            Debug.LogError("[MainFlowManager] ContentDatabaseProvider.Instance is null. Boot Scene를 거치지 않았거나 DDOL 초기화가 안 된 상태임.", this);
+            ok = false;
+        }
+
+        if (mainUIManager == null)
+        {
+            Debug.LogError("[MainFlowManager] mainUIManager is missing.", this);
+            ok = false;
+        }
+
+        if (resourceManager == null)
+        {
+            Debug.LogError("[MainFlowManager] resourceManager is missing.", this);
+            ok = false;
+        }
+
+        if (resourceUIManager == null)
+        {
+            Debug.LogError("[MainFlowManager] resourceUIManager is missing.", this);
+            ok = false;
+        }
+
+        if (researchManager == null)
+        {
+            Debug.LogError("[MainFlowManager] researchManager is missing.", this);
+            ok = false;
+        }
+
+        if (researchUIManager == null)
+        {
+            Debug.LogError("[MainFlowManager] researchUIManager is missing.", this);
+            ok = false;
+        }
+
+        if (battleManager == null)
+        {
+            Debug.LogError("[MainFlowManager] battleManager is missing.", this);
+            ok = false;
+        }
+
+        if (battleUIManager == null)
+        {
+            Debug.LogError("[MainFlowManager] battleUIManager is missing.", this);
+            ok = false;
+        }
+
+        if (gladiatorManager == null)
+        {
+            Debug.LogError("[MainFlowManager] gladiatorManager is missing.", this);
+            ok = false;
+        }
+
+        if (gladiatorUIManager == null)
+        {
+            Debug.LogError("[MainFlowManager] gladiatorUIManager is missing.", this);
+            ok = false;
+        }
+
+        if (inventoryManager == null)
+        {
+            Debug.LogError("[MainFlowManager] inventoryManager is missing.", this);
+            ok = false;
+        }
+
+        if (marketManager == null)
+        {
+            Debug.LogError("[MainFlowManager] marketManager is missing.", this);
+            ok = false;
+        }
+
+        if (marketUIManager == null)
+        {
+            Debug.LogError("[MainFlowManager] marketUIManager is missing.", this);
+            ok = false;
+        }
+
+        if (recruitFactory == null)
+        {
+            Debug.LogError("[MainFlowManager] recruitFactory is missing.", this);
+            ok = false;
+        }
+
+        if (equipmentFactory == null)
+        {
+            Debug.LogError("[MainFlowManager] equipmentFactory is missing.", this);
+            ok = false;
+        }
+
+        if (_contentDatabaseProvider != null && _contentDatabaseProvider.Balance == null)
+        {
+            Debug.LogError("[MainFlowManager] ContentDatabaseProvider.Balance is null.", this);
+            ok = false;
+        }
+
+        return ok;
+    }
+
+    public void HandleGladiatorMenuRequested()
+    {
+        if (_uiOwner != UiOwner.Main)
+        {
+            return;
+        }
+
+        _uiOwner = UiOwner.Gladiator;
+        gladiatorUIManager.OpenPanel();
+        ApplyUiState();
+
+        if (verboseLog)
+        {
+            Debug.Log("[MainFlowManager] Gladiator panel opened.", this);
+        }
+    }
+
+    public void HandleGladiatorBackRequested()
+    {
+        if (_uiOwner != UiOwner.Gladiator)
+        {
+            return;
+        }
+
+        gladiatorUIManager.ClosePanel();
+        _uiOwner = UiOwner.Main;
+        ApplyUiState();
+
+        if (verboseLog)
+        {
+            Debug.Log("[MainFlowManager] Gladiator panel closed. Main UI regained control.", this);
+        }
+    }
+
+    public void HandleResearchMenuRequested()
+    {
+        if (_uiOwner != UiOwner.Main)
+        {
+            return;
+        }
+
+        _uiOwner = UiOwner.Research;
+        researchUIManager.OpenPanel();
+        ApplyUiState();
+
+        if (verboseLog)
+        {
+            Debug.Log("[MainFlowManager] Research panel opened.", this);
+        }
+    }
+
+    public void HandleResearchBackRequested()
+    {
+        if (_uiOwner != UiOwner.Research)
+        {
+            return;
+        }
+
+        researchUIManager.ClosePanel();
+        _uiOwner = UiOwner.Main;
+        ApplyUiState();
+
+        if (verboseLog)
+        {
+            Debug.Log("[MainFlowManager] Research panel closed. Main UI regained control.", this);
+        }
+    }
+
+    public void HandleBattleMenuRequested()
+    {
+        if (_uiOwner != UiOwner.Main)
+        {
+            return;
+        }
+
+        string failReason;
+        if (!battleManager.TryOpenBattlePreparation(out failReason))
+        {
+            if (!string.IsNullOrEmpty(failReason))
+            {
+                Debug.LogWarning("[MainFlowManager] " + failReason, this);
+            }
+
+            ApplyUiState();
+            return;
+        }
+
+        _uiOwner = UiOwner.BattlePreparation;
+        battleUIManager.OpenBattlePanel(battleManager.DailyEncounters, battleManager.SelectedEncounterIndex);
+        ApplyUiState();
+
+        if (verboseLog)
+        {
+            Debug.Log("[MainFlowManager] Battle preparation panel opened.", this);
+        }
+    }
+
+    public void HandleBattleEncounterSelected(int encounterIndex)
+    {
+        if (_uiOwner != UiOwner.BattlePreparation)
+        {
+            return;
+        }
+
+        if (!battleManager.TrySelectEncounter(encounterIndex))
+        {
+            return;
+        }
+
+        battleUIManager.RefreshSelection(battleManager.SelectedEncounterIndex);
+
+        if (verboseLog)
+        {
+            Debug.Log($"[MainFlowManager] Battle encounter selected. Index={battleManager.SelectedEncounterIndex}", this);
+        }
+    }
+
+    public void HandleBattleStartRequested()
+    {
+        if (_uiOwner != UiOwner.BattlePreparation)
+        {
+            return;
+        }
+
+        if (_sceneLoader == null)
+        {
+            Debug.LogError("[MainFlowManager] SceneLoader is null.", this);
+            return;
+        }
+
+        if (_battleSessionManager == null)
+        {
+            Debug.LogError("[MainFlowManager] BattleSessionManager is null.", this);
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(battleSceneName))
+        {
+            Debug.LogError("[MainFlowManager] battleSceneName is empty.", this);
+            return;
+        }
+
+        if (!Application.CanStreamedLevelBeLoaded(battleSceneName))
+        {
+            Debug.LogError($"[MainFlowManager] Battle scene '{battleSceneName}' is not in Build Settings or cannot be loaded.", this);
+            return;
+        }
+
+        if (_sceneLoader.IsLoading)
+        {
+            Debug.LogWarning("[MainFlowManager] SceneLoader is already loading another scene.", this);
+            return;
+        }
+
+        if (!TryBuildBattleStartPayload(out BattleStartPayload payload))
+        {
+            return;
+        }
+
+        StartCoroutine(LoadBattleSceneRoutine(payload));
+    }
+
+    public void HandleBattlePreparationBackRequested()
+    {
+        if (_uiOwner != UiOwner.BattlePreparation)
+        {
+            return;
+        }
+
+        battleManager.ClosePreparation();
+        battleUIManager.CloseAll();
+        _uiOwner = UiOwner.Main;
+        ApplyUiState();
+
+        if (verboseLog)
+        {
+            Debug.Log("[MainFlowManager] Battle preparation panel closed. Main UI regained control.", this);
+        }
+    }
+
+    private bool TryBuildBattleStartPayload(out BattleStartPayload payload)
+    {
+        payload = null;
+
+        if (!battleManager.TryGetSelectedEncounterForBattle(out BattleEncounterPreview encounter))
+        {
+            Debug.LogWarning("[MainFlowManager] Cannot build battle payload because no encounter is selected.", this);
+            return false;
+        }
+
+        if (!TryBuildAllySnapshotsForBattle(out List<BattleUnitSnapshot> allySnapshots))
+        {
+            return false;
+        }
+
+        if (!TryBuildEnemySnapshotsForBattle(encounter, out List<BattleUnitSnapshot> enemySnapshots))
+        {
+            return false;
+        }
+
+        int battleSeed = _randomManager != null
+            ? _randomManager.NextInt(RandomStreamType.BattleSimulation, int.MinValue, int.MaxValue)
+            : Random.Range(0, int.MaxValue);
+
+        payload = new BattleStartPayload(
+            allySnapshots,
+            enemySnapshots,
+            encounter.EncounterIndex,
+            encounter.AverageLevel,
+            encounter.PreviewRewardGold,
+            battleSeed
+        );
+
+        return true;
+    }
+
+    private bool TryBuildAllySnapshotsForBattle(out List<BattleUnitSnapshot> allySnapshots)
+    {
+        allySnapshots = new List<BattleUnitSnapshot>(6);
+
+        if (gladiatorManager == null)
+        {
+            Debug.LogError("[MainFlowManager] gladiatorManager is null.", this);
+            return false;
+        }
+
+        IReadOnlyList<OwnedGladiatorData> ownedGladiators = gladiatorManager.OwnedGladiators;
+        if (ownedGladiators == null || ownedGladiators.Count == 0)
+        {
+            Debug.LogWarning("[MainFlowManager] Cannot start battle because there are no owned gladiators.", this);
+            return false;
+        }
+
+        int count = Mathf.Min(6, ownedGladiators.Count);
+
+        for (int i = 0; i < count; i++)
+        {
+            OwnedGladiatorData source = ownedGladiators[i];
+            if (source == null)
+            {
+                Debug.LogWarning($"[MainFlowManager] Owned gladiator at index {i} is null. Skipping.", this);
+                continue;
+            }
+
+            BattleUnitSnapshot snapshot = BattleUnitSnapshot.FromOwnedGladiator(source, false);
+            if (snapshot != null)
+            {
+                allySnapshots.Add(snapshot);
+            }
+        }
+
+        if (allySnapshots.Count == 0)
+        {
+            Debug.LogWarning("[MainFlowManager] Cannot start battle because ally snapshot build result is empty.", this);
+            return false;
+        }
+
+        return true;
+    }
+
+    private bool TryBuildEnemySnapshotsForBattle(
+        BattleEncounterPreview encounter,
+        out List<BattleUnitSnapshot> enemySnapshots)
+    {
+        enemySnapshots = new List<BattleUnitSnapshot>(6);
+
+        if (encounter == null)
+        {
+            Debug.LogError("[MainFlowManager] Encounter is null.", this);
+            return false;
+        }
+
+        IReadOnlyList<BattleUnitSnapshot> encounterUnits = encounter.EnemyUnits;
+        if (encounterUnits == null || encounterUnits.Count == 0)
+        {
+            Debug.LogWarning("[MainFlowManager] Selected encounter has no enemy units.", this);
+            return false;
+        }
+
+        int count = Mathf.Min(6, encounterUnits.Count);
+
+        for (int i = 0; i < count; i++)
+        {
+            BattleUnitSnapshot source = encounterUnits[i];
+            if (source == null)
+            {
+                Debug.LogWarning($"[MainFlowManager] Encounter enemy snapshot at index {i} is null. Skipping.", this);
+                continue;
+            }
+
+            enemySnapshots.Add(source.Clone());
+        }
+
+        if (enemySnapshots.Count == 0)
+        {
+            Debug.LogWarning("[MainFlowManager] Cannot start battle because enemy snapshot build result is empty.", this);
+            return false;
+        }
+
+        return true;
+    }
+
+    private IEnumerator LoadBattleSceneRoutine(BattleStartPayload payload)
+    {
+        if (payload == null)
+        {
+            yield break;
+        }
+
+        if (_battleSessionManager == null)
+        {
+            Debug.LogError("[MainFlowManager] BattleSessionManager is null.", this);
+            yield break;
+        }
+
+        if (_sceneLoader == null)
+        {
+            Debug.LogError("[MainFlowManager] SceneLoader is null.", this);
+            yield break;
+        }
+
+        _battleSessionManager.StorePayload(payload);
+
+        bool started = _sceneLoader.TryLoadScene(battleSceneName);
+
+        if (!started)
+        {
+            _battleSessionManager.ClearPayload();
+            Debug.LogError($"[MainFlowManager] Failed to start BattleScene load. SceneName={battleSceneName}", this);
+            yield break;
+        }
+
+        if (_sessionManager != null)
+        {
+            _sessionManager.MarkBattleUsed();
+        }
+
+        battleManager.ClosePreparation();
+        battleUIManager.CloseAll();
+        _uiOwner = UiOwner.Main;
+        ApplyUiState();
+
+        if (verboseLog)
+        {
+            Debug.Log(
+                $"[MainFlowManager] Battle payload stored. " +
+                $"Allies={payload.AllyUnits.Count}, Enemies={payload.EnemyUnits.Count}, " +
+                $"EncounterIndex={payload.SelectedEncounterIndex}, BattleSeed={payload.BattleSeed}",
+                this
+            );
+        }
+
+        yield break;
+    }
+    /*
+    public void HandleBattleConfirmRequested()
+    {
+        if (!battleManager.IsBattlePanelOpen)
+        {
+            return;
+        }
+
+        BattleResolution resolution = battleManager.ResolveCurrentBattle();
+        battleUIManager.ShowResult(resolution);
+        ApplyUiState();
+
+        if (verboseLog)
+        {
+            Debug.Log($"[MainFlowManager] Battle resolved. Win={resolution.WasWin}, PendingReward={resolution.PendingReward}", this);
+        }
+    }
+    */
+    /*
+    public void HandleBattleResultNextRequested()
+    {
+        if (!battleManager.IsResultOpen)
+        {
+            return;
+        }
+
+        int paidGold = resourceManager.GrantPendingBattleReward(_sessionManager);
+
+        if (paidGold > 0)
+        {
+            Debug.Log("exp granted");
+            gladiatorManager.GrantVictoryXpToAllOwnedGladiators();
+        }
+
+        battleManager.FinishResultFlow();
+        battleUIManager.CloseAll();
+        _uiOwner = UiOwner.Main;
+
+        ApplyUiState();
+
+        if (verboseLog)
+        {
+            Debug.Log($"[MainFlowManager] Battle result confirmed. PaidGold={paidGold}", this);
+        }
+    }
+    */
+
+    public void HandleMissionMenuRequested()
+    {
+        if (_uiOwner != UiOwner.Main)
+        {
+            return;
+        }
+
+        Debug.Log("[MainFlowManager] 임무 메뉴는 아직 이번 단계 구현 범위 아님.", this);
+    }
+
+    public void HandleMarketMenuRequested()
+    {
+        if (_uiOwner != UiOwner.Main)
+        {
+            return;
+        }
+
+        _uiOwner = UiOwner.Market;
+        marketUIManager.OpenMarketHome();
+        ApplyUiState();
+
+        if (verboseLog)
+        {
+            Debug.Log("[MainFlowManager] Market panel opened.", this);
+        }
+    }
+
+    public void HandleMarketBackRequested()
+    {
+        if (_uiOwner != UiOwner.Market)
+        {
+            return;
+        }
+
+        marketUIManager.CloseMarket();
+        _uiOwner = UiOwner.Main;
+        ApplyUiState();
+
+        if (verboseLog)
+        {
+            Debug.Log("[MainFlowManager] Market panel closed. Main UI regained control.", this);
+        }
+    }
+
+    public void HandleEodRequested()
+    {
+        if (_uiOwner != UiOwner.Main)
+        {
+            return;
+        }
+
+        _sessionManager.AdvanceDay();
+        marketManager.InitializeDay(_sessionManager.CurrentDay);
+        battleManager.InitializeDay(_sessionManager.CurrentDay);
+
+        ApplyUiState();
+
+        if (verboseLog)
+        {
+            Debug.Log($"[MainFlowManager] EOD complete. CurrentDay={_sessionManager.CurrentDay}", this);
+        }
+    }
+
+    private void ApplyUiState()
+    {
+        bool isMainOwner = _uiOwner == UiOwner.Main;
+        bool canUseBattle = isMainOwner && _sessionManager != null && _sessionManager.CanUseBattleToday();
+
+        mainUIManager.SetMainMenuInteractable(isMainOwner);
+        mainUIManager.SetBattleButtonInteractable(canUseBattle);
+        mainUIManager.SetEodButtonInteractable(isMainOwner);
+
+        if (_sessionManager != null)
+        {
+            mainUIManager.RefreshDayText(_sessionManager.CurrentDay);
+        }
+    }
+
+    private void TryGrantPendingBattleRewardOnMainSceneEnter()
+    {
+        if (_sessionManager == null)
+        {
+            Debug.LogError("[MainFlowManager] SessionManager is null while trying to grant pending battle reward.", this);
+            return;
+        }
+
+        if (resourceManager == null)
+        {
+            Debug.LogError("[MainFlowManager] resourceManager is null while trying to grant pending battle reward.", this);
+            return;
+        }
+
+        if (!_sessionManager.HasPendingBattleReward)
+        {
+            return;
+        }
+
+        int paidGold = resourceManager.GrantPendingBattleReward(_sessionManager);
+
+        if (paidGold > 0)
+        {
+            Debug.Log("exp granted");
+            gladiatorManager.GrantVictoryXpToAllOwnedGladiators();
+        }
+
+        if (verboseLog)
+        {
+            Debug.Log(
+                $"[MainFlowManager] Pending battle reward granted on MainScene enter. PaidGold={paidGold}",
+                this
+            );
+        }
+    }
+}

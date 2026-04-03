@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9fe8392d3d3f3f6469a300488b1d13aa, type: 3}
+  m_Name: Trait3
+  m_EditorClassIdentifier: Assembly-CSharp::TraitSO
+  icon: {fileID: 21300000, guid: ed587508924b3144aa8346b04f0f3738, type: 3}
+  traitName: Trait3
+  description: Trait3 des
