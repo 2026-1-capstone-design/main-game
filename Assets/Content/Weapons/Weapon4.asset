@@ -15,10 +15,12 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: 40b771aab806ee14c9c85cf2c6832204, type: 3}
   weaponName: weapon4_staff
   weaponType: 4
+  leftWeaponPrefab: {fileID: 26744791562570188, guid: 49e6000adfc1e4947a3d1e139883ac4f, type: 3}
+  rightWeaponPrefab: {fileID: 947843970086670812, guid: 866d94be47c38d746970603c59bf81ce, type: 3}
   isRanged: 1
   useProjectile: 0
   baseAttackBonus: 8
   baseHealthBonus: 10
   baseAttackSpeedBonus: 0.3
-  baseMoveSpeedBonus: 20
-  baseAttackRangeBonus: 100
+  baseMoveSpeedBonus: 1
+  baseAttackRangeBonus: 1

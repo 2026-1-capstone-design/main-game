@@ -19,5 +19,5 @@ MonoBehaviour:
   baseAttack: 20
   attackGrowthPerLevel: 2
   attackSpeed: 1
-  moveSpeed: 150
-  attackRange: 50
+  moveSpeed: 1.5
+  attackRange: 1

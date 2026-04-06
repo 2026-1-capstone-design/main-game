@@ -5,11 +5,12 @@ using UnityEngine;
 public sealed class BattleSceneFlowManager : MonoBehaviour
 {
     [Header("Spawn")]
-    [SerializeField] private RectTransform battlefieldRect;
+    // 기존 RectTransform에서 3D용 BoxCollider로 교체
+    [SerializeField] private BoxCollider battlefieldCollider;
     [SerializeField] private GameObject runtimeUnitRootPrefab;
-    [SerializeField] private RectTransform runtimeUnitRoot;
-    [SerializeField] private RectTransform[] allyPlaceholders = new RectTransform[6];
-    [SerializeField] private RectTransform[] enemyPlaceholders = new RectTransform[6];
+    [SerializeField] private Transform runtimeUnitRoot;
+    [SerializeField] private Transform[] allyPlaceholders = new Transform[6];
+    [SerializeField] private Transform[] enemyPlaceholders = new Transform[6];
 
     [Header("Battle")]
     [SerializeField] private BattleSimulationManager battleSimulationManager;
@@ -133,9 +134,10 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
 
         battleOrdersManager.Initialize(_runtimeUnits);
 
+        // SimulationManager에 BoxCollider를 전달합니다.
         battleSimulationManager.Initialize(
             _runtimeUnits,
-            battlefieldRect,
+            battlefieldCollider,
             battleStatusGridUIManager,
             battleSceneUIManager,
             payload);
@@ -153,10 +155,7 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
         for (int i = 0; i < _runtimeUnits.Count; i++)
         {
             BattleRuntimeUnit unit = _runtimeUnits[i];
-            if (unit == null)
-            {
-                continue;
-            }
+            if (unit == null) continue;
 
             GameObject rootObject = unit.RuntimeRootObject;
             if (rootObject != null)
@@ -171,111 +170,57 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
 
     private bool ValidateBootstrapSetup(BattleStartPayload payload)
     {
-        if (payload == null)
+        if (payload == null) return false;
+        if (runtimeUnitRootPrefab == null) return false;
+        if (battleSimulationManager == null) return false;
+        if (battleOrdersManager == null) return false;
+        if (battlefieldCollider == null)
         {
-            Debug.LogError("[BattleSceneFlowManager] Payload is null.", this);
+            Debug.LogError("[BattleSceneFlowManager] battlefieldCollider is not assigned. Please assign a BoxCollider.", this);
             return false;
         }
 
-        if (runtimeUnitRootPrefab == null)
-        {
-            Debug.LogError("[BattleSceneFlowManager] runtimeUnitRootPrefab is not assigned.", this);
-            return false;
-        }
+        if (allyPlaceholders == null || allyPlaceholders.Length < 6) return false;
+        if (enemyPlaceholders == null || enemyPlaceholders.Length < 6) return false;
 
-        if (battleSimulationManager == null)
-        {
-            Debug.LogError("[BattleSceneFlowManager] battleSimulationManager is not assigned.", this);
-            return false;
-        }
-
-        if (battleOrdersManager == null)
-        {
-            Debug.LogError("[BattleSceneFlowManager] battleOrdersManager is not assigned.", this);
-            return false;
-        }
-
-        if (battlefieldRect == null)
-        {
-            Debug.LogError("[BattleSceneFlowManager] battlefieldRect is not assigned.", this);
-            return false;
-        }
-
-        if (allyPlaceholders == null || allyPlaceholders.Length < 6)
-        {
-            Debug.LogError("[BattleSceneFlowManager] allyPlaceholders must have length 6.", this);
-            return false;
-        }
-
-        if (enemyPlaceholders == null || enemyPlaceholders.Length < 6)
-        {
-            Debug.LogError("[BattleSceneFlowManager] enemyPlaceholders must have length 6.", this);
-            return false;
-        }
-
-        if (payload.AllyUnits == null || payload.AllyUnits.Count == 0)
-        {
-            Debug.LogError("[BattleSceneFlowManager] Payload ally list is empty.", this);
-            return false;
-        }
-
-        if (payload.EnemyUnits == null || payload.EnemyUnits.Count == 0)
-        {
-            Debug.LogError("[BattleSceneFlowManager] Payload enemy list is empty.", this);
-            return false;
-        }
+        if (payload.AllyUnits == null || payload.AllyUnits.Count == 0) return false;
+        if (payload.EnemyUnits == null || payload.EnemyUnits.Count == 0) return false;
 
         return true;
     }
 
     private bool SpawnTeam(
         IReadOnlyList<BattleUnitSnapshot> snapshots,
-        RectTransform[] placeholders,
+        Transform[] placeholders,
         bool isEnemy,
         int unitNumberStart)
     {
-        if (snapshots == null)
-        {
-            return false;
-        }
+        if (snapshots == null) return false;
 
         int spawnCount = Mathf.Min(6, Mathf.Min(snapshots.Count, placeholders.Length));
-        RectTransform parent = runtimeUnitRoot != null ? runtimeUnitRoot : battlefieldRect;
+        Transform parent = runtimeUnitRoot != null ? runtimeUnitRoot : battlefieldCollider.transform;
 
         for (int i = 0; i < spawnCount; i++)
         {
             BattleUnitSnapshot snapshot = snapshots[i];
-            RectTransform placeholder = placeholders[i];
+            Transform placeholder = placeholders[i];
 
-            if (snapshot == null)
-            {
-                Debug.LogWarning($"[BattleSceneFlowManager] Snapshot is null. Team={(isEnemy ? "Enemy" : "Ally")}, Index={i}", this);
-                continue;
-            }
-
-            if (placeholder == null)
-            {
-                Debug.LogError($"[BattleSceneFlowManager] Placeholder is null. Team={(isEnemy ? "Enemy" : "Ally")}, Index={i}", this);
-                return false;
-            }
+            if (snapshot == null) continue;
+            if (placeholder == null) return false;
 
             GameObject runtimeRoot = Instantiate(runtimeUnitRootPrefab, parent);
             BattleRuntimeUnit runtimeUnit = runtimeRoot.GetComponentInChildren<BattleRuntimeUnit>(true);
 
             if (runtimeUnit == null)
             {
-                Debug.LogError(
-                    $"[BattleSceneFlowManager] BattleRuntimeUnit component not found under runtime root prefab. Team={(isEnemy ? "Enemy" : "Ally")}, Index={i}",
-                    this
-                );
-
                 Destroy(runtimeRoot);
                 return false;
             }
 
             runtimeUnit.Initialize(snapshot.Clone(), unitNumberStart + i, isEnemy);
-            runtimeUnit.PlaceOnBattlefieldPlaceholder(placeholder, battlefieldRect);
-            runtimeUnit.ClampInsideBattlefield(battlefieldRect);
+            runtimeUnit.PlaceOnBattlefieldPlaceholder(placeholder, battlefieldCollider.transform);
+            // 초기 스폰 후 맵 밖으로 튀어나간 유닛이 있다면 클램프 처리
+            //runtimeUnit.ClampInsideBattlefield(battlefieldCollider);
 
             _runtimeUnits.Add(runtimeUnit);
         }
@@ -301,19 +246,12 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
     private List<BattleUnitSnapshot> CloneSnapshots(IReadOnlyList<BattleUnitSnapshot> source)
     {
         List<BattleUnitSnapshot> result = new List<BattleUnitSnapshot>();
-
-        if (source == null)
-        {
-            return result;
-        }
+        if (source == null) return result;
 
         for (int i = 0; i < source.Count; i++)
         {
             BattleUnitSnapshot snapshot = source[i];
-            if (snapshot != null)
-            {
-                result.Add(snapshot.Clone());
-            }
+            if (snapshot != null) result.Add(snapshot.Clone());
         }
 
         return result;

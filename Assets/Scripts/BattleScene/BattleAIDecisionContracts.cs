@@ -1,10 +1,6 @@
-
 /*
 여기 추가 <- 검색해서 무기군 적절하게 추가하기
-
-
 */
-
 
 using System;
 using UnityEngine;
@@ -20,7 +16,6 @@ public enum BattleActionType
     CollapseOnCluster = 6,
     EngageNearest = 7
 }
-
 
 [Serializable]
 public struct BattleParameterSet
@@ -120,32 +115,45 @@ public sealed class BattleActionTuning
     [Header("Current Action Param Modifiers (percent)")]
     public BattleParameterWeights currentActionParameterPercents = BattleParameterWeights.CreateFilled(100);
 
-    [Header("Weapon Type Final Score Percents")]    //다섯개의 대표 무기군
-    public int swordPercent = 100;
-    public int crossbowPercent = 100;
-    public int macePercent = 100;
+    [Header("Weapon Type Final Score Percents")]
+    public int oneHandPercent = 100;
+    public int twoHandPercent = 100;
+    public int dualHandPercent = 100;
+    public int spearPercent = 100;
+    public int shieldPercent = 100;
     public int daggerPercent = 100;
-    public int orbPercent = 100;
+    public int handgunPercent = 100;
+    public int dualgunPercent = 100;
+    public int riflePercent = 100;
+    public int staffPercent = 100;
+    public int bowPercent = 100;
 
-    private static WeaponType GetImplicitAffinityWeaponType(WeaponType weaponType) //여기 추가
+    private static WeaponType GetImplicitAffinityWeaponType(WeaponType weaponType)
     {
         switch (weaponType)
         {
-            case WeaponType.Staff:
-            case WeaponType.Orb:
-                return WeaponType.Orb;          // 마법사가 쓸법한 무기군들
-
-            case WeaponType.Dagger:
-                return WeaponType.Dagger;       // 암살자가 쓸만한 무기군들
-
-            case WeaponType.Sword:
-                return WeaponType.Sword;        // 전사/근접 무기군들
-
-            case WeaponType.Crossbow:
-                return WeaponType.Crossbow;     //원딜러 무기군들
-
-            case WeaponType.Mace:
-                return WeaponType.Mace;         //탱커 무기군들 
+            case WeaponType.oneHand:
+                return WeaponType.oneHand;
+            case WeaponType.twoHand:
+                return WeaponType.twoHand;
+            case WeaponType.dualHand:
+                return WeaponType.dualHand;
+            case WeaponType.spear:
+                return WeaponType.spear;
+            case WeaponType.shield:
+                return WeaponType.shield;   
+            case WeaponType.dagger:
+                return WeaponType.dagger;
+            case WeaponType.handGun:
+                return WeaponType.handGun;
+            case WeaponType.dualGun:
+                return WeaponType.dualGun;
+            case WeaponType.rifle:
+                return WeaponType.rifle;
+            case WeaponType.staff:
+                return WeaponType.staff;
+            case WeaponType.bow:
+                return WeaponType.bow;
 
             case WeaponType.None:
             default:
@@ -157,21 +165,28 @@ public sealed class BattleActionTuning
     {
         switch (GetImplicitAffinityWeaponType(weaponType))
         {
-            case WeaponType.Sword:
-                return swordPercent;
-
-            case WeaponType.Crossbow:
-                return crossbowPercent;
-
-            case WeaponType.Mace:
-                return macePercent;
-
-            case WeaponType.Orb:
-                return orbPercent;
-
-            case WeaponType.Dagger:
+            case WeaponType.oneHand:
+                return oneHandPercent;
+            case WeaponType.twoHand:
+                return twoHandPercent;
+            case WeaponType.dualHand:
+                return dualHandPercent;
+            case WeaponType.spear:
+                return spearPercent;
+            case WeaponType.shield:
+                return shieldPercent;
+            case WeaponType.dagger:
                 return daggerPercent;
-
+            case WeaponType.handGun:
+                return handgunPercent;
+            case WeaponType.dualGun:
+                return dualgunPercent;
+            case WeaponType.rifle:
+                return riflePercent;
+            case WeaponType.staff:
+                return staffPercent;
+            case WeaponType.bow:
+                return bowPercent;
             case WeaponType.None:
             default:
                 return 100;
@@ -194,22 +209,14 @@ public struct BattleActionScoreSet
     {
         switch (actionType)
         {
-            case BattleActionType.AssassinateIsolatedEnemy:
-                return AssassinateIsolatedEnemy;
-            case BattleActionType.DiveEnemyBackline:
-                return DiveEnemyBackline;
-            case BattleActionType.PeelForWeakAlly:
-                return PeelForWeakAlly;
-            case BattleActionType.EscapeFromPressure:
-                return EscapeFromPressure;
-            case BattleActionType.RegroupToAllies:
-                return RegroupToAllies;
-            case BattleActionType.CollapseOnCluster:
-                return CollapseOnCluster;
-            case BattleActionType.EngageNearest:
-                return EngageNearest;
-            default:
-                return float.MinValue;
+            case BattleActionType.AssassinateIsolatedEnemy: return AssassinateIsolatedEnemy;
+            case BattleActionType.DiveEnemyBackline: return DiveEnemyBackline;
+            case BattleActionType.PeelForWeakAlly: return PeelForWeakAlly;
+            case BattleActionType.EscapeFromPressure: return EscapeFromPressure;
+            case BattleActionType.RegroupToAllies: return RegroupToAllies;
+            case BattleActionType.CollapseOnCluster: return CollapseOnCluster;
+            case BattleActionType.EngageNearest: return EngageNearest;
+            default: return float.MinValue;
         }
     }
 
@@ -217,27 +224,13 @@ public struct BattleActionScoreSet
     {
         switch (actionType)
         {
-            case BattleActionType.AssassinateIsolatedEnemy:
-                AssassinateIsolatedEnemy = score;
-                break;
-            case BattleActionType.DiveEnemyBackline:
-                DiveEnemyBackline = score;
-                break;
-            case BattleActionType.PeelForWeakAlly:
-                PeelForWeakAlly = score;
-                break;
-            case BattleActionType.EscapeFromPressure:
-                EscapeFromPressure = score;
-                break;
-            case BattleActionType.RegroupToAllies:
-                RegroupToAllies = score;
-                break;
-            case BattleActionType.CollapseOnCluster:
-                CollapseOnCluster = score;
-                break;
-            case BattleActionType.EngageNearest:
-                EngageNearest = score;
-                break;
+            case BattleActionType.AssassinateIsolatedEnemy: AssassinateIsolatedEnemy = score; break;
+            case BattleActionType.DiveEnemyBackline: DiveEnemyBackline = score; break;
+            case BattleActionType.PeelForWeakAlly: PeelForWeakAlly = score; break;
+            case BattleActionType.EscapeFromPressure: EscapeFromPressure = score; break;
+            case BattleActionType.RegroupToAllies: RegroupToAllies = score; break;
+            case BattleActionType.CollapseOnCluster: CollapseOnCluster = score; break;
+            case BattleActionType.EngageNearest: EngageNearest = score; break;
         }
     }
 
@@ -291,10 +284,7 @@ public struct BattleActionScoreSet
         BattleActionType candidateAction,
         float candidateScore)
     {
-        if (candidateAction == excludedAction)
-        {
-            return;
-        }
+        if (candidateAction == excludedAction) return;
 
         if (candidateScore > bestScore)
         {
@@ -310,6 +300,7 @@ public struct BattleActionExecutionPlan
     public BattleActionType Action;
     public BattleRuntimeUnit TargetEnemy;
     public BattleRuntimeUnit TargetAlly;
-    public Vector2 DesiredPosition;
+    // 3D 평면을 위해 Vector3로 변경
+    public Vector3 DesiredPosition;
     public bool HasDesiredPosition;
 }

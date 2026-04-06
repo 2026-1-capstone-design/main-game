@@ -30,6 +30,11 @@ public sealed class BattleUnitSnapshot
     public PersonalitySO Personality { get; }
     public PerkSO EquippedPerk { get; }
     public WeaponType WeaponType { get; }
+
+    //무기 왼쪽 오른쪽 추가
+    public GameObject LeftWeaponPrefab { get; }
+    public GameObject RightWeaponPrefab { get; }
+
     public WeaponSkillId WeaponSkillId { get; }
     public bool IsRanged { get; }
     public bool UseProjectile { get; }
@@ -52,6 +57,8 @@ public sealed class BattleUnitSnapshot
         PersonalitySO personality,
         PerkSO equippedPerk,
         WeaponType weaponType,
+        GameObject leftWeaponPrefab,
+        GameObject rightWeaponPrefab,
         WeaponSkillId weaponSkillId,
         bool isRanged,
         bool useProjectile,
@@ -74,6 +81,12 @@ public sealed class BattleUnitSnapshot
         Personality = personality;
         EquippedPerk = equippedPerk;
         WeaponType = weaponType;
+
+        //생성자에 추가
+        LeftWeaponPrefab = leftWeaponPrefab;
+        RightWeaponPrefab = rightWeaponPrefab;
+
+
         WeaponSkillId = weaponSkillId;
         IsRanged = isRanged;
         UseProjectile = useProjectile;
@@ -99,6 +112,8 @@ public sealed class BattleUnitSnapshot
             Personality,
             EquippedPerk,
             WeaponType,
+            LeftWeaponPrefab,
+            RightWeaponPrefab,
             WeaponSkillId,
             IsRanged,
             UseProjectile,
@@ -123,6 +138,11 @@ public sealed class BattleUnitSnapshot
             resolvedPortrait = source.GladiatorClass.icon;
         }
         WeaponType weaponType = WeaponType.None;
+
+        GameObject leftPrefab = null;
+        GameObject rightPrefab = null;
+
+
         WeaponSkillId weaponSkillId = WeaponSkillId.None;
         bool isRanged = false;
         bool useProjectile = false;
@@ -132,6 +152,9 @@ public sealed class BattleUnitSnapshot
             if (source.EquippedWeapon.Weapon != null)
             {
                 weaponType = source.EquippedWeapon.Weapon.weaponType;
+                //무기 추가
+                leftPrefab = source.EquippedWeapon.Weapon.leftWeaponPrefab; 
+                rightPrefab = source.EquippedWeapon.Weapon.rightWeaponPrefab;
             }
 
             if (source.EquippedWeapon.WeaponSkill != null)
@@ -157,6 +180,8 @@ public sealed class BattleUnitSnapshot
             source.Personality,
             source.EquippedPerk,
             weaponType,
+            leftPrefab,
+            rightPrefab,
             weaponSkillId,
             isRanged,
             useProjectile,

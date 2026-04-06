@@ -13,14 +13,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     [SerializeField] private GameObject dotDead;
     [SerializeField] private TMP_Text statusText;
 
-    private RectTransform _rectTransform;
-    private RectTransform _containerRectTransform;
-
-    // 실제 전투 위치/배치/클램프는 Root 기준으로 처리한다.
-    // 현재 스크립트는 Root의 자식 BattleRuntimeUnit에 붙어 있으므로,
-    // 부모 Root의 RectTransform을 컨테이너로 잡는다.
-    public RectTransform UiRectTransform => _containerRectTransform != null ? _containerRectTransform : _rectTransform;
-    public GameObject RuntimeRootObject => UiRectTransform != null ? UiRectTransform.gameObject : gameObject;
+    public GameObject RuntimeRootObject => gameObject;
 
     public int UnitNumber { get; private set; }
     public bool IsEnemy { get; private set; }
@@ -33,12 +26,12 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     public float CurrentHealth { get; private set; }
     public float Attack { get; private set; }
     public float AttackSpeed { get; private set; }
-    public float MoveSpeed { get; private set; }
-    public float AttackRange { get; private set; }
+    [field: SerializeField]  public float MoveSpeed { get; private set; }
+    [field: SerializeField]  public float AttackRange { get; private set; }
 
     public bool IsCombatDisabled { get; private set; }
     public string CurrentAction { get; private set; }
-    public BattleActionType CurrentActionType { get; private set; }
+    [field: SerializeField]  public BattleActionType CurrentActionType { get; private set; }
     public float KeepBehaving { get; private set; }
     public float ActionTimer { get; private set; }
 
@@ -48,39 +41,31 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     public bool IsMoving { get; private set; }
     public bool IsAttacking { get; private set; }
 
-    public Vector2 AnchoredPosition => UiRectTransform != null ? UiRectTransform.anchoredPosition : Vector2.zero;
+    // 2D AnchoredPosition 대신 3D World Position을 사용합니다.
+    public Vector3 Position => transform.position;
 
-    // 나중에 "보정 전 값이 뭐였는지" 확인해야 할 가능성이 높아서 비교용으로 둘 다 유지함
-    public BattleParameterSet CurrentRawParameters { get; private set; }
-    public BattleParameterSet CurrentModifiedParameters { get; private set; }
-    public BattleActionScoreSet CurrentScores { get; private set; }
+    [field: SerializeField]  public BattleParameterSet CurrentRawParameters { get; private set; }
+    [field: SerializeField]  public BattleParameterSet CurrentModifiedParameters { get; private set; }
+    [field: SerializeField]  public BattleActionScoreSet CurrentScores { get; private set; }
 
     public BattleRuntimeUnit PlannedTargetEnemy { get; private set; }
     public BattleRuntimeUnit PlannedTargetAlly { get; private set; }
-    public Vector2 PlannedDesiredPosition { get; private set; }
+
+    // 3D 평면 좌표
+    public Vector3 PlannedDesiredPosition { get; private set; }
     public bool HasPlannedDesiredPosition { get; private set; }
 
-    public BattleActionType TopScoredAction { get; private set; }
-    public float TopScoredValue { get; private set; }
+    [field: SerializeField]  public BattleActionType TopScoredAction { get; private set; }
+    [field: SerializeField]  public float TopScoredValue { get; private set; }
 
-    private void Awake()
-    {
-        _rectTransform = GetComponent<RectTransform>();
 
-        if (_rectTransform == null)
-        {
-            Debug.LogError("[BattleRuntimeUnit] RectTransform is missing on BattleRuntimeUnit child.", this);
-        }
 
-        _containerRectTransform = transform.parent as RectTransform;
-
-        if (_containerRectTransform == null)
-        {
-            // 혹시 구조가 바뀌어도 완전히 죽지 않게 fallback
-            _containerRectTransform = _rectTransform;
-            Debug.LogWarning("[BattleRuntimeUnit] Parent Root RectTransform not found. Falling back to self RectTransform.", this);
-        }
-    }
+    [Header("Weapon Sockets")]
+    [SerializeField] private Transform leftHandSocket;  
+    [SerializeField] private Transform rightHandSocket;
+    [SerializeField] private GameObject _spawnedLeftWeapon;
+    [SerializeField] private GameObject _spawnedRightWeapon;
+    [SerializeField] private Animator _myAnimation;
 
     public void Initialize(BattleUnitSnapshot snapshot, int unitNumber, bool isEnemy)
     {
@@ -122,11 +107,15 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
 
         PlannedTargetEnemy = null;
         PlannedTargetAlly = null;
-        PlannedDesiredPosition = Vector2.zero;
+        PlannedDesiredPosition = Vector3.zero;
         HasPlannedDesiredPosition = false;
 
         TopScoredAction = BattleActionType.None;
         TopScoredValue = 0f;
+
+        _myAnimation = this.transform.GetComponent<Animator>();
+        EquipWeaponFromSnapShot();
+
 
         string runtimeName = $"{(isEnemy ? "Enemy" : "Ally")}_{UnitNumber}_{DisplayName}";
         if (RuntimeRootObject != null)
@@ -145,6 +134,45 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
             );
         }
     }
+
+
+    //시각적으로 보이도록 장착
+    private void EquipWeaponFromSnapShot()
+    {
+        if (Snapshot == null)
+            return;
+
+        if(Snapshot.LeftWeaponPrefab != null && leftHandSocket != null)
+        {
+            Debug.Log("왼손 무기 장착");
+
+            _spawnedLeftWeapon = Instantiate(Snapshot.LeftWeaponPrefab, leftHandSocket);
+            _spawnedLeftWeapon.transform.localPosition = Vector3.zero;
+            _spawnedLeftWeapon.transform.localRotation = Quaternion.identity;
+
+        }
+        if (Snapshot.RightWeaponPrefab != null && rightHandSocket != null)
+        {
+            Debug.Log("오른손 무기 장착");
+
+            _spawnedRightWeapon = Instantiate(Snapshot.RightWeaponPrefab, rightHandSocket);
+            _spawnedRightWeapon.transform.localPosition = Vector3.zero;
+            _spawnedRightWeapon.transform.localRotation = Quaternion.identity;
+        }
+
+        if(_myAnimation != null && AnimationManager.Instance != null)
+        {
+            AnimatorOverrideController weaponMotion = AnimationManager.Instance.GetControllerByWeaponType(Snapshot.WeaponType);
+            if (weaponMotion != null)
+                _myAnimation.runtimeAnimatorController = weaponMotion;
+        }
+
+
+    }
+
+
+
+
 
     public void SetCurrentAction(string actionName)
     {
@@ -216,7 +244,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     {
         PlannedTargetEnemy = null;
         PlannedTargetAlly = null;
-        PlannedDesiredPosition = Vector2.zero;
+        PlannedDesiredPosition = Vector3.zero;
         HasPlannedDesiredPosition = false;
         CurrentTarget = null;
     }
@@ -245,108 +273,102 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         {
             IsAttacking = false;
         }
+
+        if (_myAnimation != null)
+            _myAnimation.SetBool("isMoving", IsMoving);
+
     }
 
     public void SetAttackState(bool isAttacking)
     {
+        if (isAttacking && !IsAttacking)
+        {
+            if (_myAnimation != null)
+            {
+                _myAnimation.SetTrigger("attack");
+            }
+
+            if (PlannedTargetEnemy != null)
+            {
+                FaceTarget(PlannedTargetEnemy.Position);
+            }
+            else if (CurrentTarget != null)
+            {
+                FaceTarget(CurrentTarget.Position);
+            }
+
+        }
+
         IsAttacking = isAttacking;
 
         if (isAttacking)
         {
             IsMoving = false;
+            if (_myAnimation != null)
+                _myAnimation.SetBool("isMoving", false);
         }
     }
 
     public void SetIdleState()
     {
+        if(_myAnimation != null)
+            _myAnimation.SetBool("isMoving", false);
+
         IsMoving = false;
         IsAttacking = false;
     }
 
-    public void SetAnchoredPosition(Vector2 anchoredPosition)
+    // 3D 월드 좌표 설정 / + 회전
+    public void SetPosition(Vector3 newPosition)
     {
-        if (UiRectTransform == null)
-        {
-            return;
-        }
-
-        UiRectTransform.anchoredPosition = anchoredPosition;
+        transform.position = newPosition;
     }
 
-    public void PlaceOnBattlefieldPlaceholder(RectTransform placeholder, RectTransform battlefieldRect)
+    public void FaceTarget(Vector3 targetPos)
     {
-        if (UiRectTransform == null)
-        {
-            Debug.LogError("[BattleRuntimeUnit] Cannot place UI unit because Root RectTransform is missing.", this);
-            return;
-        }
-
-        if (placeholder == null)
-        {
-            Debug.LogError("[BattleRuntimeUnit] placeholder is null.", this);
-            return;
-        }
-
-        if (battlefieldRect == null)
-        {
-            Debug.LogError("[BattleRuntimeUnit] battlefieldRect is null.", this);
-            return;
-        }
-
-        UiRectTransform.SetParent(battlefieldRect, false);
-
-        Bounds placeholderBounds = RectTransformUtility.CalculateRelativeRectTransformBounds(battlefieldRect, placeholder);
-
-        UiRectTransform.anchorMin = new Vector2(0.5f, 0.5f);
-        UiRectTransform.anchorMax = new Vector2(0.5f, 0.5f);
-        UiRectTransform.pivot = new Vector2(0.5f, 0.5f);
-        UiRectTransform.sizeDelta = placeholderBounds.size;
-        UiRectTransform.anchoredPosition = placeholderBounds.center;
-        UiRectTransform.localScale = Vector3.one;
-        UiRectTransform.localRotation = Quaternion.identity;
-
-        // 자식 BattleRuntimeUnit는 Root를 꽉 채우게 둔다.
-        if (_rectTransform != null && _rectTransform != UiRectTransform)
-        {
-            _rectTransform.anchorMin = Vector2.zero;
-            _rectTransform.anchorMax = Vector2.one;
-            _rectTransform.pivot = new Vector2(0.5f, 0.5f);
-            _rectTransform.offsetMin = Vector2.zero;
-            _rectTransform.offsetMax = Vector2.zero;
-            _rectTransform.localScale = Vector3.one;
-            _rectTransform.localRotation = Quaternion.identity;
-            _rectTransform.anchoredPosition = Vector2.zero;
-        }
+        Vector3 direction = targetPos - transform.position;
+        direction.y = 0f;
+        if (direction.sqrMagnitude > 0.0001f)
+            transform.rotation = Quaternion.LookRotation(direction);
     }
 
-    public void ClampInsideBattlefield(RectTransform battlefieldRect)
+
+    // 깔끔해진 3D 스폰 배치 코드
+    public void PlaceOnBattlefieldPlaceholder(Transform placeholder, Transform battlefield)
     {
-        if (UiRectTransform == null || battlefieldRect == null)
+        if (placeholder == null) return;
+
+        if (battlefield != null)
         {
-            return;
+            transform.SetParent(battlefield, false);
         }
 
-        Vector2 pos = UiRectTransform.anchoredPosition;
-        Rect fieldRect = battlefieldRect.rect;
-        Rect unitRect = UiRectTransform.rect;
+        transform.position = placeholder.position;
+        transform.rotation = placeholder.rotation;
+    }
 
-        float halfFieldWidth = fieldRect.width * 0.5f;
-        float halfFieldHeight = fieldRect.height * 0.5f;
-        float halfUnitWidth = Mathf.Max(unitRect.width * 0.5f, BodyRadius);
-        float halfUnitHeight = Mathf.Max(unitRect.height * 0.5f, BodyRadius);
+    // BoxCollider 기반의 3D 평면 클램핑 시스템
+    public void ClampInsideBattlefield(BoxCollider battlefieldCollider)
+    {
+        if (battlefieldCollider == null) return;
 
-        pos.x = Mathf.Clamp(pos.x, -halfFieldWidth + halfUnitWidth, halfFieldWidth - halfUnitWidth);
-        pos.y = Mathf.Clamp(pos.y, -halfFieldHeight + halfUnitHeight, halfFieldHeight - halfUnitHeight);
+        Vector3 pos = transform.position;
+        Bounds bounds = battlefieldCollider.bounds;
 
-        UiRectTransform.anchoredPosition = pos;
+        float minX = bounds.min.x + BodyRadius;
+        float maxX = bounds.max.x - BodyRadius;
+        float minZ = bounds.min.z + BodyRadius;
+        float maxZ = bounds.max.z - BodyRadius;
+
+        pos.x = Mathf.Clamp(pos.x, minX, maxX);
+        pos.z = Mathf.Clamp(pos.z, minZ, maxZ);
+
+        transform.position = pos;
     }
 
     public void ApplyDamage(float damage)
     {
-        if (IsCombatDisabled)
-        {
-            return;
-        }
+        if (IsCombatDisabled) return;
 
         CurrentHealth = Mathf.Max(0f, CurrentHealth - Mathf.Max(0f, damage));
 
@@ -357,7 +379,14 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
             AttackCooldownRemaining = 0f;
             CurrentAction = "Disabled";
             CurrentActionType = BattleActionType.None;
-            SetIdleState();
+
+            if (_myAnimation != null)
+            {
+                _myAnimation.SetBool("isMoving", false); 
+                _myAnimation.SetTrigger("die");     
+            }
+
+                SetIdleState();
             ClearExecutionPlan();
             RefreshVisualState();
         }
@@ -376,11 +405,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
 
     private void RefreshStatusText()
     {
-        if (statusText == null)
-        {
-            return;
-        }
-
+        if (statusText == null) return;
         string actionLine = string.IsNullOrWhiteSpace(CurrentAction) ? "Idle" : CurrentAction;
         statusText.text = $"{UnitNumber}\n{actionLine}";
     }

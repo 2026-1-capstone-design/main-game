@@ -105,6 +105,7 @@ public sealed class ContentDatabaseDumpOnMainEnter : MonoBehaviour
         for (int i = 0; i < list.Count; i++)
         {
             T item = list[i];
+
             AppendScriptableObjectDump(sb, $"{sectionName}[{i}]", item, "  ");
         }
 

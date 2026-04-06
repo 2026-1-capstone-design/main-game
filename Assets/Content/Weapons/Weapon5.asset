@@ -15,10 +15,12 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: 1526ed37ad2f8094db5515e5e99bf136, type: 3}
   weaponName: weapon5_orb
   weaponType: 5
-  isRanged: 1
+  leftWeaponPrefab: {fileID: 6909595757380089383, guid: 406d1abb3df843a409357bcdf4ac51cb, type: 3}
+  rightWeaponPrefab: {fileID: 26744791562570188, guid: 49e6000adfc1e4947a3d1e139883ac4f, type: 3}
+  isRanged: 0
   useProjectile: 0
   baseAttackBonus: 2
   baseHealthBonus: 10
   baseAttackSpeedBonus: 0
-  baseMoveSpeedBonus: 2
-  baseAttackRangeBonus: 80
+  baseMoveSpeedBonus: 1
+  baseAttackRangeBonus: 1

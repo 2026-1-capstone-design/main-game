@@ -4,12 +4,17 @@ using UnityEngine;
 public enum WeaponType
 {
     None = 0,
-    Sword = 1,
-    Crossbow = 2,
-    Mace = 3,
-    Staff = 4,
-    Orb = 5,
-    Dagger = 6,
+    oneHand,
+    twoHand,
+    dualHand,
+    spear,
+    shield,
+    dagger,
+    handGun,
+    dualGun,
+    rifle,
+    staff,
+    bow
 }
 
 public enum WeaponSkillId
@@ -34,7 +39,11 @@ public sealed class WeaponSO : ScriptableObject
 {
     public Sprite icon;
     public string weaponName = "Sword";
-    public WeaponType weaponType = WeaponType.Sword;
+    public WeaponType weaponType = WeaponType.oneHand;
+
+    public GameObject leftWeaponPrefab;
+    public GameObject rightWeaponPrefab;
+
     public bool isRanged = false;
     public bool useProjectile = false;
 

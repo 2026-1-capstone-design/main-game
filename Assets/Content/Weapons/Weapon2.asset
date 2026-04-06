@@ -14,11 +14,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WeaponSO
   icon: {fileID: 21300000, guid: 4114e47347029fd4cb1442155ff0bebb, type: 3}
   weaponName: weapon2_crossbow
-  weaponType: 2
+  weaponType: 11
+  leftWeaponPrefab: {fileID: 4597557650954906393, guid: 209da9585717a0e41a91f811ed43ce7d, type: 3}
+  rightWeaponPrefab: {fileID: 26744791562570188, guid: 49e6000adfc1e4947a3d1e139883ac4f, type: 3}
   isRanged: 1
   useProjectile: 1
   baseAttackBonus: 10
   baseHealthBonus: 20
   baseAttackSpeedBonus: 0
-  baseMoveSpeedBonus: 50
-  baseAttackRangeBonus: 300
+  baseMoveSpeedBonus: 1
+  baseAttackRangeBonus: 3
