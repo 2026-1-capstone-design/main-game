@@ -3,12 +3,12 @@
   "WorkspaceRootPath": "C:\\kimjinhyuck0329\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{CA30B7C7-43A3-92D4-106A-DC26AACCFE9A}|Assembly-CSharp.csproj|c:\\kimjinhyuck0329\\assets\\scripts\\battlescene\\textlookcam.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{CA30B7C7-43A3-92D4-106A-DC26AACCFE9A}|Assembly-CSharp.csproj|solutionrelative:assets\\scripts\\battlescene\\textlookcam.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{CA30B7C7-43A3-92D4-106A-DC26AACCFE9A}|Assembly-CSharp.csproj|C:\\kimjinhyuck0329\\assets\\scripts\\battlescene\\cameraview.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{CA30B7C7-43A3-92D4-106A-DC26AACCFE9A}|Assembly-CSharp.csproj|solutionrelative:assets\\scripts\\battlescene\\cameraview.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{CA30B7C7-43A3-92D4-106A-DC26AACCFE9A}|Assembly-CSharp.csproj|c:\\kimjinhyuck0329\\assets\\scripts\\battlescene\\cameraview.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{CA30B7C7-43A3-92D4-106A-DC26AACCFE9A}|Assembly-CSharp.csproj|solutionrelative:assets\\scripts\\battlescene\\cameraview.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{CA30B7C7-43A3-92D4-106A-DC26AACCFE9A}|Assembly-CSharp.csproj|c:\\kimjinhyuck0329\\assets\\scripts\\battlescene\\textlookcam.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{CA30B7C7-43A3-92D4-106A-DC26AACCFE9A}|Assembly-CSharp.csproj|solutionrelative:assets\\scripts\\battlescene\\textlookcam.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{CA30B7C7-43A3-92D4-106A-DC26AACCFE9A}|Assembly-CSharp.csproj|C:\\kimjinhyuck0329\\assets\\scripts\\battlescene\\animationmanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -58,24 +58,24 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 1,
+          "SelectedChildIndex": 0,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 0,
               "Title": "CameraView.cs",
               "DocumentMoniker": "C:\\kimjinhyuck0329\\Assets\\Scripts\\BattleScene\\CameraView.cs",
               "RelativeDocumentMoniker": "Assets\\Scripts\\BattleScene\\CameraView.cs",
               "ToolTip": "C:\\kimjinhyuck0329\\Assets\\Scripts\\BattleScene\\CameraView.cs",
               "RelativeToolTip": "Assets\\Scripts\\BattleScene\\CameraView.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAgAAAAZAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAYAAAAeAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-04-06T18:04:18.053Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 1,
               "Title": "TextLookCam.cs",
               "DocumentMoniker": "C:\\kimjinhyuck0329\\Assets\\Scripts\\BattleScene\\TextLookCam.cs",
               "RelativeDocumentMoniker": "Assets\\Scripts\\BattleScene\\TextLookCam.cs",

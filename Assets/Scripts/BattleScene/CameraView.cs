@@ -4,7 +4,7 @@ using UnityEngine.InputSystem;
 public class CameraView : MonoBehaviour
 {
     public float rotationSpeed = 60f;
-    public float zoomSpeed = 10f;
+    public float zoomSpeed = 60f;
 
     private float _pitch;
     private float _yaw;
