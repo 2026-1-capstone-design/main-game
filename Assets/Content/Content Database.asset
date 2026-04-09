@@ -51,7 +51,16 @@ MonoBehaviour:
   - {fileID: 11400000, guid: f8cdcd439d0802c4eaf1957b647f7695, type: 2}
   - {fileID: 11400000, guid: c37015ed3c433614caf1737cbc7547ca, type: 2}
   personalities:
-  - {fileID: 11400000, guid: dac4c43c7e634e04b819da567a5d3fe3, type: 2}
-  - {fileID: 11400000, guid: 54e4e273c565ffd4ab462c5138c03192, type: 2}
-  - {fileID: 11400000, guid: fc5ea12674271d44b9a6b53cb4a2fe19, type: 2}
+  - {fileID: 11400000, guid: 9d942108aac00f34d90789c549d4bc47, type: 2}
+  - {fileID: 11400000, guid: 2066e1276151ea94e9cc8980a00fcc4b, type: 2}
+  - {fileID: 11400000, guid: b87d846998ceb7649a9a084239ba087a, type: 2}
+  - {fileID: 11400000, guid: 442cb6f25548db0458b114c8f6eb6c97, type: 2}
+  - {fileID: 11400000, guid: 9066d418e0433bb48ba842c045d47b44, type: 2}
+  - {fileID: 11400000, guid: ab9cc47534874d94e919edbf7fec5d7f, type: 2}
+  - {fileID: 11400000, guid: b7b9c12331a19104697da20b5dfd55a4, type: 2}
+  - {fileID: 11400000, guid: c7747bf8cb1c0594895faddd42255a96, type: 2}
+  - {fileID: 11400000, guid: 829d24bc838231a4ca4255b4f62ea05e, type: 2}
+  - {fileID: 11400000, guid: 575b66772c9861542a76a34ce486137d, type: 2}
+  - {fileID: 11400000, guid: 60c4da455f935c240869fe4e4f80145b, type: 2}
+  - {fileID: 11400000, guid: 3b08d470d310f444d9078e715fe77be3, type: 2}
   balance: {fileID: 11400000, guid: 95d4a7f9b21c9634ba5bbfeb8c60dfe3, type: 2}

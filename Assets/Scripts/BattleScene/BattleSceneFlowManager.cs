@@ -5,7 +5,7 @@ using UnityEngine;
 public sealed class BattleSceneFlowManager : MonoBehaviour
 {
     [Header("Spawn")]
-    // ±âÁ¸ RectTransform¿¡¼­ 3D¿ë BoxCollider·Î ±³Ã¼
+    // ï¿½ï¿½ï¿½ï¿½ RectTransformï¿½ï¿½ï¿½ï¿½ 3Dï¿½ï¿½ BoxColliderï¿½ï¿½ ï¿½ï¿½Ã¼
     [SerializeField] private BoxCollider battlefieldCollider;
     [SerializeField] private GameObject runtimeUnitRootPrefab;
     [SerializeField] private Transform runtimeUnitRoot;
@@ -132,9 +132,9 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
             return false;
         }
 
-        battleOrdersManager.Initialize(_runtimeUnits);
+        battleOrdersManager.Initialize(_runtimeUnits, battlefieldCollider);
 
-        // SimulationManager¿¡ BoxCollider¸¦ Àü´ÞÇÕ´Ï´Ù.
+        // SimulationManagerï¿½ï¿½ BoxColliderï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Õ´Ï´ï¿½.
         battleSimulationManager.Initialize(
             _runtimeUnits,
             battlefieldCollider,
@@ -219,7 +219,7 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
 
             runtimeUnit.Initialize(snapshot.Clone(), unitNumberStart + i, isEnemy);
             runtimeUnit.PlaceOnBattlefieldPlaceholder(placeholder, battlefieldCollider.transform);
-            // ÃÊ±â ½ºÆù ÈÄ ¸Ê ¹ÛÀ¸·Î Æ¢¾î³ª°£ À¯´ÖÀÌ ÀÖ´Ù¸é Å¬·¥ÇÁ Ã³¸®
+            // ï¿½Ê±ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Æ¢ï¿½î³ªï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ö´Ù¸ï¿½ Å¬ï¿½ï¿½ï¿½ï¿½ Ã³ï¿½ï¿½
             //runtimeUnit.ClampInsideBattlefield(battlefieldCollider);
 
             _runtimeUnits.Add(runtimeUnit);

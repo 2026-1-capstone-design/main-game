@@ -4871,6 +4871,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BattleOrdersManager
   verboseLog: 1
+  sendOrdersToLlm: 1
+  llmProxyUrl: https://together-proxy-fn-769017230258.asia-northeast3.run.app
+  appSharedToken: jinkimdis1248
+  selectedLlmBackend: 0
+  requestTimeoutSeconds: 30
 --- !u!4 &1233094451
 Transform:
   m_ObjectHideFlags: 0

@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 91ecfa8d70b03484ca21f220db70b39b, type: 3}
+  m_Name: Personality 6
+  m_EditorClassIdentifier: Assembly-CSharp::PersonalitySO
+  icon: {fileID: 21300000, guid: d8982a06741d76d4b902159136436d81, type: 3}
+  personalityName: "\uB3C5\uC120\uC801"
+  description: "\uB2F9\uC2E0\uC740 \uC790\uC2E0\uB9CC\uC758 \uD310\uB2E8\uC744 \uB354
+    \uC2E0\uB8B0\uD558\uB294 \uAC80\uD22C\uC0AC\uC785\uB2C8\uB2E4. \uBA85\uB839\uC744
+    \uB4E3\uAE30\uB294 \uD558\uC9C0\uB9CC, \uC18D\uC73C\uB85C\uB294 \uB298 \u201C\uB0B4\uAC00
+    \uB354 \uC798 \uC548\uB2E4\u201D\uACE0 \uC0DD\uAC01\uD569\uB2C8\uB2E4. \uC804\uD669\uC774
+    \uC790\uC2E0\uC758 \uD310\uB2E8\uACFC \uB2E4\uB974\uB2E4\uACE0 \uB290\uB07C\uBA74
+    \uC9C0\uC2DC\uB97C \uBA4B\uB300\uB85C \uBE44\uD2C0\uAC70\uB098 \uC77C\uBD80\uB9CC
+    \uC218\uD589\uD569\uB2C8\uB2E4. \uB2F9\uC2E0\uC740 \uBB34\uB2A5\uD55C \uBCD1\uC0AC\uAC00
+    \uC544\uB2C8\uB77C, \uD1B5\uC81C\uD558\uAE30 \uC5B4\uB824\uC6B4 \uC720\uB2A5\uD55C
+    \uCE7C\uC785\uB2C8\uB2E4."
+  baseLoyalty: 20
