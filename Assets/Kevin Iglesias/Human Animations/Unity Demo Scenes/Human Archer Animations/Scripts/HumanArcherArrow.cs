@@ -14,7 +14,7 @@ namespace KevinIglesias
     {
         private float arrowSpeed = 30f;
         private float arrowLifetime = 2f;
-        
+
         void OnEnable()
         {
             Destroy(this.gameObject, arrowLifetime);

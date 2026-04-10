@@ -1,0 +1,11 @@
+{
+  "editor.tabSize": 4,
+  "editor.insertSpaces": true,
+  "editor.detectIndentation": false,
+  "[csharp]": {
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true,
+    "editor.defaultFormatter": "ms-dotnettools.csharp"
+  },
+  "cSpell.words": ["Mathf"]
+}

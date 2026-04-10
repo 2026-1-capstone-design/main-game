@@ -132,7 +132,8 @@ public sealed class BattleSimulationManager : MonoBehaviour
         for (int i = 0; i < runtimeUnits.Count; i++)
         {
             BattleRuntimeUnit unit = runtimeUnits[i];
-            if (unit == null) continue;
+            if (unit == null)
+                continue;
 
             unit.SetBodyRadius(unitBodyRadius);
             unit.ClearCurrentTarget();
@@ -168,7 +169,8 @@ public sealed class BattleSimulationManager : MonoBehaviour
 
     private void Update()
     {
-        if (!_initialized || _battleFinished || _isTemporarilyPaused) return;
+        if (!_initialized || _battleFinished || _isTemporarilyPaused)
+            return;
 
         float scaledDeltaTime = Time.unscaledDeltaTime * Mathf.Max(0f, simulationSpeedMultiplier);
         _tickAccumulator += scaledDeltaTime;
@@ -178,7 +180,8 @@ public sealed class BattleSimulationManager : MonoBehaviour
             _tickAccumulator -= _tickInterval;
             StepSimulation(_tickInterval);
 
-            if (_battleFinished) break;
+            if (_battleFinished)
+                break;
         }
     }
 
@@ -194,17 +197,19 @@ public sealed class BattleSimulationManager : MonoBehaviour
     public void SetSimulationSpeedMultiplier(float multiplier)
     {
         simulationSpeedMultiplier = Mathf.Clamp(multiplier, minSimulationSpeed, maxSimulationSpeed);
-        if (_statusGridUIManager != null) _statusGridUIManager.Refresh();
+        if (_statusGridUIManager != null)
+            _statusGridUIManager.Refresh();
         AnimationSpeedSetting();
     }
 
     public void MultiplySimulationSpeed(float multiplier)
     {
-        if (multiplier <= 0f) return;
+        if (multiplier <= 0f)
+            return;
         SetSimulationSpeedMultiplier(simulationSpeedMultiplier * multiplier);
     }
 
-    
+
 
 
     public void SetTemporaryPause(bool isPaused)
@@ -226,7 +231,8 @@ public sealed class BattleSimulationManager : MonoBehaviour
         ExecuteSkillPhase();            //스킬
         TryFinishBattle();
 
-        if (_statusGridUIManager != null) _statusGridUIManager.Refresh();
+        if (_statusGridUIManager != null)
+            _statusGridUIManager.Refresh();
     }
 
     private void TickAllCooldowns(float tickDeltaTime)
@@ -248,7 +254,8 @@ public sealed class BattleSimulationManager : MonoBehaviour
         for (int i = 0; i < _runtimeUnits.Count; i++)
         {
             BattleRuntimeUnit unit = _runtimeUnits[i];
-            if (unit == null || unit.IsCombatDisabled) continue;
+            if (unit == null || unit.IsCombatDisabled)
+                continue;
 
             BattleParameterSet rawParameters = ComputeParametersForUnit(unit);
             BattleParameterSet modifiedParameters = ApplyCurrentActionParameterModifiers(unit, rawParameters);
@@ -265,7 +272,8 @@ public sealed class BattleSimulationManager : MonoBehaviour
         for (int i = 0; i < _runtimeUnits.Count; i++)
         {
             BattleRuntimeUnit unit = _runtimeUnits[i];
-            if (unit == null || unit.IsCombatDisabled) continue;
+            if (unit == null || unit.IsCombatDisabled)
+                continue;
 
             BattleActionScoreSet scores = EvaluateActionScores(unit, unit.CurrentModifiedParameters);
             scores = ApplyEscapeReengageBias(unit, unit.CurrentRawParameters, scores);
@@ -278,7 +286,8 @@ public sealed class BattleSimulationManager : MonoBehaviour
         for (int i = 0; i < _runtimeUnits.Count; i++)
         {
             BattleRuntimeUnit unit = _runtimeUnits[i];
-            if (unit == null || unit.IsCombatDisabled) continue;
+            if (unit == null || unit.IsCombatDisabled)
+                continue;
 
             BattleActionScoreSet scores = unit.CurrentScores;
             BattleActionType currentAction = unit.CurrentActionType;
@@ -313,7 +322,8 @@ public sealed class BattleSimulationManager : MonoBehaviour
 
     private void EnterAction(BattleRuntimeUnit unit, BattleActionType actionType, float chosenFinalScore)
     {
-        if (unit == null) return;
+        if (unit == null)
+            return;
         float keepBehaving = chosenFinalScore * CommitmentEnterMultiplier;
         unit.SetCurrentActionType(actionType, GetActionDisplayName(actionType));
         unit.SetDecisionState(keepBehaving, 0f);
@@ -324,7 +334,8 @@ public sealed class BattleSimulationManager : MonoBehaviour
         int count = 0;
         for (int i = 0; i < _runtimeUnits.Count; i++)
         {
-            if (_runtimeUnits[i] != null && !_runtimeUnits[i].IsCombatDisabled) count++;
+            if (_runtimeUnits[i] != null && !_runtimeUnits[i].IsCombatDisabled)
+                count++;
         }
         return count;
     }
@@ -351,8 +362,10 @@ public sealed class BattleSimulationManager : MonoBehaviour
 
     private bool CanEnterEscapeAction(BattleRuntimeUnit unit)
     {
-        if (unit == null || unit.IsCombatDisabled) return false;
-        if (unit.CurrentActionType == BattleActionType.EscapeFromPressure) return true;
+        if (unit == null || unit.IsCombatDisabled)
+            return false;
+        if (unit.CurrentActionType == BattleActionType.EscapeFromPressure)
+            return true;
         return GetCurrentEscapeUnitCount() < GetMaxEscapeUnitCount();
     }
 
@@ -379,8 +392,10 @@ public sealed class BattleSimulationManager : MonoBehaviour
 
     private void TryConsiderActionRespectingEscapeLimit(ref BattleActionType bestAction, ref float bestScore, BattleActionType candidateAction, float candidateScore, BattleActionType excludedAction, bool canEnterEscape)
     {
-        if (candidateAction == excludedAction) return;
-        if (candidateAction == BattleActionType.EscapeFromPressure && !canEnterEscape) return;
+        if (candidateAction == excludedAction)
+            return;
+        if (candidateAction == BattleActionType.EscapeFromPressure && !canEnterEscape)
+            return;
 
         if (candidateScore > bestScore)
         {
@@ -391,13 +406,17 @@ public sealed class BattleSimulationManager : MonoBehaviour
 
     private void EnsureCurrentActionIsUsableOrFallback(BattleRuntimeUnit unit)
     {
-        if (unit == null || unit.IsCombatDisabled) return;
+        if (unit == null || unit.IsCombatDisabled)
+            return;
         BattleActionType currentAction = unit.CurrentActionType;
-        if (currentAction == BattleActionType.None) return;
+        if (currentAction == BattleActionType.None)
+            return;
 
         BattleActionExecutionPlan currentPlan = BuildExecutionPlan(unit, currentAction);
-        if (IsExecutionPlanUsable(unit, currentPlan)) return;
-        if (currentAction == BattleActionType.EngageNearest) return;
+        if (IsExecutionPlanUsable(unit, currentPlan))
+            return;
+        if (currentAction == BattleActionType.EngageNearest)
+            return;
 
         float engageScore = unit.CurrentScores.GetScore(BattleActionType.EngageNearest);
         EnterAction(unit, BattleActionType.EngageNearest, engageScore);
@@ -408,7 +427,8 @@ public sealed class BattleSimulationManager : MonoBehaviour
         for (int i = 0; i < _runtimeUnits.Count; i++)
         {
             BattleRuntimeUnit unit = _runtimeUnits[i];
-            if (unit == null || unit.IsCombatDisabled) continue;
+            if (unit == null || unit.IsCombatDisabled)
+                continue;
 
             BattleActionExecutionPlan plan = BuildExecutionPlan(unit, unit.CurrentActionType);
 
@@ -438,7 +458,8 @@ public sealed class BattleSimulationManager : MonoBehaviour
         for (int i = 0; i < _runtimeUnits.Count; i++)
         {
             BattleRuntimeUnit unit = _runtimeUnits[i];
-            if (unit == null || unit.IsCombatDisabled) continue;
+            if (unit == null || unit.IsCombatDisabled)
+                continue;
 
             BattleRuntimeUnit targetEnemy = unit.PlannedTargetEnemy;
 
@@ -456,7 +477,8 @@ public sealed class BattleSimulationManager : MonoBehaviour
 
                 bool moved = MoveTowardsPosition(unit, unit.PlannedDesiredPosition, tickDeltaTime);
                 unit.SetMovementState(moved);
-                if (!moved) unit.SetIdleState();
+                if (!moved)
+                    unit.SetIdleState();
                 continue;
             }
 
@@ -466,7 +488,8 @@ public sealed class BattleSimulationManager : MonoBehaviour
 
                 bool moved = MoveTowardsTarget(unit, targetEnemy, tickDeltaTime);
                 unit.SetMovementState(moved);
-                if (!moved) unit.SetIdleState();
+                if (!moved)
+                    unit.SetIdleState();
                 continue;
             }
 
@@ -479,15 +502,19 @@ public sealed class BattleSimulationManager : MonoBehaviour
         for (int i = 0; i < _runtimeUnits.Count; i++)
         {
             BattleRuntimeUnit attacker = _runtimeUnits[i];
-            if (attacker == null || attacker.IsCombatDisabled) continue;            //전투 불가능한 상태
+            if (attacker == null || attacker.IsCombatDisabled)
+                continue;            //전투 불가능한 상태
 
             BattleRuntimeUnit target = attacker.PlannedTargetEnemy;
-            if (!IsValidEnemyTarget(attacker, target)) continue;                    //유효하지 않은 적
-            if (!IsWithinEffectiveAttackDistance(attacker, target)) continue;       //사거리 안
-            if (attacker.AttackCooldownRemaining > 0f) continue;                    //공격 쿨이 남음
+            if (!IsValidEnemyTarget(attacker, target))
+                continue;                    //유효하지 않은 적
+            if (!IsWithinEffectiveAttackDistance(attacker, target))
+                continue;       //사거리 안
+            if (attacker.AttackCooldownRemaining > 0f)
+                continue;                    //공격 쿨이 남음
 
             attacker.SetAttackState(true);              //실질적으로 때리는 타이밍
-            
+
             target.ApplyDamage(attacker.Attack);        //데미지 적용
 
             attacker.ResetAttackCooldown();             //공격 쿨 돌리고
@@ -499,21 +526,24 @@ public sealed class BattleSimulationManager : MonoBehaviour
     //임시 스킬 쿨이 되면 스킬 사용
     private void ExecuteSkillPhase()
     {
-        for(int i = 0; i < _runtimeUnits.Count; i++)
+        for (int i = 0; i < _runtimeUnits.Count; i++)
         {
             BattleRuntimeUnit Caster = _runtimeUnits[i];
             if (Caster == null || Caster.IsCombatDisabled)
                 continue;
 
-            if (Caster.SkillCooldownRemaining > 0f) continue;
+            if (Caster.SkillCooldownRemaining > 0f)
+                continue;
 
             switch (Caster.getSkillType())
             {
                 case skillType.attack:
                     BattleRuntimeUnit target = Caster.PlannedTargetEnemy;
 
-                    if(!IsValidEnemyTarget(Caster, target)) continue;
-                    if(!IsWithinEffectiveAttackDistance(Caster, target)) continue;
+                    if (!IsValidEnemyTarget(Caster, target))
+                        continue;
+                    if (!IsWithinEffectiveAttackDistance(Caster, target))
+                        continue;
 
                     UseSkill(Caster, target);
 
@@ -523,7 +553,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
 
                     break;
                 case skillType.support:
-                    FindNearestLivingAlly(Caster);   
+                    FindNearestLivingAlly(Caster);
                     UseSkill(Caster, null);
                     break;
                 case skillType.enhance:
@@ -552,12 +582,12 @@ public sealed class BattleSimulationManager : MonoBehaviour
             case WeaponSkillId.Madness:
                 Caster.BuffApply(BuffType.AttackSpeed, 2, 20);
                 break;
-            
+
             default:
             case WeaponSkillId.None:
                 Caster.ApplyHeal(10);
                 break;
-            
+
         }
 
         Caster.SetSkillState();
@@ -566,12 +596,12 @@ public sealed class BattleSimulationManager : MonoBehaviour
 
 
 
-    //Unit당 특수 상태 이상 처리, 
+    //Unit당 특수 상태 이상 처리,
     //개인 상태 이상은 tick당 내부에서 처리하는 것이 좋을 것 같은데...
     private void ExecuteSpecialEffect(float tickDeltaTime)
     {
         //넉백
-        for(int i = 0; i < _runtimeUnits.Count; i++)
+        for (int i = 0; i < _runtimeUnits.Count; i++)
         {
             if (_runtimeUnits[i] != null && !_runtimeUnits[i].IsCombatDisabled)
             {
@@ -582,7 +612,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
 
 
         //버프 or 디버프
-        for(int i = 0; i < _runtimeUnits.Count; i++)
+        for (int i = 0; i < _runtimeUnits.Count; i++)
         {
             if (_runtimeUnits[i] != null && !_runtimeUnits[i].IsCombatDisabled)
             {
@@ -599,7 +629,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
             }
         }
 
-        
+
 
 
     }
@@ -625,9 +655,11 @@ public sealed class BattleSimulationManager : MonoBehaviour
 
     private BattleParameterSet ApplyCurrentActionParameterModifiers(BattleRuntimeUnit unit, BattleParameterSet rawParameters)
     {
-        if (unit == null) return rawParameters;
+        if (unit == null)
+            return rawParameters;
         BattleActionTuning tuning = GetActionTuning(unit.CurrentActionType);
-        if (tuning == null || unit.CurrentActionType == BattleActionType.None) return rawParameters;
+        if (tuning == null || unit.CurrentActionType == BattleActionType.None)
+            return rawParameters;
 
         BattleParameterSet modified = tuning.currentActionParameterPercents.ApplyPercentModifiers(rawParameters);
         modified.Clamp01All();
@@ -641,7 +673,8 @@ public sealed class BattleSimulationManager : MonoBehaviour
         for (int i = 0; i < actionTunings.Count; i++)
         {
             BattleActionTuning tuning = actionTunings[i];
-            if (tuning == null || tuning.actionType == BattleActionType.None) continue;
+            if (tuning == null || tuning.actionType == BattleActionType.None)
+                continue;
 
             float rawScore = tuning.baseBias + tuning.scoreWeights.Evaluate(modifiedParameters);
             int weaponTypePercent = GetWeaponTypeAffinityPercent(unit, tuning.actionType);
@@ -656,8 +689,10 @@ public sealed class BattleSimulationManager : MonoBehaviour
     private int GetWeaponTypeAffinityPercent(BattleRuntimeUnit unit, BattleActionType actionType)
     {
         BattleActionTuning tuning = GetActionTuning(actionType);
-        if (tuning == null) return 100;
-        if (unit == null || unit.Snapshot == null) return 100;
+        if (tuning == null)
+            return 100;
+        if (unit == null || unit.Snapshot == null)
+            return 100;
         return tuning.GetWeaponTypePercent(unit.Snapshot.WeaponType);
     }
 
@@ -670,14 +705,21 @@ public sealed class BattleSimulationManager : MonoBehaviour
     {
         switch (actionType)
         {
-            case BattleActionType.AssassinateIsolatedEnemy: return BuildAssassinatePlan(unit);
-            case BattleActionType.DiveEnemyBackline: return BuildDiveBacklinePlan(unit);
-            case BattleActionType.PeelForWeakAlly: return BuildPeelPlan(unit);
-            case BattleActionType.EscapeFromPressure: return BuildEscapePlan(unit);
-            case BattleActionType.RegroupToAllies: return BuildRegroupPlan(unit);
-            case BattleActionType.CollapseOnCluster: return BuildCollapsePlan(unit);
+            case BattleActionType.AssassinateIsolatedEnemy:
+                return BuildAssassinatePlan(unit);
+            case BattleActionType.DiveEnemyBackline:
+                return BuildDiveBacklinePlan(unit);
+            case BattleActionType.PeelForWeakAlly:
+                return BuildPeelPlan(unit);
+            case BattleActionType.EscapeFromPressure:
+                return BuildEscapePlan(unit);
+            case BattleActionType.RegroupToAllies:
+                return BuildRegroupPlan(unit);
+            case BattleActionType.CollapseOnCluster:
+                return BuildCollapsePlan(unit);
             case BattleActionType.EngageNearest:
-            default: return BuildEngageNearestPlan(unit);
+            default:
+                return BuildEngageNearestPlan(unit);
         }
     }
 
@@ -823,7 +865,8 @@ public sealed class BattleSimulationManager : MonoBehaviour
 
     private float ComputeSelfHpLow(BattleRuntimeUnit self)
     {
-        if (self == null || self.MaxHealth <= 0f) return 0f;
+        if (self == null || self.MaxHealth <= 0f)
+            return 0f;
         return Mathf.Clamp01(1f - (self.CurrentHealth / self.MaxHealth));
     }
 
@@ -833,7 +876,8 @@ public sealed class BattleSimulationManager : MonoBehaviour
         for (int i = 0; i < _runtimeUnits.Count; i++)
         {
             BattleRuntimeUnit enemy = _runtimeUnits[i];
-            if (!IsValidEnemyTarget(self, enemy)) continue;
+            if (!IsValidEnemyTarget(self, enemy))
+                continue;
 
             float distance = Vector3.Distance(self.Position, enemy.Position);
             float weight = QuadraticCloseFalloff(distance, surroundRadius);
@@ -848,7 +892,8 @@ public sealed class BattleSimulationManager : MonoBehaviour
         for (int i = 0; i < _runtimeUnits.Count; i++)
         {
             BattleRuntimeUnit ally = _runtimeUnits[i];
-            if (!IsValidSameTeamAlly(self, ally)) continue;
+            if (!IsValidSameTeamAlly(self, ally))
+                continue;
 
             float hpLow = ComputeSelfHpLow(ally);
             float distanceWeight = LinearFalloff(Vector3.Distance(self.Position, ally.Position), helpRadius);
@@ -863,7 +908,8 @@ public sealed class BattleSimulationManager : MonoBehaviour
         for (int i = 0; i < _runtimeUnits.Count; i++)
         {
             BattleRuntimeUnit ally = _runtimeUnits[i];
-            if (!IsValidSameTeamAlly(self, ally)) continue;
+            if (!IsValidSameTeamAlly(self, ally))
+                continue;
 
             int focusCount = CountEnemiesTargeting(self, ally);
             float focusRatio = Mathf.Clamp01(focusCount / 3f);
@@ -871,7 +917,8 @@ public sealed class BattleSimulationManager : MonoBehaviour
             float distanceWeight = LinearFalloff(Vector3.Distance(self.Position, ally.Position), peelRadius);
 
             float value = focusRatio * hpFactor * distanceWeight;
-            if (value > best) best = value;
+            if (value > best)
+                best = value;
         }
         return Mathf.Clamp01(best);
     }
@@ -879,7 +926,8 @@ public sealed class BattleSimulationManager : MonoBehaviour
     private float ComputeAllyFrontlineGap(BattleRuntimeUnit self)
     {
         List<BattleRuntimeUnit> allies = GetLivingUnits(self.IsEnemy);
-        if (allies.Count <= 1) return 0f;
+        if (allies.Count <= 1)
+            return 0f;
 
         float sumNearest = 0f;
         int count = 0;
@@ -891,9 +939,11 @@ public sealed class BattleSimulationManager : MonoBehaviour
 
             for (int j = 0; j < allies.Count; j++)
             {
-                if (i == j) continue;
+                if (i == j)
+                    continue;
                 float distance = Vector3.Distance(ally.Position, allies[j].Position);
-                if (distance < nearest) nearest = distance;
+                if (distance < nearest)
+                    nearest = distance;
             }
 
             if (nearest < float.MaxValue)
@@ -902,7 +952,8 @@ public sealed class BattleSimulationManager : MonoBehaviour
                 count++;
             }
         }
-        if (count == 0) return 0f;
+        if (count == 0)
+            return 0f;
         return Mathf.Clamp01((sumNearest / count) / frontlineGapRadius);
     }
 
@@ -912,10 +963,12 @@ public sealed class BattleSimulationManager : MonoBehaviour
         for (int i = 0; i < _runtimeUnits.Count; i++)
         {
             BattleRuntimeUnit enemy = _runtimeUnits[i];
-            if (!IsValidEnemyTarget(self, enemy)) continue;
+            if (!IsValidEnemyTarget(self, enemy))
+                continue;
 
             float score = ComputeIsolatedEnemyTargetScore(self, enemy);
-            if (score > best) best = score;
+            if (score > best)
+                best = score;
         }
         return Mathf.Clamp01(best);
     }
@@ -923,7 +976,8 @@ public sealed class BattleSimulationManager : MonoBehaviour
     private float ComputeEnemyClusterDensity(BattleRuntimeUnit self)
     {
         List<BattleRuntimeUnit> enemies = GetLivingUnits(!self.IsEnemy);
-        if (enemies.Count <= 1) return 0f;
+        if (enemies.Count <= 1)
+            return 0f;
 
         float sum = 0f;
         int pairCount = 0;
@@ -937,7 +991,8 @@ public sealed class BattleSimulationManager : MonoBehaviour
                 pairCount++;
             }
         }
-        if (pairCount == 0) return 0f;
+        if (pairCount == 0)
+            return 0f;
         return Mathf.Clamp01(sum / pairCount);
     }
 
@@ -953,27 +1008,33 @@ public sealed class BattleSimulationManager : MonoBehaviour
         for (int i = 0; i < _runtimeUnits.Count; i++)
         {
             BattleRuntimeUnit enemy = _runtimeUnits[i];
-            if (!IsValidEnemyTarget(self, enemy)) continue;
-            if (IsWithinEffectiveAttackDistance(self, enemy)) return 1f;
+            if (!IsValidEnemyTarget(self, enemy))
+                continue;
+            if (IsWithinEffectiveAttackDistance(self, enemy))
+                return 1f;
         }
         return 0f;
     }
 
     private float ComputeIsolatedEnemyTargetScore(BattleRuntimeUnit self, BattleRuntimeUnit enemy)
     {
-        if (!IsValidEnemyTarget(self, enemy)) return 0f;
+        if (!IsValidEnemyTarget(self, enemy))
+            return 0f;
 
         float nearestSupportDistance = float.MaxValue;
         for (int i = 0; i < _runtimeUnits.Count; i++)
         {
             BattleRuntimeUnit otherEnemy = _runtimeUnits[i];
-            if (otherEnemy == null || otherEnemy == enemy || otherEnemy.IsCombatDisabled || otherEnemy.IsEnemy != enemy.IsEnemy) continue;
+            if (otherEnemy == null || otherEnemy == enemy || otherEnemy.IsCombatDisabled || otherEnemy.IsEnemy != enemy.IsEnemy)
+                continue;
 
             float distance = Vector3.Distance(enemy.Position, otherEnemy.Position);
-            if (distance < nearestSupportDistance) nearestSupportDistance = distance;
+            if (distance < nearestSupportDistance)
+                nearestSupportDistance = distance;
         }
 
-        if (nearestSupportDistance == float.MaxValue) nearestSupportDistance = isolationRadius;
+        if (nearestSupportDistance == float.MaxValue)
+            nearestSupportDistance = isolationRadius;
 
         float isolation = Mathf.Clamp01(nearestSupportDistance / isolationRadius);
         float hpLow = ComputeSelfHpLow(enemy);
@@ -988,8 +1049,10 @@ public sealed class BattleSimulationManager : MonoBehaviour
         for (int i = 0; i < _runtimeUnits.Count; i++)
         {
             BattleRuntimeUnit enemy = _runtimeUnits[i];
-            if (!IsValidEnemyTarget(ally, enemy)) continue;
-            if (enemy.CurrentTarget == ally || enemy.PlannedTargetEnemy == ally) count++;
+            if (!IsValidEnemyTarget(ally, enemy))
+                continue;
+            if (enemy.CurrentTarget == ally || enemy.PlannedTargetEnemy == ally)
+                count++;
         }
         return count;
     }
@@ -1002,7 +1065,8 @@ public sealed class BattleSimulationManager : MonoBehaviour
         for (int i = 0; i < _runtimeUnits.Count; i++)
         {
             BattleRuntimeUnit enemy = _runtimeUnits[i];
-            if (!IsValidEnemyTarget(self, enemy)) continue;
+            if (!IsValidEnemyTarget(self, enemy))
+                continue;
 
             float score = ComputeIsolatedEnemyTargetScore(self, enemy);
             if (score > bestScore)
@@ -1023,7 +1087,8 @@ public sealed class BattleSimulationManager : MonoBehaviour
         for (int i = 0; i < _runtimeUnits.Count; i++)
         {
             BattleRuntimeUnit enemy = _runtimeUnits[i];
-            if (!IsValidEnemyTarget(self, enemy)) continue;
+            if (!IsValidEnemyTarget(self, enemy))
+                continue;
 
             float hpLow = ComputeSelfHpLow(enemy);
             float isolation = ComputeIsolatedEnemyTargetScore(self, enemy);
@@ -1047,7 +1112,8 @@ public sealed class BattleSimulationManager : MonoBehaviour
         for (int i = 0; i < _runtimeUnits.Count; i++)
         {
             BattleRuntimeUnit ally = _runtimeUnits[i];
-            if (!IsValidSameTeamAlly(self, ally)) continue;
+            if (!IsValidSameTeamAlly(self, ally))
+                continue;
 
             int focusCount = CountEnemiesTargeting(self, ally);
             float focusRatio = Mathf.Clamp01(focusCount / 3f);
@@ -1066,7 +1132,8 @@ public sealed class BattleSimulationManager : MonoBehaviour
 
     private BattleRuntimeUnit FindBestPeelEnemy(BattleRuntimeUnit self, BattleRuntimeUnit protectedAlly)
     {
-        if (protectedAlly == null) return FindNearestLivingEnemy(self);
+        if (protectedAlly == null)
+            return FindNearestLivingEnemy(self);
 
         BattleRuntimeUnit best = null;
         float bestScore = float.MinValue;
@@ -1074,10 +1141,12 @@ public sealed class BattleSimulationManager : MonoBehaviour
         for (int i = 0; i < _runtimeUnits.Count; i++)
         {
             BattleRuntimeUnit enemy = _runtimeUnits[i];
-            if (!IsValidEnemyTarget(self, enemy)) continue;
+            if (!IsValidEnemyTarget(self, enemy))
+                continue;
 
             bool attackingProtectedAlly = enemy.CurrentTarget == protectedAlly || enemy.PlannedTargetEnemy == protectedAlly;
-            if (!attackingProtectedAlly) continue;
+            if (!attackingProtectedAlly)
+                continue;
 
             float distanceToAlly = Vector3.Distance(enemy.Position, protectedAlly.Position);
             float score = 1f - Mathf.Clamp01(distanceToAlly / peelRadius);
@@ -1089,7 +1158,8 @@ public sealed class BattleSimulationManager : MonoBehaviour
             }
         }
 
-        if (best != null) return best;
+        if (best != null)
+            return best;
         return FindNearestLivingEnemy(self);
     }
 
@@ -1101,7 +1171,8 @@ public sealed class BattleSimulationManager : MonoBehaviour
         for (int i = 0; i < _runtimeUnits.Count; i++)
         {
             BattleRuntimeUnit enemy = _runtimeUnits[i];
-            if (!IsValidEnemyTarget(self, enemy)) continue;
+            if (!IsValidEnemyTarget(self, enemy))
+                continue;
 
             float distance = Vector3.Distance(enemy.Position, point);
             if (distance < bestDistance)
@@ -1121,7 +1192,8 @@ public sealed class BattleSimulationManager : MonoBehaviour
         for (int i = 0; i < _runtimeUnits.Count; i++)
         {
             BattleRuntimeUnit unit = _runtimeUnits[i];
-            if (unit == null || unit.IsCombatDisabled || unit.IsEnemy != isEnemyTeam) continue;
+            if (unit == null || unit.IsCombatDisabled || unit.IsEnemy != isEnemyTeam)
+                continue;
 
             sum += unit.Position;
             count++;
@@ -1137,7 +1209,8 @@ public sealed class BattleSimulationManager : MonoBehaviour
         for (int i = 0; i < _runtimeUnits.Count; i++)
         {
             BattleRuntimeUnit enemy = _runtimeUnits[i];
-            if (!IsValidEnemyTarget(self, enemy)) continue;
+            if (!IsValidEnemyTarget(self, enemy))
+                continue;
 
             float distance = Vector3.Distance(self.Position, enemy.Position);
             float weight = QuadraticCloseFalloff(distance, surroundRadius);
@@ -1145,13 +1218,15 @@ public sealed class BattleSimulationManager : MonoBehaviour
             weightSum += weight;
         }
 
-        if (weightSum <= 0.0001f) return ComputeTeamCenter(!self.IsEnemy);
+        if (weightSum <= 0.0001f)
+            return ComputeTeamCenter(!self.IsEnemy);
         return weightedSum / weightSum;
     }
 
     private bool MoveTowardsTarget(BattleRuntimeUnit mover, BattleRuntimeUnit target, float tickDeltaTime)
     {
-        if (mover == null || target == null) return false;
+        if (mover == null || target == null)
+            return false;
 
         Vector3 currentPosition = mover.Position;
         Vector3 targetPosition = target.Position;
@@ -1163,13 +1238,15 @@ public sealed class BattleSimulationManager : MonoBehaviour
         float centerDistance = toTarget.magnitude;
         float effectiveAttackDistance = GetEffectiveAttackDistance(mover, target);
 
-        if (centerDistance <= effectiveAttackDistance) return false;
+        if (centerDistance <= effectiveAttackDistance)
+            return false;
 
         Vector3 direction = centerDistance > 0.0001f ? toTarget / centerDistance : Vector3.zero;
         float remainingDistanceUntilAttack = Mathf.Max(0f, centerDistance - effectiveAttackDistance);
         float moveDistance = Mathf.Min(mover.MoveSpeed * tickDeltaTime, remainingDistanceUntilAttack);
 
-        if (moveDistance <= 0.0001f) return false;
+        if (moveDistance <= 0.0001f)
+            return false;
 
         mover.SetPosition(currentPosition + direction * moveDistance);
         mover.ClampInsideBattlefield(_battlefieldCollider);
@@ -1178,7 +1255,8 @@ public sealed class BattleSimulationManager : MonoBehaviour
 
     private bool MoveTowardsPosition(BattleRuntimeUnit mover, Vector3 desiredPosition, float tickDeltaTime)
     {
-        if (mover == null) return false;
+        if (mover == null)
+            return false;
 
         Vector3 currentPosition = mover.Position;
         Vector3 toTarget = desiredPosition - currentPosition;
@@ -1186,12 +1264,14 @@ public sealed class BattleSimulationManager : MonoBehaviour
 
         float distance = toTarget.magnitude;
 
-        if (distance <= desiredPositionStopDistance) return false;
+        if (distance <= desiredPositionStopDistance)
+            return false;
 
         Vector3 direction = distance > 0.0001f ? toTarget / distance : Vector3.zero;
         float moveDistance = Mathf.Min(mover.MoveSpeed * tickDeltaTime, distance);
 
-        if (moveDistance <= 0.0001f) return false;
+        if (moveDistance <= 0.0001f)
+            return false;
 
         mover.SetPosition(currentPosition + direction * moveDistance);
         mover.ClampInsideBattlefield(_battlefieldCollider);
@@ -1200,12 +1280,14 @@ public sealed class BattleSimulationManager : MonoBehaviour
 
     private BattleActionScoreSet ApplyEscapeReengageBias(BattleRuntimeUnit unit, BattleParameterSet rawParameters, BattleActionScoreSet scores)
     {
-        if (unit == null || unit.CurrentActionType != BattleActionType.EscapeFromPressure) return scores;
+        if (unit == null || unit.CurrentActionType != BattleActionType.EscapeFromPressure)
+            return scores;
 
         bool noEnemyInAttackRange = rawParameters.SelfCanAttackNow <= 0f;
         bool pressureMostlyGone = rawParameters.SelfSurroundedByEnemies <= 0.20f;
 
-        if (!noEnemyInAttackRange || !pressureMostlyGone) return scores;
+        if (!noEnemyInAttackRange || !pressureMostlyGone)
+            return scores;
 
         scores.EscapeFromPressure *= 0.10f;
         scores.AssassinateIsolatedEnemy *= 1.50f;
@@ -1221,12 +1303,14 @@ public sealed class BattleSimulationManager : MonoBehaviour
         for (int i = 0; i < _runtimeUnits.Count; i++)
         {
             BattleRuntimeUnit a = _runtimeUnits[i];
-            if (a == null || a.IsCombatDisabled) continue;
+            if (a == null || a.IsCombatDisabled)
+                continue;
 
             for (int j = i + 1; j < _runtimeUnits.Count; j++)
             {
                 BattleRuntimeUnit b = _runtimeUnits[j];
-                if (b == null || b.IsCombatDisabled) continue;
+                if (b == null || b.IsCombatDisabled)
+                    continue;
 
                 Vector3 delta = a.Position - b.Position;
                 delta.y = 0f; // y축을 무시하여 오직 평면상에서만 밀어내기
@@ -1234,7 +1318,8 @@ public sealed class BattleSimulationManager : MonoBehaviour
                 float distance = delta.magnitude;
                 float minDistance = a.BodyRadius + b.BodyRadius;
 
-                if (distance >= minDistance) continue;
+                if (distance >= minDistance)
+                    continue;
 
                 Vector3 pushDirection;
                 if (distance > 0.0001f)
@@ -1267,12 +1352,16 @@ public sealed class BattleSimulationManager : MonoBehaviour
         for (int i = 0; i < _runtimeUnits.Count; i++)
         {
             BattleRuntimeUnit unit = _runtimeUnits[i];
-            if (unit == null || unit.IsCombatDisabled) continue;
+            if (unit == null || unit.IsCombatDisabled)
+                continue;
 
-            if (unit.IsEnemy) hasLivingEnemy = true;
-            else hasLivingAlly = true;
+            if (unit.IsEnemy)
+                hasLivingEnemy = true;
+            else
+                hasLivingAlly = true;
 
-            if (hasLivingAlly && hasLivingEnemy) return;
+            if (hasLivingAlly && hasLivingEnemy)
+                return;
         }
 
         bool wasWin = hasLivingAlly && !hasLivingEnemy;
@@ -1290,12 +1379,15 @@ public sealed class BattleSimulationManager : MonoBehaviour
         for (int i = 0; i < _runtimeUnits.Count; i++)
         {
             BattleRuntimeUnit unit = _runtimeUnits[i];
-            if (unit == null || unit.IsCombatDisabled) continue;
+            if (unit == null || unit.IsCombatDisabled)
+                continue;
             unit.SetIdleState();
         }
 
-        if (_statusGridUIManager != null) _statusGridUIManager.Refresh();
-        if (_battleSceneUIManager != null) _battleSceneUIManager.ShowBattleEndPanel(resolution);
+        if (_statusGridUIManager != null)
+            _statusGridUIManager.Refresh();
+        if (_battleSceneUIManager != null)
+            _battleSceneUIManager.ShowBattleEndPanel(resolution);
     }
 
     private int CalculateVictoryReward(int currentDay)
@@ -1307,7 +1399,8 @@ public sealed class BattleSimulationManager : MonoBehaviour
 
     private BattleRuntimeUnit FindNearestLivingEnemy(BattleRuntimeUnit requester)
     {
-        if (requester == null) return null;
+        if (requester == null)
+            return null;
 
         BattleRuntimeUnit nearest = null;
         float bestDistanceSqr = float.MaxValue;
@@ -1315,7 +1408,8 @@ public sealed class BattleSimulationManager : MonoBehaviour
         for (int i = 0; i < _runtimeUnits.Count; i++)
         {
             BattleRuntimeUnit candidate = _runtimeUnits[i];
-            if (!IsValidEnemyTarget(requester, candidate)) continue;
+            if (!IsValidEnemyTarget(requester, candidate))
+                continue;
 
             Vector3 delta = candidate.Position - requester.Position;
             delta.y = 0f;
@@ -1332,7 +1426,8 @@ public sealed class BattleSimulationManager : MonoBehaviour
 
     private BattleRuntimeUnit FindNearestLivingAlly(BattleRuntimeUnit requester)
     {
-        if (requester == null) return null;
+        if (requester == null)
+            return null;
 
         BattleRuntimeUnit nearest = null;
         float bestDistanceSqr = float.MaxValue;
@@ -1340,7 +1435,8 @@ public sealed class BattleSimulationManager : MonoBehaviour
         for (int i = 0; i < _runtimeUnits.Count; i++)
         {
             BattleRuntimeUnit candidate = _runtimeUnits[i];
-            if (IsValidEnemyTarget(requester, candidate)) continue;     //반대로 적이면 스킵
+            if (IsValidEnemyTarget(requester, candidate))
+                continue;     //반대로 적이면 스킵
 
             Vector3 delta = candidate.Position - requester.Position;
             delta.y = 0f;
@@ -1363,7 +1459,8 @@ public sealed class BattleSimulationManager : MonoBehaviour
         for (int i = 0; i < _runtimeUnits.Count; i++)
         {
             BattleRuntimeUnit unit = _runtimeUnits[i];
-            if (unit == null || unit.IsCombatDisabled || unit.IsEnemy != isEnemyTeam) continue;
+            if (unit == null || unit.IsCombatDisabled || unit.IsEnemy != isEnemyTeam)
+                continue;
             result.Add(unit);
         }
         return result;
@@ -1371,25 +1468,34 @@ public sealed class BattleSimulationManager : MonoBehaviour
 
     private bool IsValidEnemyTarget(BattleRuntimeUnit requester, BattleRuntimeUnit candidate)
     {
-        if (requester == null || candidate == null) return false;
-        if (requester == candidate) return false;
-        if (requester.IsEnemy == candidate.IsEnemy) return false;
-        if (candidate.IsCombatDisabled) return false;
+        if (requester == null || candidate == null)
+            return false;
+        if (requester == candidate)
+            return false;
+        if (requester.IsEnemy == candidate.IsEnemy)
+            return false;
+        if (candidate.IsCombatDisabled)
+            return false;
         return true;
     }
 
     private bool IsValidSameTeamAlly(BattleRuntimeUnit requester, BattleRuntimeUnit candidate)
     {
-        if (requester == null || candidate == null) return false;
-        if (requester == candidate) return false;
-        if (requester.IsEnemy != candidate.IsEnemy) return false;
-        if (candidate.IsCombatDisabled) return false;
+        if (requester == null || candidate == null)
+            return false;
+        if (requester == candidate)
+            return false;
+        if (requester.IsEnemy != candidate.IsEnemy)
+            return false;
+        if (candidate.IsCombatDisabled)
+            return false;
         return true;
     }
 
     private bool IsWithinEffectiveAttackDistance(BattleRuntimeUnit attacker, BattleRuntimeUnit target)
     {
-        if (attacker == null || target == null) return false;
+        if (attacker == null || target == null)
+            return false;
 
         Vector3 delta = attacker.Position - target.Position;
         delta.y = 0f;
@@ -1400,13 +1506,15 @@ public sealed class BattleSimulationManager : MonoBehaviour
 
     private float GetEffectiveAttackDistance(BattleRuntimeUnit attacker, BattleRuntimeUnit target)
     {
-        if (attacker == null || target == null) return 0f;
+        if (attacker == null || target == null)
+            return 0f;
         return attacker.BodyRadius + target.BodyRadius + attacker.AttackRange;
     }
 
     private float LinearFalloff(float distance, float radius)
     {
-        if (radius <= 0f) return 0f;
+        if (radius <= 0f)
+            return 0f;
         return Mathf.Max(0f, 1f - distance / radius);
     }
 
@@ -1419,7 +1527,8 @@ public sealed class BattleSimulationManager : MonoBehaviour
     private string GetActionDisplayName(BattleActionType actionType)
     {
         BattleActionTuning tuning = GetActionTuning(actionType);
-        if (tuning != null && !string.IsNullOrWhiteSpace(tuning.displayName)) return tuning.displayName;
+        if (tuning != null && !string.IsNullOrWhiteSpace(tuning.displayName))
+            return tuning.displayName;
         return actionType.ToString();
     }
 
@@ -1428,14 +1537,16 @@ public sealed class BattleSimulationManager : MonoBehaviour
         for (int i = 0; i < actionTunings.Count; i++)
         {
             BattleActionTuning tuning = actionTunings[i];
-            if (tuning != null && tuning.actionType == actionType) return tuning;
+            if (tuning != null && tuning.actionType == actionType)
+                return tuning;
         }
         return null;
     }
 
     private void EnsureDefaultActionTunings()
     {
-        if (actionTunings == null) actionTunings = new List<BattleActionTuning>();
+        if (actionTunings == null)
+            actionTunings = new List<BattleActionTuning>();
         EnsureActionTuningExists(BattleActionType.AssassinateIsolatedEnemy);
         EnsureActionTuningExists(BattleActionType.DiveEnemyBackline);
         EnsureActionTuningExists(BattleActionType.PeelForWeakAlly);
@@ -1447,7 +1558,8 @@ public sealed class BattleSimulationManager : MonoBehaviour
 
     private void EnsureActionTuningExists(BattleActionType actionType)
     {
-        if (GetActionTuning(actionType) != null) return;
+        if (GetActionTuning(actionType) != null)
+            return;
         actionTunings.Add(CreateDefaultTuning(actionType));
     }
 
@@ -1476,7 +1588,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
                 tuning.currentActionParameterPercents.isolatedEnemyVulnerability = 120;
                 tuning.currentActionParameterPercents.enemyClusterDensity = 60;
                 tuning.currentActionParameterPercents.selfCanAttackNow = 35;
-                
+
                 tuning.oneHandPercent = 70;
                 tuning.twoHandPercent = 70;
                 tuning.dualHandPercent = 110;

@@ -19,14 +19,14 @@ namespace KevinIglesias
         Gun,
         DualGun
     }
-    
+
     public enum SoldierPosition
     {
         StandUp,
         Crouch,
         Prone
     }
-    
+
     public enum SoldierAction
     {
         Nothing,
@@ -73,7 +73,7 @@ namespace KevinIglesias
         StrafeL,
         StrafeR
     }
-    
+
     public enum UnsheatheWeapons
     {
         GetAssaultRifle,
@@ -86,40 +86,42 @@ namespace KevinIglesias
     public class HumanSoldierController : MonoBehaviour
     {
         public Animator animator;
-        
+
         public SoldierWeapons equippedWeapon;
-        
+
         public SoldierPosition position;
-        
+
         public SoldierAction action;
-        
+
         public SoldierMovement movement;
 
         public GameObject[] weapons;
-        
+
         private IEnumerator changingWeaponsCoroutine;
         private int currentWeapon = 0;
 
         void Update()
         {
             animator.SetTrigger(equippedWeapon.ToString());
-            
+
             animator.SetTrigger(position.ToString());
-            
-            if(action != SoldierAction.Nothing && action != SoldierAction.ChangeWeapons)
+
+            if (action != SoldierAction.Nothing && action != SoldierAction.ChangeWeapons)
             {
                 animator.SetTrigger(action.ToString());
             }
 
-            if(action == SoldierAction.ChangeWeapons)
+            if (action == SoldierAction.ChangeWeapons)
             {
-                if(changingWeaponsCoroutine == null)
+                if (changingWeaponsCoroutine == null)
                 {
                     changingWeaponsCoroutine = ChangingWeapons();
                     StartCoroutine(changingWeaponsCoroutine);
                 }
-            }else{
-                if(changingWeaponsCoroutine != null)
+            }
+            else
+            {
+                if (changingWeaponsCoroutine != null)
                 {
                     StopCoroutine(changingWeaponsCoroutine);
                     changingWeaponsCoroutine = null;
@@ -128,36 +130,36 @@ namespace KevinIglesias
 
             animator.SetTrigger(movement.ToString());
         }
-        
+
         private IEnumerator ChangingWeapons()
         {
             currentWeapon++;
-            
-            if(currentWeapon > 4)
+
+            if (currentWeapon > 4)
             {
                 currentWeapon = 0;
             }
-            
+
             animator.SetTrigger(((UnsheatheWeapons)(currentWeapon)).ToString());
-            
+
             yield return new WaitForSeconds(1.5f);
-            
+
             changingWeaponsCoroutine = ChangingWeapons();
             StartCoroutine(changingWeaponsCoroutine);
         }
-        
+
         public void ChangeWeapon(SoldierWeapons newWeapon)
         {
-            for(int i = 0; i < weapons.Length; i++)
+            for (int i = 0; i < weapons.Length; i++)
             {
                 weapons[i].SetActive(false);
             }
-            
-            weapons[(int)newWeapon-1].SetActive(true);
-            
-            if(newWeapon == SoldierWeapons.DualGun)
+
+            weapons[(int)newWeapon - 1].SetActive(true);
+
+            if (newWeapon == SoldierWeapons.DualGun)
             {
-                weapons[(int)SoldierWeapons.Gun-1].SetActive(true);
+                weapons[(int)SoldierWeapons.Gun - 1].SetActive(true);
             }
         }
     }

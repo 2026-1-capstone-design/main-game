@@ -158,5 +158,5 @@ public sealed class MainUIManager : MonoBehaviour
 
         button.interactable = value;
     }
-    
+
 }

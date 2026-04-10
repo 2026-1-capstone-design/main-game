@@ -37,10 +37,10 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     public float BaseMoveSpeed;
     public float BaseAttackRange;
 
-    public float Attack         => Mathf.Max(0f, BaseAttack + GetBuffLevel(BuffType.AttackDamage) * 10f);
-    public float AttackSpeed    => Mathf.Max(0f, BaseAttackSpeed + GetBuffLevel(BuffType.AttackSpeed) * 0.2f);
-    public float MoveSpeed      => Mathf.Max(0f, BaseMoveSpeed + GetBuffLevel(BuffType.MoveSpeed) * 0.5f);
-    public float AttackRange    => Mathf.Max(0f, BaseAttackRange + GetBuffLevel(BuffType.AttackRange) * 0.5f);
+    public float Attack => Mathf.Max(0f, BaseAttack + GetBuffLevel(BuffType.AttackDamage) * 10f);
+    public float AttackSpeed => Mathf.Max(0f, BaseAttackSpeed + GetBuffLevel(BuffType.AttackSpeed) * 0.2f);
+    public float MoveSpeed => Mathf.Max(0f, BaseMoveSpeed + GetBuffLevel(BuffType.MoveSpeed) * 0.5f);
+    public float AttackRange => Mathf.Max(0f, BaseAttackRange + GetBuffLevel(BuffType.AttackRange) * 0.5f);
 
     public bool IsCombatDisabled { get; private set; }
     public string CurrentAction { get; private set; }
@@ -57,9 +57,9 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     // 2D AnchoredPosition 대신 3D World Position을 사용합니다.
     public Vector3 Position => transform.position;
 
-    [field: SerializeField]  public BattleParameterSet CurrentRawParameters { get; private set; }
-    [field: SerializeField]  public BattleParameterSet CurrentModifiedParameters { get; private set; }
-    [field: SerializeField]  public BattleActionScoreSet CurrentScores { get; private set; }
+    [field: SerializeField] public BattleParameterSet CurrentRawParameters { get; private set; }
+    [field: SerializeField] public BattleParameterSet CurrentModifiedParameters { get; private set; }
+    [field: SerializeField] public BattleActionScoreSet CurrentScores { get; private set; }
 
     public BattleRuntimeUnit PlannedTargetEnemy { get; private set; }
     public BattleRuntimeUnit PlannedTargetAlly { get; private set; }
@@ -68,13 +68,13 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     public Vector3 PlannedDesiredPosition { get; private set; }
     public bool HasPlannedDesiredPosition { get; private set; }
 
-    [field: SerializeField]  public BattleActionType TopScoredAction { get; private set; }
-    [field: SerializeField]  public float TopScoredValue { get; private set; }
+    [field: SerializeField] public BattleActionType TopScoredAction { get; private set; }
+    [field: SerializeField] public float TopScoredValue { get; private set; }
 
 
 
     [Header("Weapon Sockets")]
-    [SerializeField] private Transform leftHandSocket;  
+    [SerializeField] private Transform leftHandSocket;
     [SerializeField] private Transform rightHandSocket;
     [SerializeField] private GameObject _spawnedLeftWeapon;
     [SerializeField] private GameObject _spawnedRightWeapon;
@@ -177,7 +177,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         if (Snapshot == null)
             return;
 
-        if(Snapshot.LeftWeaponPrefab != null && leftHandSocket != null)
+        if (Snapshot.LeftWeaponPrefab != null && leftHandSocket != null)
         {
             Debug.Log("왼손 무기 장착");
 
@@ -195,7 +195,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
             _spawnedRightWeapon.transform.localRotation = Quaternion.identity;
         }
 
-        if(_myAnimation != null && AnimationManager.Instance != null)
+        if (_myAnimation != null && AnimationManager.Instance != null)
         {
             AnimatorOverrideController weaponMotion = AnimationManager.Instance.GetControllerByWeaponType(Snapshot.WeaponType);
             if (weaponMotion != null)
@@ -211,12 +211,12 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
 
         HaveSkill = Snapshot.WeaponSkillId;
         AnimationClip skill_animation = AnimationManager.Instance.getAnimation(HaveSkill);
-        skillCooltime  = AnimationManager.Instance.getCooltime(HaveSkill);
+        skillCooltime = AnimationManager.Instance.getCooltime(HaveSkill);
         _skillType = AnimationManager.Instance.getSkillType(HaveSkill);
 
         //현재 runtime Animation을 덮어 씌우면 모든 스킬이 바뀜, 복사한 후 바꾸고, 그걸 줘야함
         RuntimeAnimatorController current = _myAnimation.runtimeAnimatorController;
-        
+
         AnimatorOverrideController local;
         local = new AnimatorOverrideController(current);
 
@@ -359,7 +359,8 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     //버프 틱
     public void TickBufflCooldown(float deltaTime)
     {
-        for (int i = Buffs.Count - 1; i >= 0; i--) {
+        for (int i = Buffs.Count - 1; i >= 0; i--)
+        {
             BuffCooldownRemaining[i] = Mathf.Max(0f, BuffCooldownRemaining[i] - Mathf.Max(0f, deltaTime));
 
             if (BuffCooldownRemaining[i] <= 0f)
@@ -387,7 +388,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     public int GetBuffLevel(BuffType type)
     {
         int count = 0;
-        for(int i = 0; i < Buffs.Count; i++)
+        for (int i = 0; i < Buffs.Count; i++)
         {
             if (Buffs[i] == type)
                 count++;
@@ -482,16 +483,16 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     public void SetSkillState()
     {
         _myAnimation.SetTrigger("skill");
-        if(PlannedTargetEnemy != null)
+        if (PlannedTargetEnemy != null)
             FaceTarget(PlannedTargetEnemy.Position);
-        else if(CurrentTarget != null)
+        else if (CurrentTarget != null)
             FaceTarget(CurrentTarget.Position);
     }
 
 
     public void SetIdleState()
     {
-        if(_myAnimation != null)
+        if (_myAnimation != null)
             _myAnimation.SetBool("isMoving", false);
 
         IsMoving = false;
@@ -516,7 +517,8 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     // 깔끔해진 3D 스폰 배치 코드
     public void PlaceOnBattlefieldPlaceholder(Transform placeholder, Transform battlefield)
     {
-        if (placeholder == null) return;
+        if (placeholder == null)
+            return;
 
         if (battlefield != null)
         {
@@ -530,7 +532,8 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     // BoxCollider 기반의 3D 평면 클램핑 시스템
     public void ClampInsideBattlefield(BoxCollider battlefieldCollider)
     {
-        if (battlefieldCollider == null) return;
+        if (battlefieldCollider == null)
+            return;
 
         Vector3 pos = transform.position;
         Bounds bounds = battlefieldCollider.bounds;
@@ -548,7 +551,8 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
 
     public void ApplyDamage(float damage)
     {
-        if (IsCombatDisabled) return;
+        if (IsCombatDisabled)
+            return;
 
         CurrentHealth = Mathf.Max(0f, CurrentHealth - Mathf.Max(0f, damage));
         RefreshHPbar();
@@ -563,8 +567,8 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
 
             if (_myAnimation != null)
             {
-                _myAnimation.SetBool("isMoving", false); 
-                _myAnimation.SetTrigger("die");     
+                _myAnimation.SetBool("isMoving", false);
+                _myAnimation.SetTrigger("die");
             }
 
             SetIdleState();
@@ -575,7 +579,8 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
 
     public void ApplyHeal(float heal)
     {
-        if (IsCombatDisabled) return;
+        if (IsCombatDisabled)
+            return;
 
         CurrentHealth = Mathf.Clamp(CurrentHealth, 0f, MaxHealth);
         CurrentHealth = Mathf.Max(0f, CurrentHealth + Mathf.Max(0f, heal));
@@ -598,7 +603,8 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
 
     private void RefreshStatusText()
     {
-        if (statusText == null) return;
+        if (statusText == null)
+            return;
         string actionLine = string.IsNullOrWhiteSpace(CurrentAction) ? "Idle" : CurrentAction;
         statusText.text = $"{UnitNumber}\n{actionLine}";
     }

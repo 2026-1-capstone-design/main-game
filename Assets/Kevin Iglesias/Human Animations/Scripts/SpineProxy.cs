@@ -40,13 +40,13 @@ namespace KevinIglesias
                     }
                 }
             }
-        }  
+        }
 #endif
-        
+
         //Match correct orientation on different character rigs
         void Awake()
         {
-            if(originalSpine != null)
+            if (originalSpine != null)
             {//originalSpine.rotation must be the default rotation in your character T-pose when this happens:
                 rotationOffset = Quaternion.Inverse(transform.rotation) * originalSpine.rotation;
             }
@@ -55,7 +55,7 @@ namespace KevinIglesias
         //Copy rotations from spine proxy bone to the original spine bone.
         void LateUpdate()
         {
-            if(originalSpine == null)
+            if (originalSpine == null)
             {
                 return;
             }

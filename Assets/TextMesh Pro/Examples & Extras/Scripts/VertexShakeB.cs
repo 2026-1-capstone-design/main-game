@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections;
 
 
@@ -65,7 +65,7 @@ namespace TMPro.Examples
 
             while (true)
             {
-                // Allocate new vertices 
+                // Allocate new vertices
                 if (hasTextChanged)
                 {
                     if (copyOfVertices.Length < textInfo.meshInfo.Length)
