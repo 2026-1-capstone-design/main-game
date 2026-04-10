@@ -1,5 +1,9 @@
+using NUnit.Framework;
+using System;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 [DisallowMultipleComponent]
 public sealed class BattleRuntimeUnit : MonoBehaviour
@@ -12,6 +16,9 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     [SerializeField] private GameObject dotEnemy;
     [SerializeField] private GameObject dotDead;
     [SerializeField] private TMP_Text statusText;
+    [SerializeField] private Image HPbar;
+    [SerializeField] private Sprite AllybarSprite;
+    [SerializeField] private Sprite EnemybarSprite;
 
     public GameObject RuntimeRootObject => gameObject;
 
@@ -24,14 +31,20 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
 
     public float MaxHealth { get; private set; }
     public float CurrentHealth { get; private set; }
-    public float Attack { get; private set; }
-    public float AttackSpeed { get; private set; }
-    [field: SerializeField]  public float MoveSpeed { get; private set; }
-    [field: SerializeField]  public float AttackRange { get; private set; }
+
+    public float BaseAttack;
+    public float BaseAttackSpeed;
+    public float BaseMoveSpeed;
+    public float BaseAttackRange;
+
+    public float Attack         => Mathf.Max(0f, BaseAttack + GetBuffLevel(BuffType.AttackDamage) * 10f);
+    public float AttackSpeed    => Mathf.Max(0f, BaseAttackSpeed + GetBuffLevel(BuffType.AttackSpeed) * 0.2f);
+    public float MoveSpeed      => Mathf.Max(0f, BaseMoveSpeed + GetBuffLevel(BuffType.MoveSpeed) * 0.5f);
+    public float AttackRange    => Mathf.Max(0f, BaseAttackRange + GetBuffLevel(BuffType.AttackRange) * 0.5f);
 
     public bool IsCombatDisabled { get; private set; }
     public string CurrentAction { get; private set; }
-    [field: SerializeField]  public BattleActionType CurrentActionType { get; private set; }
+    public BattleActionType CurrentActionType { get; private set; }
     public float KeepBehaving { get; private set; }
     public float ActionTimer { get; private set; }
 
@@ -67,6 +80,20 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     [SerializeField] private GameObject _spawnedRightWeapon;
     [SerializeField] private Animator _myAnimation;
 
+    [Header("Weapon Skill")]
+    [SerializeField] private WeaponSkillId HaveSkill;
+    [SerializeField] private float skillCooltime;
+    [SerializeField] private skillType _skillType;
+    public float SkillCooldownRemaining { get; private set; }
+
+    [Header("Buff")]
+    [SerializeField] List<BuffType> Buffs = new List<BuffType>();
+    [SerializeField] List<float> BuffCooldownRemaining = new List<float>();
+    [SerializeField] List<int> BuffLevel = new List<int>();
+
+    [Header("special Effect")]
+    public Vector3 CurrentKnockback { get; private set; }
+
     public void Initialize(BattleUnitSnapshot snapshot, int unitNumber, bool isEnemy)
     {
         if (snapshot == null)
@@ -84,10 +111,10 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
 
         MaxHealth = snapshot.MaxHealth;
         CurrentHealth = snapshot.CurrentHealth;
-        Attack = snapshot.Attack;
-        AttackSpeed = snapshot.AttackSpeed;
-        MoveSpeed = snapshot.MoveSpeed;
-        AttackRange = snapshot.AttackRange;
+        BaseAttack = snapshot.Attack;
+        BaseAttackSpeed = snapshot.AttackSpeed;
+        BaseMoveSpeed = snapshot.MoveSpeed;
+        BaseAttackRange = snapshot.AttackRange;
 
         IsCombatDisabled = false;
         CurrentAction = "Idle";
@@ -115,6 +142,14 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
 
         _myAnimation = this.transform.GetComponent<Animator>();
         EquipWeaponFromSnapShot();
+        EquipSkillFromSnapShot();
+
+        if (isEnemy)
+            HPbar.sprite = EnemybarSprite;
+        else
+            HPbar.sprite = AllybarSprite;
+
+        RefreshHPbar();
 
 
         string runtimeName = $"{(isEnemy ? "Enemy" : "Ally")}_{UnitNumber}_{DisplayName}";
@@ -166,10 +201,49 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
             if (weaponMotion != null)
                 _myAnimation.runtimeAnimatorController = weaponMotion;
         }
-
-
     }
 
+    //스킬 관리
+    void EquipSkillFromSnapShot()
+    {
+        if (Snapshot == null)
+            return;
+
+        HaveSkill = Snapshot.WeaponSkillId;
+        AnimationClip skill_animation = AnimationManager.Instance.getAnimation(HaveSkill);
+        skillCooltime  = AnimationManager.Instance.getCooltime(HaveSkill);
+        _skillType = AnimationManager.Instance.getSkillType(HaveSkill);
+
+        //현재 runtime Animation을 덮어 씌우면 모든 스킬이 바뀜, 복사한 후 바꾸고, 그걸 줘야함
+        RuntimeAnimatorController current = _myAnimation.runtimeAnimatorController;
+        
+        AnimatorOverrideController local;
+        local = new AnimatorOverrideController(current);
+
+        local["HumanM@MiningOneHand01_L - Ground"] = skill_animation;
+
+        _myAnimation.runtimeAnimatorController = local;
+    }
+
+    public skillType getSkillType()
+    {
+        return _skillType;
+    }
+    public WeaponSkillId getSkill()
+    {
+        return HaveSkill;
+    }
+
+
+
+    //애니메이션 속도 조절 필요하므로, 이걸 SimulationManager에서 판정
+    public void SetAnimationSpeed(float speedMultiplier)
+    {
+        if (_myAnimation != null)
+        {
+            _myAnimation.speed = speedMultiplier;
+        }
+    }
 
 
 
@@ -249,6 +323,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         CurrentTarget = null;
     }
 
+    //공격 틱
     public void TickAttackCooldown(float deltaTime)
     {
         AttackCooldownRemaining = Mathf.Max(0f, AttackCooldownRemaining - Mathf.Max(0f, deltaTime));
@@ -265,6 +340,96 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         AttackCooldownRemaining = Mathf.Max(0f, cooldown);
     }
 
+    //스킬 틱
+    public void TickSkillCooldown(float deltaTime)
+    {
+        SkillCooldownRemaining = Mathf.Max(0f, SkillCooldownRemaining - Mathf.Max(0f, deltaTime));
+    }
+    public void ClearSkillCooldown()
+    {
+        SkillCooldownRemaining = 0f;
+    }
+    public void ResetSkillCooldown()
+    {
+        float cooldown = skillCooltime;
+        SkillCooldownRemaining = Mathf.Max(0f, cooldown);
+    }
+
+
+    //버프 틱
+    public void TickBufflCooldown(float deltaTime)
+    {
+        for (int i = Buffs.Count - 1; i >= 0; i--) {
+            BuffCooldownRemaining[i] = Mathf.Max(0f, BuffCooldownRemaining[i] - Mathf.Max(0f, deltaTime));
+
+            if (BuffCooldownRemaining[i] <= 0f)
+            {
+                Buffs.RemoveAt(i);
+                BuffLevel.RemoveAt(i);
+                BuffCooldownRemaining.RemoveAt(i);
+            }
+        }
+    }
+
+    public void BuffApply(BuffType type, int level, float cool)
+    {
+        Buffs.Add(type);
+        BuffLevel.Add(level);
+        BuffCooldownRemaining.Add(cool);
+    }
+
+    public int BuffNum()
+    {
+        return Buffs.Count;
+    }
+
+
+    public int GetBuffLevel(BuffType type)
+    {
+        int count = 0;
+        for(int i = 0; i < Buffs.Count; i++)
+        {
+            if (Buffs[i] == type)
+                count++;
+        }
+        return count;
+    }
+
+
+
+
+    public void AddKnockback(Vector3 forceDirection, float forcePower)
+    {
+        Vector3 force = forceDirection.normalized * forcePower;
+        force.y = 0f;
+        CurrentKnockback += force;
+    }
+
+    //매틱마다 넉백
+    public void TickKnockback(float deltaTime, float friction = 10f)
+    {
+        if (CurrentKnockback.sqrMagnitude > 0.01f)
+        {
+            SetPosition(Position + CurrentKnockback * deltaTime);
+
+            CurrentKnockback = Vector3.Lerp(CurrentKnockback, Vector3.zero, friction * deltaTime);      //부드럽게 감소
+        }
+        else
+        {
+            CurrentKnockback = Vector3.zero;
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
     public void SetMovementState(bool isMoving)
     {
         IsMoving = isMoving;
@@ -279,6 +444,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
 
     }
 
+    //state지만, 실질적으로 때림이 가능할 때 호출
     public void SetAttackState(bool isAttacking)
     {
         if (isAttacking && !IsAttacking)
@@ -308,6 +474,20 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
                 _myAnimation.SetBool("isMoving", false);
         }
     }
+
+
+
+
+    //스킬 사용시 호출
+    public void SetSkillState()
+    {
+        _myAnimation.SetTrigger("skill");
+        if(PlannedTargetEnemy != null)
+            FaceTarget(PlannedTargetEnemy.Position);
+        else if(CurrentTarget != null)
+            FaceTarget(CurrentTarget.Position);
+    }
+
 
     public void SetIdleState()
     {
@@ -371,6 +551,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         if (IsCombatDisabled) return;
 
         CurrentHealth = Mathf.Max(0f, CurrentHealth - Mathf.Max(0f, damage));
+        RefreshHPbar();
 
         if (CurrentHealth <= 0f)
         {
@@ -386,11 +567,23 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
                 _myAnimation.SetTrigger("die");     
             }
 
-                SetIdleState();
+            SetIdleState();
             ClearExecutionPlan();
             RefreshVisualState();
         }
     }
+
+    public void ApplyHeal(float heal)
+    {
+        if (IsCombatDisabled) return;
+
+        CurrentHealth = Mathf.Clamp(CurrentHealth, 0f, MaxHealth);
+        CurrentHealth = Mathf.Max(0f, CurrentHealth + Mathf.Max(0f, heal));
+        RefreshHPbar();
+    }
+
+
+
 
     private void RefreshVisualState()
     {
@@ -408,6 +601,13 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         if (statusText == null) return;
         string actionLine = string.IsNullOrWhiteSpace(CurrentAction) ? "Idle" : CurrentAction;
         statusText.text = $"{UnitNumber}\n{actionLine}";
+    }
+
+    private void RefreshHPbar()
+    {
+        if (HPbar == null)
+            return;
+        HPbar.fillAmount = CurrentHealth / MaxHealth;
     }
 
     private static void SetActive(GameObject target, bool value)

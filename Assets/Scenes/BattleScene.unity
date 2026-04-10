@@ -3633,6 +3633,10 @@ MonoBehaviour:
   rifleController: {fileID: 22100000, guid: 41424a8a9db7208479c82f97da2819f1, type: 2}
   staffController: {fileID: 22100000, guid: c68ee8181ec3c114fb26ad558e00b6d0, type: 2}
   bowController: {fileID: 22100000, guid: ce06285c78c5a0f438effc2a5cdc7616, type: 2}
+  DefaultSkill: {fileID: 8973767263969007744, guid: 2035f8d45874b4e47a2c15ea2fa026fb, type: 3}
+  DefaultCool: 5
+  HeartAttack: {fileID: 3094330708855449807, guid: 5277e5180e302184fb73653674a14c85, type: 3}
+  HeartAttackCool: 10
 --- !u!1 &957281080
 GameObject:
   m_ObjectHideFlags: 0

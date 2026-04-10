@@ -3,20 +3,20 @@
   "WorkspaceRootPath": "C:\\kimjinhyuck0329\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{CA30B7C7-43A3-92D4-106A-DC26AACCFE9A}|Assembly-CSharp.csproj|C:\\kimjinhyuck0329\\assets\\scripts\\battlescene\\cameraview.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{CA30B7C7-43A3-92D4-106A-DC26AACCFE9A}|Assembly-CSharp.csproj|solutionrelative:assets\\scripts\\battlescene\\cameraview.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{CA30B7C7-43A3-92D4-106A-DC26AACCFE9A}|Assembly-CSharp.csproj|C:\\kimjinhyuck0329\\assets\\scripts\\battlescene\\battlesimulationmanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{CA30B7C7-43A3-92D4-106A-DC26AACCFE9A}|Assembly-CSharp.csproj|solutionrelative:assets\\scripts\\battlescene\\battlesimulationmanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{CA30B7C7-43A3-92D4-106A-DC26AACCFE9A}|Assembly-CSharp.csproj|c:\\kimjinhyuck0329\\assets\\scripts\\battlescene\\textlookcam.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{CA30B7C7-43A3-92D4-106A-DC26AACCFE9A}|Assembly-CSharp.csproj|solutionrelative:assets\\scripts\\battlescene\\textlookcam.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{CA30B7C7-43A3-92D4-106A-DC26AACCFE9A}|Assembly-CSharp.csproj|C:\\kimjinhyuck0329\\assets\\scripts\\battlescene\\battleruntimeunit.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{CA30B7C7-43A3-92D4-106A-DC26AACCFE9A}|Assembly-CSharp.csproj|solutionrelative:assets\\scripts\\battlescene\\battleruntimeunit.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\kimjinhyuck0329\\Assets\\Scripts\\BattleScene\\CameraView.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Assets\\Scripts\\BattleScene\\CameraView.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{CA30B7C7-43A3-92D4-106A-DC26AACCFE9A}|Assembly-CSharp.csproj|C:\\kimjinhyuck0329\\assets\\scripts\\battlescene\\animationmanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{CA30B7C7-43A3-92D4-106A-DC26AACCFE9A}|Assembly-CSharp.csproj|solutionrelative:assets\\scripts\\battlescene\\animationmanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{CA30B7C7-43A3-92D4-106A-DC26AACCFE9A}|Assembly-CSharp.csproj|C:\\kimjinhyuck0329\\assets\\scripts\\battlescene\\battlesimulationmanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{CA30B7C7-43A3-92D4-106A-DC26AACCFE9A}|Assembly-CSharp.csproj|solutionrelative:assets\\scripts\\battlescene\\battlesimulationmanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{CA30B7C7-43A3-92D4-106A-DC26AACCFE9A}|Assembly-CSharp.csproj|C:\\kimjinhyuck0329\\assets\\scripts\\mainscripts\\mainmenu\\battle\\battlecontracts.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -35,10 +35,6 @@
       "RelativeMoniker": "D:0:0:{CA30B7C7-43A3-92D4-106A-DC26AACCFE9A}|Assembly-CSharp.csproj|solutionrelative:assets\\scripts\\mainscripts\\resourcemanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{CA30B7C7-43A3-92D4-106A-DC26AACCFE9A}|Assembly-CSharp.csproj|C:\\kimjinhyuck0329\\assets\\scripts\\battlescene\\battleruntimeunit.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{CA30B7C7-43A3-92D4-106A-DC26AACCFE9A}|Assembly-CSharp.csproj|solutionrelative:assets\\scripts\\battlescene\\battleruntimeunit.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{CA30B7C7-43A3-92D4-106A-DC26AACCFE9A}|Assembly-CSharp.csproj|C:\\kimjinhyuck0329\\assets\\scripts\\battlescene\\battlestatusgriduimanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{CA30B7C7-43A3-92D4-106A-DC26AACCFE9A}|Assembly-CSharp.csproj|solutionrelative:assets\\scripts\\battlescene\\battlestatusgriduimanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
@@ -49,6 +45,10 @@
     {
       "AbsoluteMoniker": "D:0:0:{CA30B7C7-43A3-92D4-106A-DC26AACCFE9A}|Assembly-CSharp.csproj|C:\\kimjinhyuck0329\\assets\\scripts\\mainscripts\\mainflowmanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{CA30B7C7-43A3-92D4-106A-DC26AACCFE9A}|Assembly-CSharp.csproj|solutionrelative:assets\\scripts\\mainscripts\\mainflowmanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\kimjinhyuck0329\\Assets\\Scripts\\BattleScene\\TextLookCam.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Assets\\Scripts\\BattleScene\\TextLookCam.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -58,33 +58,18 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 0,
+          "SelectedChildIndex": 3,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 2,
               "Title": "CameraView.cs",
               "DocumentMoniker": "C:\\kimjinhyuck0329\\Assets\\Scripts\\BattleScene\\CameraView.cs",
               "RelativeDocumentMoniker": "Assets\\Scripts\\BattleScene\\CameraView.cs",
               "ToolTip": "C:\\kimjinhyuck0329\\Assets\\Scripts\\BattleScene\\CameraView.cs",
               "RelativeToolTip": "Assets\\Scripts\\BattleScene\\CameraView.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAYAAAAeAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-04-06T18:04:18.053Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 1,
-              "Title": "TextLookCam.cs",
-              "DocumentMoniker": "C:\\kimjinhyuck0329\\Assets\\Scripts\\BattleScene\\TextLookCam.cs",
-              "RelativeDocumentMoniker": "Assets\\Scripts\\BattleScene\\TextLookCam.cs",
-              "ToolTip": "C:\\kimjinhyuck0329\\Assets\\Scripts\\BattleScene\\TextLookCam.cs",
-              "RelativeToolTip": "Assets\\Scripts\\BattleScene\\TextLookCam.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA8AAAAHAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-04-06T17:26:28.18Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-04-06T18:04:18.053Z"
             },
             {
               "$type": "Document",
@@ -112,19 +97,45 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 0,
               "Title": "BattleSimulationManager.cs",
               "DocumentMoniker": "C:\\kimjinhyuck0329\\Assets\\Scripts\\BattleScene\\BattleSimulationManager.cs",
               "RelativeDocumentMoniker": "Assets\\Scripts\\BattleScene\\BattleSimulationManager.cs",
               "ToolTip": "C:\\kimjinhyuck0329\\Assets\\Scripts\\BattleScene\\BattleSimulationManager.cs",
               "RelativeToolTip": "Assets\\Scripts\\BattleScene\\BattleSimulationManager.cs",
-              "ViewState": "AgIAAKYFAAAAAAAAAAAkwLwFAABDAAAAAAAAAA==",
+              "ViewState": "AgIAAAMAAAAAAAAAAAAAABQAAAABAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-04-04T14:53:52.303Z"
+              "WhenOpened": "2026-04-04T14:53:52.303Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 1,
+              "Title": "BattleRuntimeUnit.cs",
+              "DocumentMoniker": "C:\\kimjinhyuck0329\\Assets\\Scripts\\BattleScene\\BattleRuntimeUnit.cs",
+              "RelativeDocumentMoniker": "Assets\\Scripts\\BattleScene\\BattleRuntimeUnit.cs",
+              "ToolTip": "C:\\kimjinhyuck0329\\Assets\\Scripts\\BattleScene\\BattleRuntimeUnit.cs",
+              "RelativeToolTip": "Assets\\Scripts\\BattleScene\\BattleRuntimeUnit.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAEMBAAAFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-04T10:27:58.547Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 11,
+              "Title": "TextLookCam.cs",
+              "DocumentMoniker": "C:\\kimjinhyuck0329\\Assets\\Scripts\\BattleScene\\TextLookCam.cs",
+              "RelativeDocumentMoniker": "Assets\\Scripts\\BattleScene\\TextLookCam.cs",
+              "ToolTip": "C:\\kimjinhyuck0329\\Assets\\Scripts\\BattleScene\\TextLookCam.cs",
+              "RelativeToolTip": "Assets\\Scripts\\BattleScene\\TextLookCam.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA8AAAAHAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-06T17:26:28.18Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
               "Title": "AnimationManager.cs",
               "DocumentMoniker": "C:\\kimjinhyuck0329\\Assets\\Scripts\\BattleScene\\AnimationManager.cs",
               "RelativeDocumentMoniker": "Assets\\Scripts\\BattleScene\\AnimationManager.cs",
@@ -160,7 +171,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 9,
+              "DocumentIndex": 8,
               "Title": "BattleStatusGridUIManager.cs",
               "DocumentMoniker": "C:\\kimjinhyuck0329\\Assets\\Scripts\\BattleScene\\BattleStatusGridUIManager.cs",
               "RelativeDocumentMoniker": "Assets\\Scripts\\BattleScene\\BattleStatusGridUIManager.cs",
@@ -172,19 +183,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 8,
-              "Title": "BattleRuntimeUnit.cs",
-              "DocumentMoniker": "C:\\kimjinhyuck0329\\Assets\\Scripts\\BattleScene\\BattleRuntimeUnit.cs",
-              "RelativeDocumentMoniker": "Assets\\Scripts\\BattleScene\\BattleRuntimeUnit.cs",
-              "ToolTip": "C:\\kimjinhyuck0329\\Assets\\Scripts\\BattleScene\\BattleRuntimeUnit.cs",
-              "RelativeToolTip": "Assets\\Scripts\\BattleScene\\BattleRuntimeUnit.cs",
-              "ViewState": "AgIAADkBAAAAAAAAAAAewEMBAAAoAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-04-04T10:27:58.547Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 10,
+              "DocumentIndex": 9,
               "Title": "BattleSessionManager.cs",
               "DocumentMoniker": "C:\\kimjinhyuck0329\\Assets\\Scripts\\BootScripts\\BattleSessionManager.cs",
               "RelativeDocumentMoniker": "Assets\\Scripts\\BootScripts\\BattleSessionManager.cs",
@@ -196,7 +195,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 11,
+              "DocumentIndex": 10,
               "Title": "MainFlowManager.cs",
               "DocumentMoniker": "C:\\kimjinhyuck0329\\Assets\\Scripts\\MainScripts\\MainFlowManager.cs",
               "RelativeDocumentMoniker": "Assets\\Scripts\\MainScripts\\MainFlowManager.cs",

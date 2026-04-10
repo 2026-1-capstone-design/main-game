@@ -1,5 +1,6 @@
 using UnityEngine;
 
+
 public class AnimationManager : MonoBehaviour
 {
     public static AnimationManager Instance { get; private set; }
@@ -18,6 +19,11 @@ public class AnimationManager : MonoBehaviour
     public AnimatorOverrideController staffController;
     public AnimatorOverrideController bowController;
 
+    [Header("Weapon Skill Animation Clip")]
+    public AnimationClip DefaultSkill;
+    public float DefaultCool;
+    public AnimationClip HeartAttack;
+    public float HeartAttackCool;
 
     private void Awake()
     {
@@ -52,6 +58,42 @@ public class AnimationManager : MonoBehaviour
             case WeaponType.None:
             default: 
                 return noneController;
+        }
+    }
+
+
+    public AnimationClip getAnimation(WeaponSkillId id)
+    {
+        switch (id)
+        {
+            case WeaponSkillId.HeartAttack:
+                return HeartAttack;
+            default:
+            case WeaponSkillId.None:
+                return DefaultSkill;
+        }
+    }
+    public float getCooltime(WeaponSkillId id)
+    {
+        switch (id)
+        {
+            case WeaponSkillId.HeartAttack:
+                return HeartAttackCool;
+            default:
+            case WeaponSkillId.None:
+                return DefaultCool;
+        }
+
+    }
+    public skillType getSkillType(WeaponSkillId id)
+    {
+        switch (id)
+        {
+            case WeaponSkillId.HeartAttack:
+                return skillType.attack;
+            default:
+            case WeaponSkillId.None:
+                return skillType.None;
         }
     }
 }

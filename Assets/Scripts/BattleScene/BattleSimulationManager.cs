@@ -1,5 +1,25 @@
 using System.Collections.Generic;
+using UnityEditor.Experimental.GraphView;
 using UnityEngine;
+
+
+public enum BuffType
+{
+    //긍정 버프
+    MoveSpeed = 0,
+    AttackRange = 1,
+    AttackSpeed = 2,
+    AttackDamage = 3,
+    RedudeDamage = 4,
+
+
+    //부정 버프
+    BleedDamage,
+    MoveReduce,
+    DamageReduce,
+    FearDamage
+}
+
 
 [DisallowMultipleComponent]
 public sealed class BattleSimulationManager : MonoBehaviour
@@ -117,6 +137,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
             unit.SetBodyRadius(unitBodyRadius);
             unit.ClearCurrentTarget();
             unit.ClearAttackCooldown();
+            unit.ClearSkillCooldown();  //스킬 쿨다움 초기화
             unit.SetIdleState();
 
             _runtimeUnits.Add(unit);
@@ -161,10 +182,20 @@ public sealed class BattleSimulationManager : MonoBehaviour
         }
     }
 
+    public void AnimationSpeedSetting()
+    {
+        for (int i = 0; i < _runtimeUnits.Count; i++)
+        {
+            if (_runtimeUnits[i] != null)
+                _runtimeUnits[i].SetAnimationSpeed(simulationSpeedMultiplier);
+        }
+    }
+
     public void SetSimulationSpeedMultiplier(float multiplier)
     {
         simulationSpeedMultiplier = Mathf.Clamp(multiplier, minSimulationSpeed, maxSimulationSpeed);
         if (_statusGridUIManager != null) _statusGridUIManager.Refresh();
+        AnimationSpeedSetting();
     }
 
     public void MultiplySimulationSpeed(float multiplier)
@@ -172,6 +203,9 @@ public sealed class BattleSimulationManager : MonoBehaviour
         if (multiplier <= 0f) return;
         SetSimulationSpeedMultiplier(simulationSpeedMultiplier * multiplier);
     }
+
+    
+
 
     public void SetTemporaryPause(bool isPaused)
     {
@@ -185,9 +219,11 @@ public sealed class BattleSimulationManager : MonoBehaviour
         EvaluateAllActionScores();
         CommitOrSwitchActions(tickDeltaTime);
         BuildAllExecutionPlans();
+        ExecuteSpecialEffect(tickDeltaTime);
         ExecuteMovementPhase(tickDeltaTime);
         ResolveUnitSeparation();
         ExecuteAttackPhase();
+        ExecuteSkillPhase();            //스킬
         TryFinishBattle();
 
         if (_statusGridUIManager != null) _statusGridUIManager.Refresh();
@@ -201,6 +237,8 @@ public sealed class BattleSimulationManager : MonoBehaviour
             if (unit != null && !unit.IsCombatDisabled)
             {
                 unit.TickAttackCooldown(tickDeltaTime);
+                unit.TickSkillCooldown(tickDeltaTime);
+                unit.TickBufflCooldown(tickDeltaTime);
             }
         }
     }
@@ -441,22 +479,132 @@ public sealed class BattleSimulationManager : MonoBehaviour
         for (int i = 0; i < _runtimeUnits.Count; i++)
         {
             BattleRuntimeUnit attacker = _runtimeUnits[i];
-            if (attacker == null || attacker.IsCombatDisabled) continue;
+            if (attacker == null || attacker.IsCombatDisabled) continue;            //전투 불가능한 상태
 
             BattleRuntimeUnit target = attacker.PlannedTargetEnemy;
-            if (!IsValidEnemyTarget(attacker, target)) continue;
-            if (!IsWithinEffectiveAttackDistance(attacker, target)) continue;
+            if (!IsValidEnemyTarget(attacker, target)) continue;                    //유효하지 않은 적
+            if (!IsWithinEffectiveAttackDistance(attacker, target)) continue;       //사거리 안
+            if (attacker.AttackCooldownRemaining > 0f) continue;                    //공격 쿨이 남음
 
-            //attacker.SetAttackState(true);
-            if (attacker.AttackCooldownRemaining > 0f) continue;
+            attacker.SetAttackState(true);              //실질적으로 때리는 타이밍
+            
+            target.ApplyDamage(attacker.Attack);        //데미지 적용
 
-            attacker.SetAttackState(true);  //실질적으로 때리는 타이밍
-            target.ApplyDamage(attacker.Attack);
-            attacker.ResetAttackCooldown();
+            attacker.ResetAttackCooldown();             //공격 쿨 돌리고
 
-            attacker.SetAttackState(false);
+            attacker.SetAttackState(false);             //때리는 것 끝
         }
     }
+
+    //임시 스킬 쿨이 되면 스킬 사용
+    private void ExecuteSkillPhase()
+    {
+        for(int i = 0; i < _runtimeUnits.Count; i++)
+        {
+            BattleRuntimeUnit Caster = _runtimeUnits[i];
+            if (Caster == null || Caster.IsCombatDisabled)
+                continue;
+
+            if (Caster.SkillCooldownRemaining > 0f) continue;
+
+            switch (Caster.getSkillType())
+            {
+                case skillType.attack:
+                    BattleRuntimeUnit target = Caster.PlannedTargetEnemy;
+
+                    if(!IsValidEnemyTarget(Caster, target)) continue;
+                    if(!IsWithinEffectiveAttackDistance(Caster, target)) continue;
+
+                    UseSkill(Caster, target);
+
+                    break;
+                case skillType.tank:
+                    UseSkill(Caster, null);
+
+                    break;
+                case skillType.support:
+                    FindNearestLivingAlly(Caster);   
+                    UseSkill(Caster, null);
+                    break;
+                case skillType.enhance:
+                    UseSkill(Caster, null);
+                    break;
+                default:
+                case skillType.None:
+                    UseSkill(Caster, null);
+                    break;
+            }
+        }
+    }
+
+
+    private void UseSkill(BattleRuntimeUnit Caster, BattleRuntimeUnit target)
+    {
+        WeaponSkillId Use = Caster.getSkill();
+
+        switch (Use)
+        {
+            case WeaponSkillId.HeartAttack:
+                Vector3 pushDirection = target.Position - Caster.Position;
+                target.ApplyDamage(20f);
+                target.AddKnockback(pushDirection, 50f);
+                break;
+            case WeaponSkillId.Madness:
+                Caster.BuffApply(BuffType.AttackSpeed, 2, 20);
+                break;
+            
+            default:
+            case WeaponSkillId.None:
+                Caster.ApplyHeal(10);
+                break;
+            
+        }
+
+        Caster.SetSkillState();
+        Caster.ResetSkillCooldown();
+    }
+
+
+
+    //Unit당 특수 상태 이상 처리, 
+    //개인 상태 이상은 tick당 내부에서 처리하는 것이 좋을 것 같은데...
+    private void ExecuteSpecialEffect(float tickDeltaTime)
+    {
+        //넉백
+        for(int i = 0; i < _runtimeUnits.Count; i++)
+        {
+            if (_runtimeUnits[i] != null && !_runtimeUnits[i].IsCombatDisabled)
+            {
+                _runtimeUnits[i].TickKnockback(tickDeltaTime);
+            }
+        }
+
+
+
+        //버프 or 디버프
+        for(int i = 0; i < _runtimeUnits.Count; i++)
+        {
+            if (_runtimeUnits[i] != null && !_runtimeUnits[i].IsCombatDisabled)
+            {
+                int buffNum = _runtimeUnits[i].BuffNum();
+
+
+
+
+
+
+
+
+
+            }
+        }
+
+        
+
+
+    }
+
+
 
     private BattleParameterSet ComputeParametersForUnit(BattleRuntimeUnit self)
     {
@@ -1181,6 +1329,33 @@ public sealed class BattleSimulationManager : MonoBehaviour
         }
         return nearest;
     }
+
+    private BattleRuntimeUnit FindNearestLivingAlly(BattleRuntimeUnit requester)
+    {
+        if (requester == null) return null;
+
+        BattleRuntimeUnit nearest = null;
+        float bestDistanceSqr = float.MaxValue;
+
+        for (int i = 0; i < _runtimeUnits.Count; i++)
+        {
+            BattleRuntimeUnit candidate = _runtimeUnits[i];
+            if (IsValidEnemyTarget(requester, candidate)) continue;     //반대로 적이면 스킵
+
+            Vector3 delta = candidate.Position - requester.Position;
+            delta.y = 0f;
+            float distanceSqr = delta.sqrMagnitude;
+
+            if (distanceSqr < bestDistanceSqr)
+            {
+                bestDistanceSqr = distanceSqr;
+                nearest = candidate;
+            }
+        }
+        return nearest;
+    }
+
+
 
     private List<BattleRuntimeUnit> GetLivingUnits(bool isEnemyTeam)
     {
