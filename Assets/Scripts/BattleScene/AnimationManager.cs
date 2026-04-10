@@ -27,19 +27,19 @@ public class AnimationManager : MonoBehaviour
 
     private void Awake()
     {
-        Instance = this; 
+        Instance = this;
     }
     public AnimatorOverrideController GetControllerByWeaponType(WeaponType type)
     {
         switch (type)
         {
-            case WeaponType.oneHand: 
+            case WeaponType.oneHand:
                 return oneHandController;
-            case WeaponType.twoHand: 
+            case WeaponType.twoHand:
                 return twoHandController;
-            case WeaponType.dualHand: 
+            case WeaponType.dualHand:
                 return dualHandController;
-            case WeaponType.spear: 
+            case WeaponType.spear:
                 return spearController;
             case WeaponType.shield:
                 return shieldController;
@@ -56,7 +56,7 @@ public class AnimationManager : MonoBehaviour
             case WeaponType.bow:
                 return bowController;
             case WeaponType.None:
-            default: 
+            default:
                 return noneController;
         }
     }

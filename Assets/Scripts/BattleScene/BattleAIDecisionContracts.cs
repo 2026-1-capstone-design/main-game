@@ -141,7 +141,7 @@ public sealed class BattleActionTuning
             case WeaponType.spear:
                 return WeaponType.spear;
             case WeaponType.shield:
-                return WeaponType.shield;   
+                return WeaponType.shield;
             case WeaponType.dagger:
                 return WeaponType.dagger;
             case WeaponType.handGun:
@@ -209,14 +209,22 @@ public struct BattleActionScoreSet
     {
         switch (actionType)
         {
-            case BattleActionType.AssassinateIsolatedEnemy: return AssassinateIsolatedEnemy;
-            case BattleActionType.DiveEnemyBackline: return DiveEnemyBackline;
-            case BattleActionType.PeelForWeakAlly: return PeelForWeakAlly;
-            case BattleActionType.EscapeFromPressure: return EscapeFromPressure;
-            case BattleActionType.RegroupToAllies: return RegroupToAllies;
-            case BattleActionType.CollapseOnCluster: return CollapseOnCluster;
-            case BattleActionType.EngageNearest: return EngageNearest;
-            default: return float.MinValue;
+            case BattleActionType.AssassinateIsolatedEnemy:
+                return AssassinateIsolatedEnemy;
+            case BattleActionType.DiveEnemyBackline:
+                return DiveEnemyBackline;
+            case BattleActionType.PeelForWeakAlly:
+                return PeelForWeakAlly;
+            case BattleActionType.EscapeFromPressure:
+                return EscapeFromPressure;
+            case BattleActionType.RegroupToAllies:
+                return RegroupToAllies;
+            case BattleActionType.CollapseOnCluster:
+                return CollapseOnCluster;
+            case BattleActionType.EngageNearest:
+                return EngageNearest;
+            default:
+                return float.MinValue;
         }
     }
 
@@ -224,13 +232,27 @@ public struct BattleActionScoreSet
     {
         switch (actionType)
         {
-            case BattleActionType.AssassinateIsolatedEnemy: AssassinateIsolatedEnemy = score; break;
-            case BattleActionType.DiveEnemyBackline: DiveEnemyBackline = score; break;
-            case BattleActionType.PeelForWeakAlly: PeelForWeakAlly = score; break;
-            case BattleActionType.EscapeFromPressure: EscapeFromPressure = score; break;
-            case BattleActionType.RegroupToAllies: RegroupToAllies = score; break;
-            case BattleActionType.CollapseOnCluster: CollapseOnCluster = score; break;
-            case BattleActionType.EngageNearest: EngageNearest = score; break;
+            case BattleActionType.AssassinateIsolatedEnemy:
+                AssassinateIsolatedEnemy = score;
+                break;
+            case BattleActionType.DiveEnemyBackline:
+                DiveEnemyBackline = score;
+                break;
+            case BattleActionType.PeelForWeakAlly:
+                PeelForWeakAlly = score;
+                break;
+            case BattleActionType.EscapeFromPressure:
+                EscapeFromPressure = score;
+                break;
+            case BattleActionType.RegroupToAllies:
+                RegroupToAllies = score;
+                break;
+            case BattleActionType.CollapseOnCluster:
+                CollapseOnCluster = score;
+                break;
+            case BattleActionType.EngageNearest:
+                EngageNearest = score;
+                break;
         }
     }
 
@@ -284,7 +306,8 @@ public struct BattleActionScoreSet
         BattleActionType candidateAction,
         float candidateScore)
     {
-        if (candidateAction == excludedAction) return;
+        if (candidateAction == excludedAction)
+            return;
 
         if (candidateScore > bestScore)
         {

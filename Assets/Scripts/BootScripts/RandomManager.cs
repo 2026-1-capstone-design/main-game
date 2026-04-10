@@ -122,7 +122,8 @@ public sealed class RandomManager : SingletonBehaviour<RandomManager>
 
     private void EnsureInitialized()
     {
-        if (_initialized) return;
+        if (_initialized)
+            return;
 
         if (!_loggedAutoInitWarning)
         {
