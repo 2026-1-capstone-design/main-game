@@ -1,11 +1,19 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+// BattleSceneFlowManager 책임:
+// - BattleSessionManager에서 payload 읽기
+// - ally/enemy snapshot 기반 runtime unit 12개 생성 (ally 1~6 / enemy 7~12 번호 부여)
+// - Battlefield(BoxCollider) 위 placeholder 기준 배치
+// - BattleSimulationManager 초기화
+// - BattleSceneUIManager / BattleStatusGridUIManager와 연결
+// - 초기 payload snapshot 보관 및 clone 재사용 (F7 in-place restart)
+// - 기존 runtime unit destroy 후 재생성
 [DisallowMultipleComponent]
 public sealed class BattleSceneFlowManager : MonoBehaviour
 {
     [Header("Spawn")]
-    // ���� RectTransform���� 3D�� BoxCollider�� ��ü
+    // RectTransform 대신 3D BoxCollider로 교체된 전장 영역
     [SerializeField] private BoxCollider battlefieldCollider;
     [SerializeField] private GameObject runtimeUnitRootPrefab;
     [SerializeField] private Transform runtimeUnitRoot;
@@ -22,6 +30,7 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
     [SerializeField] private bool verboseLog = true;
 
     private readonly List<BattleRuntimeUnit> _runtimeUnits = new List<BattleRuntimeUnit>();
+    // BattleScene 진입 시 payload를 clone해 보관. F7 재시작 시 이 snapshot을 다시 clone해서 사용한다.
     private BattleStartPayload _initialPayloadSnapshot;
 
     public IReadOnlyList<BattleRuntimeUnit> RuntimeUnits => _runtimeUnits;
@@ -31,6 +40,9 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
         BootstrapScene();
     }
 
+    // BattleScene 진입 시 호출되는 초기 부트스트랩.
+    // BattleSessionManager에서 BattleStartPayload를 읽고, clone해서 _initialPayloadSnapshot으로 저장한다.
+    // 이후 BattleSessionManager의 payload는 clear한다.
     private void BootstrapScene()
     {
         BattleSessionManager battleSessionManager = BattleSessionManager.Instance;
@@ -70,6 +82,9 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
         }
     }
 
+    // F7 치트 또는 결과 패널의 재시작 요청 시 호출된다.
+    // _initialPayloadSnapshot을 다시 clone해서 기존 runtime unit을 전부 destroy한 뒤 같은 씬 안에서 다시 bootstrap한다.
+    // Scene 재로드는 하지 않는다. 결과 패널은 HideAll()로 닫는다.
     public bool RestartCurrentBattle()
     {
         if (_initialPayloadSnapshot == null)
@@ -124,6 +139,7 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
 
         _runtimeUnits.Clear();
 
+        // 아군: 유닛 번호 1~6, 적군: 유닛 번호 7~12
         bool allyOk = SpawnTeam(payload.AllyUnits, allyPlaceholders, false, 1);
         bool enemyOk = SpawnTeam(payload.EnemyUnits, enemyPlaceholders, true, 7);
 
@@ -198,6 +214,8 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
         return true;
     }
 
+    // Root 프리팹 전체를 instantiate한 뒤, 내부 자식 BattleRuntimeUnit 컴포넌트를
+    // GetComponentInChildren으로 찾는다. 실제 위치/배치는 Root RectTransform(BoxCollider) 기준.
     private bool SpawnTeam(
         IReadOnlyList<BattleUnitSnapshot> snapshots,
         Transform[] placeholders,

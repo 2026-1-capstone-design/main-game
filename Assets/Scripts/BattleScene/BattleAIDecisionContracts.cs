@@ -5,30 +5,32 @@
 using System;
 using UnityEngine;
 
+// 전투 AI 행동 목록. "가장 가까운 살아있는 적만 추적"은 fallback일 뿐, 실제 판단은 행동 점수 시스템이 먼저 결정한다.
 public enum BattleActionType
 {
     None = 0,
-    AssassinateIsolatedEnemy = 1,
-    DiveEnemyBackline = 2,
-    PeelForWeakAlly = 3,
-    EscapeFromPressure = 4,
-    RegroupToAllies = 5,
-    CollapseOnCluster = 6,
-    EngageNearest = 7
+    AssassinateIsolatedEnemy = 1,   // 고립된 적 암살: 혼자 떨어진 적 추적
+    DiveEnemyBackline = 2,           // 적 후방 다이브: 후방 취약 적 추적
+    PeelForWeakAlly = 3,             // 아군 보호: 압박받는 아군 주변 적을 우선
+    EscapeFromPressure = 4,          // 도주: 압박 중심 반대 방향 + 팀 방향 혼합
+    RegroupToAllies = 5,             // 집결: 팀 중심으로 이동
+    CollapseOnCluster = 6,           // 군집 압박: 적 군집 중심으로 압박
+    EngageNearest = 7                // 최근접 교전: 가장 가까운 적 교전 (fallback)
 }
 
+// 매 tick마다 각 유닛에 대해 계산되는 RAW 파라미터 9개. 모두 마지막에 Clamp01 된다.
 [Serializable]
 public struct BattleParameterSet
 {
-    public float SelfHpLow;
-    public float SelfSurroundedByEnemies;
-    public float LowHealthAllyProximity;
-    public float AllyUnderFocusPressure;
-    public float AllyFrontlineGap;
-    public float IsolatedEnemyVulnerability;
-    public float EnemyClusterDensity;
-    public float DistanceToTeamCenter;
-    public float SelfCanAttackNow;
+    public float SelfHpLow;                 // 1 - CurrentHealth/MaxHealth. 체력이 낮을수록 큼
+    public float SelfSurroundedByEnemies;   // closeFalloff 합산 / 3. 가까운 적이 많을수록 큼
+    public float LowHealthAllyProximity;    // 저체력 아군 * 거리 falloff 합산 / 2. 저체력 아군이 가까울수록 큼
+    public float AllyUnderFocusPressure;    // 집중 공격받는 아군이 가까이 있고 체력도 낮을수록 큼 (최대값 사용)
+    public float AllyFrontlineGap;          // 아군 최근접 거리 평균 / frontlineGapRadius. 아군 진형이 퍼질수록 큼
+    public float IsolatedEnemyVulnerability;// 혼자 떨어져 있고 체력이 낮고 내가 너무 멀지 않은 적일수록 큼 (최대값 사용)
+    public float EnemyClusterDensity;       // 적 pair 간 falloff 평균. 적들이 서로 뭉쳐 있을수록 큼
+    public float DistanceToTeamCenter;      // 자기와 팀 중심 거리 / teamCenterDistanceRadius. 멀리 떨어질수록 큼
+    public float SelfCanAttackNow;          // 사거리 안에 적이 하나라도 있으면 1, 아니면 0 (이진값)
 
     public void Clamp01All()
     {
@@ -102,19 +104,27 @@ public sealed class BattleParameterWeights
     }
 }
 
+// 각 행동(BattleActionType)의 AI 튜닝 데이터.
+// 점수 계산식: RawScore = baseBias + Σ(modifiedParam_i * weight_i)
+//              FinalScore = RawScore * (weaponTypePercent / 100f)
+// currentActionParameterPercents: 현재 이 행동을 수행 중일 때 RAW→MOD 파라미터 변환에 사용.
+//   ex) Regroup 중이면 allyFrontlineGap, distanceToTeamCenter를 키우고 selfCanAttackNow를 줄여서 regroup 유지를 유도.
+// inspector에서 행동별 가중치, 보정치, 무기별 최종값 보정, 반경값, threshold 등을 바로 조정 가능.
 [Serializable]
 public sealed class BattleActionTuning
 {
     public BattleActionType actionType = BattleActionType.EngageNearest;
     public string displayName = "EngageNearest";
-    public int baseBias = 0;
+    public int baseBias = 0;    // 행동 점수의 기본 편향값
 
     [Header("Score Weights (-10 ~ +10 권장)")]
     public BattleParameterWeights scoreWeights = new BattleParameterWeights();
 
+    // 현재 이 행동 수행 중일 때 RAW 파라미터에 곱해지는 퍼센트 보정치. 행동 선택 이전 단계의 입력값 자체를 왜곡한다.
     [Header("Current Action Param Modifiers (percent)")]
     public BattleParameterWeights currentActionParameterPercents = BattleParameterWeights.CreateFilled(100);
 
+    // 무기 타입별 행동 최종 점수 배율. 클래스 성향 대신 무기군으로 판정한다.
     [Header("Weapon Type Final Score Percents")]
     public int oneHandPercent = 100;
     public int twoHandPercent = 100;

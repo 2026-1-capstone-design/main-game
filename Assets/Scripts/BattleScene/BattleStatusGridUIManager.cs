@@ -3,11 +3,16 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
+// BattleStatusGridUIManager 책임 (전투 디버그 UI 전담 manager):
+// - 하단 2×6 status panel 갱신 (ally 1~6 / enemy 7~12 상태 텍스트 표시)
+// - 상단 speed text 표시
+// 각 셀에 표시: 유닛 번호, 이름, HP, 현재 행동, 이동/공격 여부, 현재 타겟,
+//              KeepBehaving, ActionTimer, 최고 점수 행동/값, RAW parameter set, MOD parameter set
 [DisallowMultipleComponent]
 public sealed class BattleStatusGridUIManager : MonoBehaviour
 {
     [Header("Top")]
-    [SerializeField] private TMP_Text simulationSpeedText;
+    [SerializeField] private TMP_Text simulationSpeedText;  // 현재 배속 텍스트
 
     [Header("Ally Cells (1~6)")]
     [SerializeField] private TMP_Text[] allyStatusTexts = new TMP_Text[6];

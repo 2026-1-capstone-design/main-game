@@ -5,6 +5,11 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
+// BattleRuntimeUnit은 전투 중 실시간 상태 holder다.
+// prefab 구조: Root -> BattleRuntimeUnit -> Dot_ally / Dot_enemy / Dot_dead / StatusText
+// - 아군이면 Dot_ally 활성, 적군이면 Dot_enemy 활성, 죽으면 팀 상관없이 Dot_dead 활성
+// - StatusText는 항상 두 줄: 첫 줄 = 유닛 번호, 둘째 줄 = 현재 행동명
+// 스폰 시에는 Root 프리팹 전체를 instantiate하고, GetComponentInChildren<BattleRuntimeUnit>(true)로 내부 컴포넌트를 찾는다.
 [DisallowMultipleComponent]
 public sealed class BattleRuntimeUnit : MonoBehaviour
 {
@@ -54,9 +59,12 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     public bool IsMoving { get; private set; }
     public bool IsAttacking { get; private set; }
 
-    // 2D AnchoredPosition 대신 3D World Position을 사용합니다.
+        // 유닛 위치/클램프 기준은 스크립트가 붙은 자기 자신이 아니라 부모 Root RectTransform(3D: BoxCollider).
+    // BattleRuntimeUnit 스크립트는 자기 부모 Root를 컨테이너로 사용한다.
     public Vector3 Position => transform.position;
 
+    // RAW 파라미터: 매 tick마다 글로벌 상태로 계산된 원본 9개 파라미터
+    // MOD 파라미터: 현재 행동의 currentActionParameterPercents를 적용해 왜곡된 파라미터 (행동 선택 입력값)
     [field: SerializeField] public BattleParameterSet CurrentRawParameters { get; private set; }
     [field: SerializeField] public BattleParameterSet CurrentModifiedParameters { get; private set; }
     [field: SerializeField] public BattleActionScoreSet CurrentScores { get; private set; }
@@ -590,6 +598,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
 
 
 
+    // 아군/적/사망 표시와 행동 텍스트를 BattleRuntimeUnit이 직접 갱신한다.
     private void RefreshVisualState()
     {
         bool isDead = IsCombatDisabled || CurrentHealth <= 0f;

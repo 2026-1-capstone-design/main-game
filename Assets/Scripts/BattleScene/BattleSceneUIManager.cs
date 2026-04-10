@@ -3,6 +3,13 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
+// BattleScene 전담 UI manager. 전투 종료 패널, 배속 UI 처리.
+// 책임:
+// - 전투 종료 풀스크린 패널 표시 (승리/패배 텍스트, 보상 gold)
+// - confirm 버튼 처리 → MainScene 복귀 시작
+// - speed up(×2) / speed down(×0.5) 버튼 처리 → BattleSimulationManager.MultiplySimulationSpeed(...)로 조절
+// - current speed text 갱신 (결과 패널이 떠 있어도 갱신 가능)
+// ※ 속도는 minSimulationSpeed ~ maxSimulationSpeed 범위로 clamp
 [DisallowMultipleComponent]
 public sealed class BattleSceneUIManager : MonoBehaviour
 {
