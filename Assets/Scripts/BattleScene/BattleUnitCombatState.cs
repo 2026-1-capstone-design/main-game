@@ -58,6 +58,33 @@ public sealed class BattleUnitCombatState
     public float KeepBehaving { get; private set; }
     public float ActionTimer { get; private set; }
 
+    // ── 스킬 정보 세터 ─────────────────────────────────────────────
+    public void SetSkillInfo(WeaponSkillId skillId, float cooltime, skillType type)
+    {
+        HaveSkill = skillId;
+        SkillCooltime = cooltime;
+        SkillType = type;
+    }
+
+    // ── 스킬 쿨다운 ────────────────────────────────────────────────
+    public void TickSkillCooldown(float deltaTime)
+    {
+        SkillCooldownRemaining = Mathf.Max(0f, SkillCooldownRemaining - Mathf.Max(0f, deltaTime));
+    }
+
+    public void ClearSkillCooldown()
+    {
+        SkillCooldownRemaining = 0f;
+    }
+
+    public void ResetSkillCooldown()
+    {
+        SkillCooldownRemaining = Mathf.Max(0f, SkillCooltime);
+    }
+
+    public WeaponSkillId GetSkill() => HaveSkill;
+    public skillType GetSkillType() => SkillType;
+
     // ── 공격 쿨다운 ────────────────────────────────────────────────
     public float AttackCooldownRemaining { get; private set; }
 
