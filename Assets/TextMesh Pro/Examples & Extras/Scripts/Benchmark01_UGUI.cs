@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 namespace TMPro.Examples
 {
-    
+
     public class Benchmark01_UGUI : MonoBehaviour
     {
 
@@ -49,7 +49,7 @@ namespace TMPro.Examples
                 if (TMProFont != null)
                     m_textMeshPro.font = TMProFont;
 
-                //m_textMeshPro.font = Resources.Load("Fonts & Materials/Anton SDF", typeof(TextMeshProFont)) as TextMeshProFont; // Make sure the Anton SDF exists before calling this...           
+                //m_textMeshPro.font = Resources.Load("Fonts & Materials/Anton SDF", typeof(TextMeshProFont)) as TextMeshProFont; // Make sure the Anton SDF exists before calling this...
                 //m_textMeshPro.fontSharedMaterial = Resources.Load("Fonts & Materials/Anton SDF", typeof(Material)) as Material; // Same as above make sure this material exists.
 
                 m_textMeshPro.fontSize = 48;
@@ -60,13 +60,13 @@ namespace TMPro.Examples
                 //m_textMeshPro.fontSharedMaterial.SetFloat("_OutlineWidth", 0.2f);
                 //m_textMeshPro.fontSharedMaterial.EnableKeyword("UNDERLAY_ON");
                 //m_textMeshPro.lineJustification = LineJustificationTypes.Center;
-                //m_textMeshPro.enableWordWrapping = true;    
-                //m_textMeshPro.lineLength = 60;          
+                //m_textMeshPro.enableWordWrapping = true;
+                //m_textMeshPro.lineLength = 60;
                 //m_textMeshPro.characterSpacing = 0.2f;
                 //m_textMeshPro.fontColor = new Color32(255, 255, 255, 255);
 
                 m_material01 = m_textMeshPro.font.material;
-                m_material02 = Resources.Load<Material>("Fonts & Materials/LiberationSans SDF - BEVEL"); // Make sure the LiberationSans SDF exists before calling this...  
+                m_material02 = Resources.Load<Material>("Fonts & Materials/LiberationSans SDF - BEVEL"); // Make sure the LiberationSans SDF exists before calling this...
 
 
             }
@@ -88,7 +88,7 @@ namespace TMPro.Examples
                 m_textMesh.fontSize = 48;
                 m_textMesh.alignment = TextAnchor.MiddleCenter;
 
-                //m_textMesh.color = new Color32(255, 255, 0, 255);    
+                //m_textMesh.color = new Color32(255, 255, 0, 255);
             }
 
 
@@ -120,7 +120,7 @@ namespace TMPro.Examples
         {
             if (BenchmarkType == 0)
             {
-                m_textMeshPro.text = (m_frame % 1000).ToString();            
+                m_textMeshPro.text = (m_frame % 1000).ToString();
             }
             else if (BenchmarkType == 1)
             {

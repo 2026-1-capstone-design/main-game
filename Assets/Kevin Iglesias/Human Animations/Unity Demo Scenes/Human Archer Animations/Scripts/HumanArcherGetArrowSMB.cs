@@ -13,16 +13,16 @@ namespace KevinIglesias
     public class HumanArcherGetArrowSMB : StateMachineBehaviour
     {
         public float getArrowDelay = 0f;
-        
+
         private HumanArcherController hAC;
-        
+
         override public void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
         {
-            if(!hAC)
+            if (!hAC)
             {
                 hAC = animator.GetComponent<HumanArcherController>();
             }
-            
+
             hAC.GetArrow(getArrowDelay);
         }
     }

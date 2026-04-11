@@ -237,7 +237,7 @@ public sealed class BattleManager : MonoBehaviour
         return false;
     }
 
-    // legacy path 
+    // legacy path
     public bool TryBeginBattle(out string failReason)
     {
         return TryOpenBattlePreparation(out failReason);

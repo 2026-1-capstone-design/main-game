@@ -35,7 +35,8 @@ public sealed class SessionManager : SingletonBehaviour<SessionManager>
 
     public void MarkBattleUsed()
     {
-        if (HasUsedBattleToday) return;
+        if (HasUsedBattleToday)
+            return;
 
         HasUsedBattleToday = true;
         BattleUsageChanged?.Invoke(HasUsedBattleToday);
@@ -70,7 +71,8 @@ public sealed class SessionManager : SingletonBehaviour<SessionManager>
 
     public void ClearPendingBattleReward()
     {
-        if (PendingBattleRewardAmount == 0) return;
+        if (PendingBattleRewardAmount == 0)
+            return;
 
         PendingBattleRewardAmount = 0;
         PendingBattleRewardChanged?.Invoke(PendingBattleRewardAmount);

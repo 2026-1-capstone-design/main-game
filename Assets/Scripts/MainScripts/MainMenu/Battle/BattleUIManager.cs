@@ -38,7 +38,7 @@ public sealed class BattleUIManager : MonoBehaviour
     [SerializeField] private Button startButton;
     [SerializeField] private Button backButton;
 
-    
+
 
     private MainFlowManager _flow;
     private BattleManager _battleManager;

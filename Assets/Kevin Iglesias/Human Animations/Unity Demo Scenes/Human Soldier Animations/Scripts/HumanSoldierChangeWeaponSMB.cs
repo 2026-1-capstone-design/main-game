@@ -12,18 +12,18 @@ namespace KevinIglesias
     public class HumanSoldierChangeWeaponSMB : StateMachineBehaviour
     {
         public SoldierWeapons weaponToDraw;
-        
+
         private HumanSoldierController hSC;
-        
+
         // OnStateEnter is called when a transition starts and the state machine starts to evaluate this state
         override public void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
         {
-            if(hSC == null)
+            if (hSC == null)
             {
                 hSC = animator.GetComponent<HumanSoldierController>();
             }
-            
-            if(hSC)
+
+            if (hSC)
             {
                 hSC.ChangeWeapon(weaponToDraw);
             }

@@ -91,17 +91,25 @@ public sealed class CameraView : MonoBehaviour
 
         if (Keyboard.current != null)
         {
-            if (Keyboard.current.qKey.isPressed) orbitInput += 1f;
-            if (Keyboard.current.eKey.isPressed) orbitInput -= 1f;
+            if (Keyboard.current.qKey.isPressed)
+                orbitInput += 1f;
+            if (Keyboard.current.eKey.isPressed)
+                orbitInput -= 1f;
 
-            if (Keyboard.current.aKey.isPressed) lookYawInput -= 1f;
-            if (Keyboard.current.dKey.isPressed) lookYawInput += 1f;
+            if (Keyboard.current.aKey.isPressed)
+                lookYawInput -= 1f;
+            if (Keyboard.current.dKey.isPressed)
+                lookYawInput += 1f;
 
-            if (Keyboard.current.wKey.isPressed) lookPitchInput += 1f;
-            if (Keyboard.current.sKey.isPressed) lookPitchInput -= 1f;
+            if (Keyboard.current.wKey.isPressed)
+                lookPitchInput += 1f;
+            if (Keyboard.current.sKey.isPressed)
+                lookPitchInput -= 1f;
 
-            if (Keyboard.current.rKey.isPressed) zoomKeyInput += 1f;
-            if (Keyboard.current.fKey.isPressed) zoomKeyInput -= 1f;
+            if (Keyboard.current.rKey.isPressed)
+                zoomKeyInput += 1f;
+            if (Keyboard.current.fKey.isPressed)
+                zoomKeyInput -= 1f;
         }
 
         if (Mouse.current != null)

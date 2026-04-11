@@ -31,7 +31,7 @@ public sealed class BattleUnitSnapshot
     public PerkSO EquippedPerk { get; }
     public WeaponType WeaponType { get; }
 
-    //¹«±â ¿ŞÂÊ ¿À¸¥ÂÊ Ãß°¡
+    // ë¬´ê¸° ì™¼ìª½ ì˜¤ë¥¸ìª½ ì¶”ê°€
     public GameObject LeftWeaponPrefab { get; }
     public GameObject RightWeaponPrefab { get; }
 
@@ -82,7 +82,7 @@ public sealed class BattleUnitSnapshot
         EquippedPerk = equippedPerk;
         WeaponType = weaponType;
 
-        //»ı¼ºÀÚ¿¡ Ãß°¡
+        // ìƒì„±ìì— ì¶”ê°€
         LeftWeaponPrefab = leftWeaponPrefab;
         RightWeaponPrefab = rightWeaponPrefab;
 
@@ -152,8 +152,8 @@ public sealed class BattleUnitSnapshot
             if (source.EquippedWeapon.Weapon != null)
             {
                 weaponType = source.EquippedWeapon.Weapon.weaponType;
-                //¹«±â Ãß°¡
-                leftPrefab = source.EquippedWeapon.Weapon.leftWeaponPrefab; 
+                // ë¬´ê¸° ì¶”ê°€
+                leftPrefab = source.EquippedWeapon.Weapon.leftWeaponPrefab;
                 rightPrefab = source.EquippedWeapon.Weapon.rightWeaponPrefab;
             }
 

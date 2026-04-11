@@ -15,40 +15,42 @@ namespace KevinIglesias
         OnEnter,
         OnExit
     }
-    
+
     public enum BowActions
     {
         Pull,
         Release,
         Cancel
     }
-    
+
     public class HumanArcherBowSMB : StateMachineBehaviour
     {
         public BowConditions condition;
-        
+
         public BowActions bowAction;
-        
+
         public float delay;
-        
+
         public float duration;
-        
+
         private HumanArcherController hAC;
-        
+
         // OnStateEnter is called when a transition starts and the state machine starts to evaluate this state
         override public void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
         {
-            if(condition == BowConditions.OnEnter)
+            if (condition == BowConditions.OnEnter)
             {
-                if(!hAC)
+                if (!hAC)
                 {
                     hAC = animator.GetComponent<HumanArcherController>();
                 }
-                
-                if(bowAction == BowActions.Pull)
+
+                if (bowAction == BowActions.Pull)
                 {
                     hAC.LoadBow(delay, duration);
-                }else{
+                }
+                else
+                {
                     hAC.ShootArrow(delay, duration);
                 }
             }
@@ -57,17 +59,19 @@ namespace KevinIglesias
         // OnStateExit is called on each Update frame between OnStateEnter and OnStateExit callbacks
         override public void OnStateExit(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
         {
-            if(condition == BowConditions.OnExit)
+            if (condition == BowConditions.OnExit)
             {
-                if(!hAC)
+                if (!hAC)
                 {
                     hAC = animator.GetComponent<HumanArcherController>();
                 }
-                
-                if(bowAction == BowActions.Pull)
+
+                if (bowAction == BowActions.Pull)
                 {
                     hAC.LoadBow(delay, duration);
-                }else{
+                }
+                else
+                {
                     hAC.ShootArrow(delay, duration);
                 }
             }

@@ -8,9 +8,9 @@ public sealed class AudioManager : SingletonBehaviour<AudioManager>
     [SerializeField] private AudioSource sfxSource;
 
     [Header("Volume")]
-    [Range(0f, 1f)] [SerializeField] private float masterVolume = 1f;
-    [Range(0f, 1f)] [SerializeField] private float bgmVolume = 1f;
-    [Range(0f, 1f)] [SerializeField] private float sfxVolume = 1f;
+    [Range(0f, 1f)][SerializeField] private float masterVolume = 1f;
+    [Range(0f, 1f)][SerializeField] private float bgmVolume = 1f;
+    [Range(0f, 1f)][SerializeField] private float sfxVolume = 1f;
 
     [Header("Mute")]
     [SerializeField] private bool muteAll = false;
@@ -20,7 +20,8 @@ public sealed class AudioManager : SingletonBehaviour<AudioManager>
     protected override void Awake()
     {
         base.Awake();
-        if (!IsPrimaryInstance) return;
+        if (!IsPrimaryInstance)
+            return;
 
         EnsureAudioSources();
         ApplyVolume();
@@ -34,8 +35,10 @@ public sealed class AudioManager : SingletonBehaviour<AudioManager>
 
     public void PlayBgm(AudioClip clip, bool loop = true)
     {
-        if (muteAll || muteBgm) return;
-        if (clip == null) return;
+        if (muteAll || muteBgm)
+            return;
+        if (clip == null)
+            return;
 
         EnsureAudioSources();
 
@@ -52,15 +55,18 @@ public sealed class AudioManager : SingletonBehaviour<AudioManager>
 
     public void StopBgm()
     {
-        if (bgmSource == null) return;
+        if (bgmSource == null)
+            return;
         bgmSource.Stop();
         bgmSource.clip = null;
     }
 
     public void PlaySfx(AudioClip clip, float volumeScale = 1f)
     {
-        if (muteAll || muteSfx) return;
-        if (clip == null) return;
+        if (muteAll || muteSfx)
+            return;
+        if (clip == null)
+            return;
 
         EnsureAudioSources();
         sfxSource.PlayOneShot(clip, Mathf.Clamp01(masterVolume * sfxVolume * volumeScale));

@@ -1,22 +1,24 @@
 /*
-f
-1: afc에 달린 동명의 컴포넌트 인스펙터에 적힌 수치대로 검투사 1~6의 스탯 조정, 무기까지 뽑아서 장착.
-2: 무기만 장착, 스탯은 그대로
-3: 적군 평균레벨 조정
-4: 경험치 지급
+치트코드 사용법:
+- F1, F2, F3, F4: 메인씬에서만 동작
+- F5, F6, F7: 배틀씬 전투 중에만 동작
+- F8: 어느 씬에서나 동작
 
-5: 상대 모두 사망, 전투 승리
-6: 아군 모두 사망, 패배
-7: 리플레이
-8: 골드 지급 10000 
+F1: afc 인스펙터에 적힌 수치대로 검투사 1~6의 스탯(CachedMaxHealth/CurrentHealth/CachedAttack/CachedMoveSpeed/CachedAttackSpeed)을 덮어쓴다.
+    무기도 WeaponType/WeaponSkillId/Level 기준으로 뽑아서 장착. 검투사가 6명보다 적으면 있는만큼만 적용.
+    단, 검투사 레벨업 시 다시 레벨에 따라 SO 에셋에 맞춰 변형된다.
+F2: 무기만 장착, 스탯은 그대로.
+F3: 적 평균레벨 변경. BattleManager에 override 값을 저장하고, 전투 Start 시점에 RecruitFactory로 새 encounter를 다시 만든다.
+F4: 경험치 지급. 모든 검투사에게 gladiatorXpGrantAmount만큼 XP 부여.
 
+F5: 적군 전체 사망. BattleSimulationManager.RuntimeUnits를 순회해서 적 전체에 ApplyDamage 즉시 적용. 다음 tick에서 기존 종료 판정이 그대로 작동한다.
+F6: 아군 전체 사망.
+F7: 전투 재시작 (in-place). BattleSceneFlowManager.RestartCurrentBattle()을 호출한다.
+F8: 골드 1만 즉시 지급. ResourceManager.Instance.AddGold(...)를 바로 호출한다.
 
-
-
-
+아군 스탯 조정: 인스펙터에 원하는 스탯 적고 메인씬에서 F1. (단 레벨업 시 SO 에셋 기준으로 다시 변형됨)
+적군 스탯 조정: 인스펙터의 enemyAverageLevelOverride를 설정하고 F3. 세부 스탯은 SO 에셋을 직접 수정 후 재플레이.
 */
-
-
 
 using System.Collections.Generic;
 using UnityEngine;
@@ -69,7 +71,7 @@ public sealed class AfcBattleCheatCode : MonoBehaviour
 
         string activeSceneName = SceneManager.GetActiveScene().name;
 
-        // F7과 기능이 스왑된 F8 (어느 씬에서나 동작)
+        // F8: 골드 지급 (어느 씬에서나 동작)
         if (keyboard.f8Key.wasPressedThisFrame)
         {
             GrantGold();
@@ -77,18 +79,22 @@ public sealed class AfcBattleCheatCode : MonoBehaviour
 
         if (activeSceneName == mainSceneName)
         {
+            // F1: 검투사 스탯 + 무기 오버라이드 (메인씬 전용)
             if (keyboard.f1Key.wasPressedThisFrame)
             {
                 ApplyOwnedGladiatorOverrides();
             }
+            // F2: 무기만 장착, 스탯은 그대로 (메인씬 전용)
             if (keyboard.f2Key.wasPressedThisFrame)
             {
                 ApplyEquipmentOnlyOverrides();
             }
+            // F3: 적 평균레벨 오버라이드 + encounter 재생성 (메인씬 전용)
             if (keyboard.f3Key.wasPressedThisFrame)
             {
                 ApplyEncounterAverageLevelOverride();
             }
+            // F4: 경험치 지급 (메인씬 전용)
             if (keyboard.f4Key.wasPressedThisFrame)
             {
                 GrantGladiatorXp();
@@ -97,6 +103,7 @@ public sealed class AfcBattleCheatCode : MonoBehaviour
 
         if (activeSceneName == battleSceneName)
         {
+            // F5: 적군 전체 즉시 사망. 다음 tick에서 기존 종료 판정이 그대로 작동한다. (배틀씬 전용)
             if (keyboard.f5Key.wasPressedThisFrame)
             {
                 BattleSimulationManager simulationManager = FindBattleSimulationManager();
@@ -108,6 +115,7 @@ public sealed class AfcBattleCheatCode : MonoBehaviour
                 DisableEntireTeam(simulationManager, disableEnemies: true);
             }
 
+            // F6: 아군 전체 즉시 사망. 다음 tick에서 기존 종료 판정이 그대로 작동한다. (배틀씬 전용)
             if (keyboard.f6Key.wasPressedThisFrame)
             {
                 BattleSimulationManager simulationManager = FindBattleSimulationManager();
@@ -119,7 +127,7 @@ public sealed class AfcBattleCheatCode : MonoBehaviour
                 DisableEntireTeam(simulationManager, disableEnemies: false);
             }
 
-            // F8과 기능이 스왑된 F7 (배틀 씬에서만 동작)
+            // F7: 전투 in-place 재시작. Scene 재로드 없이 동일 payload snapshot으로 다시 bootstrap한다. (배틀씬 전용)
             if (keyboard.f7Key.wasPressedThisFrame)
             {
                 BattleSceneFlowManager flowManager = FindBattleSceneFlowManager();
