@@ -43,10 +43,10 @@ public static class BattleActionScorer
         if (!noEnemyInAttackRange || !pressureMostlyGone)
             return scores;
 
-        scores.EscapeFromPressure    *= 0.10f;
+        scores.EscapeFromPressure *= 0.10f;
         scores.AssassinateIsolatedEnemy *= 1.50f;
-        scores.DiveEnemyBackline     *= 1.35f;
-        scores.CollapseOnCluster     *= 1.30f;
+        scores.DiveEnemyBackline *= 1.35f;
+        scores.CollapseOnCluster *= 1.30f;
 
         return scores;
     }

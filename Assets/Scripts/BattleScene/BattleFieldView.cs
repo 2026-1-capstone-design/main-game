@@ -28,7 +28,8 @@ public sealed class BattleFieldView
         for (int i = 0; i < _units.Count; i++)
         {
             BattleRuntimeUnit u = _units[i];
-            if (u == null || u.IsCombatDisabled || u.IsEnemy != isEnemyTeam) continue;
+            if (u == null || u.IsCombatDisabled || u.IsEnemy != isEnemyTeam)
+                continue;
             result.Add(u);
         }
         return result;
@@ -38,23 +39,30 @@ public sealed class BattleFieldView
 
     public bool IsValidEnemyTarget(BattleRuntimeUnit requester, BattleRuntimeUnit candidate)
     {
-        if (requester == null || candidate == null) return false;
-        if (requester == candidate) return false;
-        if (requester.IsEnemy == candidate.IsEnemy) return false;
+        if (requester == null || candidate == null)
+            return false;
+        if (requester == candidate)
+            return false;
+        if (requester.IsEnemy == candidate.IsEnemy)
+            return false;
         return !candidate.IsCombatDisabled;
     }
 
     public bool IsValidSameTeamAlly(BattleRuntimeUnit requester, BattleRuntimeUnit candidate)
     {
-        if (requester == null || candidate == null) return false;
-        if (requester == candidate) return false;
-        if (requester.IsEnemy != candidate.IsEnemy) return false;
+        if (requester == null || candidate == null)
+            return false;
+        if (requester == candidate)
+            return false;
+        if (requester.IsEnemy != candidate.IsEnemy)
+            return false;
         return !candidate.IsCombatDisabled;
     }
 
     public bool IsWithinEffectiveAttackDistance(BattleRuntimeUnit attacker, BattleRuntimeUnit target)
     {
-        if (attacker == null || target == null) return false;
+        if (attacker == null || target == null)
+            return false;
         Vector3 delta = attacker.Position - target.Position;
         delta.y = 0f;
         return delta.magnitude <= (GetEffectiveAttackDistance(attacker, target) + 0.05f);
@@ -62,7 +70,8 @@ public sealed class BattleFieldView
 
     public float GetEffectiveAttackDistance(BattleRuntimeUnit attacker, BattleRuntimeUnit target)
     {
-        if (attacker == null || target == null) return 0f;
+        if (attacker == null || target == null)
+            return 0f;
         return attacker.BodyRadius + target.BodyRadius + attacker.AttackRange;
     }
 
@@ -70,35 +79,42 @@ public sealed class BattleFieldView
 
     public BattleRuntimeUnit FindNearestLivingEnemy(BattleRuntimeUnit requester)
     {
-        if (requester == null) return null;
+        if (requester == null)
+            return null;
         BattleRuntimeUnit nearest = null;
         float bestSqr = float.MaxValue;
         for (int i = 0; i < _units.Count; i++)
         {
             BattleRuntimeUnit c = _units[i];
-            if (!IsValidEnemyTarget(requester, c)) continue;
+            if (!IsValidEnemyTarget(requester, c))
+                continue;
             Vector3 delta = c.Position - requester.Position;
             delta.y = 0f;
             float sqr = delta.sqrMagnitude;
-            if (sqr < bestSqr) { bestSqr = sqr; nearest = c; }
+            if (sqr < bestSqr)
+            { bestSqr = sqr; nearest = c; }
         }
         return nearest;
     }
 
     public BattleRuntimeUnit FindNearestLivingAlly(BattleRuntimeUnit requester)
     {
-        if (requester == null) return null;
+        if (requester == null)
+            return null;
         BattleRuntimeUnit nearest = null;
         float bestSqr = float.MaxValue;
         for (int i = 0; i < _units.Count; i++)
         {
             BattleRuntimeUnit c = _units[i];
-            if (c == null || c == requester || c.IsCombatDisabled) continue;
-            if (c.IsEnemy != requester.IsEnemy) continue;
+            if (c == null || c == requester || c.IsCombatDisabled)
+                continue;
+            if (c.IsEnemy != requester.IsEnemy)
+                continue;
             Vector3 delta = c.Position - requester.Position;
             delta.y = 0f;
             float sqr = delta.sqrMagnitude;
-            if (sqr < bestSqr) { bestSqr = sqr; nearest = c; }
+            if (sqr < bestSqr)
+            { bestSqr = sqr; nearest = c; }
         }
         return nearest;
     }
@@ -113,10 +129,12 @@ public sealed class BattleFieldView
         for (int i = 0; i < _units.Count; i++)
         {
             BattleRuntimeUnit enemy = _units[i];
-            if (!IsValidEnemyTarget(self, enemy)) continue;
+            if (!IsValidEnemyTarget(self, enemy))
+                continue;
             float score = BattleParameterComputer.ComputeIsolatedEnemyTargetScore(
                 selfView, BattleUnitView.From(enemy), enemyViews, _radii);
-            if (score > bestScore) { bestScore = score; best = enemy; }
+            if (score > bestScore)
+            { bestScore = score; best = enemy; }
         }
         return best;
     }
@@ -132,14 +150,16 @@ public sealed class BattleFieldView
         for (int i = 0; i < _units.Count; i++)
         {
             BattleRuntimeUnit enemy = _units[i];
-            if (!IsValidEnemyTarget(self, enemy)) continue;
+            if (!IsValidEnemyTarget(self, enemy))
+                continue;
             float hpLow = enemy.MaxHealth > 0f ? Mathf.Clamp01(1f - (enemy.CurrentHealth / enemy.MaxHealth)) : 0f;
             float isolation = BattleParameterComputer.ComputeIsolatedEnemyTargetScore(
                 selfView, BattleUnitView.From(enemy), enemyViews, _radii);
             float backlineFactor = Mathf.Clamp01(
                 Vector3.Distance(enemy.Position, enemyCenter) / _radii.teamCenterDistanceRadius);
             float score = hpLow * 0.45f + isolation * 0.35f + backlineFactor * 0.20f;
-            if (score > bestScore) { bestScore = score; best = enemy; }
+            if (score > bestScore)
+            { bestScore = score; best = enemy; }
         }
         return best;
     }
@@ -151,7 +171,8 @@ public sealed class BattleFieldView
         for (int i = 0; i < _units.Count; i++)
         {
             BattleRuntimeUnit ally = _units[i];
-            if (!IsValidSameTeamAlly(self, ally)) continue;
+            if (!IsValidSameTeamAlly(self, ally))
+                continue;
             int focusCount = CountEnemiesTargeting(ally);
             float focusRatio = Mathf.Clamp01(focusCount / 3f);
             float hpLow = ally.MaxHealth > 0f ? Mathf.Clamp01(1f - (ally.CurrentHealth / ally.MaxHealth)) : 0f;
@@ -159,24 +180,29 @@ public sealed class BattleFieldView
             float distWeight = BattleParameterComputer.LinearFalloff(
                 Vector3.Distance(self.Position, ally.Position), _radii.peelRadius);
             float score = focusRatio * hpFactor * distWeight;
-            if (score > bestScore) { bestScore = score; best = ally; }
+            if (score > bestScore)
+            { bestScore = score; best = ally; }
         }
         return best;
     }
 
     public BattleRuntimeUnit FindBestPeelEnemy(BattleRuntimeUnit self, BattleRuntimeUnit protectedAlly)
     {
-        if (protectedAlly == null) return FindNearestLivingEnemy(self);
+        if (protectedAlly == null)
+            return FindNearestLivingEnemy(self);
         BattleRuntimeUnit best = null;
         float bestScore = float.MinValue;
         for (int i = 0; i < _units.Count; i++)
         {
             BattleRuntimeUnit enemy = _units[i];
-            if (!IsValidEnemyTarget(self, enemy)) continue;
-            if (enemy.CurrentTarget != protectedAlly && enemy.PlannedTargetEnemy != protectedAlly) continue;
+            if (!IsValidEnemyTarget(self, enemy))
+                continue;
+            if (enemy.CurrentTarget != protectedAlly && enemy.PlannedTargetEnemy != protectedAlly)
+                continue;
             float dist = Vector3.Distance(enemy.Position, protectedAlly.Position);
             float score = 1f - Mathf.Clamp01(dist / _radii.peelRadius);
-            if (score > bestScore) { bestScore = score; best = enemy; }
+            if (score > bestScore)
+            { bestScore = score; best = enemy; }
         }
         return best != null ? best : FindNearestLivingEnemy(self);
     }
@@ -188,9 +214,11 @@ public sealed class BattleFieldView
         for (int i = 0; i < _units.Count; i++)
         {
             BattleRuntimeUnit enemy = _units[i];
-            if (!IsValidEnemyTarget(self, enemy)) continue;
+            if (!IsValidEnemyTarget(self, enemy))
+                continue;
             float d = Vector3.Distance(enemy.Position, point);
-            if (d < bestDist) { bestDist = d; best = enemy; }
+            if (d < bestDist)
+            { bestDist = d; best = enemy; }
         }
         return best;
     }
@@ -204,7 +232,8 @@ public sealed class BattleFieldView
         for (int i = 0; i < _units.Count; i++)
         {
             BattleRuntimeUnit u = _units[i];
-            if (u == null || u.IsCombatDisabled || u.IsEnemy != isEnemyTeam) continue;
+            if (u == null || u.IsCombatDisabled || u.IsEnemy != isEnemyTeam)
+                continue;
             sum += u.Position;
             count++;
         }
@@ -218,13 +247,15 @@ public sealed class BattleFieldView
         for (int i = 0; i < _units.Count; i++)
         {
             BattleRuntimeUnit enemy = _units[i];
-            if (!IsValidEnemyTarget(self, enemy)) continue;
+            if (!IsValidEnemyTarget(self, enemy))
+                continue;
             float d = Vector3.Distance(self.Position, enemy.Position);
             float w = BattleParameterComputer.QuadraticCloseFalloff(d, _radii.surroundRadius);
             weightedSum += enemy.Position * w;
             weightSum += w;
         }
-        if (weightSum <= 0.0001f) return ComputeTeamCenter(!self.IsEnemy);
+        if (weightSum <= 0.0001f)
+            return ComputeTeamCenter(!self.IsEnemy);
         return weightedSum / weightSum;
     }
 
@@ -236,8 +267,10 @@ public sealed class BattleFieldView
         for (int i = 0; i < _units.Count; i++)
         {
             BattleRuntimeUnit enemy = _units[i];
-            if (!IsValidEnemyTarget(ally, enemy)) continue;
-            if (enemy.CurrentTarget == ally || enemy.PlannedTargetEnemy == ally) count++;
+            if (!IsValidEnemyTarget(ally, enemy))
+                continue;
+            if (enemy.CurrentTarget == ally || enemy.PlannedTargetEnemy == ally)
+                count++;
         }
         return count;
     }
@@ -248,7 +281,8 @@ public sealed class BattleFieldView
         for (int i = 0; i < _units.Count; i++)
         {
             BattleRuntimeUnit u = _units[i];
-            if (u == null || u.IsCombatDisabled || u.IsEnemy == self.IsEnemy) continue;
+            if (u == null || u.IsCombatDisabled || u.IsEnemy == self.IsEnemy)
+                continue;
             result.Add(BattleUnitView.From(u));
         }
         return result;
