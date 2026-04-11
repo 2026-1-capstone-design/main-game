@@ -140,9 +140,9 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
         _battleSceneUIManager = battleSceneUIManager;
         _payload = payload;
 
-        _fieldView      = new BattleFieldView(_runtimeUnits, BuildParameterRadii(), escapeTowardTeamBlend);
-        _planners       = BuildPlannerRegistry();
-        _skillRegistry  = new BattleSkillRegistry(new IBattleSkill[]
+        _fieldView = new BattleFieldView(_runtimeUnits, BuildParameterRadii(), escapeTowardTeamBlend);
+        _planners = BuildPlannerRegistry();
+        _skillRegistry = new BattleSkillRegistry(new IBattleSkill[]
         {
             new HeartAttackSkill(),
             new MadnessSkill(),
@@ -279,9 +279,12 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
             for (int j = 0; j < allViews.Count; j++)
             {
                 BattleUnitView v = allViews[j];
-                if (v.UnitNumber == self.UnitNumber) continue;
-                if (v.IsEnemy == self.IsEnemy) allies.Add(v);
-                else enemies.Add(v);
+                if (v.UnitNumber == self.UnitNumber)
+                    continue;
+                if (v.IsEnemy == self.IsEnemy)
+                    allies.Add(v);
+                else
+                    enemies.Add(v);
             }
 
             BattleParameterSet rawParameters = BattleParameterComputer.Compute(self, allies, enemies, radii);
@@ -296,16 +299,17 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
 
     private BattleParameterRadii BuildParameterRadii()
     {
-        if (aiTuning == null) return default;
+        if (aiTuning == null)
+            return default;
         return new BattleParameterRadii
         {
-            surroundRadius           = aiTuning.surroundRadius,
-            helpRadius               = aiTuning.helpRadius,
-            peelRadius               = aiTuning.peelRadius,
-            frontlineGapRadius       = aiTuning.frontlineGapRadius,
-            isolationRadius          = aiTuning.isolationRadius,
-            assassinReachRadius      = aiTuning.assassinReachRadius,
-            clusterRadius            = aiTuning.clusterRadius,
+            surroundRadius = aiTuning.surroundRadius,
+            helpRadius = aiTuning.helpRadius,
+            peelRadius = aiTuning.peelRadius,
+            frontlineGapRadius = aiTuning.frontlineGapRadius,
+            isolationRadius = aiTuning.isolationRadius,
+            assassinReachRadius = aiTuning.assassinReachRadius,
+            clusterRadius = aiTuning.clusterRadius,
             teamCenterDistanceRadius = aiTuning.teamCenterDistanceRadius
         };
     }
@@ -594,11 +598,14 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
     {
         foreach (BattleRuntimeUnit unit in _runtimeUnits)
         {
-            if (unit == null || unit.IsCombatDisabled) continue;
-            if (unit.SkillCooldownRemaining > 0f) continue;
+            if (unit == null || unit.IsCombatDisabled)
+                continue;
+            if (unit.SkillCooldownRemaining > 0f)
+                continue;
 
             IBattleSkill skill = _skillRegistry.Get(unit.State.GetSkill());
-            if (!skill.CanActivate(unit, _fieldView)) continue;
+            if (!skill.CanActivate(unit, _fieldView))
+                continue;
 
             skill.Apply(unit, _fieldView, this);
             unit.SetSkillState();           // 비주얼(Animator 트리거)은 BRU에 남음
@@ -839,7 +846,8 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
 
     private BattleActionTuning GetActionTuning(BattleActionType actionType)
     {
-        if (aiTuning == null) return null;
+        if (aiTuning == null)
+            return null;
         return aiTuning.GetActionTuning(actionType);
     }
 }

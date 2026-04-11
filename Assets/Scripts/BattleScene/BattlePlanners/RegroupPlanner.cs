@@ -6,10 +6,10 @@ public sealed class RegroupPlanner : IBattleActionPlanner
     {
         return new BattleActionExecutionPlan
         {
-            Action             = BattleActionType.RegroupToAllies,
-            TargetEnemy        = null,
-            TargetAlly         = null,
-            DesiredPosition    = field.ComputeTeamCenter(unit.IsEnemy),
+            Action = BattleActionType.RegroupToAllies,
+            TargetEnemy = null,
+            TargetAlly = null,
+            DesiredPosition = field.ComputeTeamCenter(unit.IsEnemy),
             HasDesiredPosition = true
         };
     }

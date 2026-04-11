@@ -10,7 +10,7 @@ public sealed class BattleSkillRegistry
     public BattleSkillRegistry(IEnumerable<IBattleSkill> skills)
     {
         _default = new DefaultHealSkill();
-        _skills  = new Dictionary<WeaponSkillId, IBattleSkill>();
+        _skills = new Dictionary<WeaponSkillId, IBattleSkill>();
 
         foreach (IBattleSkill skill in skills)
             _skills[skill.SkillId] = skill;

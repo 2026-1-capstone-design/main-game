@@ -7,10 +7,10 @@ public sealed class EngageNearestPlanner : IBattleActionPlanner
         BattleRuntimeUnit target = field.FindNearestLivingEnemy(unit);
         return new BattleActionExecutionPlan
         {
-            Action             = BattleActionType.EngageNearest,
-            TargetEnemy        = target,
-            TargetAlly         = null,
-            DesiredPosition    = target != null ? target.Position : unit.Position,
+            Action = BattleActionType.EngageNearest,
+            TargetEnemy = target,
+            TargetAlly = null,
+            DesiredPosition = target != null ? target.Position : unit.Position,
             HasDesiredPosition = target != null
         };
     }
