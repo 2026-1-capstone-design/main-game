@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -84,6 +85,32 @@ public sealed class BattleUnitCombatState
 
     public WeaponSkillId GetSkill() => HaveSkill;
     public skillType GetSkillType() => SkillType;
+
+    // ── 행동/결정 상태 이벤트 ─────────────────────────────────────
+    // BattleRuntimeUnit이 구독하여 StatusText를 갱신한다.
+    public event Action<BattleActionType, string> OnActionTypeChanged;
+
+    // ── 행동/결정 상태 세터 ────────────────────────────────────────
+    public void SetCurrentActionType(BattleActionType actionType, string displayName = null)
+    {
+        CurrentActionType = actionType;
+        CurrentAction = !string.IsNullOrWhiteSpace(displayName)
+            ? displayName
+            : (actionType == BattleActionType.None ? "Idle" : actionType.ToString());
+        OnActionTypeChanged?.Invoke(CurrentActionType, CurrentAction);
+    }
+
+    public void SetCurrentAction(string actionName)
+    {
+        CurrentAction = string.IsNullOrWhiteSpace(actionName) ? "Idle" : actionName;
+        OnActionTypeChanged?.Invoke(CurrentActionType, CurrentAction);
+    }
+
+    public void SetDecisionState(float keepBehaving, float actionTimer)
+    {
+        KeepBehaving = keepBehaving;
+        ActionTimer = Mathf.Max(0f, actionTimer);
+    }
 
     // ── 공격 쿨다운 ────────────────────────────────────────────────
     public float AttackCooldownRemaining { get; private set; }
