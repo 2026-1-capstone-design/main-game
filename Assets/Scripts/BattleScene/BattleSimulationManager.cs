@@ -147,11 +147,11 @@ public sealed class BattleSimulationManager : MonoBehaviour
             if (unit == null)
                 continue;
 
-            unit.SetBodyRadius(unitBodyRadius);
+            unit.State.SetBodyRadius(unitBodyRadius);
             unit.ClearCurrentTarget();
-            unit.ClearAttackCooldown();
-            unit.ClearSkillCooldown();  //스킬 쿨다움 초기화
-            unit.SetIdleState();
+            unit.State.ClearAttackCooldown();
+            unit.State.ClearSkillCooldown();
+            unit.State.SetIdleState();
 
             _runtimeUnits.Add(unit);
         }
@@ -258,9 +258,9 @@ public sealed class BattleSimulationManager : MonoBehaviour
             BattleRuntimeUnit unit = _runtimeUnits[i];
             if (unit != null && !unit.IsCombatDisabled)
             {
-                unit.TickAttackCooldown(tickDeltaTime);
-                unit.TickSkillCooldown(tickDeltaTime);
-                unit.TickBufflCooldown(tickDeltaTime);
+                unit.State.TickAttackCooldown(tickDeltaTime);
+                unit.State.TickSkillCooldown(tickDeltaTime);
+                unit.State.TickBufflCooldown(tickDeltaTime);
             }
         }
     }
@@ -279,7 +279,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
             rawParameters.Clamp01All();
             modifiedParameters.Clamp01All();
 
-            unit.SetCurrentParameters(rawParameters, modifiedParameters);
+            unit.State.SetCurrentParameters(rawParameters, modifiedParameters);
         }
     }
 
@@ -293,7 +293,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
 
             BattleActionScoreSet scores = EvaluateActionScores(unit, unit.CurrentModifiedParameters);
             scores = ApplyEscapeReengageBias(unit, unit.CurrentRawParameters, scores);
-            unit.SetCurrentScores(scores);
+            unit.State.SetCurrentScores(scores);
         }
     }
 
@@ -329,8 +329,8 @@ public sealed class BattleSimulationManager : MonoBehaviour
             }
             else
             {
-                unit.SetCurrentActionType(currentAction, GetActionDisplayName(currentAction));
-                unit.SetDecisionState(decayedKeepBehaving, nextActionTimer);
+                unit.State.SetCurrentActionType(currentAction, GetActionDisplayName(currentAction));
+                unit.State.SetDecisionState(decayedKeepBehaving, nextActionTimer);
                 EnsureCurrentActionIsUsableOrFallback(unit);
             }
         }
@@ -341,8 +341,8 @@ public sealed class BattleSimulationManager : MonoBehaviour
         if (unit == null)
             return;
         float keepBehaving = chosenFinalScore * CommitmentEnterMultiplier;
-        unit.SetCurrentActionType(actionType, GetActionDisplayName(actionType));
-        unit.SetDecisionState(keepBehaving, 0f);
+        unit.State.SetCurrentActionType(actionType, GetActionDisplayName(actionType));
+        unit.State.SetDecisionState(keepBehaving, 0f);
     }
 
     private int GetLivingUnitCountForDecision()
@@ -482,34 +482,34 @@ public sealed class BattleSimulationManager : MonoBehaviour
             if (IsValidEnemyTarget(unit, targetEnemy) && IsWithinEffectiveAttackDistance(unit, targetEnemy))
             {
                 if (unit.IsMoving)
-                    unit.SetIdleState();
+                    unit.State.SetIdleState();
 
                 continue;
             }
 
             if (unit.HasPlannedDesiredPosition)
             {
-                unit.FaceTarget(unit.PlannedDesiredPosition); //바라보도곩
+                unit.FaceTarget(unit.PlannedDesiredPosition); //바라보도록
 
                 bool moved = MoveTowardsPosition(unit, unit.PlannedDesiredPosition, tickDeltaTime);
-                unit.SetMovementState(moved);
+                unit.State.SetMovementState(moved);
                 if (!moved)
-                    unit.SetIdleState();
+                    unit.State.SetIdleState();
                 continue;
             }
 
             if (IsValidEnemyTarget(unit, targetEnemy))
             {
-                unit.FaceTarget(unit.PlannedDesiredPosition);   //바라보도록
+                unit.FaceTarget(unit.PlannedDesiredPosition); //바라보도록
 
                 bool moved = MoveTowardsTarget(unit, targetEnemy, tickDeltaTime);
-                unit.SetMovementState(moved);
+                unit.State.SetMovementState(moved);
                 if (!moved)
-                    unit.SetIdleState();
+                    unit.State.SetIdleState();
                 continue;
             }
 
-            unit.SetIdleState();
+            unit.State.SetIdleState();
         }
     }
 
@@ -529,13 +529,13 @@ public sealed class BattleSimulationManager : MonoBehaviour
             if (attacker.AttackCooldownRemaining > 0f)
                 continue;                    //공격 쿨이 남음
 
-            attacker.SetAttackState(true);              //실질적으로 때리는 타이밍
+            attacker.State.SetAttackState(true);        //실질적으로 때리는 타이밍
 
-            target.ApplyDamage(attacker.Attack);        //데미지 적용
+            target.State.ApplyDamage(attacker.Attack); //데미지 적용
 
-            attacker.ResetAttackCooldown();             //공격 쿨 돌리고
+            attacker.State.ResetAttackCooldown();       //공격 쿨 돌리고
 
-            attacker.SetAttackState(false);             //때리는 것 끝
+            attacker.State.SetAttackState(false);       //때리는 것 끝
         }
     }
 
@@ -551,7 +551,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
             if (Caster.SkillCooldownRemaining > 0f)
                 continue;
 
-            switch (Caster.getSkillType())
+            switch (Caster.State.GetSkillType())
             {
                 case skillType.attack:
                     BattleRuntimeUnit target = Caster.PlannedTargetEnemy;
@@ -586,28 +586,27 @@ public sealed class BattleSimulationManager : MonoBehaviour
 
     private void UseSkill(BattleRuntimeUnit Caster, BattleRuntimeUnit target)
     {
-        WeaponSkillId Use = Caster.getSkill();
+        WeaponSkillId Use = Caster.State.GetSkill();
 
         switch (Use)
         {
             case WeaponSkillId.HeartAttack:
                 Vector3 pushDirection = target.Position - Caster.Position;
-                target.ApplyDamage(20f);
-                target.AddKnockback(pushDirection, 50f);
+                target.State.ApplyDamage(20f);
+                target.State.AddKnockback(pushDirection, 50f);
                 break;
             case WeaponSkillId.Madness:
-                Caster.BuffApply(BuffType.AttackSpeed, 2, 20);
+                Caster.State.BuffApply(BuffType.AttackSpeed, 2, 20);
                 break;
 
             default:
             case WeaponSkillId.None:
-                Caster.ApplyHeal(10);
+                Caster.State.ApplyHeal(10);
                 break;
-
         }
 
-        Caster.SetSkillState();
-        Caster.ResetSkillCooldown();
+        Caster.SetSkillState();             // 비주얼(Animator 트리거)은 BRU에 남음
+        Caster.State.ResetSkillCooldown();
     }
 
 
@@ -632,7 +631,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
         {
             if (_runtimeUnits[i] != null && !_runtimeUnits[i].IsCombatDisabled)
             {
-                int buffNum = _runtimeUnits[i].BuffNum();
+                int buffNum = _runtimeUnits[i].State.BuffNum();
 
 
 
