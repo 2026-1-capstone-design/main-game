@@ -2,9 +2,8 @@ name: Auto Approve Inactive PRs
 
 on:
   schedule:
-    # 5분마다 실행 (GitHub Actions의 최소 주기 권장사항)
-    - cron: '*/5 * * * *'
-  # 테스트를 위해 수동 실행 버튼 추가
+    # 매 시간 0분에 실행
+    - cron: '0 * * * *'
   workflow_dispatch:
 
 jobs:
@@ -17,12 +16,14 @@ jobs:
       - name: Auto-approve inactive PRs
         uses: actions/github-script@v7
         with:
+          # 조직 레벨 설정이 완료되었으므로 기본 토큰 사용 가능
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const owner = context.repo.owner;
             const repo = context.repo.repo;
-            const minutesLimit = 1; // 테스트를 위해 1분으로 설정
+            const hoursLimit = 48; // 48시간으로 설정
             const now = new Date();
-            const threshold = new Date(now.getTime() - (minutesLimit * 60 * 1000));
+            const threshold = new Date(now.getTime() - (hoursLimit * 60 * 60 * 1000));
 
             // 모든 오픈된 PR 가져오기
             const { data: pullRequests } = await github.rest.pulls.list({
@@ -34,38 +35,42 @@ jobs:
             console.log(`Checking ${pullRequests.length} open pull requests...`);
 
             for (const pr of pullRequests) {
+              // 1. Draft PR은 제외
+              if (pr.draft) {
+                console.log(`PR #${pr.number} is a draft. Skipping...`);
+                continue;
+              }
+
               const updatedAt = new Date(pr.updated_at);
               
-              console.log(`PR #${pr.number} (last updated: ${pr.updated_at})`);
-
-              // 마지막 수정 시각이 1분 이전인지 확인
+              // 2. 마지막 수정 시각 확인 (48시간 경과 여부)
               if (updatedAt < threshold) {
                 console.log(`PR #${pr.number} is inactive since ${pr.updated_at}. Checking for existing approvals...`);
 
-                // 이미 승인했는지 확인 (중복 승인 방지)
+                // 3. 이미 승인했는지 확인 (중복 승인 방지)
                 const { data: reviews } = await github.rest.pulls.listReviews({
                   owner,
                   repo,
                   pull_number: pr.number,
                 });
 
-                const isAlreadyApprovedByBot = reviews.some(review => 
+                const isAlreadyApproved = reviews.some(review => 
                   review.state === 'APPROVED' && review.user.login === 'github-actions[bot]'
                 );
 
-                if (!isAlreadyApprovedByBot) {
+                if (!isAlreadyApproved) {
                   console.log(`Approving PR #${pr.number}...`);
                   await github.rest.pulls.createReview({
                     owner,
                     repo,
                     pull_number: pr.number,
                     event: 'APPROVE',
-                    body: `Automatically approved after ${minutesLimit} minute(s) of inactivity since the last update. (Test run)`
+                    body: `Automatically approved after ${hoursLimit} hours of inactivity since the last update.`
                   });
                 } else {
                   console.log(`PR #${pr.number} was already approved by this bot.`);
                 }
               } else {
-                console.log(`PR #${pr.number} is still active. Skiping...`);
+                console.log(`PR #${pr.number} is still active. Skipping...`);
               }
             }
