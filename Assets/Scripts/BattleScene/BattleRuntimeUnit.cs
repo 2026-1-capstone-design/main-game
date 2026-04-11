@@ -98,7 +98,9 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     [SerializeField] private GameObject _spawnedRightWeapon;
     [SerializeField] private Animator _myAnimation;
 
-    public void Initialize(BattleUnitSnapshot snapshot, int unitNumber, bool isEnemy)
+    // animationProvider가 null이면 AnimationManager.Instance로 폴백한다.
+    public void Initialize(BattleUnitSnapshot snapshot, int unitNumber, bool isEnemy,
+        IAnimationProvider animationProvider = null)
     {
         if (snapshot == null)
         {
@@ -122,8 +124,10 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         CurrentTarget = null;
 
         _myAnimation = transform.GetComponent<Animator>();
-        EquipWeaponFromSnapShot();
-        EquipSkillFromSnapShot();
+
+        IAnimationProvider provider = animationProvider ?? AnimationManager.Instance;
+        EquipWeaponFromSnapShot(provider);
+        EquipSkillFromSnapShot(provider);
 
         if (isEnemy)
             HPbar.sprite = EnemybarSprite;
@@ -149,7 +153,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     }
 
     // ── 무기/스킬 장착 ────────────────────────────────────────────
-    private void EquipWeaponFromSnapShot()
+    private void EquipWeaponFromSnapShot(IAnimationProvider provider)
     {
         if (Snapshot == null)
             return;
@@ -169,36 +173,39 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
             _spawnedRightWeapon.transform.localRotation = Quaternion.identity;
         }
 
-        if (_myAnimation != null && AnimationManager.Instance != null)
+        if (_myAnimation != null && provider != null)
         {
-            AnimatorOverrideController weaponMotion = AnimationManager.Instance.GetControllerByWeaponType(Snapshot.WeaponType);
+            AnimatorOverrideController weaponMotion = provider.GetControllerByWeaponType(Snapshot.WeaponType);
             if (weaponMotion != null)
                 _myAnimation.runtimeAnimatorController = weaponMotion;
         }
     }
 
-    private void EquipSkillFromSnapShot()
+    private void EquipSkillFromSnapShot(IAnimationProvider provider)
     {
         if (Snapshot == null)
             return;
 
-        if (AnimationManager.Instance == null)
+        if (provider == null)
         {
-            Debug.LogWarning("[BattleRuntimeUnit] AnimationManager.Instance is null — skipping skill setup.", this);
+            Debug.LogWarning("[BattleRuntimeUnit] IAnimationProvider is null — skipping skill setup.", this);
             return;
         }
 
         WeaponSkillId skillId = Snapshot.WeaponSkillId;
-        AnimationClip skillAnimation = AnimationManager.Instance.getAnimation(skillId);
-        float cooltime = AnimationManager.Instance.getCooltime(skillId);
-        skillType type = AnimationManager.Instance.getSkillType(skillId);
+        AnimationClip skillAnimation = provider.getAnimation(skillId);
+        float cooltime = provider.getCooltime(skillId);
+        skillType type = provider.getSkillType(skillId);
 
         State.SetSkillInfo(skillId, cooltime, type);
 
-        RuntimeAnimatorController current = _myAnimation.runtimeAnimatorController;
-        AnimatorOverrideController local = new AnimatorOverrideController(current);
-        local["HumanM@MiningOneHand01_L - Ground"] = skillAnimation;
-        _myAnimation.runtimeAnimatorController = local;
+        if (_myAnimation != null && skillAnimation != null)
+        {
+            RuntimeAnimatorController current = _myAnimation.runtimeAnimatorController;
+            AnimatorOverrideController local = new AnimatorOverrideController(current);
+            local["HumanM@MiningOneHand01_L - Ground"] = skillAnimation;
+            _myAnimation.runtimeAnimatorController = local;
+        }
     }
 
     // ── 사망 처리 (OnDied 이벤트 핸들러) ─────────────────────────
