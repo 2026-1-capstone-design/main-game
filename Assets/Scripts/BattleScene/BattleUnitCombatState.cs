@@ -86,6 +86,53 @@ public sealed class BattleUnitCombatState
     public WeaponSkillId GetSkill() => HaveSkill;
     public skillType GetSkillType() => SkillType;
 
+    // ── 이동/공격 플래그 이벤트 ──────────────────────────────────
+    // BattleRuntimeUnit이 구독하여 Animator를 업데이트한다.
+    public event Action<bool> OnMovingStateChanged;   // bool = isMoving
+    public event Action OnAttackTriggered;             // 공격 애니메이션 트리거 시점
+    public event Action OnIdleStateEntered;            // 아이들 전환 시점
+
+    // ── 이동/공격 플래그 세터 ─────────────────────────────────────
+    public void SetMovementState(bool isMoving)
+    {
+        IsMoving = isMoving;
+        if (isMoving)
+            IsAttacking = false;
+        OnMovingStateChanged?.Invoke(IsMoving);
+    }
+
+    public void SetAttackState(bool isAttacking)
+    {
+        bool wasAttacking = IsAttacking;
+        IsAttacking = isAttacking;
+        if (isAttacking)
+        {
+            IsMoving = false;
+            if (!wasAttacking)
+                OnAttackTriggered?.Invoke();
+        }
+    }
+
+    public void SetIdleState()
+    {
+        IsMoving = false;
+        IsAttacking = false;
+        OnIdleStateEntered?.Invoke();
+    }
+
+    // ── 실행 플랜 위치 세터 ────────────────────────────────────────
+    public void SetExecutionPlanPosition(Vector3 desiredPosition, bool hasDesiredPosition)
+    {
+        PlannedDesiredPosition = desiredPosition;
+        HasPlannedDesiredPosition = hasDesiredPosition;
+    }
+
+    public void ClearExecutionPlanPosition()
+    {
+        PlannedDesiredPosition = Vector3.zero;
+        HasPlannedDesiredPosition = false;
+    }
+
     // ── 행동/결정 상태 이벤트 ─────────────────────────────────────
     // BattleRuntimeUnit이 구독하여 StatusText를 갱신한다.
     public event Action<BattleActionType, string> OnActionTypeChanged;
