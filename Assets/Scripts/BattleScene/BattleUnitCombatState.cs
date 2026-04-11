@@ -30,7 +30,12 @@ public sealed class BattleUnitCombatState
     public float AttackRange => Mathf.Max(0f, BaseAttackRange + GetBuffLevel(BuffType.AttackRange) * 0.5f);
 
     // ── 바디 반경 (분리/클램프 계산용) ────────────────────────────
-    public float BodyRadius { get; private set; } = 50f;
+    public float BodyRadius { get; private set; }
+
+    public void SetBodyRadius(float bodyRadius)
+    {
+        BodyRadius = Mathf.Max(0f, bodyRadius);
+    }
 
     // ── 버프 ───────────────────────────────────────────────────────
     private readonly List<BuffType> _buffs = new List<BuffType>();
@@ -86,7 +91,7 @@ public sealed class BattleUnitCombatState
         BaseMoveSpeed = snapshot.MoveSpeed;
         BaseAttackRange = snapshot.AttackRange;
 
-        BodyRadius = 50f;
+        BodyRadius = 50f;   // SetBodyRadius로 SimManager가 덮어쓴다
 
         CurrentKnockback = Vector3.zero;
 
