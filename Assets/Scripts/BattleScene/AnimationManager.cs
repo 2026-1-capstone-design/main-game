@@ -1,7 +1,7 @@
 using UnityEngine;
 
 
-public class AnimationManager : MonoBehaviour
+public class AnimationManager : MonoBehaviour, IAnimationProvider
 {
     public static AnimationManager Instance { get; private set; }
 
