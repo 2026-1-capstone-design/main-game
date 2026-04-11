@@ -267,13 +267,36 @@ public sealed class BattleSimulationManager : MonoBehaviour
 
     private void ComputeAllParameters()
     {
+        // BattleUnitView 스냅샷 구성
+        var allViews = new List<BattleUnitView>(_runtimeUnits.Count);
+        for (int i = 0; i < _runtimeUnits.Count; i++)
+        {
+            BattleRuntimeUnit u = _runtimeUnits[i];
+            if (u != null && !u.IsCombatDisabled)
+                allViews.Add(BattleUnitView.From(u));
+        }
+
+        BattleParameterRadii radii = BuildParameterRadii();
+
         for (int i = 0; i < _runtimeUnits.Count; i++)
         {
             BattleRuntimeUnit unit = _runtimeUnits[i];
             if (unit == null || unit.IsCombatDisabled)
                 continue;
 
-            BattleParameterSet rawParameters = ComputeParametersForUnit(unit);
+            BattleUnitView self = BattleUnitView.From(unit);
+
+            var allies = new List<BattleUnitView>();
+            var enemies = new List<BattleUnitView>();
+            for (int j = 0; j < allViews.Count; j++)
+            {
+                BattleUnitView v = allViews[j];
+                if (v.UnitNumber == self.UnitNumber) continue;
+                if (v.IsEnemy == self.IsEnemy) allies.Add(v);
+                else enemies.Add(v);
+            }
+
+            BattleParameterSet rawParameters = BattleParameterComputer.Compute(self, allies, enemies, radii);
             BattleParameterSet modifiedParameters = ApplyCurrentActionParameterModifiers(unit, rawParameters);
 
             rawParameters.Clamp01All();
@@ -281,6 +304,21 @@ public sealed class BattleSimulationManager : MonoBehaviour
 
             unit.State.SetCurrentParameters(rawParameters, modifiedParameters);
         }
+    }
+
+    private BattleParameterRadii BuildParameterRadii()
+    {
+        return new BattleParameterRadii
+        {
+            surroundRadius           = surroundRadius,
+            helpRadius               = helpRadius,
+            peelRadius               = peelRadius,
+            frontlineGapRadius       = frontlineGapRadius,
+            isolationRadius          = isolationRadius,
+            assassinReachRadius      = assassinReachRadius,
+            clusterRadius            = clusterRadius,
+            teamCenterDistanceRadius = teamCenterDistanceRadius
+        };
     }
 
     private void EvaluateAllActionScores()
@@ -651,23 +689,6 @@ public sealed class BattleSimulationManager : MonoBehaviour
 
 
 
-    private BattleParameterSet ComputeParametersForUnit(BattleRuntimeUnit self)
-    {
-        BattleParameterSet parameters = default;
-        parameters.SelfHpLow = ComputeSelfHpLow(self);
-        parameters.SelfSurroundedByEnemies = ComputeSelfSurroundedByEnemies(self);
-        parameters.LowHealthAllyProximity = ComputeLowHealthAllyProximity(self);
-        parameters.AllyUnderFocusPressure = ComputeAllyUnderFocusPressure(self);
-        parameters.AllyFrontlineGap = ComputeAllyFrontlineGap(self);
-        parameters.IsolatedEnemyVulnerability = ComputeIsolatedEnemyVulnerability(self);
-        parameters.EnemyClusterDensity = ComputeEnemyClusterDensity(self);
-        parameters.DistanceToTeamCenter = ComputeDistanceToTeamCenter(self);
-        parameters.SelfCanAttackNow = ComputeSelfCanAttackNow(self);
-
-        parameters.Clamp01All();
-        return parameters;
-    }
-
     private BattleParameterSet ApplyCurrentActionParameterModifiers(BattleRuntimeUnit unit, BattleParameterSet rawParameters)
     {
         if (unit == null)
@@ -878,159 +899,6 @@ public sealed class BattleSimulationManager : MonoBehaviour
         }
     }
 
-    private float ComputeSelfHpLow(BattleRuntimeUnit self)
-    {
-        if (self == null || self.MaxHealth <= 0f)
-            return 0f;
-        return Mathf.Clamp01(1f - (self.CurrentHealth / self.MaxHealth));
-    }
-
-    private float ComputeSelfSurroundedByEnemies(BattleRuntimeUnit self)
-    {
-        float sum = 0f;
-        for (int i = 0; i < _runtimeUnits.Count; i++)
-        {
-            BattleRuntimeUnit enemy = _runtimeUnits[i];
-            if (!IsValidEnemyTarget(self, enemy))
-                continue;
-
-            float distance = Vector3.Distance(self.Position, enemy.Position);
-            float weight = QuadraticCloseFalloff(distance, surroundRadius);
-            sum += weight;
-        }
-        return Mathf.Clamp01(sum / 3f);
-    }
-
-    private float ComputeLowHealthAllyProximity(BattleRuntimeUnit self)
-    {
-        float sum = 0f;
-        for (int i = 0; i < _runtimeUnits.Count; i++)
-        {
-            BattleRuntimeUnit ally = _runtimeUnits[i];
-            if (!IsValidSameTeamAlly(self, ally))
-                continue;
-
-            float hpLow = ComputeSelfHpLow(ally);
-            float distanceWeight = LinearFalloff(Vector3.Distance(self.Position, ally.Position), helpRadius);
-            sum += hpLow * distanceWeight;
-        }
-        return Mathf.Clamp01(sum / 2f);
-    }
-
-    private float ComputeAllyUnderFocusPressure(BattleRuntimeUnit self)
-    {
-        float best = 0f;
-        for (int i = 0; i < _runtimeUnits.Count; i++)
-        {
-            BattleRuntimeUnit ally = _runtimeUnits[i];
-            if (!IsValidSameTeamAlly(self, ally))
-                continue;
-
-            int focusCount = CountEnemiesTargeting(self, ally);
-            float focusRatio = Mathf.Clamp01(focusCount / 3f);
-            float hpFactor = 0.5f + 0.5f * ComputeSelfHpLow(ally);
-            float distanceWeight = LinearFalloff(Vector3.Distance(self.Position, ally.Position), peelRadius);
-
-            float value = focusRatio * hpFactor * distanceWeight;
-            if (value > best)
-                best = value;
-        }
-        return Mathf.Clamp01(best);
-    }
-
-    private float ComputeAllyFrontlineGap(BattleRuntimeUnit self)
-    {
-        List<BattleRuntimeUnit> allies = GetLivingUnits(self.IsEnemy);
-        if (allies.Count <= 1)
-            return 0f;
-
-        float sumNearest = 0f;
-        int count = 0;
-
-        for (int i = 0; i < allies.Count; i++)
-        {
-            BattleRuntimeUnit ally = allies[i];
-            float nearest = float.MaxValue;
-
-            for (int j = 0; j < allies.Count; j++)
-            {
-                if (i == j)
-                    continue;
-                float distance = Vector3.Distance(ally.Position, allies[j].Position);
-                if (distance < nearest)
-                    nearest = distance;
-            }
-
-            if (nearest < float.MaxValue)
-            {
-                sumNearest += nearest;
-                count++;
-            }
-        }
-        if (count == 0)
-            return 0f;
-        return Mathf.Clamp01((sumNearest / count) / frontlineGapRadius);
-    }
-
-    private float ComputeIsolatedEnemyVulnerability(BattleRuntimeUnit self)
-    {
-        float best = 0f;
-        for (int i = 0; i < _runtimeUnits.Count; i++)
-        {
-            BattleRuntimeUnit enemy = _runtimeUnits[i];
-            if (!IsValidEnemyTarget(self, enemy))
-                continue;
-
-            float score = ComputeIsolatedEnemyTargetScore(self, enemy);
-            if (score > best)
-                best = score;
-        }
-        return Mathf.Clamp01(best);
-    }
-
-    private float ComputeEnemyClusterDensity(BattleRuntimeUnit self)
-    {
-        List<BattleRuntimeUnit> enemies = GetLivingUnits(!self.IsEnemy);
-        if (enemies.Count <= 1)
-            return 0f;
-
-        float sum = 0f;
-        int pairCount = 0;
-
-        for (int i = 0; i < enemies.Count; i++)
-        {
-            for (int j = i + 1; j < enemies.Count; j++)
-            {
-                float distance = Vector3.Distance(enemies[i].Position, enemies[j].Position);
-                sum += LinearFalloff(distance, clusterRadius);
-                pairCount++;
-            }
-        }
-        if (pairCount == 0)
-            return 0f;
-        return Mathf.Clamp01(sum / pairCount);
-    }
-
-    private float ComputeDistanceToTeamCenter(BattleRuntimeUnit self)
-    {
-        Vector3 teamCenter = ComputeTeamCenter(self.IsEnemy);
-        float distance = Vector3.Distance(self.Position, teamCenter);
-        return Mathf.Clamp01(distance / teamCenterDistanceRadius);
-    }
-
-    private float ComputeSelfCanAttackNow(BattleRuntimeUnit self)
-    {
-        for (int i = 0; i < _runtimeUnits.Count; i++)
-        {
-            BattleRuntimeUnit enemy = _runtimeUnits[i];
-            if (!IsValidEnemyTarget(self, enemy))
-                continue;
-            if (IsWithinEffectiveAttackDistance(self, enemy))
-                return 1f;
-        }
-        return 0f;
-    }
-
     private float ComputeIsolatedEnemyTargetScore(BattleRuntimeUnit self, BattleRuntimeUnit enemy)
     {
         if (!IsValidEnemyTarget(self, enemy))
@@ -1052,7 +920,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
             nearestSupportDistance = isolationRadius;
 
         float isolation = Mathf.Clamp01(nearestSupportDistance / isolationRadius);
-        float hpLow = ComputeSelfHpLow(enemy);
+        float hpLow = enemy.MaxHealth > 0f ? Mathf.Clamp01(1f - (enemy.CurrentHealth / enemy.MaxHealth)) : 0f;
         float reachFactor = 0.35f + 0.65f * LinearFalloff(Vector3.Distance(self.Position, enemy.Position), assassinReachRadius);
 
         return isolation * (0.6f + 0.4f * hpLow) * reachFactor;
@@ -1105,7 +973,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
             if (!IsValidEnemyTarget(self, enemy))
                 continue;
 
-            float hpLow = ComputeSelfHpLow(enemy);
+            float hpLow = enemy.MaxHealth > 0f ? Mathf.Clamp01(1f - (enemy.CurrentHealth / enemy.MaxHealth)) : 0f;
             float isolation = ComputeIsolatedEnemyTargetScore(self, enemy);
             float backlineFactor = Mathf.Clamp01(Vector3.Distance(enemy.Position, enemyCenter) / teamCenterDistanceRadius);
 
@@ -1132,7 +1000,8 @@ public sealed class BattleSimulationManager : MonoBehaviour
 
             int focusCount = CountEnemiesTargeting(self, ally);
             float focusRatio = Mathf.Clamp01(focusCount / 3f);
-            float hpFactor = 0.5f + 0.5f * ComputeSelfHpLow(ally);
+            float hpLow = ally.MaxHealth > 0f ? Mathf.Clamp01(1f - (ally.CurrentHealth / ally.MaxHealth)) : 0f;
+            float hpFactor = 0.5f + 0.5f * hpLow;
             float distanceWeight = LinearFalloff(Vector3.Distance(self.Position, ally.Position), peelRadius);
 
             float score = focusRatio * hpFactor * distanceWeight;
