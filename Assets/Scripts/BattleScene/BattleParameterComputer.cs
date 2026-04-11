@@ -13,15 +13,15 @@ public static class BattleParameterComputer
         BattleParameterRadii radii)
     {
         BattleParameterSet p = default;
-        p.SelfHpLow                  = ComputeSelfHpLow(self);
-        p.SelfSurroundedByEnemies    = ComputeSelfSurroundedByEnemies(self, enemies, radii.surroundRadius);
-        p.LowHealthAllyProximity     = ComputeLowHealthAllyProximity(self, allies, radii.helpRadius);
-        p.AllyUnderFocusPressure     = ComputeAllyUnderFocusPressure(self, allies, enemies, radii.peelRadius);
-        p.AllyFrontlineGap           = ComputeAllyFrontlineGap(allies, radii.frontlineGapRadius);
+        p.SelfHpLow = ComputeSelfHpLow(self);
+        p.SelfSurroundedByEnemies = ComputeSelfSurroundedByEnemies(self, enemies, radii.surroundRadius);
+        p.LowHealthAllyProximity = ComputeLowHealthAllyProximity(self, allies, radii.helpRadius);
+        p.AllyUnderFocusPressure = ComputeAllyUnderFocusPressure(self, allies, enemies, radii.peelRadius);
+        p.AllyFrontlineGap = ComputeAllyFrontlineGap(allies, radii.frontlineGapRadius);
         p.IsolatedEnemyVulnerability = ComputeIsolatedEnemyVulnerability(self, enemies, radii);
-        p.EnemyClusterDensity        = ComputeEnemyClusterDensity(enemies, radii.clusterRadius);
-        p.DistanceToTeamCenter       = ComputeDistanceToTeamCenter(self, allies, radii.teamCenterDistanceRadius);
-        p.SelfCanAttackNow           = ComputeSelfCanAttackNow(self, enemies);
+        p.EnemyClusterDensity = ComputeEnemyClusterDensity(enemies, radii.clusterRadius);
+        p.DistanceToTeamCenter = ComputeDistanceToTeamCenter(self, allies, radii.teamCenterDistanceRadius);
+        p.SelfCanAttackNow = ComputeSelfCanAttackNow(self, enemies);
         p.Clamp01All();
         return p;
     }
@@ -30,7 +30,8 @@ public static class BattleParameterComputer
 
     private static float ComputeSelfHpLow(BattleUnitView self)
     {
-        if (self.MaxHealth <= 0f) return 0f;
+        if (self.MaxHealth <= 0f)
+            return 0f;
         return Mathf.Clamp01(1f - (self.CurrentHealth / self.MaxHealth));
     }
 
@@ -65,14 +66,16 @@ public static class BattleParameterComputer
             float hpFactor = 0.5f + 0.5f * ComputeSelfHpLow(ally);
             float distWeight = LinearFalloff(Vector3.Distance(self.Position, ally.Position), peelRadius);
             float value = focusRatio * hpFactor * distWeight;
-            if (value > best) best = value;
+            if (value > best)
+                best = value;
         }
         return Mathf.Clamp01(best);
     }
 
     private static float ComputeAllyFrontlineGap(IReadOnlyList<BattleUnitView> allies, float frontlineGapRadius)
     {
-        if (allies.Count <= 1) return 0f;
+        if (allies.Count <= 1)
+            return 0f;
 
         float sumNearest = 0f;
         int count = 0;
@@ -81,13 +84,17 @@ public static class BattleParameterComputer
             float nearest = float.MaxValue;
             for (int j = 0; j < allies.Count; j++)
             {
-                if (i == j) continue;
+                if (i == j)
+                    continue;
                 float d = Vector3.Distance(allies[i].Position, allies[j].Position);
-                if (d < nearest) nearest = d;
+                if (d < nearest)
+                    nearest = d;
             }
-            if (nearest < float.MaxValue) { sumNearest += nearest; count++; }
+            if (nearest < float.MaxValue)
+            { sumNearest += nearest; count++; }
         }
-        if (count == 0) return 0f;
+        if (count == 0)
+            return 0f;
         return Mathf.Clamp01((sumNearest / count) / frontlineGapRadius);
     }
 
@@ -97,14 +104,16 @@ public static class BattleParameterComputer
         for (int i = 0; i < enemies.Count; i++)
         {
             float score = ComputeIsolatedEnemyTargetScore(self, enemies[i], enemies, radii);
-            if (score > best) best = score;
+            if (score > best)
+                best = score;
         }
         return Mathf.Clamp01(best);
     }
 
     private static float ComputeEnemyClusterDensity(IReadOnlyList<BattleUnitView> enemies, float clusterRadius)
     {
-        if (enemies.Count <= 1) return 0f;
+        if (enemies.Count <= 1)
+            return 0f;
         float sum = 0f;
         int pairCount = 0;
         for (int i = 0; i < enemies.Count; i++)
@@ -115,7 +124,8 @@ public static class BattleParameterComputer
                 pairCount++;
             }
         }
-        if (pairCount == 0) return 0f;
+        if (pairCount == 0)
+            return 0f;
         return Mathf.Clamp01(sum / pairCount);
     }
 
@@ -148,9 +158,11 @@ public static class BattleParameterComputer
         for (int i = 0; i < allEnemies.Count; i++)
         {
             BattleUnitView other = allEnemies[i];
-            if (other.UnitNumber == enemy.UnitNumber || other.IsCombatDisabled) continue;
+            if (other.UnitNumber == enemy.UnitNumber || other.IsCombatDisabled)
+                continue;
             float d = Vector3.Distance(enemy.Position, other.Position);
-            if (d < nearestSupportDistance) nearestSupportDistance = d;
+            if (d < nearestSupportDistance)
+                nearestSupportDistance = d;
         }
         if (nearestSupportDistance == float.MaxValue)
             nearestSupportDistance = radii.isolationRadius;
@@ -183,7 +195,8 @@ public static class BattleParameterComputer
 
     public static float LinearFalloff(float distance, float radius)
     {
-        if (radius <= 0f) return 0f;
+        if (radius <= 0f)
+            return 0f;
         return Mathf.Max(0f, 1f - distance / radius);
     }
 

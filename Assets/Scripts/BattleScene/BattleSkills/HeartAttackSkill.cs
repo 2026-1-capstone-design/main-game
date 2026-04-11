@@ -20,7 +20,8 @@ public sealed class HeartAttackSkill : IBattleSkill
     public void Apply(BattleRuntimeUnit caster, BattleFieldView field, ISkillEffectApplier applier)
     {
         BattleRuntimeUnit target = caster.PlannedTargetEnemy;
-        if (target == null) return;
+        if (target == null)
+            return;
         Vector3 pushDir = target.Position - caster.Position;
         applier.ApplyDamage(target.State, 20f);
         applier.AddKnockback(target.State, pushDir, 50f);

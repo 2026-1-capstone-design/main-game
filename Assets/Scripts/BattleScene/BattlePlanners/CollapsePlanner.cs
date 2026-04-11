@@ -6,15 +6,15 @@ public sealed class CollapsePlanner : IBattleActionPlanner
 
     public BattleActionExecutionPlan Build(BattleRuntimeUnit unit, BattleFieldView field)
     {
-        Vector3 clusterCenter  = field.ComputeTeamCenter(!unit.IsEnemy);
+        Vector3 clusterCenter = field.ComputeTeamCenter(!unit.IsEnemy);
         BattleRuntimeUnit target = field.FindEnemyClosestToPoint(unit, clusterCenter);
 
         return new BattleActionExecutionPlan
         {
-            Action             = BattleActionType.CollapseOnCluster,
-            TargetEnemy        = target,
-            TargetAlly         = null,
-            DesiredPosition    = clusterCenter,
+            Action = BattleActionType.CollapseOnCluster,
+            TargetEnemy = target,
+            TargetAlly = null,
+            DesiredPosition = clusterCenter,
             HasDesiredPosition = true
         };
     }
