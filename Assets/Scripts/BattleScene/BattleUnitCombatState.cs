@@ -86,6 +86,41 @@ public sealed class BattleUnitCombatState
     public WeaponSkillId GetSkill() => HaveSkill;
     public skillType GetSkillType() => SkillType;
 
+    // ── 체력/사망 이벤트 ──────────────────────────────────────────
+    // BattleRuntimeUnit이 구독하여 HPbar 갱신, 사망 처리를 담당한다.
+    public event Action<float> OnHealthChanged;   // float = newHealth
+    public event Action OnDied;
+
+    // ── 체력/사망 메서드 ──────────────────────────────────────────
+    public void ApplyDamage(float damage)
+    {
+        if (IsCombatDisabled)
+            return;
+
+        CurrentHealth = Mathf.Max(0f, CurrentHealth - Mathf.Max(0f, damage));
+        OnHealthChanged?.Invoke(CurrentHealth);
+
+        if (CurrentHealth <= 0f)
+        {
+            IsCombatDisabled = true;
+            CurrentHealth = 0f;
+            AttackCooldownRemaining = 0f;
+            CurrentAction = "Disabled";
+            CurrentActionType = BattleActionType.None;
+            SetIdleState();
+            OnDied?.Invoke();
+        }
+    }
+
+    public void ApplyHeal(float heal)
+    {
+        if (IsCombatDisabled)
+            return;
+
+        CurrentHealth = Mathf.Clamp(CurrentHealth + Mathf.Max(0f, heal), 0f, MaxHealth);
+        OnHealthChanged?.Invoke(CurrentHealth);
+    }
+
     // ── 이동/공격 플래그 이벤트 ──────────────────────────────────
     // BattleRuntimeUnit이 구독하여 Animator를 업데이트한다.
     public event Action<bool> OnMovingStateChanged;   // bool = isMoving
