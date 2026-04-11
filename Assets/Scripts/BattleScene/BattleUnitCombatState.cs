@@ -178,6 +178,29 @@ public sealed class BattleUnitCombatState
         TopScoredValue = bestScore;
     }
 
+    // ── 넉백 ───────────────────────────────────────────────────────
+    public void AddKnockback(Vector3 forceDirection, float forcePower)
+    {
+        Vector3 force = forceDirection.normalized * forcePower;
+        force.y = 0f;
+        CurrentKnockback += force;
+    }
+
+    // 넉백 속도를 deltaTime만큼 감소시키고, 이동해야 할 positionDelta를 반환한다.
+    // BattleRuntimeUnit이 반환값을 transform에 직접 적용한다.
+    public Vector3 ConsumeKnockbackDelta(float deltaTime, float friction = 10f)
+    {
+        if (CurrentKnockback.sqrMagnitude <= 0.01f)
+        {
+            CurrentKnockback = Vector3.zero;
+            return Vector3.zero;
+        }
+
+        Vector3 delta = CurrentKnockback * deltaTime;
+        CurrentKnockback = Vector3.Lerp(CurrentKnockback, Vector3.zero, friction * deltaTime);
+        return delta;
+    }
+
     // ── 버프 시스템 ────────────────────────────────────────────────
     public void BuffApply(BuffType type, int level, float cool)
     {
