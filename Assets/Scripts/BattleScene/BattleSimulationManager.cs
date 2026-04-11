@@ -80,6 +80,9 @@ public sealed class BattleSimulationManager : MonoBehaviour
     private BattleSceneUIManager _battleSceneUIManager;
     private BattleStartPayload _payload;
 
+    private BattleFieldView _fieldView;
+    private Dictionary<BattleActionType, IBattleActionPlanner> _planners;
+
     private bool _initialized;
     private bool _battleFinished;
     private bool _isTemporarilyPaused;
@@ -159,6 +162,9 @@ public sealed class BattleSimulationManager : MonoBehaviour
         _statusGridUIManager = statusGridUIManager;
         _battleSceneUIManager = battleSceneUIManager;
         _payload = payload;
+
+        _fieldView = new BattleFieldView(_runtimeUnits, BuildParameterRadii(), escapeTowardTeamBlend);
+        _planners   = BuildPlannerRegistry();
 
         _tickAccumulator = 0f;
         _tickInterval = 1f / Mathf.Max(1f, simulationTickRate);
@@ -321,6 +327,24 @@ public sealed class BattleSimulationManager : MonoBehaviour
         };
     }
 
+    private static Dictionary<BattleActionType, IBattleActionPlanner> BuildPlannerRegistry()
+    {
+        var planners = new IBattleActionPlanner[]
+        {
+            new AssassinatePlanner(),
+            new DiveBacklinePlanner(),
+            new PeelPlanner(),
+            new EscapePlanner(),
+            new RegroupPlanner(),
+            new CollapsePlanner(),
+            new EngageNearestPlanner()
+        };
+        var dict = new Dictionary<BattleActionType, IBattleActionPlanner>(planners.Length);
+        foreach (var p in planners)
+            dict[p.ActionType] = p;
+        return dict;
+    }
+
     private void EvaluateAllActionScores()
     {
         for (int i = 0; i < _runtimeUnits.Count; i++)
@@ -466,9 +490,11 @@ public sealed class BattleSimulationManager : MonoBehaviour
         BattleActionType currentAction = unit.CurrentActionType;
         if (currentAction == BattleActionType.None)
             return;
+        if (!_planners.TryGetValue(currentAction, out IBattleActionPlanner planner))
+            return;
 
-        BattleActionExecutionPlan currentPlan = BuildExecutionPlan(unit, currentAction);
-        if (IsExecutionPlanUsable(unit, currentPlan))
+        BattleActionExecutionPlan currentPlan = planner.Build(unit, _fieldView);
+        if (planner.IsUsable(unit, currentPlan, _fieldView))
             return;
         if (currentAction == BattleActionType.EngageNearest)
             return;
@@ -485,23 +511,24 @@ public sealed class BattleSimulationManager : MonoBehaviour
             if (unit == null || unit.IsCombatDisabled)
                 continue;
 
-            BattleActionExecutionPlan plan = BuildExecutionPlan(unit, unit.CurrentActionType);
-
-            if (!IsExecutionPlanUsable(unit, plan))
+            BattleActionExecutionPlan plan;
+            if (!_planners.TryGetValue(unit.CurrentActionType, out IBattleActionPlanner planner))
             {
-                BattleActionExecutionPlan engagePlan = BuildExecutionPlan(unit, BattleActionType.EngageNearest);
-                if (IsExecutionPlanUsable(unit, engagePlan))
+                plan = _planners[BattleActionType.EngageNearest].Build(unit, _fieldView);
+            }
+            else
+            {
+                plan = planner.Build(unit, _fieldView);
+                if (!planner.IsUsable(unit, plan, _fieldView))
                 {
-                    plan = engagePlan;
-                }
-                else
-                {
-                    plan = default;
-                    plan.Action = unit.CurrentActionType;
-                    plan.TargetEnemy = null;
-                    plan.TargetAlly = null;
-                    plan.DesiredPosition = unit.Position; // Vector3로 변경
-                    plan.HasDesiredPosition = false;
+                    IBattleActionPlanner engage = _planners[BattleActionType.EngageNearest];
+                    BattleActionExecutionPlan engagePlan = engage.Build(unit, _fieldView);
+                    plan = engage.IsUsable(unit, engagePlan, _fieldView) ? engagePlan : default;
+                    if (plan.Action == BattleActionType.None)
+                    {
+                        plan.Action = unit.CurrentActionType;
+                        plan.DesiredPosition = unit.Position;
+                    }
                 }
             }
             unit.SetExecutionPlan(plan);
@@ -518,7 +545,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
 
             BattleRuntimeUnit targetEnemy = unit.PlannedTargetEnemy;
 
-            if (IsValidEnemyTarget(unit, targetEnemy) && IsWithinEffectiveAttackDistance(unit, targetEnemy))
+            if (_fieldView.IsValidEnemyTarget(unit, targetEnemy) && _fieldView.IsWithinEffectiveAttackDistance(unit, targetEnemy))
             {
                 if (unit.IsMoving)
                     unit.State.SetIdleState();
@@ -537,7 +564,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
                 continue;
             }
 
-            if (IsValidEnemyTarget(unit, targetEnemy))
+            if (_fieldView.IsValidEnemyTarget(unit, targetEnemy))
             {
                 unit.FaceTarget(unit.PlannedDesiredPosition); //바라보도록
 
@@ -561,9 +588,9 @@ public sealed class BattleSimulationManager : MonoBehaviour
                 continue;            //전투 불가능한 상태
 
             BattleRuntimeUnit target = attacker.PlannedTargetEnemy;
-            if (!IsValidEnemyTarget(attacker, target))
+            if (!_fieldView.IsValidEnemyTarget(attacker, target))
                 continue;                    //유효하지 않은 적
-            if (!IsWithinEffectiveAttackDistance(attacker, target))
+            if (!_fieldView.IsWithinEffectiveAttackDistance(attacker, target))
                 continue;       //사거리 안
             if (attacker.AttackCooldownRemaining > 0f)
                 continue;                    //공격 쿨이 남음
@@ -595,9 +622,9 @@ public sealed class BattleSimulationManager : MonoBehaviour
                 case skillType.attack:
                     BattleRuntimeUnit target = Caster.PlannedTargetEnemy;
 
-                    if (!IsValidEnemyTarget(Caster, target))
+                    if (!_fieldView.IsValidEnemyTarget(Caster, target))
                         continue;
-                    if (!IsWithinEffectiveAttackDistance(Caster, target))
+                    if (!_fieldView.IsWithinEffectiveAttackDistance(Caster, target))
                         continue;
 
                     UseSkill(Caster, target);
@@ -703,376 +730,6 @@ public sealed class BattleSimulationManager : MonoBehaviour
         return modified;
     }
 
-    private BattleActionExecutionPlan BuildExecutionPlan(BattleRuntimeUnit unit, BattleActionType actionType)
-    {
-        switch (actionType)
-        {
-            case BattleActionType.AssassinateIsolatedEnemy:
-                return BuildAssassinatePlan(unit);
-            case BattleActionType.DiveEnemyBackline:
-                return BuildDiveBacklinePlan(unit);
-            case BattleActionType.PeelForWeakAlly:
-                return BuildPeelPlan(unit);
-            case BattleActionType.EscapeFromPressure:
-                return BuildEscapePlan(unit);
-            case BattleActionType.RegroupToAllies:
-                return BuildRegroupPlan(unit);
-            case BattleActionType.CollapseOnCluster:
-                return BuildCollapsePlan(unit);
-            case BattleActionType.EngageNearest:
-            default:
-                return BuildEngageNearestPlan(unit);
-        }
-    }
-
-    private BattleActionExecutionPlan BuildAssassinatePlan(BattleRuntimeUnit unit)
-    {
-        BattleRuntimeUnit target = FindBestIsolatedEnemy(unit);
-        return new BattleActionExecutionPlan
-        {
-            Action = BattleActionType.AssassinateIsolatedEnemy,
-            TargetEnemy = target,
-            TargetAlly = null,
-            DesiredPosition = target != null ? target.Position : unit.Position,
-            HasDesiredPosition = target != null
-        };
-    }
-
-    private BattleActionExecutionPlan BuildDiveBacklinePlan(BattleRuntimeUnit unit)
-    {
-        BattleRuntimeUnit target = FindBestBacklineEnemy(unit);
-        return new BattleActionExecutionPlan
-        {
-            Action = BattleActionType.DiveEnemyBackline,
-            TargetEnemy = target,
-            TargetAlly = null,
-            DesiredPosition = target != null ? target.Position : unit.Position,
-            HasDesiredPosition = target != null
-        };
-    }
-
-    private BattleActionExecutionPlan BuildPeelPlan(BattleRuntimeUnit unit)
-    {
-        BattleRuntimeUnit ally = FindMostPressuredAlly(unit);
-        BattleRuntimeUnit enemy = FindBestPeelEnemy(unit, ally);
-
-        Vector3 desiredPosition = ally != null ? ally.Position : unit.Position;
-        bool hasDesiredPosition = ally != null;
-
-        if (enemy != null)
-        {
-            desiredPosition = enemy.Position;
-            hasDesiredPosition = true;
-        }
-
-        return new BattleActionExecutionPlan
-        {
-            Action = BattleActionType.PeelForWeakAlly,
-            TargetEnemy = enemy,
-            TargetAlly = ally,
-            DesiredPosition = desiredPosition,
-            HasDesiredPosition = hasDesiredPosition
-        };
-    }
-
-    private BattleActionExecutionPlan BuildEscapePlan(BattleRuntimeUnit unit)
-    {
-        Vector3 selfPos = unit.Position;
-        Vector3 pressureCenter = ComputeEnemyPressureCenter(unit);
-        Vector3 away = selfPos - pressureCenter;
-        away.y = 0f; // 평면 강제
-
-        if (away.sqrMagnitude < 0.0001f)
-        {
-            away = unit.IsEnemy ? Vector3.right : Vector3.left;
-        }
-        away.Normalize();
-
-        Vector3 teamCenter = ComputeTeamCenter(unit.IsEnemy);
-        Vector3 towardTeam = (teamCenter - selfPos);
-        towardTeam.y = 0f;
-        towardTeam.Normalize();
-
-        Vector3 escapeDirection = (away * (1f - escapeTowardTeamBlend) + towardTeam * escapeTowardTeamBlend).normalized;
-        Vector3 desiredPosition = selfPos + escapeDirection * Mathf.Max(80f, unit.MoveSpeed);
-
-        return new BattleActionExecutionPlan
-        {
-            Action = BattleActionType.EscapeFromPressure,
-            TargetEnemy = null,
-            TargetAlly = null,
-            DesiredPosition = desiredPosition,
-            HasDesiredPosition = true
-        };
-    }
-
-    private BattleActionExecutionPlan BuildRegroupPlan(BattleRuntimeUnit unit)
-    {
-        Vector3 teamCenter = ComputeTeamCenter(unit.IsEnemy);
-        return new BattleActionExecutionPlan
-        {
-            Action = BattleActionType.RegroupToAllies,
-            TargetEnemy = null,
-            TargetAlly = null,
-            DesiredPosition = teamCenter,
-            HasDesiredPosition = true
-        };
-    }
-
-    private BattleActionExecutionPlan BuildCollapsePlan(BattleRuntimeUnit unit)
-    {
-        Vector3 enemyClusterCenter = ComputeTeamCenter(!unit.IsEnemy);
-        BattleRuntimeUnit target = FindEnemyClosestToPoint(unit, enemyClusterCenter);
-
-        return new BattleActionExecutionPlan
-        {
-            Action = BattleActionType.CollapseOnCluster,
-            TargetEnemy = target,
-            TargetAlly = null,
-            DesiredPosition = enemyClusterCenter,
-            HasDesiredPosition = true
-        };
-    }
-
-    private BattleActionExecutionPlan BuildEngageNearestPlan(BattleRuntimeUnit unit)
-    {
-        BattleRuntimeUnit target = FindNearestLivingEnemy(unit);
-        return new BattleActionExecutionPlan
-        {
-            Action = BattleActionType.EngageNearest,
-            TargetEnemy = target,
-            TargetAlly = null,
-            DesiredPosition = target != null ? target.Position : unit.Position,
-            HasDesiredPosition = target != null
-        };
-    }
-
-    private bool IsExecutionPlanUsable(BattleRuntimeUnit unit, BattleActionExecutionPlan plan)
-    {
-        switch (plan.Action)
-        {
-            case BattleActionType.EscapeFromPressure:
-            case BattleActionType.RegroupToAllies:
-            case BattleActionType.CollapseOnCluster:
-                return plan.HasDesiredPosition || IsValidEnemyTarget(unit, plan.TargetEnemy);
-            case BattleActionType.AssassinateIsolatedEnemy:
-            case BattleActionType.DiveEnemyBackline:
-            case BattleActionType.PeelForWeakAlly:
-            case BattleActionType.EngageNearest:
-                return IsValidEnemyTarget(unit, plan.TargetEnemy);
-            default:
-                return false;
-        }
-    }
-
-    private float ComputeIsolatedEnemyTargetScore(BattleRuntimeUnit self, BattleRuntimeUnit enemy)
-    {
-        if (!IsValidEnemyTarget(self, enemy))
-            return 0f;
-
-        float nearestSupportDistance = float.MaxValue;
-        for (int i = 0; i < _runtimeUnits.Count; i++)
-        {
-            BattleRuntimeUnit otherEnemy = _runtimeUnits[i];
-            if (otherEnemy == null || otherEnemy == enemy || otherEnemy.IsCombatDisabled || otherEnemy.IsEnemy != enemy.IsEnemy)
-                continue;
-
-            float distance = Vector3.Distance(enemy.Position, otherEnemy.Position);
-            if (distance < nearestSupportDistance)
-                nearestSupportDistance = distance;
-        }
-
-        if (nearestSupportDistance == float.MaxValue)
-            nearestSupportDistance = isolationRadius;
-
-        float isolation = Mathf.Clamp01(nearestSupportDistance / isolationRadius);
-        float hpLow = enemy.MaxHealth > 0f ? Mathf.Clamp01(1f - (enemy.CurrentHealth / enemy.MaxHealth)) : 0f;
-        float reachFactor = 0.35f + 0.65f * LinearFalloff(Vector3.Distance(self.Position, enemy.Position), assassinReachRadius);
-
-        return isolation * (0.6f + 0.4f * hpLow) * reachFactor;
-    }
-
-    private int CountEnemiesTargeting(BattleRuntimeUnit self, BattleRuntimeUnit ally)
-    {
-        int count = 0;
-        for (int i = 0; i < _runtimeUnits.Count; i++)
-        {
-            BattleRuntimeUnit enemy = _runtimeUnits[i];
-            if (!IsValidEnemyTarget(ally, enemy))
-                continue;
-            if (enemy.CurrentTarget == ally || enemy.PlannedTargetEnemy == ally)
-                count++;
-        }
-        return count;
-    }
-
-    private BattleRuntimeUnit FindBestIsolatedEnemy(BattleRuntimeUnit self)
-    {
-        BattleRuntimeUnit best = null;
-        float bestScore = float.MinValue;
-
-        for (int i = 0; i < _runtimeUnits.Count; i++)
-        {
-            BattleRuntimeUnit enemy = _runtimeUnits[i];
-            if (!IsValidEnemyTarget(self, enemy))
-                continue;
-
-            float score = ComputeIsolatedEnemyTargetScore(self, enemy);
-            if (score > bestScore)
-            {
-                bestScore = score;
-                best = enemy;
-            }
-        }
-        return best;
-    }
-
-    private BattleRuntimeUnit FindBestBacklineEnemy(BattleRuntimeUnit self)
-    {
-        Vector3 enemyCenter = ComputeTeamCenter(!self.IsEnemy);
-        BattleRuntimeUnit best = null;
-        float bestScore = float.MinValue;
-
-        for (int i = 0; i < _runtimeUnits.Count; i++)
-        {
-            BattleRuntimeUnit enemy = _runtimeUnits[i];
-            if (!IsValidEnemyTarget(self, enemy))
-                continue;
-
-            float hpLow = enemy.MaxHealth > 0f ? Mathf.Clamp01(1f - (enemy.CurrentHealth / enemy.MaxHealth)) : 0f;
-            float isolation = ComputeIsolatedEnemyTargetScore(self, enemy);
-            float backlineFactor = Mathf.Clamp01(Vector3.Distance(enemy.Position, enemyCenter) / teamCenterDistanceRadius);
-
-            float score = hpLow * 0.45f + isolation * 0.35f + backlineFactor * 0.20f;
-            if (score > bestScore)
-            {
-                bestScore = score;
-                best = enemy;
-            }
-        }
-        return best;
-    }
-
-    private BattleRuntimeUnit FindMostPressuredAlly(BattleRuntimeUnit self)
-    {
-        BattleRuntimeUnit best = null;
-        float bestScore = float.MinValue;
-
-        for (int i = 0; i < _runtimeUnits.Count; i++)
-        {
-            BattleRuntimeUnit ally = _runtimeUnits[i];
-            if (!IsValidSameTeamAlly(self, ally))
-                continue;
-
-            int focusCount = CountEnemiesTargeting(self, ally);
-            float focusRatio = Mathf.Clamp01(focusCount / 3f);
-            float hpLow = ally.MaxHealth > 0f ? Mathf.Clamp01(1f - (ally.CurrentHealth / ally.MaxHealth)) : 0f;
-            float hpFactor = 0.5f + 0.5f * hpLow;
-            float distanceWeight = LinearFalloff(Vector3.Distance(self.Position, ally.Position), peelRadius);
-
-            float score = focusRatio * hpFactor * distanceWeight;
-            if (score > bestScore)
-            {
-                bestScore = score;
-                best = ally;
-            }
-        }
-        return best;
-    }
-
-    private BattleRuntimeUnit FindBestPeelEnemy(BattleRuntimeUnit self, BattleRuntimeUnit protectedAlly)
-    {
-        if (protectedAlly == null)
-            return FindNearestLivingEnemy(self);
-
-        BattleRuntimeUnit best = null;
-        float bestScore = float.MinValue;
-
-        for (int i = 0; i < _runtimeUnits.Count; i++)
-        {
-            BattleRuntimeUnit enemy = _runtimeUnits[i];
-            if (!IsValidEnemyTarget(self, enemy))
-                continue;
-
-            bool attackingProtectedAlly = enemy.CurrentTarget == protectedAlly || enemy.PlannedTargetEnemy == protectedAlly;
-            if (!attackingProtectedAlly)
-                continue;
-
-            float distanceToAlly = Vector3.Distance(enemy.Position, protectedAlly.Position);
-            float score = 1f - Mathf.Clamp01(distanceToAlly / peelRadius);
-
-            if (score > bestScore)
-            {
-                bestScore = score;
-                best = enemy;
-            }
-        }
-
-        if (best != null)
-            return best;
-        return FindNearestLivingEnemy(self);
-    }
-
-    private BattleRuntimeUnit FindEnemyClosestToPoint(BattleRuntimeUnit self, Vector3 point)
-    {
-        BattleRuntimeUnit best = null;
-        float bestDistance = float.MaxValue;
-
-        for (int i = 0; i < _runtimeUnits.Count; i++)
-        {
-            BattleRuntimeUnit enemy = _runtimeUnits[i];
-            if (!IsValidEnemyTarget(self, enemy))
-                continue;
-
-            float distance = Vector3.Distance(enemy.Position, point);
-            if (distance < bestDistance)
-            {
-                bestDistance = distance;
-                best = enemy;
-            }
-        }
-        return best;
-    }
-
-    private Vector3 ComputeTeamCenter(bool isEnemyTeam)
-    {
-        Vector3 sum = Vector3.zero;
-        int count = 0;
-
-        for (int i = 0; i < _runtimeUnits.Count; i++)
-        {
-            BattleRuntimeUnit unit = _runtimeUnits[i];
-            if (unit == null || unit.IsCombatDisabled || unit.IsEnemy != isEnemyTeam)
-                continue;
-
-            sum += unit.Position;
-            count++;
-        }
-        return count > 0 ? sum / count : Vector3.zero;
-    }
-
-    private Vector3 ComputeEnemyPressureCenter(BattleRuntimeUnit self)
-    {
-        Vector3 weightedSum = Vector3.zero;
-        float weightSum = 0f;
-
-        for (int i = 0; i < _runtimeUnits.Count; i++)
-        {
-            BattleRuntimeUnit enemy = _runtimeUnits[i];
-            if (!IsValidEnemyTarget(self, enemy))
-                continue;
-
-            float distance = Vector3.Distance(self.Position, enemy.Position);
-            float weight = QuadraticCloseFalloff(distance, surroundRadius);
-            weightedSum += enemy.Position * weight;
-            weightSum += weight;
-        }
-
-        if (weightSum <= 0.0001f)
-            return ComputeTeamCenter(!self.IsEnemy);
-        return weightedSum / weightSum;
-    }
-
     private bool MoveTowardsTarget(BattleRuntimeUnit mover, BattleRuntimeUnit target, float tickDeltaTime)
     {
         if (mover == null || target == null)
@@ -1086,7 +743,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
         toTarget.y = 0f;
 
         float centerDistance = toTarget.magnitude;
-        float effectiveAttackDistance = GetEffectiveAttackDistance(mover, target);
+        float effectiveAttackDistance = _fieldView.GetEffectiveAttackDistance(mover, target);
 
         if (centerDistance <= effectiveAttackDistance)
             return false;
@@ -1226,133 +883,6 @@ public sealed class BattleSimulationManager : MonoBehaviour
         BalanceSO balance = ContentDatabaseProvider.Instance != null ? ContentDatabaseProvider.Instance.Balance : null;
         int rewardPerDay = balance != null ? Mathf.Max(0, balance.battleVictoryRewardPerDay) : 100;
         return Mathf.Max(0, currentDay) * rewardPerDay;
-    }
-
-    private BattleRuntimeUnit FindNearestLivingEnemy(BattleRuntimeUnit requester)
-    {
-        if (requester == null)
-            return null;
-
-        BattleRuntimeUnit nearest = null;
-        float bestDistanceSqr = float.MaxValue;
-
-        for (int i = 0; i < _runtimeUnits.Count; i++)
-        {
-            BattleRuntimeUnit candidate = _runtimeUnits[i];
-            if (!IsValidEnemyTarget(requester, candidate))
-                continue;
-
-            Vector3 delta = candidate.Position - requester.Position;
-            delta.y = 0f;
-            float distanceSqr = delta.sqrMagnitude;
-
-            if (distanceSqr < bestDistanceSqr)
-            {
-                bestDistanceSqr = distanceSqr;
-                nearest = candidate;
-            }
-        }
-        return nearest;
-    }
-
-    private BattleRuntimeUnit FindNearestLivingAlly(BattleRuntimeUnit requester)
-    {
-        if (requester == null)
-            return null;
-
-        BattleRuntimeUnit nearest = null;
-        float bestDistanceSqr = float.MaxValue;
-
-        for (int i = 0; i < _runtimeUnits.Count; i++)
-        {
-            BattleRuntimeUnit candidate = _runtimeUnits[i];
-            if (IsValidEnemyTarget(requester, candidate))
-                continue;     //반대로 적이면 스킵
-
-            Vector3 delta = candidate.Position - requester.Position;
-            delta.y = 0f;
-            float distanceSqr = delta.sqrMagnitude;
-
-            if (distanceSqr < bestDistanceSqr)
-            {
-                bestDistanceSqr = distanceSqr;
-                nearest = candidate;
-            }
-        }
-        return nearest;
-    }
-
-
-
-    private List<BattleRuntimeUnit> GetLivingUnits(bool isEnemyTeam)
-    {
-        List<BattleRuntimeUnit> result = new List<BattleRuntimeUnit>();
-        for (int i = 0; i < _runtimeUnits.Count; i++)
-        {
-            BattleRuntimeUnit unit = _runtimeUnits[i];
-            if (unit == null || unit.IsCombatDisabled || unit.IsEnemy != isEnemyTeam)
-                continue;
-            result.Add(unit);
-        }
-        return result;
-    }
-
-    private bool IsValidEnemyTarget(BattleRuntimeUnit requester, BattleRuntimeUnit candidate)
-    {
-        if (requester == null || candidate == null)
-            return false;
-        if (requester == candidate)
-            return false;
-        if (requester.IsEnemy == candidate.IsEnemy)
-            return false;
-        if (candidate.IsCombatDisabled)
-            return false;
-        return true;
-    }
-
-    private bool IsValidSameTeamAlly(BattleRuntimeUnit requester, BattleRuntimeUnit candidate)
-    {
-        if (requester == null || candidate == null)
-            return false;
-        if (requester == candidate)
-            return false;
-        if (requester.IsEnemy != candidate.IsEnemy)
-            return false;
-        if (candidate.IsCombatDisabled)
-            return false;
-        return true;
-    }
-
-    private bool IsWithinEffectiveAttackDistance(BattleRuntimeUnit attacker, BattleRuntimeUnit target)
-    {
-        if (attacker == null || target == null)
-            return false;
-
-        Vector3 delta = attacker.Position - target.Position;
-        delta.y = 0f;
-        float distance = delta.magnitude;
-
-        return distance <= (GetEffectiveAttackDistance(attacker, target) + 0.05f); //오차보정 추가
-    }
-
-    private float GetEffectiveAttackDistance(BattleRuntimeUnit attacker, BattleRuntimeUnit target)
-    {
-        if (attacker == null || target == null)
-            return 0f;
-        return attacker.BodyRadius + target.BodyRadius + attacker.AttackRange;
-    }
-
-    private float LinearFalloff(float distance, float radius)
-    {
-        if (radius <= 0f)
-            return 0f;
-        return Mathf.Max(0f, 1f - distance / radius);
-    }
-
-    private float QuadraticCloseFalloff(float distance, float radius)
-    {
-        float linear = LinearFalloff(distance, radius);
-        return linear * linear;
     }
 
     private string GetActionDisplayName(BattleActionType actionType)
