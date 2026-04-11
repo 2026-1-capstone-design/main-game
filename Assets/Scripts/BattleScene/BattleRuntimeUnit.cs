@@ -1,11 +1,11 @@
-using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// BattleRuntimeUnit은 전투 중 실시간 상태 holder다.
+// BattleRuntimeUnit은 전투 중 비주얼 렌더러다.
+// 전투 상태(HP, 쿨다운, 행동 타입 등)는 State(BattleUnitCombatState)가 담당한다.
 // prefab 구조: Root -> BattleRuntimeUnit -> Dot_ally / Dot_enemy / Dot_dead / StatusText
 // - 아군이면 Dot_ally 활성, 적군이면 Dot_enemy 활성, 죽으면 팀 상관없이 Dot_dead 활성
 // - StatusText는 항상 두 줄: 첫 줄 = 유닛 번호, 둘째 줄 = 현재 행동명
@@ -25,61 +25,71 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     [SerializeField] private Sprite AllybarSprite;
     [SerializeField] private Sprite EnemybarSprite;
 
+    // ── 순수 전투 상태 (Animator/UI 없음) ─────────────────────────
+    public BattleUnitCombatState State { get; private set; }
+
     public GameObject RuntimeRootObject => gameObject;
 
-    public int UnitNumber { get; private set; }
-    public bool IsEnemy { get; private set; }
+    // ── 정체성 프로퍼티 (State 위임) ──────────────────────────────
+    public int UnitNumber => State.UnitNumber;
+    public bool IsEnemy => State.IsEnemy;
     public BattleUnitSnapshot Snapshot { get; private set; }
 
-    public string DisplayName { get; private set; }
-    public int Level { get; private set; }
+    public string DisplayName => State.DisplayName;
+    public int Level => State.Level;
 
-    public float MaxHealth { get; private set; }
-    public float CurrentHealth { get; private set; }
+    // ── 체력 (State 위임) ─────────────────────────────────────────
+    public float MaxHealth => State.MaxHealth;
+    public float CurrentHealth => State.CurrentHealth;
+    public bool IsCombatDisabled => State.IsCombatDisabled;
 
-    public float BaseAttack;
-    public float BaseAttackSpeed;
-    public float BaseMoveSpeed;
-    public float BaseAttackRange;
+    // ── 스탯 (State 위임) ─────────────────────────────────────────
+    public float BaseAttack => State.BaseAttack;
+    public float BaseAttackSpeed => State.BaseAttackSpeed;
+    public float BaseMoveSpeed => State.BaseMoveSpeed;
+    public float BaseAttackRange => State.BaseAttackRange;
 
-    public float Attack => Mathf.Max(0f, BaseAttack + GetBuffLevel(BuffType.AttackDamage) * 10f);
-    public float AttackSpeed => Mathf.Max(0f, BaseAttackSpeed + GetBuffLevel(BuffType.AttackSpeed) * 0.2f);
-    public float MoveSpeed => Mathf.Max(0f, BaseMoveSpeed + GetBuffLevel(BuffType.MoveSpeed) * 0.5f);
-    public float AttackRange => Mathf.Max(0f, BaseAttackRange + GetBuffLevel(BuffType.AttackRange) * 0.5f);
+    public float Attack => State.Attack;
+    public float AttackSpeed => State.AttackSpeed;
+    public float MoveSpeed => State.MoveSpeed;
+    public float AttackRange => State.AttackRange;
 
-    public bool IsCombatDisabled { get; private set; }
-    public string CurrentAction { get; private set; }
-    public BattleActionType CurrentActionType { get; private set; }
-    public float KeepBehaving { get; private set; }
-    public float ActionTimer { get; private set; }
+    // ── 행동/결정 상태 (State 위임) ───────────────────────────────
+    public string CurrentAction => State.CurrentAction;
+    public BattleActionType CurrentActionType => State.CurrentActionType;
+    public float KeepBehaving => State.KeepBehaving;
+    public float ActionTimer => State.ActionTimer;
 
-    public float BodyRadius { get; private set; } = 50f;
-    public BattleRuntimeUnit CurrentTarget { get; private set; }
-    public float AttackCooldownRemaining { get; private set; }
-    public bool IsMoving { get; private set; }
-    public bool IsAttacking { get; private set; }
+    // ── 쿨다운 (State 위임) ────────────────────────────────────────
+    public float BodyRadius => State.BodyRadius;
+    public float AttackCooldownRemaining => State.AttackCooldownRemaining;
+    public float SkillCooldownRemaining => State.SkillCooldownRemaining;
 
-        // 유닛 위치/클램프 기준은 스크립트가 붙은 자기 자신이 아니라 부모 Root RectTransform(3D: BoxCollider).
-    // BattleRuntimeUnit 스크립트는 자기 부모 Root를 컨테이너로 사용한다.
+    // ── 이동/공격 플래그 (State 위임) ─────────────────────────────
+    public bool IsMoving => State.IsMoving;
+    public bool IsAttacking => State.IsAttacking;
+
+    // ── 위치 (transform 직접) ─────────────────────────────────────
+    // 유닛 위치/클램프 기준은 스크립트가 붙은 자기 자신이 아니라 부모 Root(3D: BoxCollider).
     public Vector3 Position => transform.position;
 
-    // RAW 파라미터: 매 tick마다 글로벌 상태로 계산된 원본 9개 파라미터
-    // MOD 파라미터: 현재 행동의 currentActionParameterPercents를 적용해 왜곡된 파라미터 (행동 선택 입력값)
-    [field: SerializeField] public BattleParameterSet CurrentRawParameters { get; private set; }
-    [field: SerializeField] public BattleParameterSet CurrentModifiedParameters { get; private set; }
-    [field: SerializeField] public BattleActionScoreSet CurrentScores { get; private set; }
+    // ── 파라미터 / 점수 (State 위임) ──────────────────────────────
+    public BattleParameterSet CurrentRawParameters => State.CurrentRawParameters;
+    public BattleParameterSet CurrentModifiedParameters => State.CurrentModifiedParameters;
+    public BattleActionScoreSet CurrentScores => State.CurrentScores;
+    public BattleActionType TopScoredAction => State.TopScoredAction;
+    public float TopScoredValue => State.TopScoredValue;
 
+    // ── 실행 플랜 (BRU 참조는 BRU가 직접 보유 — 순환 의존 방지) ──
     public BattleRuntimeUnit PlannedTargetEnemy { get; private set; }
     public BattleRuntimeUnit PlannedTargetAlly { get; private set; }
+    public BattleRuntimeUnit CurrentTarget { get; private set; }
 
-    // 3D 평면 좌표
-    public Vector3 PlannedDesiredPosition { get; private set; }
-    public bool HasPlannedDesiredPosition { get; private set; }
+    public Vector3 PlannedDesiredPosition => State.PlannedDesiredPosition;
+    public bool HasPlannedDesiredPosition => State.HasPlannedDesiredPosition;
 
-    [field: SerializeField] public BattleActionType TopScoredAction { get; private set; }
-    [field: SerializeField] public float TopScoredValue { get; private set; }
-
-
+    // ── 넉백 (State 위임) ─────────────────────────────────────────
+    public Vector3 CurrentKnockback => State.CurrentKnockback;
 
     [Header("Weapon Sockets")]
     [SerializeField] private Transform leftHandSocket;
@@ -87,20 +97,6 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     [SerializeField] private GameObject _spawnedLeftWeapon;
     [SerializeField] private GameObject _spawnedRightWeapon;
     [SerializeField] private Animator _myAnimation;
-
-    [Header("Weapon Skill")]
-    [SerializeField] private WeaponSkillId HaveSkill;
-    [SerializeField] private float skillCooltime;
-    [SerializeField] private skillType _skillType;
-    public float SkillCooldownRemaining { get; private set; }
-
-    [Header("Buff")]
-    [SerializeField] List<BuffType> Buffs = new List<BuffType>();
-    [SerializeField] List<float> BuffCooldownRemaining = new List<float>();
-    [SerializeField] List<int> BuffLevel = new List<int>();
-
-    [Header("special Effect")]
-    public Vector3 CurrentKnockback { get; private set; }
 
     public void Initialize(BattleUnitSnapshot snapshot, int unitNumber, bool isEnemy)
     {
@@ -111,44 +107,21 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         }
 
         Snapshot = snapshot;
-        UnitNumber = unitNumber;
-        IsEnemy = isEnemy;
 
-        DisplayName = snapshot.DisplayName;
-        Level = snapshot.Level;
-
-        MaxHealth = snapshot.MaxHealth;
-        CurrentHealth = snapshot.CurrentHealth;
-        BaseAttack = snapshot.Attack;
-        BaseAttackSpeed = snapshot.AttackSpeed;
-        BaseMoveSpeed = snapshot.MoveSpeed;
-        BaseAttackRange = snapshot.AttackRange;
-
-        IsCombatDisabled = false;
-        CurrentAction = "Idle";
-        CurrentActionType = BattleActionType.None;
-        KeepBehaving = 0f;
-        ActionTimer = 0f;
-
-        BodyRadius = 50f;
-        CurrentTarget = null;
-        AttackCooldownRemaining = 0f;
-        IsMoving = false;
-        IsAttacking = false;
-
-        CurrentRawParameters = default;
-        CurrentModifiedParameters = default;
-        CurrentScores = default;
+        // ── State 생성 및 이벤트 구독 ────────────────────────────
+        State = new BattleUnitCombatState(snapshot, unitNumber, isEnemy);
+        State.OnHealthChanged += _ => RefreshHPbar();
+        State.OnDied += HandleUnitDied;
+        State.OnActionTypeChanged += (_, _) => RefreshStatusText();
+        State.OnMovingStateChanged += isMoving => _myAnimation?.SetBool("isMoving", isMoving);
+        State.OnIdleStateEntered += () => _myAnimation?.SetBool("isMoving", false);
+        State.OnAttackTriggered += HandleAttackTriggered;
 
         PlannedTargetEnemy = null;
         PlannedTargetAlly = null;
-        PlannedDesiredPosition = Vector3.zero;
-        HasPlannedDesiredPosition = false;
+        CurrentTarget = null;
 
-        TopScoredAction = BattleActionType.None;
-        TopScoredValue = 0f;
-
-        _myAnimation = this.transform.GetComponent<Animator>();
+        _myAnimation = transform.GetComponent<Animator>();
         EquipWeaponFromSnapShot();
         EquipSkillFromSnapShot();
 
@@ -159,12 +132,9 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
 
         RefreshHPbar();
 
-
         string runtimeName = $"{(isEnemy ? "Enemy" : "Ally")}_{UnitNumber}_{DisplayName}";
         if (RuntimeRootObject != null)
-        {
             RuntimeRootObject.name = runtimeName;
-        }
 
         RefreshVisualState();
 
@@ -178,8 +148,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         }
     }
 
-
-    //시각적으로 보이도록 장착
+    // ── 무기/스킬 장착 ────────────────────────────────────────────
     private void EquipWeaponFromSnapShot()
     {
         if (Snapshot == null)
@@ -188,16 +157,13 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         if (Snapshot.LeftWeaponPrefab != null && leftHandSocket != null)
         {
             Debug.Log("왼손 무기 장착");
-
             _spawnedLeftWeapon = Instantiate(Snapshot.LeftWeaponPrefab, leftHandSocket);
             _spawnedLeftWeapon.transform.localPosition = Vector3.zero;
             _spawnedLeftWeapon.transform.localRotation = Quaternion.identity;
-
         }
         if (Snapshot.RightWeaponPrefab != null && rightHandSocket != null)
         {
             Debug.Log("오른손 무기 장착");
-
             _spawnedRightWeapon = Instantiate(Snapshot.RightWeaponPrefab, rightHandSocket);
             _spawnedRightWeapon.transform.localPosition = Vector3.zero;
             _spawnedRightWeapon.transform.localRotation = Quaternion.identity;
@@ -211,303 +177,150 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         }
     }
 
-    //스킬 관리
-    void EquipSkillFromSnapShot()
+    private void EquipSkillFromSnapShot()
     {
         if (Snapshot == null)
             return;
 
-        HaveSkill = Snapshot.WeaponSkillId;
-        AnimationClip skill_animation = AnimationManager.Instance.getAnimation(HaveSkill);
-        skillCooltime = AnimationManager.Instance.getCooltime(HaveSkill);
-        _skillType = AnimationManager.Instance.getSkillType(HaveSkill);
+        if (AnimationManager.Instance == null)
+        {
+            Debug.LogWarning("[BattleRuntimeUnit] AnimationManager.Instance is null — skipping skill setup.", this);
+            return;
+        }
 
-        //현재 runtime Animation을 덮어 씌우면 모든 스킬이 바뀜, 복사한 후 바꾸고, 그걸 줘야함
+        WeaponSkillId skillId = Snapshot.WeaponSkillId;
+        AnimationClip skillAnimation = AnimationManager.Instance.getAnimation(skillId);
+        float cooltime = AnimationManager.Instance.getCooltime(skillId);
+        skillType type = AnimationManager.Instance.getSkillType(skillId);
+
+        State.SetSkillInfo(skillId, cooltime, type);
+
         RuntimeAnimatorController current = _myAnimation.runtimeAnimatorController;
-
-        AnimatorOverrideController local;
-        local = new AnimatorOverrideController(current);
-
-        local["HumanM@MiningOneHand01_L - Ground"] = skill_animation;
-
+        AnimatorOverrideController local = new AnimatorOverrideController(current);
+        local["HumanM@MiningOneHand01_L - Ground"] = skillAnimation;
         _myAnimation.runtimeAnimatorController = local;
     }
 
-    public skillType getSkillType()
-    {
-        return _skillType;
-    }
-    public WeaponSkillId getSkill()
-    {
-        return HaveSkill;
-    }
-
-
-
-    //애니메이션 속도 조절 필요하므로, 이걸 SimulationManager에서 판정
-    public void SetAnimationSpeed(float speedMultiplier)
-    {
-        if (_myAnimation != null)
-        {
-            _myAnimation.speed = speedMultiplier;
-        }
-    }
-
-
-
-
-    public void SetCurrentAction(string actionName)
-    {
-        CurrentAction = string.IsNullOrWhiteSpace(actionName) ? "Idle" : actionName;
-        RefreshStatusText();
-    }
-
-    public void SetCurrentActionType(BattleActionType actionType, string displayName = null)
-    {
-        CurrentActionType = actionType;
-
-        if (!string.IsNullOrWhiteSpace(displayName))
-        {
-            CurrentAction = displayName;
-        }
-        else
-        {
-            CurrentAction = actionType == BattleActionType.None ? "Idle" : actionType.ToString();
-        }
-
-        RefreshStatusText();
-    }
-
-    public void SetDecisionState(float keepBehaving, float actionTimer)
-    {
-        KeepBehaving = keepBehaving;
-        ActionTimer = Mathf.Max(0f, actionTimer);
-    }
-
-    public void SetBodyRadius(float bodyRadius)
-    {
-        BodyRadius = Mathf.Max(0f, bodyRadius);
-    }
-
-    public void SetCurrentTarget(BattleRuntimeUnit target)
-    {
-        CurrentTarget = target;
-    }
-
-    public void ClearCurrentTarget()
-    {
-        CurrentTarget = null;
-    }
-
-    public void SetCurrentParameters(BattleParameterSet rawParameters, BattleParameterSet modifiedParameters)
-    {
-        CurrentRawParameters = rawParameters;
-        CurrentModifiedParameters = modifiedParameters;
-    }
-
-    public void SetCurrentScores(BattleActionScoreSet scores)
-    {
-        CurrentScores = scores;
-        scores.GetBestAction(out BattleActionType bestAction, out float bestScore);
-        TopScoredAction = bestAction;
-        TopScoredValue = bestScore;
-    }
-
-    public void SetExecutionPlan(BattleActionExecutionPlan plan)
-    {
-        PlannedTargetEnemy = plan.TargetEnemy;
-        PlannedTargetAlly = plan.TargetAlly;
-        PlannedDesiredPosition = plan.DesiredPosition;
-        HasPlannedDesiredPosition = plan.HasDesiredPosition;
-        CurrentTarget = plan.TargetEnemy;
-    }
-
-    public void ClearExecutionPlan()
+    // ── 사망 처리 (OnDied 이벤트 핸들러) ─────────────────────────
+    private void HandleUnitDied()
     {
         PlannedTargetEnemy = null;
         PlannedTargetAlly = null;
-        PlannedDesiredPosition = Vector3.zero;
-        HasPlannedDesiredPosition = false;
         CurrentTarget = null;
-    }
-
-    //공격 틱
-    public void TickAttackCooldown(float deltaTime)
-    {
-        AttackCooldownRemaining = Mathf.Max(0f, AttackCooldownRemaining - Mathf.Max(0f, deltaTime));
-    }
-
-    public void ClearAttackCooldown()
-    {
-        AttackCooldownRemaining = 0f;
-    }
-
-    public void ResetAttackCooldown()
-    {
-        float cooldown = AttackSpeed > 0f ? 1f / AttackSpeed : float.MaxValue;
-        AttackCooldownRemaining = Mathf.Max(0f, cooldown);
-    }
-
-    //스킬 틱
-    public void TickSkillCooldown(float deltaTime)
-    {
-        SkillCooldownRemaining = Mathf.Max(0f, SkillCooldownRemaining - Mathf.Max(0f, deltaTime));
-    }
-    public void ClearSkillCooldown()
-    {
-        SkillCooldownRemaining = 0f;
-    }
-    public void ResetSkillCooldown()
-    {
-        float cooldown = skillCooltime;
-        SkillCooldownRemaining = Mathf.Max(0f, cooldown);
-    }
-
-
-    //버프 틱
-    public void TickBufflCooldown(float deltaTime)
-    {
-        for (int i = Buffs.Count - 1; i >= 0; i--)
-        {
-            BuffCooldownRemaining[i] = Mathf.Max(0f, BuffCooldownRemaining[i] - Mathf.Max(0f, deltaTime));
-
-            if (BuffCooldownRemaining[i] <= 0f)
-            {
-                Buffs.RemoveAt(i);
-                BuffLevel.RemoveAt(i);
-                BuffCooldownRemaining.RemoveAt(i);
-            }
-        }
-    }
-
-    public void BuffApply(BuffType type, int level, float cool)
-    {
-        Buffs.Add(type);
-        BuffLevel.Add(level);
-        BuffCooldownRemaining.Add(cool);
-    }
-
-    public int BuffNum()
-    {
-        return Buffs.Count;
-    }
-
-
-    public int GetBuffLevel(BuffType type)
-    {
-        int count = 0;
-        for (int i = 0; i < Buffs.Count; i++)
-        {
-            if (Buffs[i] == type)
-                count++;
-        }
-        return count;
-    }
-
-
-
-
-    public void AddKnockback(Vector3 forceDirection, float forcePower)
-    {
-        Vector3 force = forceDirection.normalized * forcePower;
-        force.y = 0f;
-        CurrentKnockback += force;
-    }
-
-    //매틱마다 넉백
-    public void TickKnockback(float deltaTime, float friction = 10f)
-    {
-        if (CurrentKnockback.sqrMagnitude > 0.01f)
-        {
-            SetPosition(Position + CurrentKnockback * deltaTime);
-
-            CurrentKnockback = Vector3.Lerp(CurrentKnockback, Vector3.zero, friction * deltaTime);      //부드럽게 감소
-        }
-        else
-        {
-            CurrentKnockback = Vector3.zero;
-        }
-    }
-
-
-
-
-
-
-
-
-
-
-
-    public void SetMovementState(bool isMoving)
-    {
-        IsMoving = isMoving;
-
-        if (isMoving)
-        {
-            IsAttacking = false;
-        }
 
         if (_myAnimation != null)
-            _myAnimation.SetBool("isMoving", IsMoving);
-
-    }
-
-    //state지만, 실질적으로 때림이 가능할 때 호출
-    public void SetAttackState(bool isAttacking)
-    {
-        if (isAttacking && !IsAttacking)
         {
-            if (_myAnimation != null)
-            {
-                _myAnimation.SetTrigger("attack");
-            }
-
-            if (PlannedTargetEnemy != null)
-            {
-                FaceTarget(PlannedTargetEnemy.Position);
-            }
-            else if (CurrentTarget != null)
-            {
-                FaceTarget(CurrentTarget.Position);
-            }
-
+            _myAnimation.SetBool("isMoving", false);
+            _myAnimation.SetTrigger("die");
         }
 
-        IsAttacking = isAttacking;
-
-        if (isAttacking)
-        {
-            IsMoving = false;
-            if (_myAnimation != null)
-                _myAnimation.SetBool("isMoving", false);
-        }
+        RefreshVisualState();
     }
 
-
-
-
-    //스킬 사용시 호출
-    public void SetSkillState()
+    // ── 공격 트리거 (OnAttackTriggered 이벤트 핸들러) ────────────
+    private void HandleAttackTriggered()
     {
-        _myAnimation.SetTrigger("skill");
+        _myAnimation?.SetTrigger("attack");
+
         if (PlannedTargetEnemy != null)
             FaceTarget(PlannedTargetEnemy.Position);
         else if (CurrentTarget != null)
             FaceTarget(CurrentTarget.Position);
     }
 
-
-    public void SetIdleState()
+    // ── 애니메이션 속도 ────────────────────────────────────────────
+    public void SetAnimationSpeed(float speedMultiplier)
     {
         if (_myAnimation != null)
-            _myAnimation.SetBool("isMoving", false);
-
-        IsMoving = false;
-        IsAttacking = false;
+            _myAnimation.speed = speedMultiplier;
     }
 
-    // 3D 월드 좌표 설정 / + 회전
+    // ── 스킬 실행 비주얼 ──────────────────────────────────────────
+    public void SetSkillState()
+    {
+        _myAnimation?.SetTrigger("skill");
+        if (PlannedTargetEnemy != null)
+            FaceTarget(PlannedTargetEnemy.Position);
+        else if (CurrentTarget != null)
+            FaceTarget(CurrentTarget.Position);
+    }
+
+    // ── State 세터 위임 (SimManager 호출 진입점) ──────────────────
+
+    public void SetBodyRadius(float bodyRadius) => State.SetBodyRadius(bodyRadius);
+    public void ClearCurrentTarget() { CurrentTarget = null; }
+    public void SetCurrentTarget(BattleRuntimeUnit target) { CurrentTarget = target; }
+
+    public void SetCurrentParameters(BattleParameterSet raw, BattleParameterSet modified)
+        => State.SetCurrentParameters(raw, modified);
+
+    public void SetCurrentScores(BattleActionScoreSet scores)
+        => State.SetCurrentScores(scores);
+
+    public void SetCurrentActionType(BattleActionType actionType, string displayName = null)
+        => State.SetCurrentActionType(actionType, displayName);
+
+    public void SetCurrentAction(string actionName)
+        => State.SetCurrentAction(actionName);
+
+    public void SetDecisionState(float keepBehaving, float actionTimer)
+        => State.SetDecisionState(keepBehaving, actionTimer);
+
+    public void SetExecutionPlan(BattleActionExecutionPlan plan)
+    {
+        PlannedTargetEnemy = plan.TargetEnemy;
+        PlannedTargetAlly = plan.TargetAlly;
+        CurrentTarget = plan.TargetEnemy;
+        State.SetExecutionPlanPosition(plan.DesiredPosition, plan.HasDesiredPosition);
+    }
+
+    public void ClearExecutionPlan()
+    {
+        PlannedTargetEnemy = null;
+        PlannedTargetAlly = null;
+        CurrentTarget = null;
+        State.ClearExecutionPlanPosition();
+    }
+
+    // ── 쿨다운 위임 ────────────────────────────────────────────────
+    public void TickAttackCooldown(float deltaTime) => State.TickAttackCooldown(deltaTime);
+    public void ClearAttackCooldown() => State.ClearAttackCooldown();
+    public void ResetAttackCooldown() => State.ResetAttackCooldown();
+
+    public void TickSkillCooldown(float deltaTime) => State.TickSkillCooldown(deltaTime);
+    public void ClearSkillCooldown() => State.ClearSkillCooldown();
+    public void ResetSkillCooldown() => State.ResetSkillCooldown();
+
+    public WeaponSkillId getSkill() => State.GetSkill();
+    public skillType getSkillType() => State.GetSkillType();
+
+    // ── 버프 위임 ─────────────────────────────────────────────────
+    public void TickBufflCooldown(float deltaTime) => State.TickBufflCooldown(deltaTime);
+    public void BuffApply(BuffType type, int level, float cool) => State.BuffApply(type, level, cool);
+    public int BuffNum() => State.BuffNum();
+    public int GetBuffLevel(BuffType type) => State.GetBuffLevel(type);
+
+    // ── 넉백 위임 ─────────────────────────────────────────────────
+    public void AddKnockback(Vector3 forceDirection, float forcePower)
+        => State.AddKnockback(forceDirection, forcePower);
+
+    public void TickKnockback(float deltaTime, float friction = 10f)
+    {
+        Vector3 delta = State.ConsumeKnockbackDelta(deltaTime, friction);
+        if (delta.sqrMagnitude > 0f)
+            SetPosition(Position + delta);
+    }
+
+    // ── 체력 위임 ─────────────────────────────────────────────────
+    public void ApplyDamage(float damage) => State.ApplyDamage(damage);
+    public void ApplyHeal(float heal) => State.ApplyHeal(heal);
+
+    // ── 이동/공격 상태 위임 ───────────────────────────────────────
+    public void SetMovementState(bool isMoving) => State.SetMovementState(isMoving);
+    public void SetAttackState(bool isAttacking) => State.SetAttackState(isAttacking);
+    public void SetIdleState() => State.SetIdleState();
+
+    // ── 위치/회전 (Transform 직접) ────────────────────────────────
     public void SetPosition(Vector3 newPosition)
     {
         transform.position = newPosition;
@@ -521,23 +334,18 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
             transform.rotation = Quaternion.LookRotation(direction);
     }
 
-
-    // 깔끔해진 3D 스폰 배치 코드
     public void PlaceOnBattlefieldPlaceholder(Transform placeholder, Transform battlefield)
     {
         if (placeholder == null)
             return;
 
         if (battlefield != null)
-        {
             transform.SetParent(battlefield, false);
-        }
 
         transform.position = placeholder.position;
         transform.rotation = placeholder.rotation;
     }
 
-    // BoxCollider 기반의 3D 평면 클램핑 시스템
     public void ClampInsideBattlefield(BoxCollider battlefieldCollider)
     {
         if (battlefieldCollider == null)
@@ -557,48 +365,9 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         transform.position = pos;
     }
 
-    public void ApplyDamage(float damage)
-    {
-        if (IsCombatDisabled)
-            return;
+    // ── 배치 ──────────────────────────────────────────────────────
 
-        CurrentHealth = Mathf.Max(0f, CurrentHealth - Mathf.Max(0f, damage));
-        RefreshHPbar();
-
-        if (CurrentHealth <= 0f)
-        {
-            IsCombatDisabled = true;
-            CurrentHealth = 0f;
-            AttackCooldownRemaining = 0f;
-            CurrentAction = "Disabled";
-            CurrentActionType = BattleActionType.None;
-
-            if (_myAnimation != null)
-            {
-                _myAnimation.SetBool("isMoving", false);
-                _myAnimation.SetTrigger("die");
-            }
-
-            SetIdleState();
-            ClearExecutionPlan();
-            RefreshVisualState();
-        }
-    }
-
-    public void ApplyHeal(float heal)
-    {
-        if (IsCombatDisabled)
-            return;
-
-        CurrentHealth = Mathf.Clamp(CurrentHealth, 0f, MaxHealth);
-        CurrentHealth = Mathf.Max(0f, CurrentHealth + Mathf.Max(0f, heal));
-        RefreshHPbar();
-    }
-
-
-
-
-    // 아군/적/사망 표시와 행동 텍스트를 BattleRuntimeUnit이 직접 갱신한다.
+    // ── 비주얼 갱신 (이벤트 구독 또는 내부 호출) ─────────────────
     private void RefreshVisualState()
     {
         bool isDead = IsCombatDisabled || CurrentHealth <= 0f;
@@ -620,7 +389,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
 
     private void RefreshHPbar()
     {
-        if (HPbar == null)
+        if (HPbar == null || MaxHealth <= 0f)
             return;
         HPbar.fillAmount = CurrentHealth / MaxHealth;
     }
@@ -628,8 +397,6 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     private static void SetActive(GameObject target, bool value)
     {
         if (target != null && target.activeSelf != value)
-        {
             target.SetActive(value);
-        }
     }
 }
