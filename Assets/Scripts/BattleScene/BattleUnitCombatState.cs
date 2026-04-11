@@ -119,6 +119,23 @@ public sealed class BattleUnitCombatState
         IsAttacking = false;
     }
 
+    // ── 공격 쿨다운 ────────────────────────────────────────────────
+    public void TickAttackCooldown(float deltaTime)
+    {
+        AttackCooldownRemaining = Mathf.Max(0f, AttackCooldownRemaining - Mathf.Max(0f, deltaTime));
+    }
+
+    public void ClearAttackCooldown()
+    {
+        AttackCooldownRemaining = 0f;
+    }
+
+    public void ResetAttackCooldown()
+    {
+        float cooldown = AttackSpeed > 0f ? 1f / AttackSpeed : float.MaxValue;
+        AttackCooldownRemaining = Mathf.Max(0f, cooldown);
+    }
+
     // ── 파라미터 / 점수 세터 ──────────────────────────────────────
     public void SetCurrentParameters(BattleParameterSet rawParameters, BattleParameterSet modifiedParameters)
     {
