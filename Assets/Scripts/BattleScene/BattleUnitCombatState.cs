@@ -119,6 +119,21 @@ public sealed class BattleUnitCombatState
         IsAttacking = false;
     }
 
+    // ── 파라미터 / 점수 세터 ──────────────────────────────────────
+    public void SetCurrentParameters(BattleParameterSet rawParameters, BattleParameterSet modifiedParameters)
+    {
+        CurrentRawParameters = rawParameters;
+        CurrentModifiedParameters = modifiedParameters;
+    }
+
+    public void SetCurrentScores(BattleActionScoreSet scores)
+    {
+        CurrentScores = scores;
+        scores.GetBestAction(out BattleActionType bestAction, out float bestScore);
+        TopScoredAction = bestAction;
+        TopScoredValue = bestScore;
+    }
+
     // ── 버프 조회 (Attack/Speed 등 계산에 사용) ───────────────────
     public int GetBuffLevel(BuffType type)
     {
