@@ -31,7 +31,7 @@ public enum BuffType
 
 
 [DisallowMultipleComponent]
-public sealed class BattleSimulationManager : MonoBehaviour
+public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
 {
     [Header("Simulation")]
     public float simulationTickRate = 15f;
@@ -82,6 +82,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
 
     private BattleFieldView _fieldView;
     private Dictionary<BattleActionType, IBattleActionPlanner> _planners;
+    private BattleSkillRegistry _skillRegistry;
 
     private bool _initialized;
     private bool _battleFinished;
@@ -163,8 +164,13 @@ public sealed class BattleSimulationManager : MonoBehaviour
         _battleSceneUIManager = battleSceneUIManager;
         _payload = payload;
 
-        _fieldView = new BattleFieldView(_runtimeUnits, BuildParameterRadii(), escapeTowardTeamBlend);
-        _planners   = BuildPlannerRegistry();
+        _fieldView      = new BattleFieldView(_runtimeUnits, BuildParameterRadii(), escapeTowardTeamBlend);
+        _planners       = BuildPlannerRegistry();
+        _skillRegistry  = new BattleSkillRegistry(new IBattleSkill[]
+        {
+            new HeartAttackSkill(),
+            new MadnessSkill(),
+        });
 
         _tickAccumulator = 0f;
         _tickInterval = 1f / Mathf.Max(1f, simulationTickRate);
@@ -605,75 +611,34 @@ public sealed class BattleSimulationManager : MonoBehaviour
         }
     }
 
-    //임시 스킬 쿨이 되면 스킬 사용
     private void ExecuteSkillPhase()
     {
-        for (int i = 0; i < _runtimeUnits.Count; i++)
+        foreach (BattleRuntimeUnit unit in _runtimeUnits)
         {
-            BattleRuntimeUnit Caster = _runtimeUnits[i];
-            if (Caster == null || Caster.IsCombatDisabled)
-                continue;
+            if (unit == null || unit.IsCombatDisabled) continue;
+            if (unit.SkillCooldownRemaining > 0f) continue;
 
-            if (Caster.SkillCooldownRemaining > 0f)
-                continue;
+            IBattleSkill skill = _skillRegistry.Get(unit.State.GetSkill());
+            if (!skill.CanActivate(unit, _fieldView)) continue;
 
-            switch (Caster.State.GetSkillType())
-            {
-                case skillType.attack:
-                    BattleRuntimeUnit target = Caster.PlannedTargetEnemy;
-
-                    if (!_fieldView.IsValidEnemyTarget(Caster, target))
-                        continue;
-                    if (!_fieldView.IsWithinEffectiveAttackDistance(Caster, target))
-                        continue;
-
-                    UseSkill(Caster, target);
-
-                    break;
-                case skillType.tank:
-                    UseSkill(Caster, null);
-
-                    break;
-                case skillType.support:
-                    FindNearestLivingAlly(Caster);
-                    UseSkill(Caster, null);
-                    break;
-                case skillType.enhance:
-                    UseSkill(Caster, null);
-                    break;
-                default:
-                case skillType.None:
-                    UseSkill(Caster, null);
-                    break;
-            }
+            skill.Apply(unit, _fieldView, this);
+            unit.SetSkillState();           // 비주얼(Animator 트리거)은 BRU에 남음
+            unit.State.ResetSkillCooldown();
         }
     }
 
+    // ISkillEffectApplier 구현
+    void ISkillEffectApplier.ApplyDamage(BattleUnitCombatState target, float amount)
+        => target.ApplyDamage(amount);
 
-    private void UseSkill(BattleRuntimeUnit Caster, BattleRuntimeUnit target)
-    {
-        WeaponSkillId Use = Caster.State.GetSkill();
+    void ISkillEffectApplier.AddKnockback(BattleUnitCombatState target, Vector3 direction, float force)
+        => target.AddKnockback(direction, force);
 
-        switch (Use)
-        {
-            case WeaponSkillId.HeartAttack:
-                Vector3 pushDirection = target.Position - Caster.Position;
-                target.State.ApplyDamage(20f);
-                target.State.AddKnockback(pushDirection, 50f);
-                break;
-            case WeaponSkillId.Madness:
-                Caster.State.BuffApply(BuffType.AttackSpeed, 2, 20);
-                break;
+    void ISkillEffectApplier.ApplyHeal(BattleUnitCombatState caster, float amount)
+        => caster.ApplyHeal(amount);
 
-            default:
-            case WeaponSkillId.None:
-                Caster.State.ApplyHeal(10);
-                break;
-        }
-
-        Caster.SetSkillState();             // 비주얼(Animator 트리거)은 BRU에 남음
-        Caster.State.ResetSkillCooldown();
-    }
+    void ISkillEffectApplier.ApplyBuff(BattleUnitCombatState caster, BuffType type, int level, float duration)
+        => caster.BuffApply(type, level, duration);
 
 
 
