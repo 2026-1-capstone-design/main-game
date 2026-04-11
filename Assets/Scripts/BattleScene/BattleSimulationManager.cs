@@ -329,8 +329,9 @@ public sealed class BattleSimulationManager : MonoBehaviour
             if (unit == null || unit.IsCombatDisabled)
                 continue;
 
-            BattleActionScoreSet scores = EvaluateActionScores(unit, unit.CurrentModifiedParameters);
-            scores = ApplyEscapeReengageBias(unit, unit.CurrentRawParameters, scores);
+            WeaponType weaponType = unit.Snapshot != null ? unit.Snapshot.WeaponType : WeaponType.None;
+            BattleActionScoreSet scores = BattleActionScorer.Evaluate(unit.CurrentModifiedParameters, weaponType, actionTunings);
+            scores = BattleActionScorer.ApplyEscapeReengageBias(unit.CurrentActionType, unit.CurrentRawParameters, scores);
             unit.State.SetCurrentScores(scores);
         }
     }
@@ -700,41 +701,6 @@ public sealed class BattleSimulationManager : MonoBehaviour
         BattleParameterSet modified = tuning.currentActionParameterPercents.ApplyPercentModifiers(rawParameters);
         modified.Clamp01All();
         return modified;
-    }
-
-    private BattleActionScoreSet EvaluateActionScores(BattleRuntimeUnit unit, BattleParameterSet modifiedParameters)
-    {
-        BattleActionScoreSet scores = default;
-
-        for (int i = 0; i < actionTunings.Count; i++)
-        {
-            BattleActionTuning tuning = actionTunings[i];
-            if (tuning == null || tuning.actionType == BattleActionType.None)
-                continue;
-
-            float rawScore = tuning.baseBias + tuning.scoreWeights.Evaluate(modifiedParameters);
-            int weaponTypePercent = GetWeaponTypeAffinityPercent(unit, tuning.actionType);
-            int personalityPercent = GetPersonalityAffinityPercent(unit, tuning.actionType);
-
-            float finalScore = rawScore * (weaponTypePercent / 100f) * (personalityPercent / 100f);
-            scores.SetScore(tuning.actionType, finalScore);
-        }
-        return scores;
-    }
-
-    private int GetWeaponTypeAffinityPercent(BattleRuntimeUnit unit, BattleActionType actionType)
-    {
-        BattleActionTuning tuning = GetActionTuning(actionType);
-        if (tuning == null)
-            return 100;
-        if (unit == null || unit.Snapshot == null)
-            return 100;
-        return tuning.GetWeaponTypePercent(unit.Snapshot.WeaponType);
-    }
-
-    private int GetPersonalityAffinityPercent(BattleRuntimeUnit unit, BattleActionType actionType)
-    {
-        return 100;
     }
 
     private BattleActionExecutionPlan BuildExecutionPlan(BattleRuntimeUnit unit, BattleActionType actionType)
@@ -1160,25 +1126,6 @@ public sealed class BattleSimulationManager : MonoBehaviour
         mover.SetPosition(currentPosition + direction * moveDistance);
         mover.ClampInsideBattlefield(_battlefieldCollider);
         return true;
-    }
-
-    private BattleActionScoreSet ApplyEscapeReengageBias(BattleRuntimeUnit unit, BattleParameterSet rawParameters, BattleActionScoreSet scores)
-    {
-        if (unit == null || unit.CurrentActionType != BattleActionType.EscapeFromPressure)
-            return scores;
-
-        bool noEnemyInAttackRange = rawParameters.SelfCanAttackNow <= 0f;
-        bool pressureMostlyGone = rawParameters.SelfSurroundedByEnemies <= 0.20f;
-
-        if (!noEnemyInAttackRange || !pressureMostlyGone)
-            return scores;
-
-        scores.EscapeFromPressure *= 0.10f;
-        scores.AssassinateIsolatedEnemy *= 1.50f;
-        scores.DiveEnemyBackline *= 1.35f;
-        scores.CollapseOnCluster *= 1.30f;
-
-        return scores;
     }
 
     // 밀어내기 처리도 3D 평면을 사용합니다.
