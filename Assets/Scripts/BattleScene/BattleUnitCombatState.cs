@@ -178,7 +178,31 @@ public sealed class BattleUnitCombatState
         TopScoredValue = bestScore;
     }
 
-    // ── 버프 조회 (Attack/Speed 등 계산에 사용) ───────────────────
+    // ── 버프 시스템 ────────────────────────────────────────────────
+    public void BuffApply(BuffType type, int level, float cool)
+    {
+        _buffs.Add(type);
+        _buffLevel.Add(level);
+        _buffCooldownRemaining.Add(cool);
+    }
+
+    public void TickBufflCooldown(float deltaTime)
+    {
+        for (int i = _buffs.Count - 1; i >= 0; i--)
+        {
+            _buffCooldownRemaining[i] = Mathf.Max(0f, _buffCooldownRemaining[i] - Mathf.Max(0f, deltaTime));
+
+            if (_buffCooldownRemaining[i] <= 0f)
+            {
+                _buffs.RemoveAt(i);
+                _buffLevel.RemoveAt(i);
+                _buffCooldownRemaining.RemoveAt(i);
+            }
+        }
+    }
+
+    public int BuffNum() => _buffs.Count;
+
     public int GetBuffLevel(BuffType type)
     {
         int count = 0;
