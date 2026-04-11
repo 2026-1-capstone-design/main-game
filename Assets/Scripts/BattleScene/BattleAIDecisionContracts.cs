@@ -3,6 +3,7 @@
 */
 
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 // 전투 AI 행동 목록. "가장 가까운 살아있는 적만 추적"은 fallback일 뿐, 실제 판단은 행동 점수 시스템이 먼저 결정한다.
@@ -324,6 +325,66 @@ public struct BattleActionScoreSet
             bestAction = candidateAction;
             bestScore = candidateScore;
         }
+    }
+}
+
+// 파라미터 계산에 사용되는 반경/임계값 모음. BattleSimulationManager Inspector 필드에서 채워진다.
+[Serializable]
+public struct BattleParameterRadii
+{
+    public float surroundRadius;            // self_surrounded_by_enemies 계산 기준 반경
+    public float helpRadius;                // low_health_ally_proximity 계산 기준 반경
+    public float peelRadius;                // ally_under_focus_pressure 거리 가중치 기준 반경
+    public float frontlineGapRadius;        // ally_frontline_gap 정규화 기준 반경
+    public float isolationRadius;           // isolated_enemy_vulnerability 고립 판정 기준 반경
+    public float assassinReachRadius;       // isolated_enemy_vulnerability 자기 도달 가능 거리 기준
+    public float clusterRadius;             // enemy_cluster_density 군집 판정 기준 반경
+    public float teamCenterDistanceRadius;  // distance_to_team_center 정규화 기준 반경
+}
+
+// 파라미터 계산을 위한 유닛의 런타임 스냅샷. MonoBehaviour 없이 순수 C# 테스트 가능.
+public readonly struct BattleUnitView
+{
+    public readonly int UnitNumber;
+    public readonly bool IsEnemy;
+    public readonly Vector3 Position;
+    public readonly float CurrentHealth;
+    public readonly float MaxHealth;
+    public readonly float BodyRadius;
+    public readonly float AttackRange;
+    public readonly bool IsCombatDisabled;
+    public readonly int PlannedEnemyTargetNumber;   // -1 if none
+    public readonly int CurrentTargetNumber;         // -1 if none
+
+    public BattleUnitView(int unitNumber, bool isEnemy, Vector3 position,
+        float currentHealth, float maxHealth, float bodyRadius, float attackRange,
+        bool isCombatDisabled, int plannedEnemyTargetNumber, int currentTargetNumber)
+    {
+        UnitNumber = unitNumber;
+        IsEnemy = isEnemy;
+        Position = position;
+        CurrentHealth = currentHealth;
+        MaxHealth = maxHealth;
+        BodyRadius = bodyRadius;
+        AttackRange = attackRange;
+        IsCombatDisabled = isCombatDisabled;
+        PlannedEnemyTargetNumber = plannedEnemyTargetNumber;
+        CurrentTargetNumber = currentTargetNumber;
+    }
+
+    public static BattleUnitView From(BattleRuntimeUnit u)
+    {
+        return new BattleUnitView(
+            u.UnitNumber,
+            u.IsEnemy,
+            u.Position,
+            u.CurrentHealth,
+            u.MaxHealth,
+            u.BodyRadius,
+            u.AttackRange,
+            u.IsCombatDisabled,
+            u.PlannedTargetEnemy != null ? u.PlannedTargetEnemy.UnitNumber : -1,
+            u.CurrentTarget != null ? u.CurrentTarget.UnitNumber : -1);
     }
 }
 
