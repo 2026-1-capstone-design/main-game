@@ -468,7 +468,7 @@ public sealed class GladiatorUIManager : MonoBehaviour
         RefreshInventoryWeaponViewer();
         SetInventoryActive(true);
     }
-    //이미 장착/탈착 직후 RefreshDetail()을 호출하고 있어서 아이콘은 뜬느데 혹시 모르니 
+    //이미 장착/탈착 직후 RefreshDetail()을 호출하고 있어서 아이콘은 뜬느데 혹시 모르니
     private void CloseInventoryPanel()
     {
         _currentSelectedWeapon = null;

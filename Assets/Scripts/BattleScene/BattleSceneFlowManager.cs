@@ -155,7 +155,8 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
         for (int i = 0; i < _runtimeUnits.Count; i++)
         {
             BattleRuntimeUnit unit = _runtimeUnits[i];
-            if (unit == null) continue;
+            if (unit == null)
+                continue;
 
             GameObject rootObject = unit.RuntimeRootObject;
             if (rootObject != null)
@@ -170,21 +171,29 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
 
     private bool ValidateBootstrapSetup(BattleStartPayload payload)
     {
-        if (payload == null) return false;
-        if (runtimeUnitRootPrefab == null) return false;
-        if (battleSimulationManager == null) return false;
-        if (battleOrdersManager == null) return false;
+        if (payload == null)
+            return false;
+        if (runtimeUnitRootPrefab == null)
+            return false;
+        if (battleSimulationManager == null)
+            return false;
+        if (battleOrdersManager == null)
+            return false;
         if (battlefieldCollider == null)
         {
             Debug.LogError("[BattleSceneFlowManager] battlefieldCollider is not assigned. Please assign a BoxCollider.", this);
             return false;
         }
 
-        if (allyPlaceholders == null || allyPlaceholders.Length < 6) return false;
-        if (enemyPlaceholders == null || enemyPlaceholders.Length < 6) return false;
+        if (allyPlaceholders == null || allyPlaceholders.Length < 6)
+            return false;
+        if (enemyPlaceholders == null || enemyPlaceholders.Length < 6)
+            return false;
 
-        if (payload.AllyUnits == null || payload.AllyUnits.Count == 0) return false;
-        if (payload.EnemyUnits == null || payload.EnemyUnits.Count == 0) return false;
+        if (payload.AllyUnits == null || payload.AllyUnits.Count == 0)
+            return false;
+        if (payload.EnemyUnits == null || payload.EnemyUnits.Count == 0)
+            return false;
 
         return true;
     }
@@ -195,7 +204,8 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
         bool isEnemy,
         int unitNumberStart)
     {
-        if (snapshots == null) return false;
+        if (snapshots == null)
+            return false;
 
         int spawnCount = Mathf.Min(6, Mathf.Min(snapshots.Count, placeholders.Length));
         Transform parent = runtimeUnitRoot != null ? runtimeUnitRoot : battlefieldCollider.transform;
@@ -205,8 +215,10 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
             BattleUnitSnapshot snapshot = snapshots[i];
             Transform placeholder = placeholders[i];
 
-            if (snapshot == null) continue;
-            if (placeholder == null) return false;
+            if (snapshot == null)
+                continue;
+            if (placeholder == null)
+                return false;
 
             GameObject runtimeRoot = Instantiate(runtimeUnitRootPrefab, parent);
             BattleRuntimeUnit runtimeUnit = runtimeRoot.GetComponentInChildren<BattleRuntimeUnit>(true);
@@ -246,12 +258,14 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
     private List<BattleUnitSnapshot> CloneSnapshots(IReadOnlyList<BattleUnitSnapshot> source)
     {
         List<BattleUnitSnapshot> result = new List<BattleUnitSnapshot>();
-        if (source == null) return result;
+        if (source == null)
+            return result;
 
         for (int i = 0; i < source.Count; i++)
         {
             BattleUnitSnapshot snapshot = source[i];
-            if (snapshot != null) result.Add(snapshot.Clone());
+            if (snapshot != null)
+                result.Add(snapshot.Clone());
         }
 
         return result;

@@ -62,7 +62,7 @@ public sealed class MainFlowManager : MonoBehaviour
         _randomManager = RandomManager.Instance;
         _sceneLoader = SceneLoader.Instance;
         _battleSessionManager = BattleSessionManager.Instance;
-        
+
         resourceManager = ResourceManager.Instance;
         gladiatorManager = GladiatorManager.Instance;
         inventoryManager = InventoryManager.Instance;
@@ -77,7 +77,7 @@ public sealed class MainFlowManager : MonoBehaviour
 
         equipmentFactory.Initialize(_contentDatabaseProvider, _randomManager);
         recruitFactory.Initialize(_contentDatabaseProvider, _sessionManager, _randomManager, equipmentFactory);
-        
+
         inventoryManager.Initialize(_contentDatabaseProvider, _randomManager);
         gladiatorManager.Initialize(balance, _randomManager);
         resourceManager.Initialize(balance);

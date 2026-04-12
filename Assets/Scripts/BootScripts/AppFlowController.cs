@@ -28,7 +28,8 @@ public sealed class AppFlowController : SingletonBehaviour<AppFlowController>
     protected override void Awake()
     {
         base.Awake();
-        if (!IsPrimaryInstance) return;
+        if (!IsPrimaryInstance)
+            return;
 
         DontDestroyOnLoad(gameObject);
         ResolveDependencies();
@@ -36,8 +37,10 @@ public sealed class AppFlowController : SingletonBehaviour<AppFlowController>
 
     private IEnumerator Start()
     {
-        if (!IsPrimaryInstance) yield break;
-        if (!autoBootOnStart) yield break;
+        if (!IsPrimaryInstance)
+            yield break;
+        if (!autoBootOnStart)
+            yield break;
 
         yield return BootSequenceRoutine();
     }
@@ -45,9 +48,12 @@ public sealed class AppFlowController : SingletonBehaviour<AppFlowController>
     [ContextMenu("Run Boot Sequence")]
     public void RunBootSequenceFromContextMenu()
     {
-        if (!Application.isPlaying) return;
-        if (!IsPrimaryInstance) return;
-        if (_bootInProgress || _bootCompleted) return;
+        if (!Application.isPlaying)
+            return;
+        if (!IsPrimaryInstance)
+            return;
+        if (_bootInProgress || _bootCompleted)
+            return;
 
         StartCoroutine(BootSequenceRoutine());
     }

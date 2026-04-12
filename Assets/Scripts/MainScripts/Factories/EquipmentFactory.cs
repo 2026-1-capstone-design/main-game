@@ -288,7 +288,7 @@ public sealed class EquipmentFactory : MonoBehaviour
 
         return null;
     }
-    
+
     private void RefreshDerivedStats(OwnedWeaponData ownedWeapon)
     {
         if (ownedWeapon == null || ownedWeapon.Weapon == null)
