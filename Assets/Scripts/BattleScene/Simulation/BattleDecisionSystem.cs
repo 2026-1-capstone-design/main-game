@@ -18,7 +18,6 @@ public sealed class BattleDecisionSystem
             return;
 
         float decay = aiTuning != null ? aiTuning.commitmentDecayPerSecond : 0.5f;
-
         for (int i = 0; i < units.Count; i++)
         {
             BattleRuntimeUnit unit = units[i];
@@ -29,12 +28,6 @@ public sealed class BattleDecisionSystem
 
             BattleActionScoreSet scores = EvaluateScores(unit, aiTuning);
             unit.State.SetCurrentScores(scores);
-
-            if (unit.IsExternallyControlled)
-            {
-                decisions[i] = unit.CurrentActionType;
-                continue;
-            }
 
             if (
                 (channelSystem != null && channelSystem.IsDecisionChangeBlocked(unit))
@@ -88,6 +81,63 @@ public sealed class BattleDecisionSystem
 
             decisions[i] = unit.CurrentActionType;
         }
+    }
+
+    public BattleActionType DecideBuiltInUnit(
+        IReadOnlyList<BattleRuntimeUnit> units,
+        BattleRuntimeUnit unit,
+        BattleAITuningSO aiTuning,
+        float tickDeltaTime
+    )
+    {
+        if (unit == null || unit.IsCombatDisabled)
+            return BattleActionType.None;
+
+        float decay = aiTuning != null ? aiTuning.commitmentDecayPerSecond : 0.5f;
+        BattleActionScoreSet scores = EvaluateScores(unit, aiTuning);
+        unit.State.SetCurrentScores(scores);
+
+        BattleActionType currentAction = unit.CurrentActionType;
+        IReadOnlyList<BattleRuntimeUnit> decisionUnits = units ?? new[] { unit };
+
+        GetBestActionRespectingEscapeLimit(
+            decisionUnits,
+            unit,
+            scores,
+            BattleActionType.None,
+            out BattleActionType bestAction,
+            out float bestScore
+        );
+
+        if (currentAction == BattleActionType.None)
+        {
+            EnterAction(unit, bestAction, bestScore, aiTuning);
+            return unit.CurrentActionType;
+        }
+
+        float decayedKeepBehaving = unit.KeepBehaving - (decay * tickDeltaTime);
+        float nextActionTimer = unit.ActionTimer + tickDeltaTime;
+
+        GetBestActionRespectingEscapeLimit(
+            decisionUnits,
+            unit,
+            scores,
+            currentAction,
+            out BattleActionType bestOtherAction,
+            out float bestOtherScore
+        );
+
+        if (bestOtherScore > decayedKeepBehaving)
+        {
+            EnterAction(unit, bestOtherAction, bestOtherScore, aiTuning);
+        }
+        else
+        {
+            unit.State.SetCurrentActionType(currentAction, GetActionDisplayName(currentAction, aiTuning));
+            unit.State.SetDecisionState(decayedKeepBehaving, nextActionTimer);
+        }
+
+        return unit.CurrentActionType;
     }
 
     private static BattleActionScoreSet EvaluateScores(BattleRuntimeUnit unit, BattleAITuningSO aiTuning)

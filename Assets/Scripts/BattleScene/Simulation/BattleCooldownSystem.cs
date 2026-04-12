@@ -2,7 +2,12 @@ using System.Collections.Generic;
 
 public sealed class BattleCooldownSystem
 {
-    public void Tick(IReadOnlyList<BattleRuntimeUnit> units, float deltaTime, IBattleEffectSink effects)
+    public void Tick(
+        IReadOnlyList<BattleRuntimeUnit> units,
+        float deltaTime,
+        IBattleEffectSink effects,
+        bool includeSkillCooldown = true
+    )
     {
         if (units == null)
             return;
@@ -14,7 +19,8 @@ public sealed class BattleCooldownSystem
                 continue;
 
             unit.State.TickAttackCooldown(deltaTime);
-            unit.State.TickSkillCooldown(deltaTime);
+            if (includeSkillCooldown)
+                unit.State.TickSkillCooldown(deltaTime);
             unit.State.TickBufflCooldown(deltaTime, effects);
 
             // 공격 lock 해제 시점은 tick 기반 추정값이 아니라 실제 Animator 상태를 기준으로 맞춘다.

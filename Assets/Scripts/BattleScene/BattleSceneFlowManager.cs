@@ -15,8 +15,7 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
 {
     [Header("Spawn")]
     // RectTransform 대신 3D SphereCollider로 교체된 전장 영역
-    [SerializeField]
-    private SphereCollider battlefieldCollider;
+    public SphereCollider battlefieldCollider;
 
     [SerializeField]
     private GameObject runtimeUnitRootPrefab;
@@ -58,6 +57,9 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
     private BattleStartPayload _initialPayloadSnapshot;
 
     public IReadOnlyList<BattleRuntimeUnit> RuntimeUnits => _runtimeUnits;
+    public BattleSimulationManager BattleSimulationManager => battleSimulationManager;
+    public BattleStartPayload CurrentPayload =>
+        battleSimulationManager != null ? battleSimulationManager.InitialPayload : _initialPayloadSnapshot;
 
     // 유닛 스폰 및 초기화가 완료됐을 때 발화. 초기 진입과 F7 재시작 모두 호출된다.
     public event Action OnUnitsSpawned;
@@ -336,6 +338,7 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
     private BattleStartPayload ClonePayload(BattleStartPayload source)
     {
         List<BattleTeamEntry> teams = new List<BattleTeamEntry>(source.Teams.Count);
+        var teamSlotIndicesById = new Dictionary<BattleTeamId, IReadOnlyList<int>>();
 
         for (int i = 0; i < source.Teams.Count; i++)
         {
@@ -346,6 +349,7 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
             }
 
             teams.Add(new BattleTeamEntry(team.TeamId, team.IsPlayerOwned, CloneSnapshots(team.Units)));
+            teamSlotIndicesById[team.TeamId] = new List<int>(source.GetTeamSlotIndices(team.TeamId));
         }
 
         return new BattleStartPayload(
@@ -354,7 +358,8 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
             source.SelectedEncounterIndex,
             source.EnemyAverageLevel,
             source.PreviewRewardGold,
-            source.BattleSeed
+            source.BattleSeed,
+            teamSlotIndicesById
         );
     }
 

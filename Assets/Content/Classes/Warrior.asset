@@ -16,8 +16,8 @@ MonoBehaviour:
   className: Warrior
   baseHealth: 1000
   healthGrowthPerLevel: 100
-  baseAttack: 20
+  baseAttack: 100
   attackGrowthPerLevel: 2
-  attackSpeed: 1
+  attackSpeed: 3
   moveSpeed: 3
   attackRange: 2

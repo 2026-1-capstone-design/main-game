@@ -2,77 +2,61 @@ using System.Collections.Generic;
 
 public sealed class BattlePlanningSystem
 {
-    private readonly Dictionary<BattleActionType, IBattleActionPlanner> _planners;
-
-    public BattlePlanningSystem()
-    {
-        _planners = BuildPlannerRegistry();
-    }
-
     public void Build(
         IReadOnlyList<BattleRuntimeUnit> units,
         BattleFieldSnapshot snapshot,
+        BattleUnitPlannerRegistry planners,
+        BattleAITuningSO aiTuning,
+        float tickDeltaTime,
+        BattleControlPlan[] controlPlans,
         BattleRosterMutationSystem rosterMutationSystem = null
     )
     {
-        if (units == null || snapshot == null)
+        if (units == null || controlPlans == null)
             return;
 
         for (int i = 0; i < units.Count; i++)
         {
+            if (i >= controlPlans.Length)
+                break;
+
+            controlPlans[i] = default;
             BattleRuntimeUnit unit = units[i];
             if (unit == null || unit.IsCombatDisabled)
-                continue;
-
-            if (unit.IsExternallyControlled)
                 continue;
 
             if (rosterMutationSystem != null && rosterMutationSystem.IsCommandDisabled(unit))
                 continue;
 
-            BattleActionExecutionPlan plan;
-            if (!_planners.TryGetValue(unit.CurrentActionType, out IBattleActionPlanner planner))
+            if (planners == null || !planners.TryGet(unit.State, out IBattleUnitPlanner planner))
             {
-                plan = _planners[BattleActionType.EngageNearest].Build(unit, snapshot);
-            }
-            else
-            {
-                plan = planner.Build(unit, snapshot);
-                if (!planner.IsUsable(unit, plan))
-                {
-                    IBattleActionPlanner engagePlanner = _planners[BattleActionType.EngageNearest];
-                    BattleActionExecutionPlan engagePlan = engagePlanner.Build(unit, snapshot);
-                    plan = engagePlanner.IsUsable(unit, engagePlan) ? engagePlan : default;
-
-                    if (plan.Action == BattleActionType.None)
-                    {
-                        plan.Action = unit.CurrentActionType;
-                        plan.DesiredPosition = unit.Position;
-                    }
-                }
+                continue;
             }
 
-            unit.SetExecutionPlan(plan);
+            var context = new BattlePlanningContext(units, snapshot, aiTuning, tickDeltaTime);
+            if (!planner.TryBuildPlan(unit.State, context, out BattleControlPlan plan))
+            {
+                continue;
+            }
+
+            controlPlans[i] = plan;
+            SyncPlannedState(unit.State, plan);
         }
     }
 
-    private static Dictionary<BattleActionType, IBattleActionPlanner> BuildPlannerRegistry()
+    private static void SyncPlannedState(BattleUnitCombatState state, in BattleControlPlan plan)
     {
-        var planners = new IBattleActionPlanner[]
+        if (state == null)
+            return;
+
+        state.SetPlannedTargets(plan.TargetEnemy, plan.TargetAlly);
+        state.SetPlannedAnchor(plan.TacticalCommand.Anchor);
+        if (plan.MoveIntent == BattleMoveIntent.MoveToPosition && plan.HasDesiredPosition)
         {
-            new AssassinatePlanner(),
-            new DiveBacklinePlanner(),
-            new PeelPlanner(),
-            new EscapePlanner(),
-            new RegroupPlanner(),
-            new CollapsePlanner(),
-            new EngageNearestPlanner(),
-        };
+            state.SetExecutionPlanPosition(plan.DesiredPosition, true);
+            return;
+        }
 
-        var dictionary = new Dictionary<BattleActionType, IBattleActionPlanner>(planners.Length);
-        for (int i = 0; i < planners.Length; i++)
-            dictionary[planners[i].ActionType] = planners[i];
-
-        return dictionary;
+        state.ClearExecutionPlanPosition();
     }
 }
