@@ -1,10 +1,10 @@
 {
   "version": 1,
   "skills": {
-    "architecture-blueprint-generator": {
-      "source": "github/awesome-copilot",
+    "find-docs": {
+      "source": "upstash/context7",
       "sourceType": "github",
-      "computedHash": "9b20f13d1d96ba1c2550e1ce535f932e943c42939d3fae906a9e0d6c1bfb471a"
+      "computedHash": "d0321f889edc54a338b22615d6b00ace35f73f5879558e7183d0a70ceb819aa7"
     }
   }
 }

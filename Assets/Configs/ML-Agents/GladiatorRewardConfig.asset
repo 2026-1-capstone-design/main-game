@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 80c998aa54db4e1897d08acca359afc5, type: 3}
+  m_Name: GladiatorRewardConfig
+  m_EditorClassIdentifier: 
+  step: -0.001
+  approach: 0.0005
+  retreatDistance: 0.0005
+  chaseTarget: 0.0005
+  disengaged: -0.01
+  goodRetreat: 0.001
+  badRetreat: -0.02
+  inRangeNoAttack: -0.01
+  dangerousAttack: -0.03
+  damageTaken: -0.01
+  damageTakenPerPoint: -0.002
+  death: -2
+  damageDealt: 0.01
+  attackLanded: 0.5
+  kill: 10
+  boundary: -0.2
+  invalidAction: -1
+  actionDelta: -0.01
+  turnDelta: -0.005
+  idleJitter: -0.01
+  invalidSkill: -0.02
+  skillActivated: 0.02
+  groupWin: 20
+  groupLoss: -20
+  groupTimeout: -20
+  groupInterrupted: -20
