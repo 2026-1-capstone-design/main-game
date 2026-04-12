@@ -15,8 +15,7 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
 {
     [Header("Spawn")]
     // RectTransform 대신 3D SphereCollider로 교체된 전장 영역
-    [SerializeField]
-    private SphereCollider battlefieldCollider;
+    public SphereCollider battlefieldCollider;
 
     [SerializeField]
     private GameObject runtimeUnitRootPrefab;
@@ -58,6 +57,8 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
     private BattleStartPayload _initialPayloadSnapshot;
 
     public IReadOnlyList<BattleRuntimeUnit> RuntimeUnits => _runtimeUnits;
+    public BattleStartPayload CurrentPayload =>
+        battleSimulationManager != null ? battleSimulationManager.InitialPayload : _initialPayloadSnapshot;
 
     // 유닛 스폰 및 초기화가 완료됐을 때 발화. 초기 진입과 F7 재시작 모두 호출된다.
     public event Action OnUnitsSpawned;
