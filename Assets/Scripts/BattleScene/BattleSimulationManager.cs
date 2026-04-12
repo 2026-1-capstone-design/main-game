@@ -3,6 +3,15 @@ using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 
 
+// BattleSimulationManager 책임 (실제 전투 본체):
+// 1. fixed tick 기반 시뮬레이션 루프
+// 2. RAW 파라미터 9개 계산 → 현재 행동 기준 MOD 파라미터 보정
+// 3. 각 행동에 대해 점수 계산 → 무기 타입별 최종 배율 적용
+// 4. commitment / timer / decay 기반 행동 유지/전환 판단
+// 5. 행동별 execution plan 생성
+// 6. 이동 처리 → separation(겹침 방지) → 공격속도 기반 공격 → HP 감소/전투불능
+// 7. 전투 종료 판정 → 승리 시 pending reward 저장 → UI 결과 표시 요청
+// ※ 배속: simulationSpeedMultiplier (minSimulationSpeed ~ maxSimulationSpeed 범위로 clamp)
 public enum BuffType
 {
     //긍정 버프
@@ -36,19 +45,22 @@ public sealed class BattleSimulationManager : MonoBehaviour
     public float unitBodyRadius = 50f;
 
     [Header("AI / Action Switching")]
+    // 행동 유지 관성 감소 속도. remainingCommitment = max(0, KeepBehaving - decayPerSecond * ActionTimer)
+    // 다른 행동으로 전환하려면 bestOtherScore > currentEffectiveScore + actionSwitchThreshold 여야 한다.
     [SerializeField] private float commitmentDecayPerSecond = 0.5f;
 
+    // 행동 진입 시 KeepBehaving = chosenFinalScore * 이 값. 진입 직후 관성을 부여한다.
     private const float CommitmentEnterMultiplier = 1.2f;
 
     [Header("AI / Parameter Radii")]
-    public float surroundRadius = 350f;
-    public float helpRadius = 450f;
-    public float peelRadius = 500f;
-    public float frontlineGapRadius = 600f;
-    public float isolationRadius = 450f;
-    public float assassinReachRadius = 600f;
-    public float clusterRadius = 400f;
-    public float teamCenterDistanceRadius = 800f;
+    public float surroundRadius = 350f;            // self_surrounded_by_enemies 계산 기준 반경
+    public float helpRadius = 450f;                // low_health_ally_proximity 계산 기준 반경
+    public float peelRadius = 500f;                // ally_under_focus_pressure 거리 가중치 기준 반경
+    public float frontlineGapRadius = 600f;        // ally_frontline_gap 정규화 기준 반경
+    public float isolationRadius = 450f;           // isolated_enemy_vulnerability 고립 판정 기준 반경
+    public float assassinReachRadius = 600f;       // isolated_enemy_vulnerability 자기 도달 가능 거리 기준
+    public float clusterRadius = 400f;             // enemy_cluster_density 군집 판정 기준 반경
+    public float teamCenterDistanceRadius = 800f;  // distance_to_team_center 정규화 기준 반경
 
     [Header("AI / Position Helpers")]
     public float desiredPositionStopDistance = 8f;
@@ -217,6 +229,10 @@ public sealed class BattleSimulationManager : MonoBehaviour
         _isTemporarilyPaused = isPaused;
     }
 
+    // 전투 AI 한 tick 처리 순서:
+    // 1. 쿨다운 감소 → 2. RAW 파라미터 9개 계산 → 3. MOD 보정 → 4. 행동 점수 계산
+    // 5. 행동 유지/전환 판단 → 6. execution plan 생성 → 7. 이동 → 8. 겹침 해소
+    // 9. 공격 → 10. 스킬 → 11. 승패 판정
     private void StepSimulation(float tickDeltaTime)
     {
         TickAllCooldowns(tickDeltaTime);
