@@ -1,0 +1,56 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 80c998aa54db4e1897d08acca359afc5, type: 3}
+  m_Name: GladiatorRewardConfig
+  m_EditorClassIdentifier: 
+  step: -0.0005
+  damageDealtRatio: 1
+  damageTakenRatio: -1
+  attackLanded: 0.05
+  kill: 3
+  death: -3
+  invalidAction: -1
+  actionDelta: -0.001
+  commandSwitchPenalty: -0.02
+  roleSwitchPenalty: -0.02
+  fightModeSwitchPenalty: -0.02
+  anchorSwitchPenalty: -0.05
+  commandCommitmentReward: 0
+  roleCommitmentReward: 0
+  fightModeCommitmentReward: 0
+  anchorCommitmentReward: 0
+  minimumEffectiveRange: 0.001
+  pressureApproachReward: 0.03
+  pressureFavorableRangeReward: 0.04
+  pressureMoveIntoRangeReward: 0.02
+  pressureUnsafeDamageTakenRatio: -0.5
+  keepRangeBandMin: 0.75
+  keepRangeBandMax: 1.05
+  keepRangeBandReward: 0.04
+  keepRangeRecoverReward: 0.02
+  keepRangeTooCloseDamageTakenRatio: -0.5
+  retreatSeparationReward: 0.03
+  retreatEscapeRangeReward: 0.03
+  neutralReservedReward: 0
+  engageApproachReward: 0.01
+  engageReacquireReward: 0.01
+  regroupSafetyReward: 0.02
+  regroupCohesionReward: 0.02
+  regroupOverstayPenalty: -0.02
+  regroupWindowSteps: 8
+  groupWin: 10
+  groupLoss: -10
+  groupInterrupted: -10
+  winSpeedBonus: 1.5
+  winHpBonus: 1.5
+  timeoutMultiplier: 1.2
+  timeoutHpRatioMultiplierMax: 1.5

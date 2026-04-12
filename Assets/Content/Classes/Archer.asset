@@ -14,10 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   icon: {fileID: 0}
   className: Archer
-  baseHealth: 500
+  baseHealth: 1000
   healthGrowthPerLevel: 50
-  baseAttack: 30
+  baseAttack: 100
   attackGrowthPerLevel: 3
-  attackSpeed: 1
+  attackSpeed: 2
   moveSpeed: 3
   attackRange: 10
