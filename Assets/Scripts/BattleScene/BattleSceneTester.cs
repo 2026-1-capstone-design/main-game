@@ -69,8 +69,16 @@ public sealed class BattleSceneTester : MonoBehaviour
 
     private void RefreshAllUnitAnimations()
     {
-        BattleRuntimeUnit[] units = FindObjectsByType<BattleRuntimeUnit>(FindObjectsSortMode.None);
-        if (units == null || units.Length == 0)
+        BattleSceneFlowManager flowManager = FindFirstObjectByType<BattleSceneFlowManager>();
+        if (flowManager == null)
+        {
+            Debug.LogError("[BattleSceneTester] BattleSceneFlowManager not found during animation refresh.", this);
+            return;
+        }
+
+        var units = flowManager.RuntimeUnits;
+
+        if (units == null || units.Count == 0)
             return;
 
         if (AnimationManager.Instance == null)
