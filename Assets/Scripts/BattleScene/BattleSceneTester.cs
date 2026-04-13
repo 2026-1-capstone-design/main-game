@@ -124,10 +124,12 @@ public sealed class BattleSceneTester : MonoBehaviour
             enemySnapshots.Add(CreateSnapshotFromEntry(i + 7, true, entry));
         }
 
+        int battleSeed = preset.battleSeed != 0 ? preset.battleSeed : Random.Range(1, 1000000);
+        Debug.Log("[BattleSceneTester] Generated battle seed: " + battleSeed);
         BattleStartPayload testPayload = new BattleStartPayload(
             allySnapshots, enemySnapshots, 0,
             preset.enemyAverageLevel, preset.previewRewardGold,
-            preset.battleSeed != 0 ? preset.battleSeed : Random.Range(1, 1000000)
+            battleSeed
         );
 
         BattleSessionManager.Instance.StorePayload(testPayload);
