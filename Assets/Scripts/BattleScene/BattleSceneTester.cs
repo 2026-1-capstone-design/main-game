@@ -132,12 +132,23 @@ public sealed class BattleSceneTester : MonoBehaviour
         WeaponType resolvedType = WeaponType.None;
         GameObject leftPrefab = null;
         GameObject rightPrefab = null;
+        bool isRanged = false;
+        bool useProjectile = false;
 
         if (entry.weaponData != null)
         {
             resolvedType = entry.weaponData.weaponType;
             leftPrefab = entry.weaponData.leftWeaponPrefab;
             rightPrefab = entry.weaponData.rightWeaponPrefab;
+            isRanged = entry.weaponData.isRanged;
+            useProjectile = entry.weaponData.useProjectile;
+        }
+
+        // Weapon Overrides
+        if (entry.overrideWeaponSettings)
+        {
+            isRanged = entry.isRanged;
+            useProjectile = entry.useProjectile;
         }
 
         return new BattleUnitSnapshot(
@@ -159,9 +170,9 @@ public sealed class BattleSceneTester : MonoBehaviour
             weaponType: resolvedType,
             leftWeaponPrefab: leftPrefab,
             rightWeaponPrefab: rightPrefab,
-            weaponSkillId: WeaponSkillId.None,
-            isRanged: false,
-            useProjectile: false,
+            weaponSkillId: entry.weaponSkillId,
+            isRanged: isRanged,
+            useProjectile: useProjectile,
             portraitSprite: classSO.icon
         );
     }
