@@ -1007,7 +1007,7 @@ MonoBehaviour:
   m_CaretWidth: 1
   m_ReadOnly: 0
   m_RichText: 1
-  m_GlobalFontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_GlobalFontAsset: {fileID: 11400000, guid: d7808219f60343447bf0ff4c4912e3c7, type: 2}
   m_OnFocusSelectAll: 1
   m_ResetOnDeActivation: 1
   m_KeepTextSelectionVisible: 0
@@ -1076,8 +1076,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: Order
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: d7808219f60343447bf0ff4c4912e3c7, type: 2}
+  m_sharedMaterial: {fileID: -3930394122975906372, guid: d7808219f60343447bf0ff4c4912e3c7, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -1239,6 +1239,17 @@ MonoBehaviour:
   battleSceneUIManager: {fileID: 1946387393}
   battleOrdersManager: {fileID: 1233094450}
   verboseLog: 1
+  useTemporaryAllyAttackRangeOverride: 1
+  useTemporaryEnemyStatsMatchAllies: 1
+  enableDebugMode: 1
+  debugGladiatorClass: {fileID: 0}
+  debugAllyCount: 6
+  debugEnemyCount: 6
+  debugMaxHealth: 500
+  debugAttack: 30
+  debugAttackSpeed: 1
+  debugMoveSpeed: 3
+  debugAttackRange: 2
 --- !u!4 &235651750
 Transform:
   m_ObjectHideFlags: 0
@@ -1804,8 +1815,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: No
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: d7808219f60343447bf0ff4c4912e3c7, type: 2}
+  m_sharedMaterial: {fileID: -3930394122975906372, guid: d7808219f60343447bf0ff4c4912e3c7, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -3339,7 +3350,7 @@ MonoBehaviour:
   defaultFov: 60
   minFov: 20
   maxFov: 80
-  zoomSpeed: 35
+  zoomSpeed: 100
   zoomLookCompensationStrength: 1
 --- !u!1 &802683826
 GameObject:
@@ -3637,6 +3648,82 @@ MonoBehaviour:
   DefaultCool: 5
   HeartAttack: {fileID: 3094330708855449807, guid: 5277e5180e302184fb73653674a14c85, type: 3}
   HeartAttackCool: 10
+--- !u!1 &926568535
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 926568536}
+  - component: {fileID: 926568537}
+  m_Layer: 0
+  m_Name: IntentExecutor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &926568536
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 926568535}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &926568537
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 926568535}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e4f081fdde0cfb4b9b730d46e0a5b66, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  verboseLog: 1
+  debugIntents:
+  - allyUnitNumber: 0
+    intent: 1
+    skillPolicy: 0
+    positioning: 0
+    primaryTargetEnemyNumber: 7
+  - allyUnitNumber: 0
+    intent: 3
+    skillPolicy: 0
+    positioning: 0
+    primaryTargetEnemyNumber: 0
+  - allyUnitNumber: 0
+    intent: 3
+    skillPolicy: 0
+    positioning: 0
+    primaryTargetEnemyNumber: 0
+  - allyUnitNumber: 0
+    intent: 3
+    skillPolicy: 0
+    positioning: 0
+    primaryTargetEnemyNumber: 0
+  - allyUnitNumber: 0
+    intent: 3
+    skillPolicy: 0
+    positioning: 0
+    primaryTargetEnemyNumber: 0
+  - allyUnitNumber: 0
+    intent: 3
+    skillPolicy: 0
+    positioning: 0
+    primaryTargetEnemyNumber: 0
 --- !u!1 &957281080
 GameObject:
   m_ObjectHideFlags: 0
@@ -3958,8 +4045,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: Enter text...
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: d7808219f60343447bf0ff4c4912e3c7, type: 2}
+  m_sharedMaterial: {fileID: -3930394122975906372, guid: d7808219f60343447bf0ff4c4912e3c7, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -4880,6 +4967,9 @@ MonoBehaviour:
   appSharedToken: jinkimdis1248
   selectedLlmBackend: 0
   requestTimeoutSeconds: 30
+  geminiApiKey: 
+  geminiModel: gemini-2.5-flash-lite
+  useGeminiDirect: 1
 --- !u!4 &1233094451
 Transform:
   m_ObjectHideFlags: 0
@@ -5657,8 +5747,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: "asdgagaerher\u200B"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: d7808219f60343447bf0ff4c4912e3c7, type: 2}
+  m_sharedMaterial: {fileID: -3930394122975906372, guid: d7808219f60343447bf0ff4c4912e3c7, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -8626,6 +8716,8 @@ MonoBehaviour:
   ordersMaskRoot: {fileID: 1372637958}
   ordersPanelRoot: {fileID: 450542925}
   ordersInputField: {fileID: 220049800}
+  koreanFallbackFontAsset: {fileID: 11400000, guid: d7808219f60343447bf0ff4c4912e3c7, type: 2}
+  forceDynamicImeFont: 1
   orderSendButton: {fileID: 997834957}
   orderBackButton: {fileID: 1173536081}
   battleOrdersManager: {fileID: 1233094450}
@@ -9194,6 +9286,10 @@ MonoBehaviour:
     staffPercent: 100
     bowPercent: 100
   verboseLog: 0
+  forcedAllyActions: 000000000000000000000000000000000000000000000000
+  suspendForcedActionOnLlmOrder: 1
+  forcedActionSuspendDurationSeconds: 10
+  intentExecutor: {fileID: 926568537}
 --- !u!1 &2050258309
 GameObject:
   m_ObjectHideFlags: 0
@@ -9734,3 +9830,4 @@ SceneRoots:
   - {fileID: 1642397103}
   - {fileID: 558297239}
   - {fileID: 1052342578}
+  - {fileID: 926568536}

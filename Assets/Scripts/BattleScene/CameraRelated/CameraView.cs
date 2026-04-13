@@ -1,5 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.EventSystems;
+using TMPro;
 
 [DisallowMultipleComponent]
 public sealed class CameraView : MonoBehaviour
@@ -40,6 +42,7 @@ public sealed class CameraView : MonoBehaviour
 
     private float _currentFov;
     private bool _isInitialized;
+    private BattleSceneUIManager _battleSceneUiManager;
 
     private void Awake()
     {
@@ -83,6 +86,11 @@ public sealed class CameraView : MonoBehaviour
             return;
         }
 
+        if (ShouldBlockCameraInput())
+        {
+            return;
+        }
+
         float orbitInput = 0f;
         float lookYawInput = 0f;
         float lookPitchInput = 0f;
@@ -121,6 +129,25 @@ public sealed class CameraView : MonoBehaviour
         UpdateZoom(zoomKeyInput, scrollInput);
         UpdateLookOffset(lookYawInput, lookPitchInput);
         ApplyCameraTransform();
+    }
+
+    private bool ShouldBlockCameraInput()
+    {
+        if (_battleSceneUiManager == null)
+            _battleSceneUiManager = FindAnyObjectByType<BattleSceneUIManager>();
+
+        if (_battleSceneUiManager != null && _battleSceneUiManager.IsOrdersPanelOpen)
+            return true;
+
+        if (EventSystem.current == null)
+            return false;
+
+        GameObject selected = EventSystem.current.currentSelectedGameObject;
+        if (selected == null)
+            return false;
+
+        TMP_InputField focusedInput = selected.GetComponentInParent<TMP_InputField>();
+        return focusedInput != null && focusedInput.isFocused;
     }
 
     private void InitializeCameraState()

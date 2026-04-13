@@ -90,7 +90,10 @@ public sealed class BattleLlmOutputTemplateDto
 {
     public string thinking;
     public string dialog;
-    public BattleLlmOutputActionPlaceholderDto[] action;
+    public string intent;
+    public string target;
+    public string skill_usage_policy;
+    public string positioning;
 }
 
 [Serializable]

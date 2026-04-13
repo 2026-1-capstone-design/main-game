@@ -11,6 +11,12 @@ public sealed class BattleLlmResponseOutputDto
 {
     public string thinking;
     public string dialog;
+    public string intent;
+    public string skillUsagePolicy;
+    public string positioning;
+    public string targetUnitId;
+
+    // Legacy field kept for compatibility with older logs/responses.
     public BattleLlmResponseActionDto[] action;
 }
 

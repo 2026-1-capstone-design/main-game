@@ -60,6 +60,24 @@ public sealed class BattleSimulationManager : MonoBehaviour
     [Header("Debug")]
     public bool verboseLog = false;
 
+    [Header("Debug / Forced Action")]
+    [Tooltip("Ally 1~6 강제 액션. None이면 강제 없음.")]
+    [SerializeField] private BattleActionType[] forcedAllyActions =
+    {
+        BattleActionType.None,
+        BattleActionType.None,
+        BattleActionType.None,
+        BattleActionType.None,
+        BattleActionType.None,
+        BattleActionType.None
+    };
+    [Tooltip("켜면 LLM 명령을 받은 Ally는 일정 시간 강제 액션을 해제합니다.")]
+    [SerializeField] private bool suspendForcedActionOnLlmOrder = true;
+    [SerializeField][Min(0f)] private float forcedActionSuspendDurationSeconds = 10f;
+
+    [Header("Intent Executor")]
+    [SerializeField] private TacticalIntentExecutor intentExecutor;
+
     private readonly List<BattleRuntimeUnit> _runtimeUnits = new List<BattleRuntimeUnit>(12);
 
     // 3D 전장 클램프를 위한 BoxCollider
@@ -73,6 +91,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
     private bool _isTemporarilyPaused;
     private float _tickAccumulator;
     private float _tickInterval;
+    private readonly float[] _forcedActionSuspendUntilUnscaledTime = new float[6];
 
     public IReadOnlyList<BattleRuntimeUnit> RuntimeUnits => _runtimeUnits;
     public float SimulationSpeedMultiplier => simulationSpeedMultiplier;
@@ -81,9 +100,55 @@ public sealed class BattleSimulationManager : MonoBehaviour
     public bool IsTemporarilyPaused => _isTemporarilyPaused;
     public BattleStartPayload InitialPayload => _payload;
 
+    public void SuspendForcedActionForAllyTemporarily(int allyUnitNumber, float durationSeconds = -1f)
+    {
+        if (!suspendForcedActionOnLlmOrder)
+            return;
+
+        int allyIndex = allyUnitNumber - 1;
+        if (allyIndex < 0 || allyIndex >= _forcedActionSuspendUntilUnscaledTime.Length)
+            return;
+
+        float duration = durationSeconds >= 0f ? durationSeconds : forcedActionSuspendDurationSeconds;
+        if (duration <= 0f)
+            return;
+
+        float speed = Mathf.Max(0.0001f, simulationSpeedMultiplier);
+        float scaledRealtimeDuration = duration / speed;
+        float until = Time.unscaledTime + scaledRealtimeDuration;
+        if (until > _forcedActionSuspendUntilUnscaledTime[allyIndex])
+        {
+            _forcedActionSuspendUntilUnscaledTime[allyIndex] = until;
+        }
+    }
+
+    public bool TryGetForcedActionDebugState(int allyUnitNumber, out BattleActionType forcedAction, out bool isSuspended, out float remainingSuspendSeconds)
+    {
+        forcedAction = BattleActionType.None;
+        isSuspended = false;
+        remainingSuspendSeconds = 0f;
+
+        int allyIndex = allyUnitNumber - 1;
+        if (allyIndex < 0 || allyIndex >= 6)
+            return false;
+
+        if (forcedAllyActions != null && allyIndex < forcedAllyActions.Length)
+            forcedAction = forcedAllyActions[allyIndex];
+
+        float remaining = _forcedActionSuspendUntilUnscaledTime[allyIndex] - Time.unscaledTime;
+        if (remaining > 0f)
+        {
+            isSuspended = true;
+            remainingSuspendSeconds = remaining;
+        }
+
+        return true;
+    }
+
     private void Reset()
     {
         EnsureDefaultActionTunings();
+        EnsureForcedAllyActionsConfig();
     }
 
     private void OnValidate()
@@ -108,6 +173,24 @@ public sealed class BattleSimulationManager : MonoBehaviour
         desiredPositionStopDistance = Mathf.Max(0f, desiredPositionStopDistance);
 
         EnsureDefaultActionTunings();
+        EnsureForcedAllyActionsConfig();
+    }
+
+    private void EnsureForcedAllyActionsConfig()
+    {
+        if (forcedAllyActions == null || forcedAllyActions.Length != 6)
+        {
+            BattleActionType[] newConfig = new BattleActionType[6];
+            if (forcedAllyActions != null)
+            {
+                int copyLength = Mathf.Min(6, forcedAllyActions.Length);
+                for (int i = 0; i < copyLength; i++)
+                {
+                    newConfig[i] = forcedAllyActions[i];
+                }
+            }
+            forcedAllyActions = newConfig;
+        }
     }
 
     // BoxCollider로 파라미터 변경
@@ -165,6 +248,10 @@ public sealed class BattleSimulationManager : MonoBehaviour
             _battleSceneUIManager.Initialize();
             _battleSceneUIManager.HideAll();
         }
+
+        // Intent Executor 초기화
+        if (intentExecutor != null)
+            intentExecutor.Initialize(this);
     }
 
     private void Update()
@@ -223,6 +310,13 @@ public sealed class BattleSimulationManager : MonoBehaviour
         ComputeAllParameters();
         EvaluateAllActionScores();
         CommitOrSwitchActions(tickDeltaTime);
+
+        // ▼ 이 한 줄 추가: Intent 오버라이드 적용 (AI 결정 이후 덮어씌움)
+        if (intentExecutor != null)
+            intentExecutor.TickIntents();
+
+        ApplyForcedActionOverrides();
+
         BuildAllExecutionPlans();
         ExecuteSpecialEffect(tickDeltaTime);
         ExecuteMovementPhase(tickDeltaTime);
@@ -317,6 +411,39 @@ public sealed class BattleSimulationManager : MonoBehaviour
                 unit.SetDecisionState(decayedKeepBehaving, nextActionTimer);
                 EnsureCurrentActionIsUsableOrFallback(unit);
             }
+        }
+    }
+
+    private void ApplyForcedActionOverrides()
+    {
+        if (forcedAllyActions == null || forcedAllyActions.Length == 0)
+            return;
+
+        for (int i = 0; i < _runtimeUnits.Count; i++)
+        {
+            BattleRuntimeUnit unit = _runtimeUnits[i];
+            if (unit == null || unit.IsCombatDisabled)
+                continue;
+
+            if (unit.IsEnemy)
+                continue;
+
+            int allyIndex = unit.UnitNumber - 1;
+            if (allyIndex < 0 || allyIndex >= forcedAllyActions.Length)
+                continue;
+
+            BattleActionType forcedAction = forcedAllyActions[allyIndex];
+            if (forcedAction == BattleActionType.None)
+                continue;
+
+            if (Time.unscaledTime < _forcedActionSuspendUntilUnscaledTime[allyIndex])
+                continue;
+
+            if (unit.CurrentActionType == forcedAction)
+                continue;
+
+            float forcedScore = unit.CurrentScores.GetScore(forcedAction);
+            EnterAction(unit, forcedAction, forcedScore);
         }
     }
 
@@ -430,7 +557,49 @@ public sealed class BattleSimulationManager : MonoBehaviour
             if (unit == null || unit.IsCombatDisabled)
                 continue;
 
-            BattleActionExecutionPlan plan = BuildExecutionPlan(unit, unit.CurrentActionType);
+            // ▼ 추가: Intent 오버라이드가 있으면 타겟만 교체하고 나머지는 기존 로직
+            BattleActionType actionTypeToUse = unit.HasIntentOverride
+                ? unit.IntentOverrideActionType
+                : unit.CurrentActionType;
+
+            BattleActionExecutionPlan plan = BuildExecutionPlan(unit, actionTypeToUse);
+
+            // Intent 오버라이드 타겟 적용
+            if (unit.HasIntentOverride
+                && actionTypeToUse == BattleActionType.PeelForWeakAlly
+                && unit.IntentOverrideTarget != null
+                && !unit.IntentOverrideTarget.IsEnemy
+                && !unit.IntentOverrideTarget.IsCombatDisabled)
+            {
+                BattleRuntimeUnit supportTargetAlly = unit.IntentOverrideTarget;
+                BattleRuntimeUnit supportTargetEnemy = FindBestPeelEnemy(unit, supportTargetAlly);
+
+                plan.TargetAlly = supportTargetAlly;
+                plan.TargetEnemy = supportTargetEnemy;
+                plan.DesiredPosition = supportTargetAlly.Position;
+                plan.HasDesiredPosition = true;
+            }
+            else if (unit.HasIntentOverride
+                && actionTypeToUse != BattleActionType.EscapeFromPressure
+                && actionTypeToUse != BattleActionType.RegroupToAllies
+                && unit.IntentOverrideTarget != null
+                && unit.IntentOverrideTarget.IsEnemy
+                && !unit.IntentOverrideTarget.IsCombatDisabled)
+            {
+                plan.TargetEnemy = unit.IntentOverrideTarget;
+                plan.DesiredPosition = unit.IntentOverrideTarget.Position;
+                plan.HasDesiredPosition = true;
+            }
+
+            // Intent에서 KeepMaxRange가 지정된 경우(예: kite), 적과의 스탠드오프 거리를 유지하도록 이동 목표를 재계산한다.
+            if (unit.HasIntentOverride
+                && unit.IntentPositioning == PositioningStyle.KeepMaxRange
+                && actionTypeToUse == BattleActionType.EngageNearest
+                && IsValidEnemyTarget(unit, plan.TargetEnemy))
+            {
+                plan.DesiredPosition = ComputeKeepMaxRangePosition(unit, plan.TargetEnemy);
+                plan.HasDesiredPosition = true;
+            }
 
             if (!IsExecutionPlanUsable(unit, plan))
             {
@@ -504,6 +673,9 @@ public sealed class BattleSimulationManager : MonoBehaviour
             BattleRuntimeUnit attacker = _runtimeUnits[i];
             if (attacker == null || attacker.IsCombatDisabled)
                 continue;            //전투 불가능한 상태
+
+            if (attacker.CurrentActionType == BattleActionType.EscapeFromPressure)
+                continue;
 
             BattleRuntimeUnit target = attacker.PlannedTargetEnemy;
             if (!IsValidEnemyTarget(attacker, target))
@@ -843,6 +1015,32 @@ public sealed class BattleSimulationManager : MonoBehaviour
             DesiredPosition = target != null ? target.Position : unit.Position,
             HasDesiredPosition = target != null
         };
+    }
+
+    // KeepMaxRange 이동점 계산: 공격 사거리 근처(약 90%)를 유지하도록 목표점을 만든다.
+    private Vector3 ComputeKeepMaxRangePosition(BattleRuntimeUnit unit, BattleRuntimeUnit targetEnemy)
+    {
+        Vector3 enemyPos = targetEnemy.Position;
+        Vector3 selfPos = unit.Position;
+
+        Vector3 fromEnemyToSelf = selfPos - enemyPos;
+        fromEnemyToSelf.y = 0f;
+
+        if (fromEnemyToSelf.sqrMagnitude < 0.0001f)
+        {
+            // 같은 점에 겹친 경우, 팀 중심 반대축을 기본 이탈 방향으로 사용한다.
+            Vector3 awayFromTeamCenter = selfPos - ComputeTeamCenter(unit.IsEnemy);
+            awayFromTeamCenter.y = 0f;
+            if (awayFromTeamCenter.sqrMagnitude < 0.0001f)
+                awayFromTeamCenter = unit.IsEnemy ? Vector3.right : Vector3.left;
+
+            fromEnemyToSelf = awayFromTeamCenter;
+        }
+
+        fromEnemyToSelf.Normalize();
+        float standoffDistance = Mathf.Max(unit.AttackRange * 0.9f, unitBodyRadius * 2f);
+
+        return enemyPos + fromEnemyToSelf * standoffDistance;
     }
 
     private bool IsExecutionPlanUsable(BattleRuntimeUnit unit, BattleActionExecutionPlan plan)

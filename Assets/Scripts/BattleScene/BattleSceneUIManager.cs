@@ -30,6 +30,8 @@ public sealed class BattleSceneUIManager : MonoBehaviour
     [SerializeField] private GameObject ordersMaskRoot;
     [SerializeField] private GameObject ordersPanelRoot;
     [SerializeField] private TMP_InputField ordersInputField;
+    [SerializeField] private TMP_FontAsset koreanFallbackFontAsset;
+    [SerializeField] private bool forceDynamicImeFont = true;
     [SerializeField] private Button orderSendButton;
     [SerializeField] private Button orderBackButton;
 
@@ -67,10 +69,17 @@ public sealed class BattleSceneUIManager : MonoBehaviour
     private BattleRuntimeUnit _currentOrderTargetUnit;
     private float _cachedSpeedMultiplier = 1f;
     private bool _hasCachedSpeedMultiplier;
+    private TMP_FontAsset _runtimeImeFont;
 
     public bool IsBattleEndPanelOpen => battleEndPanelRoot != null && battleEndPanelRoot.activeSelf;
     public bool IsSurrenderPanelOpen => surrenderPanelRoot != null && surrenderPanelRoot.activeSelf;
     public bool IsOrdersPanelOpen => ordersPanelRoot != null && ordersPanelRoot.activeSelf;
+
+    private void Awake()
+    {
+        // Initialize() 이전에도 InputField가 렌더링될 수 있어 미리 폰트를 적용한다.
+        ConfigureOrderInputFontFallback();
+    }
 
     public void Initialize()
     {
@@ -95,11 +104,323 @@ public sealed class BattleSceneUIManager : MonoBehaviour
         BindButton(orderSendButton, OnOrderSendClicked);
         BindButton(orderBackButton, OnOrderBackClicked);
 
+        ConfigureOrderInputFontFallback();
+
         HideAll();
         RefreshSpeedText();
         RefreshButtonStates();
 
         _initialized = true;
+    }
+
+    private void ConfigureOrderInputFontFallback()
+    {
+        if (ordersInputField == null)
+        {
+            return;
+        }
+
+        TMP_FontAsset fallback = ResolveKoreanFontAsset();
+
+        if (fallback == null)
+        {
+            if (verboseLog)
+            {
+                Debug.LogWarning("[BattleSceneUIManager] Korean fallback font is not configured and no OS font was found.", this);
+            }
+            return;
+        }
+
+        ApplyAsPrimaryInputFont(ordersInputField.textComponent, fallback);
+        ApplyAsPrimaryInputFont(ordersInputField.placeholder as TMP_Text, fallback);
+        ordersInputField.fontAsset = fallback;
+        ApplyKoreanFontToAllInputFields(fallback);
+
+        TryAttachFallback(ordersInputField.textComponent, fallback);
+        TryAttachFallback(ordersInputField.placeholder as TMP_Text, fallback);
+
+        TMP_FontAsset textFont = ordersInputField.textComponent != null
+            ? ordersInputField.textComponent.font
+            : null;
+
+        if (TMP_Settings.fallbackFontAssets == null)
+        {
+            TMP_Settings.fallbackFontAssets = new List<TMP_FontAsset>();
+        }
+
+        if (textFont != null && !TMP_Settings.fallbackFontAssets.Contains(fallback))
+        {
+            TMP_Settings.fallbackFontAssets.Add(fallback);
+        }
+
+        ordersInputField.ForceLabelUpdate();
+
+        if (verboseLog)
+        {
+            Debug.Log($"[BattleSceneUIManager] Korean input font applied. Font={fallback.name}", this);
+        }
+    }
+
+    private TMP_FontAsset ResolveKoreanFontAsset()
+    {
+        if (forceDynamicImeFont)
+        {
+            TMP_FontAsset dynamicImeFont = GetOrCreateRuntimeImeFont();
+            if (dynamicImeFont != null)
+            {
+                return dynamicImeFont;
+            }
+        }
+
+        if (koreanFallbackFontAsset != null)
+        {
+            EnsureHangulCompositionGlyphs(koreanFallbackFontAsset);
+            if (HasRequiredInputGlyphs(koreanFallbackFontAsset))
+            {
+                return koreanFallbackFontAsset;
+            }
+
+            TMP_FontAsset dynamicFromAssigned = CreateDynamicFontFromAssignedAsset(koreanFallbackFontAsset);
+            if (dynamicFromAssigned != null)
+            {
+                return dynamicFromAssigned;
+            }
+
+            if (verboseLog)
+            {
+                Debug.LogWarning($"[BattleSceneUIManager] Assigned Korean font '{koreanFallbackFontAsset.name}' is missing Hangul composition glyphs (example: U+3141). Falling back to runtime OS font.", this);
+            }
+        }
+
+        return CreateRuntimeKoreanFontFallback();
+    }
+
+    private TMP_FontAsset GetOrCreateRuntimeImeFont()
+    {
+        if (_runtimeImeFont != null)
+        {
+            EnsureRequiredInputGlyphs(_runtimeImeFont);
+            if (HasRequiredInputGlyphs(_runtimeImeFont))
+            {
+                return _runtimeImeFont;
+            }
+        }
+
+        if (koreanFallbackFontAsset != null)
+        {
+            TMP_FontAsset dynamicFromAssigned = CreateDynamicFontFromAssignedAsset(koreanFallbackFontAsset);
+            if (dynamicFromAssigned != null)
+            {
+                _runtimeImeFont = dynamicFromAssigned;
+                return _runtimeImeFont;
+            }
+        }
+
+        _runtimeImeFont = CreateRuntimeKoreanFontFallback();
+        return _runtimeImeFont;
+    }
+
+    private TMP_FontAsset CreateDynamicFontFromAssignedAsset(TMP_FontAsset original)
+    {
+        if (original == null)
+        {
+            return null;
+        }
+
+        Font sourceFont = original.sourceFontFile;
+        if (sourceFont == null)
+        {
+            return null;
+        }
+
+        TMP_FontAsset runtimeDynamic = TMP_FontAsset.CreateFontAsset(sourceFont);
+        if (runtimeDynamic == null)
+        {
+            return null;
+        }
+
+        runtimeDynamic.name = $"{original.name}_DynamicRuntime";
+        runtimeDynamic.atlasPopulationMode = AtlasPopulationMode.Dynamic;
+        EnsureRequiredInputGlyphs(runtimeDynamic);
+
+        if (HasRequiredInputGlyphs(runtimeDynamic))
+        {
+            if (verboseLog)
+            {
+                Debug.Log($"[BattleSceneUIManager] Created dynamic Korean font from assigned asset. Source={original.name}", this);
+            }
+            return runtimeDynamic;
+        }
+
+        return null;
+    }
+
+    private void EnsureHangulCompositionGlyphs(TMP_FontAsset fontAsset)
+    {
+        if (fontAsset == null)
+        {
+            return;
+        }
+
+        if (fontAsset.atlasPopulationMode != AtlasPopulationMode.Dynamic)
+        {
+            return;
+        }
+
+        EnsureRequiredInputGlyphs(fontAsset);
+    }
+
+    private static void EnsureRequiredInputGlyphs(TMP_FontAsset fontAsset)
+    {
+        if (fontAsset == null)
+        {
+            return;
+        }
+
+        if (fontAsset.atlasPopulationMode != AtlasPopulationMode.Dynamic)
+        {
+            return;
+        }
+
+        // IME 조합 중 자모 + 기본 기호(_ 포함)를 반드시 보장한다.
+        fontAsset.TryAddCharacters("_ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎㅏㅐㅑㅒㅓㅔㅕㅖㅗㅛㅜㅠㅡㅣ가나다라마바사아자차카타파하", out _);
+    }
+
+    private static bool HasHangulCompositionGlyphs(TMP_FontAsset fontAsset)
+    {
+        if (fontAsset == null)
+        {
+            return false;
+        }
+
+        Dictionary<uint, TMP_Character> lookup = fontAsset.characterLookupTable;
+        if (lookup == null)
+        {
+            return false;
+        }
+
+        return lookup.ContainsKey('ㅇ') && lookup.ContainsKey('ㅁ') && lookup.ContainsKey('가');
+    }
+
+    private static bool HasRequiredInputGlyphs(TMP_FontAsset fontAsset)
+    {
+        if (fontAsset == null)
+        {
+            return false;
+        }
+
+        Dictionary<uint, TMP_Character> lookup = fontAsset.characterLookupTable;
+        if (lookup == null)
+        {
+            return false;
+        }
+
+        return lookup.ContainsKey('ㅇ')
+            && lookup.ContainsKey('ㅁ')
+            && lookup.ContainsKey('ㄱ')
+            && lookup.ContainsKey('가')
+            && lookup.ContainsKey('_');
+    }
+
+    private static void ApplyAsPrimaryInputFont(TMP_Text text, TMP_FontAsset font)
+    {
+        if (text == null || font == null)
+        {
+            return;
+        }
+
+        if (text.font != font)
+        {
+            text.font = font;
+        }
+
+        text.SetAllDirty();
+    }
+
+    private void ApplyKoreanFontToAllInputFields(TMP_FontAsset font)
+    {
+        if (font == null)
+        {
+            return;
+        }
+
+        TMP_InputField[] allInputFields = FindObjectsByType<TMP_InputField>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        if (allInputFields == null || allInputFields.Length == 0)
+        {
+            return;
+        }
+
+        for (int i = 0; i < allInputFields.Length; i++)
+        {
+            TMP_InputField input = allInputFields[i];
+            if (input == null)
+            {
+                continue;
+            }
+
+            ApplyAsPrimaryInputFont(input.textComponent, font);
+            ApplyAsPrimaryInputFont(input.placeholder as TMP_Text, font);
+            input.fontAsset = font;
+            TryAttachFallback(input.textComponent, font);
+            TryAttachFallback(input.placeholder as TMP_Text, font);
+            input.ForceLabelUpdate();
+        }
+    }
+
+    private TMP_FontAsset CreateRuntimeKoreanFontFallback()
+    {
+        string[] candidateFonts =
+        {
+            "Malgun Gothic",
+            "Noto Sans CJK KR",
+            "NanumGothic",
+            "Arial Unicode MS"
+        };
+
+        for (int i = 0; i < candidateFonts.Length; i++)
+        {
+            Font osFont = Font.CreateDynamicFontFromOSFont(candidateFonts[i], 32);
+            if (osFont == null)
+            {
+                continue;
+            }
+
+            TMP_FontAsset runtimeFallback = TMP_FontAsset.CreateFontAsset(osFont);
+            if (runtimeFallback != null)
+            {
+                runtimeFallback.name = $"RuntimeFallback_{candidateFonts[i].Replace(' ', '_')}";
+                runtimeFallback.atlasPopulationMode = AtlasPopulationMode.Dynamic;
+                EnsureRequiredInputGlyphs(runtimeFallback);
+                return runtimeFallback;
+            }
+        }
+
+        return null;
+    }
+
+    private static void TryAttachFallback(TMP_Text text, TMP_FontAsset fallback)
+    {
+        if (text == null || fallback == null)
+        {
+            return;
+        }
+
+        TMP_FontAsset baseFont = text.font;
+        if (baseFont == null)
+        {
+            text.font = fallback;
+            return;
+        }
+
+        if (baseFont.fallbackFontAssetTable == null)
+        {
+            baseFont.fallbackFontAssetTable = new List<TMP_FontAsset>();
+        }
+
+        if (!baseFont.fallbackFontAssetTable.Contains(fallback))
+        {
+            baseFont.fallbackFontAssetTable.Add(fallback);
+        }
     }
 
     public void ShowBattleEndPanel(BattleResolution resolution)
@@ -336,6 +657,9 @@ public sealed class BattleSceneUIManager : MonoBehaviour
         _activeModalState = ModalState.Orders;
         _currentOrderTargetMode = targetMode;
         _currentOrderTargetUnit = targetUnit;
+
+        // 패널 열기 직전 재적용: 다른 스크립트가 폰트를 덮어썼어도 복구한다.
+        ConfigureOrderInputFontFallback();
 
         SetActive(ordersMaskRoot, true);
         SetActive(ordersPanelRoot, true);

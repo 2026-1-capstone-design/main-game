@@ -1,3 +1,6 @@
+# Visual Studio 관련 파일 무시하기
+.vs/
+
 # 유니티 임시 파일 무시하기
 /[Ll]ibrary/
 /[Tt]emp/
