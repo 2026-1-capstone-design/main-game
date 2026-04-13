@@ -838,7 +838,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   useTestEnvironment: 1
-  currentPreset: {fileID: 11400000, guid: 35de94649a107034786dd1f04a02f523, type: 2}
+  currentPreset: {fileID: 11400000, guid: 0ee19b80213f78a42b9dd2a69a3168b7, type: 2}
 --- !u!4 &180414084
 Transform:
   m_ObjectHideFlags: 0
