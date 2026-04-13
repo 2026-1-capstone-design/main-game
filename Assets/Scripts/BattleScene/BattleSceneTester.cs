@@ -16,18 +16,25 @@ public sealed class BattleSceneTester : MonoBehaviour
         if (!useTestEnvironment)
             return;
 
+        // 이미 Payload가 있다면(정상적인 게임 흐름) 테스트 데이터를 덮어쓰지 않음
         if (BattleSessionManager.Instance != null && BattleSessionManager.Instance.HasPayload)
             return;
 
+        // BattleSessionManager가 씬에 없다면 생성
         if (BattleSessionManager.Instance == null)
         {
-            GameObject managerObj = new GameObject("Temp_BattleSessionManager");
-            managerObj.AddComponent<BattleSessionManager>();
+            var existingManager = FindFirstObjectByType<BattleSessionManager>();
+            if (existingManager == null)
+            {
+                GameObject managerObj = new GameObject("Temp_BattleSessionManager");
+                managerObj.AddComponent<BattleSessionManager>();
+                Debug.Log("[BattleSceneTester] Created temporary BattleSessionManager.");
+            }
         }
 
         if (currentPreset == null)
         {
-            Debug.LogWarning("[BattleSceneTester] No preset selected!");
+            Debug.LogWarning("[BattleSceneTester] No preset selected! Battle will not start correctly if no payload exists.");
             return;
         }
 
@@ -47,24 +54,20 @@ public sealed class BattleSceneTester : MonoBehaviour
         }
 
         // 2. 유닛 생성 직후 애니메이션 강제 새로고침
-        // AnimationManager.Instance가 늦게 로드되어 애니메이션이 안 바뀌는 현상 방지
-        Invoke(nameof(RefreshAllUnitAnimations), 0.1f); // 아주 짧은 지연 후 실행
+        // AnimationManager.Instance가 늦게 로드되거나, 유닛 스폰 시점이 다를 수 있으므로 지연 호출
+        CancelInvoke(nameof(RefreshAllUnitAnimations));
+        Invoke(nameof(RefreshAllUnitAnimations), 0.1f);
+        Invoke(nameof(RefreshAllUnitAnimations), 0.5f); // 한 번 더 실행하여 확실히 적용
     }
 
     private void RefreshAllUnitAnimations()
     {
         BattleRuntimeUnit[] units = FindObjectsByType<BattleRuntimeUnit>(FindObjectsSortMode.None);
-        if (units.Length == 0)
-        {
-            Debug.Log("[BattleSceneTester] No units found to refresh animations.");
+        if (units == null || units.Length == 0)
             return;
-        }
 
         if (AnimationManager.Instance == null)
-        {
-            Debug.LogError("[BattleSceneTester] AnimationManager.Instance is still null! Cannot refresh animations.");
             return;
-        }
 
         foreach (var unit in units)
         {
@@ -75,8 +78,9 @@ public sealed class BattleSceneTester : MonoBehaviour
             if (animator == null)
                 continue;
 
+            // 이미 애니메이션이 적용되어 있을 수도 있지만, 테스트 환경에서는 강제로 덮어씌움
             AnimatorOverrideController weaponMotion = AnimationManager.Instance.GetControllerByWeaponType(unit.Snapshot.WeaponType);
-            if (weaponMotion != null)
+            if (weaponMotion != null && animator.runtimeAnimatorController != weaponMotion)
             {
                 animator.runtimeAnimatorController = weaponMotion;
                 Debug.Log($"[BattleSceneTester] Force-applied {unit.Snapshot.WeaponType} animation to {unit.name}");
@@ -112,6 +116,7 @@ public sealed class BattleSceneTester : MonoBehaviour
         );
 
         BattleSessionManager.Instance.StorePayload(testPayload);
+        Debug.Log($"[BattleSceneTester] Stored test payload: {preset.scenarioName} (Ally:{allySnapshots.Count}, Enemy:{enemySnapshots.Count})");
     }
 
     private BattleUnitSnapshot CreateSnapshotFromEntry(int id, bool isEnemy, BattleTestUnitConfig entry)
