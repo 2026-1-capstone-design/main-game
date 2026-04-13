@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Archer
   m_EditorClassIdentifier: 
   icon: {fileID: 0}
-  className: Gladiator
+  className: Archer
   baseHealth: 500
   healthGrowthPerLevel: 50
   baseAttack: 30

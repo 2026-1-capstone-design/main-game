@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Tanker
   m_EditorClassIdentifier: 
   icon: {fileID: 0}
-  className: Gladiator
+  className: Tanker
   baseHealth: 2000
   healthGrowthPerLevel: 200
   baseAttack: 10

@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Assassin
   m_EditorClassIdentifier: 
   icon: {fileID: 0}
-  className: Gladiator
+  className: Assassin
   baseHealth: 750
   healthGrowthPerLevel: 75
   baseAttack: 30
