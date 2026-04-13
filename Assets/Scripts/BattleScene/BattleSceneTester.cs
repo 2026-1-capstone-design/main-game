@@ -39,6 +39,20 @@ public sealed class BattleSceneTester : MonoBehaviour
         }
 
         CreateAndStoreTestDataFromPreset(currentPreset);
+
+        // 모든 Awake가 Start보다 먼저 실행되므로, 여기서 구독하면 FlowManager.Start() 발화 전에 등록이 보장됨
+        var flowManager = FindFirstObjectByType<BattleSceneFlowManager>();
+        if (flowManager != null)
+            flowManager.OnUnitsSpawned += RefreshAllUnitAnimations;
+        else
+            Debug.LogWarning("[BattleSceneTester] BattleSceneFlowManager not found. Animation refresh will be skipped.");
+    }
+
+    private void OnDestroy()
+    {
+        var flowManager = FindFirstObjectByType<BattleSceneFlowManager>();
+        if (flowManager != null)
+            flowManager.OnUnitsSpawned -= RefreshAllUnitAnimations;
     }
 
     private void Start()
@@ -46,18 +60,11 @@ public sealed class BattleSceneTester : MonoBehaviour
         if (!useTestEnvironment)
             return;
 
-        // 1. 시뮬레이션 속도 강제 설정
         BattleSimulationManager simManager = FindFirstObjectByType<BattleSimulationManager>();
         if (simManager != null && simManager.simulationSpeedMultiplier <= 0)
         {
             simManager.simulationSpeedMultiplier = 1f;
         }
-
-        // 2. 유닛 생성 직후 애니메이션 강제 새로고침
-        // AnimationManager.Instance가 늦게 로드되거나, 유닛 스폰 시점이 다를 수 있으므로 지연 호출
-        CancelInvoke(nameof(RefreshAllUnitAnimations));
-        Invoke(nameof(RefreshAllUnitAnimations), 0.1f);
-        Invoke(nameof(RefreshAllUnitAnimations), 0.5f); // 한 번 더 실행하여 확실히 적용
     }
 
     private void RefreshAllUnitAnimations()
