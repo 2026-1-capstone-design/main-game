@@ -7,7 +7,7 @@ public sealed class SceneLoader : SingletonBehaviour<SceneLoader>
 {
     [SerializeField] private bool verboseLog = true;
 
-    private bool _isLoading;
+    private bool _isLoading;        // 현재 씬 로드가 진행 중인지 나타내는 플래그. 중복 로드를 막음
 
     public bool IsLoading => _isLoading;
 
@@ -21,6 +21,7 @@ public sealed class SceneLoader : SingletonBehaviour<SceneLoader>
         return TryLoadScene(sceneName, LoadSceneMode.Single);
     }
 
+    // SceneLoader 자기 자신이 코루틴 호스트가 되어 씬 로드를 시작히ㅏㅁ
     public bool TryLoadScene(string sceneName, LoadSceneMode loadMode = LoadSceneMode.Single)
     {
         if (_isLoading)
@@ -36,7 +37,7 @@ public sealed class SceneLoader : SingletonBehaviour<SceneLoader>
         StartCoroutine(LoadSceneAsync(sceneName, loadMode));
         return true;
     }
-
+    // 실제 비동기 씬 로드 본체
     public IEnumerator LoadSceneAsync(string sceneName, LoadSceneMode loadMode = LoadSceneMode.Single)
     {
         if (_isLoading)

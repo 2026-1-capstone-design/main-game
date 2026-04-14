@@ -5,11 +5,11 @@ using UnityEngine;
 public sealed class AppFlowController : SingletonBehaviour<AppFlowController>
 {
     [Header("Boot Flow")]
-    [SerializeField] private string mainSceneName = "Main";
-    [SerializeField] private bool autoBootOnStart = true;
+    [SerializeField] private string mainSceneName = "Main";     // 부팅 시퀀스가 끝난 뒤 최초로 진입할 메인 씬 이름
+    [SerializeField] private bool autoBootOnStart = true;       // 플레이 시작과 동시에 전체 부팅 절차를 자동으로 실행할지 결정.
 
     [Header("Debug")]
-    [SerializeField] private bool useForcedSeedInEditor = false;
+    [SerializeField] private bool useForcedSeedInEditor = false;        // 에디터 테스트에서 세션 랜덤 결과를 고정 재현할지 결정.
     [SerializeField] private int forcedSeed = 12345;
     [SerializeField] private bool verboseLog = true;
 
@@ -20,8 +20,8 @@ public sealed class AppFlowController : SingletonBehaviour<AppFlowController>
     private ContentDatabaseProvider _contentDatabaseProvider;
     private BattleSessionManager _battleSessionManager;
 
-    private bool _bootInProgress;
-    private bool _bootCompleted;
+    private bool _bootInProgress;       // 부팅 시퀀스 중복 실행 막기 위한 플래그
+    private bool _bootCompleted;        // 이건 부팅 완료 플래그
 
     public bool IsBootCompleted => _bootCompleted;
 
@@ -68,6 +68,7 @@ public sealed class AppFlowController : SingletonBehaviour<AppFlowController>
         _battleSessionManager = GetComponent<BattleSessionManager>();
     }
 
+    // AFC에 필수 매니저와 메인 씬 이름이 모두 준비됐는지 검사함
     private bool ValidateDependencies()
     {
         bool ok = true;
@@ -117,6 +118,7 @@ public sealed class AppFlowController : SingletonBehaviour<AppFlowController>
         return ok;
     }
 
+    // DB, 오디오, 세션, 랜덤을 초기화한 뒤 메인 씬으로 넘기는 앱 전체 부팅 절차
     private IEnumerator BootSequenceRoutine()
     {
         if (_bootInProgress || _bootCompleted)

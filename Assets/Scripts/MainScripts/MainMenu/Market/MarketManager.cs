@@ -6,6 +6,7 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
 {
     [SerializeField] private bool verboseLog = true;
 
+    // _gladiatorOffers 와ㅓ _weaponOffers 모두 날짜가 바뀌기 전까지만 유지되는 하루 단위 캐시
     private readonly List<MarketGladiatorOffer> _gladiatorOffers = new List<MarketGladiatorOffer>();
     private readonly List<MarketWeaponOffer> _weaponOffers = new List<MarketWeaponOffer>();
 
@@ -15,7 +16,8 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
     private InventoryManager _inventoryManager;
     private ResourceManager _resourceManager;
 
-    private int _initializedDay = -1;       //day 캐싱용
+    private int _initializedDay = -1;       // 현재 시장 재고가 어느 날짜 기준으로 생성됐는지 나타냄
+                                            // 같은 날 재진입 시(배틀 종료 후 등_) 재생성을 막는 기준값
     public int InitializedDay => _initializedDay;
 
     private bool _initialized;
@@ -23,6 +25,8 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
     public IReadOnlyList<MarketGladiatorOffer> GladiatorOffers => _gladiatorOffers;
     public IReadOnlyList<MarketWeaponOffer> WeaponOffers => _weaponOffers;
 
+    // 시장이 참조할 factory와 실제 보유/골드 매니저를 연결
+    // 마켓 매니저가 DDOL 매니저라서 메인씬 재진입 시 scene 의존성을 다시 꽂아주는 역할도 함
     public void Initialize(
     RecruitFactory recruitFactory,
     EquipmentFactory equipmentFactory,
@@ -100,6 +104,8 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
         DontDestroyOnLoad(gameObject);
     }
 
+    // 해당 날짜의 시장 재고를 생성
+    // 이미 같은 날짜에 재고가 있으면 그대로 유지, 날짜가 바뀌었을 때만 새로 만든다.
     public void InitializeDay(int currentDay)
     {
         if (!_initialized)
@@ -201,6 +207,9 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
         return Mathf.Max(0, weapon.Level * balance.weaponSellPricePerLevel);
     }
 
+    // 검투사 구매를 책임지는 함수.
+    // 골드 차감 -> preview를 실제 보유 검투사로 복사 추가 -> 슬롯 sold 처리 순서로 진행된다.
+    // 중간 실패 시 차감한 골드는 즉시 롤백
     public bool TryBuyGladiator(int slotIndex, out string failReason)
     {
         failReason = string.Empty;
@@ -271,6 +280,7 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
         return true;
     }
 
+    // TryBuyGladiato 플로우 참고.
     public bool TryBuyWeapon(int slotIndex, out string failReason)
     {
         failReason = string.Empty;
@@ -341,6 +351,8 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
         return true;
     }
 
+    // 보유 검투사를 판매하고 골드를 지급.
+    // 판매 과정에서 GladiatorManager가 장착 무기를 먼저 자동 해제함.
     public bool TrySellGladiator(OwnedGladiatorData gladiator, out int sellPrice, out string failReason)
     {
         sellPrice = 0;
@@ -383,6 +395,8 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
         return true;
     }
 
+    // 보유 무기를 판매하고 골드를 지급한다.
+    // 장착 중 무기 판매를 막기 위해 삭제 전에 현재 owner를 먼저 검사함
     public bool TrySellWeapon(OwnedWeaponData weapon, out int sellPrice, out string failReason)
     {
         sellPrice = 0;

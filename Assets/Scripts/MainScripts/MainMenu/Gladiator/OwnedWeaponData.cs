@@ -1,3 +1,7 @@
+/*
+OwnedGladiatorData 와 같은 형식
+*/
+
 using UnityEngine;
 
 public sealed class OwnedWeaponData

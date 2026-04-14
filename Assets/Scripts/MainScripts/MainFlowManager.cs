@@ -1,3 +1,9 @@
+/*
+주석들만으로 한번에 파악하기 힘든 긴 플로우나 복잡한 플로우들의 경우 사전의 형태로 Scripts/Mainscripts/ImportantFlows 에 정리해놨습니다.
+기본적으로 주석들만 가지고도 플로우를 따라가면 파악에는 문제 없을 것 같지만,
+한눈에 해당 플로우의 진입점부터 최종 목적지까지 파악하면 편할 것 같아서 따로 적어놨습니다. 목차를 보고 그대로 아래에서 찾아보시면 됩니다
+*/
+
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -5,6 +11,9 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public sealed class MainFlowManager : MonoBehaviour
 {
+
+    // 현재 어떤 UI가 통제권을 가지고 있는지 나타냄.
+    // 메인/시장/검투사/연구/전투준비 화면 간 전환을 제어함. 이후 메뉴 추가 시 추가 필요.
     private enum UiOwner
     {
         None = 0,
@@ -32,7 +41,7 @@ public sealed class MainFlowManager : MonoBehaviour
     [SerializeField] private EquipmentFactory equipmentFactory;
 
     [Header("Battle Scene")]
-    [SerializeField] private string battleSceneName = "BattleScene";
+    [SerializeField] private string battleSceneName = "BattleScene";        // 전투 시작 시 실제로 로드할 배틀씬 이름
 
     [Header("Debug")]
     [SerializeField] private bool verboseLog = true;
@@ -50,6 +59,9 @@ public sealed class MainFlowManager : MonoBehaviour
         InitializeScene();
     }
 
+    // 메인씬 전체 초기화 함수
+    // DDOL 매니저 재연결, factory 초기화, 보유 검투사/장비 스타터 지급,
+    // 시장/전투 후보 초기화, 각 UI 초기화, 펜딩 전투 보상 지급까지 한 번에 수행
     private void InitializeScene()
     {
         if (_initialized)
@@ -361,6 +373,8 @@ public sealed class MainFlowManager : MonoBehaviour
         }
     }
 
+    // 현재 선택된 전투 후보와 보유 검투사로 전투 시작용 payload를 만든다
+    // 그 payload를 boot scene DDOL인 BattleSessionManager에 전달해 저장한 뒤 배틀씬 로드를 시작
     public void HandleBattleStartRequested()
     {
         if (_uiOwner != UiOwner.BattlePreparation)
@@ -424,6 +438,8 @@ public sealed class MainFlowManager : MonoBehaviour
         }
     }
 
+    // 전투 진입 직전에 아군/적군 snapshot과 battleSeed를 묶어
+    // BattleStartPayload를 완성함.
     private bool TryBuildBattleStartPayload(out BattleStartPayload payload)
     {
         payload = null;
@@ -460,6 +476,9 @@ public sealed class MainFlowManager : MonoBehaviour
         return true;
     }
 
+    // 현재 보유 검투사 목록의 앞 1~6명을 전투용 아군 snapshot으로 복사함.
+    // 프로토타입에서 전투에 들어가는 건 실제 인스턴스가 아니라, 각 유닛의 정보를 복사한 스냅샷임. (정보의 변형이나 버그를 방지, 오버헤드 감소)
+    // 즉, 실제 보유 데이터 자체를 넘기지 않고 전투 시작용 복사본을 만든다는 것
     private bool TryBuildAllySnapshotsForBattle(out List<BattleUnitSnapshot> allySnapshots)
     {
         allySnapshots = new List<BattleUnitSnapshot>(6);
@@ -504,6 +523,7 @@ public sealed class MainFlowManager : MonoBehaviour
         return true;
     }
 
+    // 선택된 전투 후보가 들고 있는 적 preview를 실제 전투용 적 snapshot 리스트로 복사
     private bool TryBuildEnemySnapshotsForBattle(
         BattleEncounterPreview encounter,
         out List<BattleUnitSnapshot> enemySnapshots)
@@ -546,6 +566,9 @@ public sealed class MainFlowManager : MonoBehaviour
         return true;
     }
 
+    // 전투 payload를 BattleSessionManager에 저장하고,
+    // 배틀씬 로드를 시작한 뒤 '오늘 전투 사용 처리'까지 수행함
+    // 로드 시작 실패 시 방어로써 저장된 payload는 즉시 비움
     private IEnumerator LoadBattleSceneRoutine(BattleStartPayload payload)
     {
         if (payload == null)
@@ -598,52 +621,6 @@ public sealed class MainFlowManager : MonoBehaviour
 
         yield break;
     }
-    /*
-    public void HandleBattleConfirmRequested()
-    {
-        if (!battleManager.IsBattlePanelOpen)
-        {
-            return;
-        }
-
-        BattleResolution resolution = battleManager.ResolveCurrentBattle();
-        battleUIManager.ShowResult(resolution);
-        ApplyUiState();
-
-        if (verboseLog)
-        {
-            Debug.Log($"[MainFlowManager] Battle resolved. Win={resolution.WasWin}, PendingReward={resolution.PendingReward}", this);
-        }
-    }
-    */
-    /*
-    public void HandleBattleResultNextRequested()
-    {
-        if (!battleManager.IsResultOpen)
-        {
-            return;
-        }
-
-        int paidGold = resourceManager.GrantPendingBattleReward(_sessionManager);
-
-        if (paidGold > 0)
-        {
-            Debug.Log("exp granted");
-            gladiatorManager.GrantVictoryXpToAllOwnedGladiators();
-        }
-
-        battleManager.FinishResultFlow();
-        battleUIManager.CloseAll();
-        _uiOwner = UiOwner.Main;
-
-        ApplyUiState();
-
-        if (verboseLog)
-        {
-            Debug.Log($"[MainFlowManager] Battle result confirmed. PaidGold={paidGold}", this);
-        }
-    }
-    */
 
     public void HandleMissionMenuRequested()
     {
@@ -689,6 +666,8 @@ public sealed class MainFlowManager : MonoBehaviour
         }
     }
 
+    // 하루 종료 처리.
+    // 날짜를 1일 진행시키고, 새 날짜 기준으로 시장과 전투 후보를 다시 생성함
     public void HandleEodRequested()
     {
         if (_uiOwner != UiOwner.Main)
@@ -708,6 +687,8 @@ public sealed class MainFlowManager : MonoBehaviour
         }
     }
 
+    // 현재 _uiOwner와 전투 사용 여부를 기준으로
+    // 메인 메뉴, 전투 버튼, EOD 버튼의 활성 상태를 다시 맞춘다.
     private void ApplyUiState()
     {
         bool isMainOwner = _uiOwner == UiOwner.Main;
@@ -723,6 +704,8 @@ public sealed class MainFlowManager : MonoBehaviour
         }
     }
 
+    // 메인씬 재진입 시 저장돼 있던 펜딩 전투 보상을 실제 골드로 지급함
+    // 리팩토링 대상: 지급 성공이 돼야 검투사 전체 승리 XP도 여기서 함께 주어짐.
     private void TryGrantPendingBattleRewardOnMainSceneEnter()
     {
         if (_sessionManager == null)
