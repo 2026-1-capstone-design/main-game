@@ -6,12 +6,14 @@ public sealed class GladiatorManager : SingletonBehaviour<GladiatorManager>
 {
     [SerializeField] private bool verboseLog = true;
 
-    private readonly List<OwnedGladiatorData> _ownedGladiators = new List<OwnedGladiatorData>();
+    private readonly List<OwnedGladiatorData> _ownedGladiators = new List<OwnedGladiatorData>();        // 플레이어가 실제로 보유 중인 검투사 목록.
+                                                                                                        // 시장 preview나 전투 snapshot과 분리된 실제 소유 데이터다.
+                                                                                                        // 이렇게 분리한 이유는, 다른 로직들 내에서 어떤 방식으로든 변형되는 걸 방지하기 위해
 
     private BalanceSO _balance;
     private RandomManager _randomManager;
     private bool _initialized;
-    private int _nextRuntimeId = 1;
+    private int _nextRuntimeId = 1;            // 새로 보유하게 되는 검투사에게 부여할 고유 런타임 ID
 
     public IReadOnlyList<OwnedGladiatorData> OwnedGladiators => _ownedGladiators;
 
@@ -63,7 +65,9 @@ public sealed class GladiatorManager : SingletonBehaviour<GladiatorManager>
     {
         return _ownedGladiators.Count;
     }
-    //장착 무기도 자동 해제
+
+    // 보유 검투사를 목록에서 제거함.
+    // 제거 전에 장착 무기를 자동 해제해서 장착 참조가 남지 않게 한다.
     public bool RemoveOwnedGladiator(OwnedGladiatorData gladiator)
     {
         if (!_initialized)
@@ -102,6 +106,8 @@ public sealed class GladiatorManager : SingletonBehaviour<GladiatorManager>
         return true;
     }
 
+    // 특정 무기를 현재 누가 장착 중인지 찾음
+    // 무기 중복 장착 방지와 '장착중인 무기 판매' 차단을 위해
     public OwnedGladiatorData FindOwnerOfEquippedWeapon(OwnedWeaponData weapon)
     {
         if (!_initialized)
@@ -132,6 +138,9 @@ public sealed class GladiatorManager : SingletonBehaviour<GladiatorManager>
         return null;
     }
 
+    // 무기를 해당 검투사에게 장ㅊ착함.
+    // 이미 다른 검투사가 쓰는 무기면 막음.
+    // 장착 성공 시 장비 보너스를 포함해 스탯을 다시 계산한다
     public bool TryEquipWeapon(OwnedGladiatorData gladiator, OwnedWeaponData weapon, out string failReason)
     {
         failReason = string.Empty;
@@ -184,6 +193,7 @@ public sealed class GladiatorManager : SingletonBehaviour<GladiatorManager>
         return true;
     }
 
+    // 무기 해제, 기준 스탯 다시 계산
     public bool TryUnequipWeapon(OwnedGladiatorData gladiator, out string failReason)
     {
         failReason = string.Empty;
@@ -223,6 +233,7 @@ public sealed class GladiatorManager : SingletonBehaviour<GladiatorManager>
         return true;
     }
 
+    // 판매/삭제 같은 검투사 상태 변경 전에 강제로 무기를 떼는 방어용 함수
     public void UnequipWeaponIfAny(OwnedGladiatorData gladiator)
     {
         if (!_initialized)
@@ -251,6 +262,10 @@ public sealed class GladiatorManager : SingletonBehaviour<GladiatorManager>
         }
     }
 
+    // 시장 preview를 실제 보유 검투사 데이터로 복사해 목록에 추가함.
+    // 즉, 시장 데이터 자체를 들고 오는 게 아니라 새 owned 인스턴스를 만든다
+    // 시장에서 인스턴스를 factory에 요청해서 떼어오고 -> 시장에서 가지고 있거나 참조를 들고 있다가 -> 검투사나 인벤토리 매니저에 직접 인스턴스를 넘겨주는 방식은
+    // 참조 관련 버그나 인스턴스 관련 버그가 일어나는 경우가 있어서 아예 새 인스턴스로 깔끔하게 다시 만드는 쪽을 쓴 것
     public bool AddPurchasedGladiatorFromMarketPreview(OwnedGladiatorData marketPreview)
     {
         if (!_initialized)
@@ -309,6 +324,8 @@ public sealed class GladiatorManager : SingletonBehaviour<GladiatorManager>
         return true;
     }
 
+    // 게임 시작 시 스타터 검투사들을 생성해 보유 목록에 넣음.
+    // 이미 보유 검투사가 있으면 중복 지급 아ㅣㄴ함
     public void GrantRandomStarterGladiator(ContentDatabaseProvider contentDatabaseProvider, SessionManager sessionManager)
     {
         GrantRandomStarterGladiators(contentDatabaseProvider, sessionManager, 1);
@@ -379,6 +396,7 @@ public sealed class GladiatorManager : SingletonBehaviour<GladiatorManager>
         }
     }
 
+    // 스타터 검투사 한명을 실제로 생성
     private OwnedGladiatorData CreateStarterGladiatorInternal(
         ContentDatabaseProvider contentDatabaseProvider,
         SessionManager sessionManager)
@@ -435,12 +453,18 @@ public sealed class GladiatorManager : SingletonBehaviour<GladiatorManager>
         return starter;
     }
 
+    // 전투 보상 정산이 끝난 뒤,
+    // 모든 보유 검투사에게 승리 XP를 일괄 지급.
+    // MainScene에서 펜딩 보상 지급 성공 직후 호출됨.
     public void GrantVictoryXpToAllOwnedGladiators()
     {
         int victoryXpAmount = _balance != null ? _balance.eodXpGainAmount : 500;
         GrantXpToAllOwnedGladiators(victoryXpAmount, "Victory XP");
     }
 
+    // 전체 보유 검투사에게 XP를 주고,
+    // (레벨업을 한 검투사가 존재할 시) 레벨업과 스탯 재계산까지 처리함
+    // 리팩토링 대상: 검투사 하나에게 경험치를 지급하는 함수는 현재 존재 안함
     public void GrantXpToAllOwnedGladiators(int xpAmount, string logReason = "Cheat XP")
     {
         if (!_initialized)
@@ -494,6 +518,7 @@ public sealed class GladiatorManager : SingletonBehaviour<GladiatorManager>
         }
     }
 
+    // 레벨 상승 후 유지비와 캐시 스탯을 다시 계산
     private int ProcessLevelUps(OwnedGladiatorData gladiator)
     {
         if (gladiator == null)
@@ -532,6 +557,8 @@ public sealed class GladiatorManager : SingletonBehaviour<GladiatorManager>
         return Mathf.Max(1, currentLevel) * Mathf.Max(1, xpPerLevelMultiplier);
     }
 
+    // 검투사 최종 스탯 계산.
+    // 클래스 기본치, 성장치, 개체 분산, 장착 무기 보너스를 합쳐 캐시 스탯을 만든다
     private void RefreshDerivedStats(OwnedGladiatorData gladiator, bool fullyHeal)
     {
         if (gladiator == null)

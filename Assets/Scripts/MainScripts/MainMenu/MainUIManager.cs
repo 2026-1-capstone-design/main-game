@@ -16,10 +16,12 @@ public sealed class MainUIManager : MonoBehaviour
     [Header("Optional Labels")]
     [SerializeField] private TMP_Text currentDayText;
 
-    private MainFlowManager _flow;
+    private MainFlowManager _flow;      // 메인 메뉴 버튼 입력을 실제 게임 흐름 처리 함수로 넘김
     private SessionManager _sessionManager;
     private bool _initialized;
 
+    // 메인 버튼들을 모두 MainFlowManager 핸들러에 연결하고,
+    // !!DayChanged 이벤트를 구독해!! 날짜 UI를 동기화
     public void Initialize(MainFlowManager flow, SessionManager sessionManager)
     {
         if (_initialized)
@@ -74,6 +76,7 @@ public sealed class MainUIManager : MonoBehaviour
         SetButtonInteractable(eodButton, value);
     }
 
+    // 현재 날짜를 메인 화면 텍스트에 반영
     public void RefreshDayText(int currentDay)
     {
         if (currentDayText == null)

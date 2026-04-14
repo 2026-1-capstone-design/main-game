@@ -6,13 +6,13 @@ public sealed class InventoryManager : SingletonBehaviour<InventoryManager>
 {
     [SerializeField] private bool verboseLog = true;
 
-    private readonly List<OwnedWeaponData> _ownedWeapons = new List<OwnedWeaponData>();
+    private readonly List<OwnedWeaponData> _ownedWeapons = new List<OwnedWeaponData>();         // 실제로 보유 중인 무기 목록
 
     private ContentDatabaseProvider _contentDatabaseProvider;
     private RandomManager _randomManager;
 
     private bool _initialized;
-    private int _nextRuntimeId = 1;
+    private int _nextRuntimeId = 1;         // 장비도 고유 런타임 ID
 
     public IReadOnlyList<OwnedWeaponData> OwnedWeapons => _ownedWeapons;
 
@@ -71,6 +71,8 @@ public sealed class InventoryManager : SingletonBehaviour<InventoryManager>
         return TryAddOwnedWeaponFromPreview(marketPreview, out _);
     }
 
+    // 무기 preview를 실제 보유 무기로 복사해 인벤토리에 추가한다.
+    // 시장 구매 후 실제 무기 획득하는 경로
     public bool TryAddOwnedWeaponFromPreview(OwnedWeaponData weaponPreview, out OwnedWeaponData ownedWeapon)
     {
         ownedWeapon = null;
@@ -116,6 +118,8 @@ public sealed class InventoryManager : SingletonBehaviour<InventoryManager>
         return true;
     }
 
+    // preview 무기의 레벨, 스킬, 최종 분산, 캐시 보너스를 그대로 복사하되,
+    // !!새로운 RuntimeId를 가진!! owned 무기 인스턴스를 새로 만든다
     private OwnedWeaponData CreateOwnedWeaponCopyFromPreview(OwnedWeaponData weaponPreview)
     {
         if (weaponPreview == null || weaponPreview.Weapon == null)
@@ -143,6 +147,8 @@ public sealed class InventoryManager : SingletonBehaviour<InventoryManager>
         return ownedWeapon;
     }
 
+    // 실제 보유 무기를 인벤토리 목록에서 제거함.
+    // 장착 중인지 여부는 여기서 확인하지 않고 외부에서 먼저 막는 시스템
     public bool RemoveOwnedWeapon(OwnedWeaponData weapon)
     {
         if (!_initialized)

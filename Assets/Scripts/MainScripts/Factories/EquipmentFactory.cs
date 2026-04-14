@@ -53,6 +53,8 @@ public sealed class EquipmentFactory : MonoBehaviour
         }
     }
 
+    // 현재 날짜 기준 무기 preview를 만든다. 이는 recruit factory도 비슷하게 동작함.
+    // 시장 슬롯에 올릴 판매용 offer 객체로 감싼다
     public MarketWeaponOffer CreateMarketWeaponOffer(int currentDay, int slotIndex)
     {
         if (!_initialized)
@@ -86,6 +88,8 @@ public sealed class EquipmentFactory : MonoBehaviour
         return offer;
     }
 
+    // 날짜 기반 레벨, 무기 종류, 무기 스킬, 최종 공격/체력 분산값을 포함한
+    // '시장/적 장비용 무기 프리뷰'를 생성함.
     public OwnedWeaponData CreateRandomWeaponPreviewForDay(int currentDay)
     {
         if (!_initialized)
@@ -125,6 +129,8 @@ public sealed class EquipmentFactory : MonoBehaviour
         );
     }
 
+    // 랜덤이 아니라 지정된 무기 타입/스킬/레벨로 무기 preview를 만든다.
+    // 치트코드용.
     public OwnedWeaponData CreateWeaponPreviewFromSpec(
         WeaponType weaponType,
         WeaponSkillId weaponSkillId,
@@ -193,6 +199,8 @@ public sealed class EquipmentFactory : MonoBehaviour
         return Mathf.Max(1, level);
     }
 
+    // OwnedWeaponData preview를 실제로 조립하는 함수
+    // 무기 본체, 스킬, 레벨, 최종 분산값을 묶고 캐시 스탯까지 계산함.
     private OwnedWeaponData BuildWeaponPreview(
     WeaponSO weapon,
     WeaponSkillSO weaponSkill,
@@ -289,6 +297,9 @@ public sealed class EquipmentFactory : MonoBehaviour
         return null;
     }
 
+    // 무기 레벨과 최종 분산값을 반영해
+    // 공격/체력/공속/이속/사거리 보너스 캐시를 계산함.
+    // 이후 검투사 쪽 최종 스탯 계산에서 그대로 더해짐
     private void RefreshDerivedStats(OwnedWeaponData ownedWeapon)
     {
         if (ownedWeapon == null || ownedWeapon.Weapon == null)

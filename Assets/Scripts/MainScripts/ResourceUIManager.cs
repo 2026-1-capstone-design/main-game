@@ -51,6 +51,7 @@ public sealed class ResourceUIManager : MonoBehaviour
         OnGoldChanged(_resourceManager.CurrentGold);
     }
 
+    // 이벤트를 여기서 받음
     private void OnGoldChanged(int currentGold)
     {
         if (goldText == null)

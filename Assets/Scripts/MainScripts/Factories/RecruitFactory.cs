@@ -9,7 +9,7 @@ public sealed class RecruitFactory : MonoBehaviour
     private ContentDatabaseProvider _contentDatabaseProvider;
     private SessionManager _sessionManager;
     private RandomManager _randomManager;
-    private EquipmentFactory _equipmentFactory;
+    private EquipmentFactory _equipmentFactory;            // 적 프리뷰 생성 시 무기를 붙여야 되니까
     private BalanceSO _balance;
     private bool _initialized;
 
@@ -81,6 +81,8 @@ public sealed class RecruitFactory : MonoBehaviour
         }
     }
 
+    // 날짜를 기준으로 해서 검투사 프리뷰를 만들고,
+    // 시장 슬롯에 올릴 offer 객체로 감싼다
     public MarketGladiatorOffer CreateMarketGladiatorOffer(int currentDay, int slotIndex)
     {
         if (!_initialized)
@@ -116,6 +118,9 @@ public sealed class RecruitFactory : MonoBehaviour
         return offer;
     }
 
+    // 하루치 전투 후보 전체를 생성한다. 각각 기준 레벨의 -40%, -10%, +0%, +10%
+    // 실제 하나의 난이도 당 적 팀 하나는 CreateBattleEncounterPreviewForDifficulty에서 구성함.
+    // 이렇게 난이도별 적 팀 preview를 만들고, BattleManager가 이를 캐시해 사용함.
     public List<BattleEncounterPreview> CreateBattleEncounterPreviewsForDay(
         int currentDay,
         int encounterCount = 4,
@@ -175,6 +180,8 @@ public sealed class RecruitFactory : MonoBehaviour
         return encounters;
     }
 
+    // 특정 난이도의 적 팀 1개를 실제로 구성함.
+    // 적 유닛 레벨 분배, 적 검투사 preview 생성, 랜덤 무기 장착, snapshot 변환까지 담당.
     private BattleEncounterPreview CreateBattleEncounterPreviewForDifficulty(
     int currentDay,
     int encounterIndex,
@@ -241,6 +248,10 @@ public sealed class RecruitFactory : MonoBehaviour
         );
     }
 
+    // 난이도와 날짜에 맞춰 적 팀 전체 레벨 총량을 정하고,
+    // 그 총량을 각 적 유닛에게 분배한다.
+    // 리팩토링 대상: 현재는 총량을 정하고 분배하는 방식이므로 레벨이 정수로 딱 떨어진다.
+    // 추후 약간의 노이즈를 위해 개별 분포를 적용할 수 있음.
     private List<int> BuildEncounterUnitLevels(
     int currentDay,
     BattleEncounterDifficulty difficulty,
@@ -369,6 +380,8 @@ public sealed class RecruitFactory : MonoBehaviour
         return preview;
     }
 
+    // 날짜 기반 레벨의 검투사 preview를 생성함.
+    // 시장애 진열되는 검투사와 일부 적 preview 생성의 시작점
     private OwnedGladiatorData CreatePreviewGladiatorForDay(
         int currentDay,
         RandomStreamType streamType,
@@ -511,6 +524,9 @@ public sealed class RecruitFactory : MonoBehaviour
         return mean + standardDeviation * standardNormal;
     }
 
+    // 검투사 클래스 기본치 + 레벨 성장 + 최종 분산 + 장착 무기 보너스를 반영해
+    // 전투용 캐시용 스탯을 계산함.
+    // 프리뷰 단계에서도 이 함수로 실제 전투 진입 전 능력치가 확정됨.
     private void RefreshDerivedStats(OwnedGladiatorData gladiator, bool fullyHeal)
     {
         if (gladiator == null)
@@ -642,6 +658,8 @@ public sealed class RecruitFactory : MonoBehaviour
         return null;
     }
 
+    // 적 검투사 preview에 랜덤 무기 preview를 장착하고,
+    // 그 무기 보너스를 포함해 최종 스탯을 다시 계산해야함
     private bool TryEquipRandomWeaponForBattlePreview(OwnedGladiatorData preview, int currentDay)
     {
         if (preview == null)

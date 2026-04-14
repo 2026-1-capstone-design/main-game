@@ -6,8 +6,8 @@ public sealed class ResourceManager : SingletonBehaviour<ResourceManager>
 {
     [SerializeField] private bool verboseLog = true;
 
-    private BalanceSO _balance;
-    private int _currentGold;
+    private BalanceSO _balance;         // 초기 골드 등 자원 관련 기본 수치를 제공하는 밸런스 데이터 참조
+    private int _currentGold;           // 현재 플레이어가 실제로 보유 중인 골드
     private bool _initialized;
 
     public event Action<int> GoldChanged;
@@ -25,6 +25,10 @@ public sealed class ResourceManager : SingletonBehaviour<ResourceManager>
 
         DontDestroyOnLoad(gameObject);
     }
+
+    // 자원 매니저 최초 초기화임
+    // 첫 1회만 initialGold를 실제 보유 골드로 세팅함.
+    // 이후 메인씬 재진입에서는 기존 골드를 유지한 채 UI 동기화만 계속 다시 보낸다.
     public void Initialize(BalanceSO balance)
     {
         if (_initialized)
@@ -58,6 +62,8 @@ public sealed class ResourceManager : SingletonBehaviour<ResourceManager>
         return _currentGold >= amount;
     }
 
+    // 골드가 충분할 때만 실제 골드를 차감함.
+    // 시장에서 구매할 때 소비 가능 여부를 보는 함수
     public bool TrySpendGold(int amount)
     {
         amount = Mathf.Max(0, amount);
@@ -78,6 +84,7 @@ public sealed class ResourceManager : SingletonBehaviour<ResourceManager>
         return true;
     }
 
+    // 실제 보유 골드를 즉시 증가
     public void AddGold(int amount)
     {
         amount = Mathf.Max(0, amount);
@@ -91,6 +98,9 @@ public sealed class ResourceManager : SingletonBehaviour<ResourceManager>
         }
     }
 
+    // SessionManager에 저장돼 있던 펜딩 전투 보상을 소비해서 실제 골드로 지급
+    // 즉, 보상을 임시로 저장은 SessionManager,
+    // 실제 지급은 이 함수가 함
     public int GrantPendingBattleReward(SessionManager sessionManager)
     {
         if (sessionManager == null)

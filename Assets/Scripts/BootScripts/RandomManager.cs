@@ -14,17 +14,19 @@ public sealed class RandomManager : SingletonBehaviour<RandomManager>
 {
     [SerializeField] private bool verboseLog = true;
 
-    private System.Random _recruitRng;
-    private System.Random _equipmentRng;
-    private System.Random _battleEncounterRng;
-    private System.Random _battleSimulationRng;
+    private System.Random _recruitRng;      // 검투사 생성 전용 난수 스트림
+    private System.Random _equipmentRng;       // 장비 난수
+    private System.Random _battleEncounterRng;      //전투 상대 난수
+    private System.Random _battleSimulationRng;     // 실제 전투 난수
 
     private bool _initialized;
     private bool _loggedAutoInitWarning;
 
-    public int SessionSeed { get; private set; }
-    public bool IsInitialized => _initialized;
+    public int SessionSeed { get; private set; }        // 현재 세션의 기준 시드. 모든 난수 스트림은 이 값을 바탕으로 파생됨
+    public bool IsInitialized => _initialized;          // 세션용 난수 스트림 초기화 완료 여부
 
+    // 새 세션의 기준 시드를 정하고
+    // 모든 시스템 전용 RNG를 서로 다른 salt로 분리 생성
     public void InitializeForNewSession(int? forcedSeed = null)
     {
         SessionSeed = forcedSeed ?? unchecked((int)DateTime.UtcNow.Ticks);
@@ -106,6 +108,7 @@ public sealed class RandomManager : SingletonBehaviour<RandomManager>
         return Mathf.Clamp(value, minInclusive, maxInclusive);
     }
 
+    // 여기서 실제로 요청된 시스템에 맞는 전용 RNG를 반환함
     private System.Random GetRng(RandomStreamType stream)
     {
         EnsureInitialized();
@@ -134,6 +137,7 @@ public sealed class RandomManager : SingletonBehaviour<RandomManager>
         InitializeForNewSession();
     }
 
+    // 공통 세션 시드에서 스트림별로 다른 시드를 파생시키는 내부 해시 함수
     private static int HashSeed(int baseSeed, int salt)
     {
         unchecked
