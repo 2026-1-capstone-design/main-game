@@ -164,6 +164,12 @@ public sealed class BattleSceneTester : MonoBehaviour
             rightPrefab = entry.weaponData.rightWeaponPrefab;
             isRanged = entry.weaponData.isRanged;
             useProjectile = entry.weaponData.useProjectile;
+
+            finalAtk += entry.weaponData.baseAttackBonus;
+            finalAtkSpeed += entry.weaponData.baseAttackSpeedBonus;
+            finalHp += entry.weaponData.baseHealthBonus;
+            finalMove += entry.weaponData.baseMoveSpeedBonus;
+            finalRange += entry.weaponData.baseAttackRangeBonus;
         }
 
         // Weapon Overrides

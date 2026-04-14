@@ -39,7 +39,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     public int Level => State.Level;
 
     // ── 체력 (State 위임) ─────────────────────────────────────────
-    public float MaxHealth => State.MaxHealth;
+    [SerializeField] public float MaxHealth => State.MaxHealth;
     public float CurrentHealth => State.CurrentHealth;
     public bool IsCombatDisabled => State.IsCombatDisabled;
 
@@ -49,10 +49,10 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     public float BaseMoveSpeed => State.BaseMoveSpeed;
     public float BaseAttackRange => State.BaseAttackRange;
 
-    public float Attack => State.Attack;
-    public float AttackSpeed => State.AttackSpeed;
-    public float MoveSpeed => State.MoveSpeed;
-    public float AttackRange => State.AttackRange;
+    [SerializeField] public float Attack => State.Attack;
+    [SerializeField] public float AttackSpeed => State.AttackSpeed;
+    [SerializeField] public float MoveSpeed => State.MoveSpeed;
+    [SerializeField] public float AttackRange => State.AttackRange;
 
     // ── 행동/결정 상태 (State 위임) ───────────────────────────────
     public string CurrentAction => State.CurrentAction;
@@ -62,7 +62,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
 
     // ── 쿨다운 (State 위임) ────────────────────────────────────────
     public float BodyRadius => State.BodyRadius;
-    public float AttackCooldownRemaining => State.AttackCooldownRemaining;
+    [SerializeField] public float AttackCooldownRemaining => State.AttackCooldownRemaining;
     public float SkillCooldownRemaining => State.SkillCooldownRemaining;
 
     // ── 이동/공격 플래그 (State 위임) ─────────────────────────────
@@ -158,19 +158,20 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         if (Snapshot == null)
             return;
 
+        //넣을 떄 주석 처리 필요 -> 위치 이미 할당됨
         if (Snapshot.LeftWeaponPrefab != null && leftHandSocket != null)
         {
             Debug.Log("왼손 무기 장착");
             _spawnedLeftWeapon = Instantiate(Snapshot.LeftWeaponPrefab, leftHandSocket);
-            _spawnedLeftWeapon.transform.localPosition = Vector3.zero;
-            _spawnedLeftWeapon.transform.localRotation = Quaternion.identity;
+            //_spawnedLeftWeapon.transform.localPosition = Vector3.zero;
+            //_spawnedLeftWeapon.transform.localRotation = Quaternion.identity;
         }
         if (Snapshot.RightWeaponPrefab != null && rightHandSocket != null)
         {
             Debug.Log("오른손 무기 장착");
             _spawnedRightWeapon = Instantiate(Snapshot.RightWeaponPrefab, rightHandSocket);
-            _spawnedRightWeapon.transform.localPosition = Vector3.zero;
-            _spawnedRightWeapon.transform.localRotation = Quaternion.identity;
+            //_spawnedRightWeapon.transform.localPosition = Vector3.zero;
+            //_spawnedRightWeapon.transform.localRotation = Quaternion.identity;
         }
 
         if (_myAnimation != null && provider != null)

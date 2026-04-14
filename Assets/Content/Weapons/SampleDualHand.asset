@@ -15,8 +15,8 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: e5dda82d34675eb4b878658113823077, type: 3}
   weaponName: weapon3_mace
   weaponType: 3
-  leftWeaponPrefab: {fileID: 6353319322634812030, guid: 00136e4362eeb964a967da6309274c9c, type: 3}
-  rightWeaponPrefab: {fileID: 4040911424271386890, guid: 8305d74f2e457034a944f92e4768f38c, type: 3}
+  leftWeaponPrefab: {fileID: 4008085833001920289, guid: dd6dfd462684df54db89046a01800a0d, type: 3}
+  rightWeaponPrefab: {fileID: 8935633830502879671, guid: f0f67484e970cc44d8d22d4d17c32031, type: 3}
   isRanged: 0
   useProjectile: 0
   baseAttackBonus: 7

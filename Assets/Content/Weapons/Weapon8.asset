@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: df9d8b62f4a040845a470ef2178797ef, type: 3}
+  m_Name: Weapon8
+  m_EditorClassIdentifier: 
+  icon: {fileID: 0}
+  weaponName: Sword
+  weaponType: 9
+  leftWeaponPrefab: {fileID: 26744791562570188, guid: 49e6000adfc1e4947a3d1e139883ac4f, type: 3}
+  rightWeaponPrefab: {fileID: 7860103617456621554, guid: 3f8a1e3f348d3774fb062c6daf69d5ee, type: 3}
+  isRanged: 0
+  useProjectile: 0
+  baseAttackBonus: 10
+  baseHealthBonus: 20
+  baseAttackSpeedBonus: 50
+  baseMoveSpeedBonus: 1
+  baseAttackRangeBonus: 3
