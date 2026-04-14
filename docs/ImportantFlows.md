@@ -1,11 +1,3 @@
-using UnityEngine;
-
-public class ImportantFlows
-{
-
-}
-
-/*
 
 목차)
 1. 날짜 진행
@@ -173,7 +165,7 @@ RecruitFactory.CreateBattleEncounterPreviewsForDay(...)
 → new BattleStartPayload(...)
 
 일반적으론 오늘 캐시된 전투 후보 그대로 사용
-치트코트 사용시 그 시점에 적 팀을 다시 생성해서 사용
+치트코드 사용시 그 시점에 적 팀을 다시 생성해서 사용
 
 
 15. 전투 진입 직전 처리
@@ -211,7 +203,7 @@ MainFlowManager.HandleBattleStartRequested()
 
 전투 보상은 메인씬 !!재진입 시점!!에 정산된다.
 즉, 유저의 특정 입력에 반응하는 것이 아니라
-배틀씬에서 매인씬으로 돌아올 때 트리거됨.
+배틀씬에서 메인씬으로 돌아올 때 트리거됨.
 
 
 18. 승리 XP 지급
@@ -223,6 +215,3 @@ MainFlowManager.HandleBattleStartRequested()
 
 
 
-
-
-*/

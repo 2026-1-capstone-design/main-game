@@ -6,7 +6,7 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
 {
     [SerializeField] private bool verboseLog = true;
 
-    // _gladiatorOffers 와ㅓ _weaponOffers 모두 날짜가 바뀌기 전까지만 유지되는 하루 단위 캐시
+    // _gladiatorOffers 와 _weaponOffers 모두 날짜가 바뀌기 전까지만 유지되는 하루 단위 캐시
     private readonly List<MarketGladiatorOffer> _gladiatorOffers = new List<MarketGladiatorOffer>();
     private readonly List<MarketWeaponOffer> _weaponOffers = new List<MarketWeaponOffer>();
 

@@ -213,7 +213,7 @@ public sealed class BattleEncounterPreview
     public IReadOnlyList<BattleUnitSnapshot> EnemyUnits => _enemyUnits;
 
     // 하루치 전투 후보 1줄을 구성하는 데이터들
-    // 적 유닛 목록, 평균레벨, 보상, 난이도를 모두 들고 이;ㅆ음
+    // 적 유닛 목록, 평균레벨, 보상, 난이도를 모두 들고 있음
     public BattleEncounterPreview(
         int encounterIndex,
         IEnumerable<BattleUnitSnapshot> enemyUnits,

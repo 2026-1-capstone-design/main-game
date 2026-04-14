@@ -1,9 +1,3 @@
-/*
-주석들만으로 한번에 파악하기 힘든 긴 플로우나 복잡한 플로우들의 경우 사전의 형태로 Scripts/Mainscripts/ImportantFlows 에 정리해놨습니다.
-기본적으로 주석들만 가지고도 플로우를 따라가면 파악에는 문제 없을 것 같지만,
-한눈에 해당 플로우의 진입점부터 최종 목적지까지 파악하면 편할 것 같아서 따로 적어놨습니다. 목차를 보고 그대로 아래에서 찾아보시면 됩니다
-*/
-
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
