@@ -21,7 +21,7 @@ public sealed class SceneLoader : SingletonBehaviour<SceneLoader>
         return TryLoadScene(sceneName, LoadSceneMode.Single);
     }
 
-    // SceneLoader 자기 자신이 코루틴 호스트가 되어 씬 로드를 시작히ㅏㅁ
+    // SceneLoader 자기 자신이 코루틴 호스트가 되어 씬 로드를 시작함
     public bool TryLoadScene(string sceneName, LoadSceneMode loadMode = LoadSceneMode.Single)
     {
         if (_isLoading)

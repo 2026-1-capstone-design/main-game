@@ -138,7 +138,7 @@ public sealed class GladiatorManager : SingletonBehaviour<GladiatorManager>
         return null;
     }
 
-    // 무기를 해당 검투사에게 장ㅊ착함.
+    // 무기를 해당 검투사에게 장착함.
     // 이미 다른 검투사가 쓰는 무기면 막음.
     // 장착 성공 시 장비 보너스를 포함해 스탯을 다시 계산한다
     public bool TryEquipWeapon(OwnedGladiatorData gladiator, OwnedWeaponData weapon, out string failReason)
@@ -325,7 +325,7 @@ public sealed class GladiatorManager : SingletonBehaviour<GladiatorManager>
     }
 
     // 게임 시작 시 스타터 검투사들을 생성해 보유 목록에 넣음.
-    // 이미 보유 검투사가 있으면 중복 지급 아ㅣㄴ함
+    // 이미 보유 검투사가 있으면 중복 지급 안함
     public void GrantRandomStarterGladiator(ContentDatabaseProvider contentDatabaseProvider, SessionManager sessionManager)
     {
         GrantRandomStarterGladiators(contentDatabaseProvider, sessionManager, 1);
