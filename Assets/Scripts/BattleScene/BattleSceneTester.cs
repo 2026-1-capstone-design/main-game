@@ -179,6 +179,8 @@ public sealed class BattleSceneTester : MonoBehaviour
             useProjectile = entry.useProjectile;
         }
 
+        int[] randomSkins = GladiatorSkinManager.Instance.GenerateRandomSkinIndicates();
+
         return new BattleUnitSnapshot(
             sourceRuntimeId: id,
             isEnemy: isEnemy,
@@ -201,6 +203,7 @@ public sealed class BattleSceneTester : MonoBehaviour
             weaponSkillId: entry.weaponSkillId,
             isRanged: isRanged,
             useProjectile: useProjectile,
+            customizeIndicates: randomSkins,
             portraitSprite: classSO.icon
         );
     }

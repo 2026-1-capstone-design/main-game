@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: df9d8b62f4a040845a470ef2178797ef, type: 3}
   m_Name: Weapon7
   m_EditorClassIdentifier: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 9eb825158918555459bbfd53c457244c, type: 3}
   weaponName: weapon7_dualgun
   weaponType: 8
   leftWeaponPrefab: {fileID: 957394319240228214, guid: 819537502fd71cb4baadbe1f096fa1eb, type: 3}

@@ -66,7 +66,7 @@ MonoBehaviour:
     healthOverride: 0
     attackOverride: 0
     attackSpeedOverride: 0
-    moveSpeedOverride: 5
+    moveSpeedOverride: 0
     attackRangeOverride: 0
     statMultiplier: 0
   - classSO: {fileID: 11400000, guid: 6846407ed22928941b371aab2d355ecf, type: 2}

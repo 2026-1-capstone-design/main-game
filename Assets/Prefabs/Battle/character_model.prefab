@@ -1202,6 +1202,18 @@ MonoBehaviour:
   _spawnedLeftWeapon: {fileID: 0}
   _spawnedRightWeapon: {fileID: 0}
   _myAnimation: {fileID: 0}
+  rootFullHead: {fileID: 7644792217674140775}
+  rootNose: {fileID: 7644792217128995756}
+  rootHair: {fileID: 7644792217756776566}
+  rootFaceHair: {fileID: 7644792218334113111}
+  rootEyes: {fileID: 7644792217884240638}
+  rootEyebrows: {fileID: 7644792219062460527}
+  rootEars: {fileID: 7644792218918664756}
+  rootChest: {fileID: 7644792218367488160}
+  rootArms: {fileID: 7644792217518017921}
+  rootBelt: {fileID: 7644792219097763447}
+  rootLegs: {fileID: 7644792217996117258}
+  rootFeet: {fileID: 7644792217273691673}
 --- !u!1 &361804306307397501
 GameObject:
   m_ObjectHideFlags: 0

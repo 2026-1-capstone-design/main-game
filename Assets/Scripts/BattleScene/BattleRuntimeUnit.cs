@@ -98,6 +98,24 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     [SerializeField] private GameObject _spawnedRightWeapon;
     [SerializeField] private Animator _myAnimation;
 
+    //customize
+    [Header("Skin Part Roots")]
+    [SerializeField] private Transform rootFullHead; // HEADS 폴더 연결
+    [SerializeField] private Transform rootNose;     // NOSES 폴더 연결
+    [SerializeField] private Transform rootHair;     // HAIRS 폴더 연결
+    [SerializeField] private Transform rootFaceHair; // FACE HAIRS 폴더 연결
+    [SerializeField] private Transform rootEyes;     // EYES 폴더 연결
+    [SerializeField] private Transform rootEyebrows; // EYEBROWS 폴더 연결
+    [SerializeField] private Transform rootEars;     // EARS 폴더 연결
+
+    [SerializeField] private Transform rootChest;    // CHESTS 폴더 연결
+    [SerializeField] private Transform rootArms;     // ARMS 폴더 연결
+    [SerializeField] private Transform rootBelt;     // BELTS 폴더 연결
+    [SerializeField] private Transform rootLegs;     // LEGS 폴더 연결
+    [SerializeField] private Transform rootFeet;     // FEET 폴더 연결
+
+
+
     // animationProvider가 null이면 AnimationManager.Instance로 폴백한다.
     public void Initialize(BattleUnitSnapshot snapshot, int unitNumber, bool isEnemy,
         IAnimationProvider animationProvider = null)
@@ -128,6 +146,29 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         IAnimationProvider provider = animationProvider ?? AnimationManager.Instance;
         EquipWeaponFromSnapShot(provider);
         EquipSkillFromSnapShot(provider);
+
+        EquipSkinFromSnapshot();
+
+        if (snapshot != null)
+        {
+            if (snapshot.CustomizeIndicates != null)
+            {
+                string dataStr = string.Join(", ", snapshot.CustomizeIndicates);
+                Debug.Log($"<color=#4FC3F7>[수신 성공]</color> {unitNumber}번 {snapshot.DisplayName}: [{dataStr}]");
+            }
+            else
+            {
+                Debug.LogError($"<color=#FF5252>[수신 실패]</color> {unitNumber}번 {snapshot.DisplayName}: CustomizeIndicates가 null입니다!");
+            }
+        }
+
+
+
+
+
+
+
+
 
         if (isEnemy)
             HPbar.sprite = EnemybarSprite;
@@ -208,6 +249,50 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
             _myAnimation.runtimeAnimatorController = local;
         }
     }
+
+
+
+    // ── 커스터마이즈 ─────────────────────────
+    private void EquipSkinFromSnapshot()
+    {
+        if (Snapshot == null || Snapshot.CustomizeIndicates == null) return;
+
+        Debug.Log("값은 들어옴");
+
+
+        int[] indicates = Snapshot.CustomizeIndicates;
+
+        // 1. 머리 및 세부 얼굴 파츠 토글
+        ActivateSpecificSkinPart(rootFullHead, indicates[(int)SkinPart.FullHead]);
+        ActivateSpecificSkinPart(rootNose, indicates[(int)SkinPart.Nose]);
+        ActivateSpecificSkinPart(rootHair, indicates[(int)SkinPart.Hair]);
+        ActivateSpecificSkinPart(rootFaceHair, indicates[(int)SkinPart.Face]);
+        ActivateSpecificSkinPart(rootEyes, indicates[(int)SkinPart.Eyes]);
+        ActivateSpecificSkinPart(rootEyebrows, indicates[(int)SkinPart.Eyebrows]);
+        ActivateSpecificSkinPart(rootEars, indicates[(int)SkinPart.Ears]);
+
+        // 2. 공통 바디 파츠 토글
+        ActivateSpecificSkinPart(rootChest, indicates[(int)SkinPart.Chest]);
+        ActivateSpecificSkinPart(rootArms, indicates[(int)SkinPart.Arms]);
+        ActivateSpecificSkinPart(rootBelt, indicates[(int)SkinPart.Belt]);
+        ActivateSpecificSkinPart(rootLegs, indicates[(int)SkinPart.Legs]);
+        ActivateSpecificSkinPart(rootFeet, indicates[(int)SkinPart.Feet]);
+    }
+    private void ActivateSpecificSkinPart(Transform parentRoot, int targetIndex)
+    {
+        if (parentRoot == null) return;
+
+        // 부모안 모든 파츠 확인
+        for (int i = 0; i < parentRoot.childCount; i++)
+        {
+            // targetIndex가 -1이면 모든 자식의 활성화 상태가 false가 됩니다. (즉, 안 입음)
+            // i와 targetIndex가 같을 때만 true가 되어 해당 옷이 나타납니다.
+            parentRoot.GetChild(i).gameObject.SetActive(i == targetIndex);
+        }
+    }
+
+
+
 
     // ── 사망 처리 (OnDied 이벤트 핸들러) ─────────────────────────
     private void HandleUnitDied()

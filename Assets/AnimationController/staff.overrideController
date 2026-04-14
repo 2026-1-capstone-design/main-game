@@ -9,7 +9,7 @@ AnimatorOverrideController:
   m_Name: staff
   m_Controller: {fileID: 9100000, guid: f5d34f735bde1ea4db4ee51df55271f8, type: 2}
   m_Clips:
+  - m_OriginalClip: {fileID: -2576967968662016515, guid: 56fd86b76fc74d24d83522069f5deb9b, type: 3}
+    m_OverrideClip: {fileID: 3094330708855449807, guid: fa330eb5470c2e441929ad836b5b2ac7, type: 3}
   - m_OriginalClip: {fileID: 3094330708855449807, guid: 39df77266a31a2547b7cc6c67a54a62c, type: 3}
     m_OverrideClip: {fileID: 3094330708855449807, guid: c1eb42725689cc34daf0bf5f43e21298, type: 3}
-  - m_OriginalClip: {fileID: -2576967968662016515, guid: 56fd86b76fc74d24d83522069f5deb9b, type: 3}
-    m_OverrideClip: {fileID: 3094330708855449807, guid: 210c0ba3454dd1a4681017115b0c564f, type: 3}
