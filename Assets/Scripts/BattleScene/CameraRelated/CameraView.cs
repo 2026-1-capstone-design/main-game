@@ -1,5 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.EventSystems;
+using TMPro;
 
 [DisallowMultipleComponent]
 public sealed class CameraView : MonoBehaviour
@@ -83,6 +85,12 @@ public sealed class CameraView : MonoBehaviour
             return;
         }
 
+        // 텍스트 입력창이 포커스된 동안 카메라 입력을 완전히 잠근다.
+        if (IsTextInputFocused())
+        {
+            return;
+        }
+
         float orbitInput = 0f;
         float lookYawInput = 0f;
         float lookPitchInput = 0f;
@@ -121,6 +129,24 @@ public sealed class CameraView : MonoBehaviour
         UpdateZoom(zoomKeyInput, scrollInput);
         UpdateLookOffset(lookYawInput, lookPitchInput);
         ApplyCameraTransform();
+    }
+
+    private static bool IsTextInputFocused()
+    {
+        // 현재 선택된 UI가 TMP 입력 필드면 입력 중으로 판단한다.
+        if (EventSystem.current == null || EventSystem.current.currentSelectedGameObject == null)
+        {
+            return false;
+        }
+
+        TMP_InputField inputField = EventSystem.current.currentSelectedGameObject.GetComponentInParent<TMP_InputField>();
+        if (inputField == null)
+        {
+            return false;
+        }
+
+        // 실제 포커스가 살아있는 상태에서만 카메라를 잠근다.
+        return inputField.isFocused;
     }
 
     private void InitializeCameraState()
