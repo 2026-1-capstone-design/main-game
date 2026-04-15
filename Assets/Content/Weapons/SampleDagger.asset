@@ -10,17 +10,17 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: df9d8b62f4a040845a470ef2178797ef, type: 3}
-  m_Name: Weapon1
+  m_Name: SampleDagger
   m_EditorClassIdentifier: Assembly-CSharp::WeaponSO
-  icon: {fileID: 21300000, guid: ae6bbd58678f7f14c8c5e38176cfffa0, type: 3}
-  weaponName: weapon1_sword
-  weaponType: 1
+  icon: {fileID: 21300000, guid: 23b31847b4105164cb2304b526c41c74, type: 3}
+  weaponName: weapon6_dagger
+  weaponType: 6
   leftWeaponPrefab: {fileID: 26744791562570188, guid: 49e6000adfc1e4947a3d1e139883ac4f, type: 3}
-  rightWeaponPrefab: {fileID: 4573974495087520027, guid: a8b2b40a8ef388d47b3c1a9ce098ff86, type: 3}
+  rightWeaponPrefab: {fileID: 9181499740744905866, guid: 866b7ea30437ce54690e99f3dffa85b4, type: 3}
   isRanged: 0
   useProjectile: 0
-  baseAttackBonus: 5
+  baseAttackBonus: 3
   baseHealthBonus: 10
-  baseAttackSpeedBonus: 0.2
-  baseMoveSpeedBonus: 1
-  baseAttackRangeBonus: 0.5
+  baseAttackSpeedBonus: 0.1
+  baseMoveSpeedBonus: 3
+  baseAttackRangeBonus: 0

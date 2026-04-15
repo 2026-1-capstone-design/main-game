@@ -155,6 +155,9 @@ public sealed class BattleUnitSnapshot
                 // 무기 추가
                 leftPrefab = source.EquippedWeapon.Weapon.leftWeaponPrefab;
                 rightPrefab = source.EquippedWeapon.Weapon.rightWeaponPrefab;
+
+                isRanged = source.EquippedWeapon.Weapon.isRanged;
+                useProjectile = source.EquippedWeapon.Weapon.useProjectile;
             }
 
             if (source.EquippedWeapon.WeaponSkill != null)

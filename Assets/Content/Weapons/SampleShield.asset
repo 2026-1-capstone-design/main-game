@@ -10,17 +10,17 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: df9d8b62f4a040845a470ef2178797ef, type: 3}
-  m_Name: Weapon4
+  m_Name: SampleShield
   m_EditorClassIdentifier: Assembly-CSharp::WeaponSO
-  icon: {fileID: 21300000, guid: 40b771aab806ee14c9c85cf2c6832204, type: 3}
-  weaponName: weapon4_staff
-  weaponType: 4
-  leftWeaponPrefab: {fileID: 26744791562570188, guid: 49e6000adfc1e4947a3d1e139883ac4f, type: 3}
-  rightWeaponPrefab: {fileID: 947843970086670812, guid: 866d94be47c38d746970603c59bf81ce, type: 3}
-  isRanged: 1
+  icon: {fileID: 21300000, guid: 1526ed37ad2f8094db5515e5e99bf136, type: 3}
+  weaponName: weapon5_orb
+  weaponType: 5
+  leftWeaponPrefab: {fileID: 6909595757380089383, guid: 406d1abb3df843a409357bcdf4ac51cb, type: 3}
+  rightWeaponPrefab: {fileID: 26744791562570188, guid: 49e6000adfc1e4947a3d1e139883ac4f, type: 3}
+  isRanged: 0
   useProjectile: 0
-  baseAttackBonus: 8
+  baseAttackBonus: 2
   baseHealthBonus: 10
-  baseAttackSpeedBonus: 0.3
+  baseAttackSpeedBonus: 0
   baseMoveSpeedBonus: 1
   baseAttackRangeBonus: 1
