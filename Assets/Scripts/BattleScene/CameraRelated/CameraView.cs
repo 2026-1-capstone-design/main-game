@@ -42,6 +42,8 @@ public sealed class CameraView : MonoBehaviour
 
     private float _currentFov;
     private bool _isInitialized;
+    private GameObject _cachedSelectedGameObject;
+    private TMP_InputField _cachedInputField;
 
     private void Awake()
     {
@@ -86,10 +88,7 @@ public sealed class CameraView : MonoBehaviour
         }
 
         // 텍스트 입력창이 포커스된 동안 카메라 입력을 완전히 잠근다.
-        if (IsTextInputFocused())
-        {
-            return;
-        }
+        bool isTextInputFocused = IsTextInputFocused();
 
         float orbitInput = 0f;
         float lookYawInput = 0f;
@@ -97,7 +96,8 @@ public sealed class CameraView : MonoBehaviour
         float zoomKeyInput = 0f;
         float scrollInput = 0f;
 
-        if (Keyboard.current != null)
+        // 입력이 잠겨 있어도 카메라 위치와 회전 갱신은 계속 유지한다.
+        if (!isTextInputFocused && Keyboard.current != null)
         {
             if (Keyboard.current.qKey.isPressed)
                 orbitInput += 1f;
@@ -120,33 +120,45 @@ public sealed class CameraView : MonoBehaviour
                 zoomKeyInput -= 1f;
         }
 
-        if (Mouse.current != null)
+        if (!isTextInputFocused && Mouse.current != null)
         {
             scrollInput = Mouse.current.scroll.ReadValue().y * 0.01f;
         }
 
-        UpdateOrbit(orbitInput);
-        UpdateZoom(zoomKeyInput, scrollInput);
-        UpdateLookOffset(lookYawInput, lookPitchInput);
+        if (!isTextInputFocused)
+        {
+            UpdateOrbit(orbitInput);
+            UpdateZoom(zoomKeyInput, scrollInput);
+            UpdateLookOffset(lookYawInput, lookPitchInput);
+        }
+
         ApplyCameraTransform();
     }
 
-    private static bool IsTextInputFocused()
+    private bool IsTextInputFocused()
     {
         // 현재 선택된 UI가 TMP 입력 필드면 입력 중으로 판단한다.
         if (EventSystem.current == null || EventSystem.current.currentSelectedGameObject == null)
         {
+            _cachedSelectedGameObject = null;
+            _cachedInputField = null;
             return false;
         }
 
-        TMP_InputField inputField = EventSystem.current.currentSelectedGameObject.GetComponentInParent<TMP_InputField>();
-        if (inputField == null)
+        GameObject selectedGameObject = EventSystem.current.currentSelectedGameObject;
+        if (selectedGameObject != _cachedSelectedGameObject)
+        {
+            _cachedSelectedGameObject = selectedGameObject;
+            _cachedInputField = selectedGameObject.GetComponentInParent<TMP_InputField>();
+        }
+
+        if (_cachedInputField == null)
         {
             return false;
         }
 
         // 실제 포커스가 살아있는 상태에서만 카메라를 잠근다.
-        return inputField.isFocused;
+        return _cachedInputField.isFocused;
     }
 
     private void InitializeCameraState()
