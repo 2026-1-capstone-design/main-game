@@ -817,6 +817,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 180414084}
+  - component: {fileID: 180414085}
   - component: {fileID: 180414083}
   m_Layer: 0
   m_Name: _Tester
@@ -854,6 +855,30 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &180414085
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 180414082}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 03adea407c4268b48847bf60f82ba582, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  fullHeadCount: 18
+  noseCount: 5
+  hairCount: 25
+  faceCount: 25
+  eyesCount: 25
+  eyebrowsCount: 25
+  earsCount: 2
+  chestCount: 18
+  armsCount: 18
+  beltCount: 18
+  legsCount: 18
+  feetCount: 18
 --- !u!1 &195634270
 GameObject:
   m_ObjectHideFlags: 0
@@ -1263,7 +1288,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bc320a214c32157409545aeedebe266b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BattleSceneFlowManager
-  battlefieldCollider: {fileID: 1505140326}
+  battlefieldCollider: {fileID: 1505140330}
   runtimeUnitRootPrefab: {fileID: 354350443408783854, guid: 39cb3314a97ca2d4094abc2e7175b6e8, type: 3}
   runtimeUnitRoot: {fileID: 1505140329}
   allyPlaceholders:
@@ -6318,6 +6343,7 @@ GameObject:
   - component: {fileID: 1505140328}
   - component: {fileID: 1505140327}
   - component: {fileID: 1505140326}
+  - component: {fileID: 1505140330}
   m_Layer: 0
   m_Name: plane
   m_TagString: Untagged
@@ -6342,7 +6368,7 @@ BoxCollider:
   m_LayerOverridePriority: 0
   m_IsTrigger: 0
   m_ProvidesContacts: 0
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 3
   m_Size: {x: 40, y: 20, z: 40}
   m_Center: {x: 0, y: 0, z: 0}
@@ -6416,6 +6442,27 @@ Transform:
   - {fileID: 699831721}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!135 &1505140330
+SphereCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1505140325}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Radius: 28
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &1507875186
 GameObject:
   m_ObjectHideFlags: 0

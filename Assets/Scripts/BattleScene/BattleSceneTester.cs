@@ -179,7 +179,9 @@ public sealed class BattleSceneTester : MonoBehaviour
             useProjectile = entry.useProjectile;
         }
 
-        int[] randomSkins = GladiatorSkinManager.Instance.GenerateRandomSkinIndicates();
+        int[] randomSkins = GladiatorSkinManager.Instance != null
+        ? GladiatorSkinManager.Instance.GenerateRandomSkinIndicates()
+        : null;
 
         return new BattleUnitSnapshot(
             sourceRuntimeId: id,

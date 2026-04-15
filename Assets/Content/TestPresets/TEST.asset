@@ -16,35 +16,9 @@ MonoBehaviour:
   allyTeam:
   - classSO: {fileID: 11400000, guid: 6846407ed22928941b371aab2d355ecf, type: 2}
     level: 0
-    weaponData: {fileID: 11400000, guid: 72083519813a3ab4098ce19d38d566cd, type: 2}
-    healthOverride: 0
-    attackOverride: 0
-    attackSpeedOverride: 0
-    moveSpeedOverride: 0
-    attackRangeOverride: 0
-    statMultiplier: 0
-  - classSO: {fileID: 11400000, guid: 6846407ed22928941b371aab2d355ecf, type: 2}
-    level: 0
     weaponData: {fileID: 11400000, guid: 1125cefdf7e96c04cb5c836ceef728b5, type: 2}
-    healthOverride: 0
-    attackOverride: 0
-    attackSpeedOverride: 0
-    moveSpeedOverride: 0
-    attackRangeOverride: 0
-    statMultiplier: 0
-  - classSO: {fileID: 11400000, guid: 6846407ed22928941b371aab2d355ecf, type: 2}
-    level: 0
-    weaponData: {fileID: 11400000, guid: 57a45c0a1bc261f4486e00585a46083b, type: 2}
-    healthOverride: 0
-    attackOverride: 0
-    attackSpeedOverride: 0
-    moveSpeedOverride: 0
-    attackRangeOverride: 0
-    statMultiplier: 0
-  - classSO: {fileID: 11400000, guid: 6846407ed22928941b371aab2d355ecf, type: 2}
-    level: 0
-    weaponData: {fileID: 11400000, guid: dbdb181f9c76fca4d932bbbdbf2ded9b, type: 2}
-    healthOverride: 0
+    weaponSkillId: 5
+    healthOverride: 200000
     attackOverride: 0
     attackSpeedOverride: 0
     moveSpeedOverride: 0
@@ -53,35 +27,9 @@ MonoBehaviour:
   enemyTeam:
   - classSO: {fileID: 11400000, guid: 6846407ed22928941b371aab2d355ecf, type: 2}
     level: 0
-    weaponData: {fileID: 11400000, guid: 3da7b72ba791cd940915b68cc3d6a124, type: 2}
-    healthOverride: 0
-    attackOverride: 0
-    attackSpeedOverride: 0
-    moveSpeedOverride: 0
-    attackRangeOverride: 0
-    statMultiplier: 0
-  - classSO: {fileID: 11400000, guid: 6846407ed22928941b371aab2d355ecf, type: 2}
-    level: 0
     weaponData: {fileID: 11400000, guid: 8f15a2a951e32fa44914883dd11d291f, type: 2}
-    healthOverride: 0
-    attackOverride: 0
-    attackSpeedOverride: 0
-    moveSpeedOverride: 0
-    attackRangeOverride: 0
-    statMultiplier: 0
-  - classSO: {fileID: 11400000, guid: 6846407ed22928941b371aab2d355ecf, type: 2}
-    level: 0
-    weaponData: {fileID: 11400000, guid: 3f69dd2a1b6d04140a0d6b09f9c06b82, type: 2}
-    healthOverride: 0
-    attackOverride: 0
-    attackSpeedOverride: 0
-    moveSpeedOverride: 0
-    attackRangeOverride: 0
-    statMultiplier: 0
-  - classSO: {fileID: 11400000, guid: 6846407ed22928941b371aab2d355ecf, type: 2}
-    level: 0
-    weaponData: {fileID: 11400000, guid: ab1629e5d89986f4595fdae5ee52b07e, type: 2}
-    healthOverride: 0
+    weaponSkillId: 8
+    healthOverride: 200000
     attackOverride: 0
     attackSpeedOverride: 0
     moveSpeedOverride: 0
