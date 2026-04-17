@@ -208,7 +208,7 @@ public sealed class BattleSceneTester : MonoBehaviour
             if (entry.attackDuration > 0)
             {
                 defaultDur = false;
-                duration = entry.attackDuration > 0 ? entry.attackDuration : duration;
+                duration = entry.attackDuration;
             }
         }
 

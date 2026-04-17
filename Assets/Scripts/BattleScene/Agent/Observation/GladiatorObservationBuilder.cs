@@ -36,7 +36,7 @@ public readonly struct GladiatorObservationContext
         float arenaRadius,
         float battleTimeoutRemainingRatio,
         Vector2 rawLocalMove,
-        Vector2 PreviousRawLocalMove,
+        Vector2 previousRawLocalMove,
         int anchorSlot,
         GladiatorCommand currentCommand,
         GladiatorStrategy currentStrategy,
@@ -56,7 +56,7 @@ public readonly struct GladiatorObservationContext
         ArenaRadius = arenaRadius;
         BattleTimeoutRemainingRatio = Mathf.Clamp01(battleTimeoutRemainingRatio);
         RawLocalMove = Vector2.ClampMagnitude(rawLocalMove, 1f);
-        this.PreviousRawLocalMove = Vector2.ClampMagnitude(PreviousRawLocalMove, 1f);
+        this.PreviousRawLocalMove = Vector2.ClampMagnitude(previousRawLocalMove, 1f);
         AnchorSlot = Mathf.Clamp(anchorSlot, 0, GladiatorActionSchema.AnchorActionBranchSize - 1);
         CurrentCommand = currentCommand;
         CurrentStrategy = currentStrategy;
