@@ -624,6 +624,8 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
         {
             if (unit == null || unit.IsCombatDisabled)
                 continue;
+            if (unit.IsExternallyControlled) // TODO: 스킬이 추가되면 해제
+                continue;
             if (unit.SkillCooldownRemaining > 0f)
                 continue;
 
@@ -875,3 +877,4 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
         return aiTuning.GetActionTuning(actionType);
     }
 }
+
