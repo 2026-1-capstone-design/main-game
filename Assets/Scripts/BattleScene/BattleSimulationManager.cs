@@ -362,6 +362,9 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
 
             GetBestActionRespectingEscapeLimit(unit, scores, BattleActionType.None, out BattleActionType bestAction, out float bestScore);
 
+            if (unit.IsExternallyControlled)
+                continue;
+
             if (currentAction == BattleActionType.None)
             {
                 EnterAction(unit, bestAction, bestScore);
@@ -500,6 +503,9 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
             if (unit == null || unit.IsCombatDisabled)
                 continue;
 
+            if (unit.IsExternallyControlled)
+                continue;
+
             BattleActionExecutionPlan plan;
             if (!_planners.TryGetValue(unit.CurrentActionType, out IBattleActionPlanner planner))
             {
@@ -531,6 +537,24 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
             BattleRuntimeUnit unit = _runtimeUnits[i];
             if (unit == null || unit.IsCombatDisabled)
                 continue;
+
+            if (unit.IsExternallyControlled)
+            {
+                if (unit.ExternalRotationDelta != 0f)
+                    unit.Rotate(unit.ExternalRotationDelta * tickDeltaTime);
+
+                if (unit.ExternalMoveDirection.sqrMagnitude > 0.0001f)
+                {
+                    unit.SetPosition(unit.Position + unit.ExternalMoveDirection * unit.MoveSpeed * tickDeltaTime);
+                    unit.ClampInsideBattlefield(_battlefieldCollider);
+                    unit.State.SetMovementState(true);
+                }
+                else
+                {
+                    unit.State.SetIdleState();
+                }
+                continue;
+            }
 
             BattleRuntimeUnit targetEnemy = unit.PlannedTargetEnemy;
 

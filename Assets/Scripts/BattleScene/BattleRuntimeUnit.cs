@@ -73,6 +73,31 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     // 유닛 위치/클램프 기준은 스크립트가 붙은 자기 자신이 아니라 부모 Root(3D: BoxCollider).
     public Vector3 Position => transform.position;
 
+    // ── ML-Agents 외부 제어 ───────────────────────────────────────
+    // true면 BattleSimulationManager의 AI 파이프라인(CommitOrSwitch, BuildPlan)을 스킵한다.
+    public bool IsExternallyControlled { get; private set; }
+    public Vector3 ExternalMoveDirection { get; private set; }
+    public float ExternalRotationDelta { get; private set; }
+
+    public void SetExternallyControlled(bool value) => IsExternallyControlled = value;
+
+    public void SetExternalMovement(Vector3 worldDirection, float rotationDeltaDegPerSec)
+    {
+        ExternalMoveDirection = worldDirection;
+        ExternalRotationDelta = rotationDeltaDegPerSec;
+    }
+
+    public void SetExternalAttackTarget(BattleRuntimeUnit target)
+    {
+        PlannedTargetEnemy = target;
+        CurrentTarget = target;
+    }
+
+    public void Rotate(float deltaAngleDeg)
+    {
+        transform.Rotate(0f, deltaAngleDeg, 0f, Space.World);
+    }
+
     // ── 파라미터 / 점수 (State 위임) ──────────────────────────────
     public BattleParameterSet CurrentRawParameters => State.CurrentRawParameters;
     public BattleParameterSet CurrentModifiedParameters => State.CurrentModifiedParameters;
@@ -358,17 +383,18 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         if (battlefieldCollider == null)
             return;
 
+        Vector3 center = battlefieldCollider.bounds.center;
+        float arenaRadius = Mathf.Min(battlefieldCollider.bounds.extents.x,
+                                      battlefieldCollider.bounds.extents.z) - BodyRadius;
+
         Vector3 pos = transform.position;
-        Bounds bounds = battlefieldCollider.bounds;
-
-        float minX = bounds.min.x + BodyRadius;
-        float maxX = bounds.max.x - BodyRadius;
-        float minZ = bounds.min.z + BodyRadius;
-        float maxZ = bounds.max.z - BodyRadius;
-
-        pos.x = Mathf.Clamp(pos.x, minX, maxX);
-        pos.z = Mathf.Clamp(pos.z, minZ, maxZ);
-
+        Vector3 flat = new Vector3(pos.x - center.x, 0f, pos.z - center.z);
+        if (flat.magnitude > arenaRadius)
+        {
+            flat = flat.normalized * arenaRadius;
+            pos.x = center.x + flat.x;
+            pos.z = center.z + flat.z;
+        }
         transform.position = pos;
     }
 

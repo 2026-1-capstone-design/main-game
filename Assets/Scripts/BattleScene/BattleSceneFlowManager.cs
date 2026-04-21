@@ -29,6 +29,8 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
 
     [Header("Debug")]
     [SerializeField] private bool verboseLog = true;
+    // TrainingScene에서는 false로 설정해 BattleSessionManager 의존성을 우회한다.
+    [SerializeField] private bool autoBootstrapFromSessionManager = true;
 
     private readonly List<BattleRuntimeUnit> _runtimeUnits = new List<BattleRuntimeUnit>();
     // BattleScene 진입 시 payload를 clone해 보관. F7 재시작 시 이 snapshot을 다시 clone해서 사용한다.
@@ -41,7 +43,8 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
 
     private void Start()
     {
-        BootstrapScene();
+        if (autoBootstrapFromSessionManager)
+            BootstrapScene();
     }
 
     // BattleScene 진입 시 호출되는 초기 부트스트랩.
@@ -122,7 +125,7 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
         return true;
     }
 
-    private bool BootstrapFromPayload(BattleStartPayload payload)
+    public bool BootstrapFromPayload(BattleStartPayload payload)
     {
         if (payload == null)
         {
@@ -132,6 +135,7 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
 
         if (!ValidateBootstrapSetup(payload))
         {
+            Debug.LogError("[BattleSceneFlowManager] BootstrapFromPayload failed. Validation failed.", this);
             return false;
         }
 
@@ -149,10 +153,12 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
 
         if (!allyOk || !enemyOk)
         {
+            Debug.LogError("[BattleSceneFlowManager] BootstrapFromPayload failed. Team spawning failed.", this);
             return false;
         }
 
-        battleOrdersManager.Initialize(_runtimeUnits, battlefieldCollider);
+        if (battleOrdersManager != null)
+            battleOrdersManager.Initialize(_runtimeUnits, battlefieldCollider);
 
         // SimulationManager�� BoxCollider�� �����մϴ�.
         battleSimulationManager.Initialize(
@@ -169,6 +175,17 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
 
         OnUnitsSpawned?.Invoke();
         return true;
+    }
+
+    // TrainingBootstrapper에서 에피소드마다 호출한다.
+    // 기존 유닛을 모두 제거하고 새 payload로 다시 스폰한다.
+    public bool ResetAndBootstrap(BattleStartPayload payload)
+    {
+        DestroyRuntimeUnits();
+        bool success = BootstrapFromPayload(payload);
+        if (verboseLog && success)
+            Debug.Log($"[BattleSceneFlowManager] ResetAndBootstrap complete. RuntimeUnitCount={_runtimeUnits.Count}", this);
+        return success;
     }
 
     private void DestroyRuntimeUnits()
@@ -197,8 +214,6 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
         if (runtimeUnitRootPrefab == null)
             return false;
         if (battleSimulationManager == null)
-            return false;
-        if (battleOrdersManager == null)
             return false;
         if (battlefieldCollider == null)
         {
@@ -254,7 +269,6 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
 
             runtimeUnit.Initialize(snapshot.Clone(), unitNumberStart + i, isEnemy);
             runtimeUnit.PlaceOnBattlefieldPlaceholder(placeholder, battlefieldCollider.transform);
-            // �ʱ� ���� �� �� ������ Ƣ��� ������ �ִٸ� Ŭ���� ó��
             //runtimeUnit.ClampInsideBattlefield(battlefieldCollider);
 
             _runtimeUnits.Add(runtimeUnit);
