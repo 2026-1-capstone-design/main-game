@@ -249,6 +249,9 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
                 unit.State.TickAttackCooldown(tickDeltaTime);
                 unit.State.TickSkillCooldown(tickDeltaTime);
                 unit.State.TickBufflCooldown(tickDeltaTime);
+
+                if (unit.IsAttacking && !unit.IsAttackAnimationPlaying())
+                    unit.State.SetAttackState(false);
             }
         }
     }
@@ -538,6 +541,9 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
             if (unit == null || unit.IsCombatDisabled)
                 continue;
 
+            if (unit.IsAttacking)
+                continue;
+
             if (unit.IsExternallyControlled)
             {
                 if (unit.ExternalRotationDelta != 0f)
@@ -613,8 +619,7 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
             target.State.ApplyDamage(attacker.Attack); //데미지 적용
 
             attacker.State.ResetAttackCooldown();       //공격 쿨 돌리고
-
-            attacker.State.SetAttackState(false);       //때리는 것 끝
+            // SetAttackState(false)는 TickAllCooldowns에서 애니메이션 종료 후 호출
         }
     }
 

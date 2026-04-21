@@ -267,6 +267,23 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
             _myAnimation.speed = speedMultiplier;
     }
 
+    public bool IsAttackAnimationPlaying()
+    {
+        if (_myAnimation == null) return false;
+
+        var info = _myAnimation.GetCurrentAnimatorStateInfo(0);
+        if (info.IsName("attack1") && info.normalizedTime < 1f) return true;
+
+        // idle → attack1 트랜지션 중에는 현재 상태가 아직 attack1이 아니므로 목적지도 확인
+        if (_myAnimation.IsInTransition(0))
+        {
+            var nextInfo = _myAnimation.GetNextAnimatorStateInfo(0);
+            if (nextInfo.IsName("attack1")) return true;
+        }
+
+        return false;
+    }
+
     // ── 스킬 실행 비주얼 ──────────────────────────────────────────
     public void SetSkillState()
     {
