@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Linq;
 
 // BattleSceneFlowManager 책임:
 // - BattleSessionManager에서 payload 읽기
@@ -37,6 +38,7 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
     private BattleStartPayload _initialPayloadSnapshot;
 
     public IReadOnlyList<BattleRuntimeUnit> RuntimeUnits => _runtimeUnits;
+    public BoxCollider BattlefieldCollider => battlefieldCollider;
 
     // 유닛 스폰 및 초기화가 완료됐을 때 발화. 초기 진입과 F7 재시작 모두 호출된다.
     public event Action OnUnitsSpawned;
@@ -139,6 +141,34 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
             return false;
         }
 
+        Vector3 ExtractPosition(Transform placeholder)
+        {
+            return placeholder != null ? placeholder.position : Vector3.zero;
+        }
+        return BootstrapCore(payload, allyPlaceholders.Select(ExtractPosition).ToArray(), enemyPlaceholders.Select(ExtractPosition).ToArray());
+    }
+
+    // TrainingBootstrapper에서 무작위 배치 시 사용한다.
+    public bool ResetAndBootstrap(BattleStartPayload payload, Vector3[] allyPositions, Vector3[] enemyPositions)
+    {
+        DestroyRuntimeUnits();
+        bool success = BootstrapCore(payload, allyPositions, enemyPositions);
+        if (verboseLog && success)
+            Debug.Log($"[BattleSceneFlowManager] ResetAndBootstrap complete. RuntimeUnitCount={_runtimeUnits.Count}", this);
+        return success;
+    }
+
+    private bool BootstrapCore(BattleStartPayload payload, Vector3[] allyPositions, Vector3[] enemyPositions)
+    {
+        if (payload == null)
+            return false;
+        if (runtimeUnitRootPrefab == null || battleSimulationManager == null || battlefieldCollider == null)
+            return false;
+        if (payload.AllyUnits == null || payload.AllyUnits.Count == 0)
+            return false;
+        if (payload.EnemyUnits == null || payload.EnemyUnits.Count == 0)
+            return false;
+
         if (battleSceneUIManager != null)
         {
             battleSceneUIManager.Initialize();
@@ -148,44 +178,25 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
         _runtimeUnits.Clear();
 
         // 아군: 유닛 번호 1~6, 적군: 유닛 번호 7~12
-        bool allyOk = SpawnTeam(payload.AllyUnits, allyPlaceholders, false, 1);
-        bool enemyOk = SpawnTeam(payload.EnemyUnits, enemyPlaceholders, true, 7);
+        bool allyOk = SpawnTeam(payload.AllyUnits, allyPositions, false, 1);
+        bool enemyOk = SpawnTeam(payload.EnemyUnits, enemyPositions, true, 7);
 
         if (!allyOk || !enemyOk)
         {
-            Debug.LogError("[BattleSceneFlowManager] BootstrapFromPayload failed. Team spawning failed.", this);
+            Debug.LogError("[BattleSceneFlowManager] BootstrapCore failed. Team spawning failed.", this);
             return false;
         }
 
         if (battleOrdersManager != null)
             battleOrdersManager.Initialize(_runtimeUnits, battlefieldCollider);
 
-        // SimulationManager�� BoxCollider�� �����մϴ�.
-        battleSimulationManager.Initialize(
-            _runtimeUnits,
-            battlefieldCollider,
-            battleStatusGridUIManager,
-            battleSceneUIManager,
-            payload);
+        battleSimulationManager.Initialize(_runtimeUnits, battlefieldCollider, battleStatusGridUIManager, battleSceneUIManager, payload);
 
         if (battleSceneUIManager != null)
-        {
             battleSceneUIManager.RefreshSpeedText();
-        }
 
         OnUnitsSpawned?.Invoke();
         return true;
-    }
-
-    // TrainingBootstrapper에서 에피소드마다 호출한다.
-    // 기존 유닛을 모두 제거하고 새 payload로 다시 스폰한다.
-    public bool ResetAndBootstrap(BattleStartPayload payload)
-    {
-        DestroyRuntimeUnits();
-        bool success = BootstrapFromPayload(payload);
-        if (verboseLog && success)
-            Debug.Log($"[BattleSceneFlowManager] ResetAndBootstrap complete. RuntimeUnitCount={_runtimeUnits.Count}", this);
-        return success;
     }
 
     private void DestroyRuntimeUnits()
@@ -234,29 +245,24 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
         return true;
     }
 
-    // Root 프리팹 전체를 instantiate한 뒤, 내부 자식 BattleRuntimeUnit 컴포넌트를
-    // GetComponentInChildren으로 찾는다. 실제 위치/배치는 Root RectTransform(BoxCollider) 기준.
     private bool SpawnTeam(
         IReadOnlyList<BattleUnitSnapshot> snapshots,
-        Transform[] placeholders,
+        Vector3[] positions,
         bool isEnemy,
-        int unitNumberStart)
+        int unitNumberStart
+        )
     {
-        if (snapshots == null)
+        if (snapshots == null || positions == null)
             return false;
 
-        int spawnCount = Mathf.Min(6, Mathf.Min(snapshots.Count, placeholders.Length));
+        int spawnCount = Mathf.Min(6, Mathf.Min(snapshots.Count, positions.Length));
         Transform parent = runtimeUnitRoot != null ? runtimeUnitRoot : battlefieldCollider.transform;
 
         for (int i = 0; i < spawnCount; i++)
         {
             BattleUnitSnapshot snapshot = snapshots[i];
-            Transform placeholder = placeholders[i];
-
             if (snapshot == null)
                 continue;
-            if (placeholder == null)
-                return false;
 
             GameObject runtimeRoot = Instantiate(runtimeUnitRootPrefab, parent);
             BattleRuntimeUnit runtimeUnit = runtimeRoot.GetComponentInChildren<BattleRuntimeUnit>(true);
@@ -268,8 +274,7 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
             }
 
             runtimeUnit.Initialize(snapshot.Clone(), unitNumberStart + i, isEnemy);
-            runtimeUnit.PlaceOnBattlefieldPlaceholder(placeholder, battlefieldCollider.transform);
-            //runtimeUnit.ClampInsideBattlefield(battlefieldCollider);
+            runtimeUnit.PlaceAt(positions[i], battlefieldCollider.transform);
 
             _runtimeUnits.Add(runtimeUnit);
         }

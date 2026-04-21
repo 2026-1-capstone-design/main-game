@@ -366,16 +366,13 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
             transform.rotation = Quaternion.LookRotation(direction);
     }
 
-    public void PlaceOnBattlefieldPlaceholder(Transform placeholder, Transform battlefield)
+    public void PlaceAt(Vector3 worldPos, Transform battlefield)
     {
-        if (placeholder == null)
-            return;
-
         if (battlefield != null)
             transform.SetParent(battlefield, false);
 
-        transform.position = placeholder.position;
-        transform.rotation = placeholder.rotation;
+        transform.position = worldPos;
+        transform.rotation = Quaternion.identity;
     }
 
     public void ClampInsideBattlefield(BoxCollider battlefieldCollider)
