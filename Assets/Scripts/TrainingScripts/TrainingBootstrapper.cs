@@ -16,6 +16,7 @@ public class TrainingBootstrapper : MonoBehaviour
 
     [SerializeField] private BattleTestPresetSO preset;
     [SerializeField] private GladiatorAgent[] allyAgents;
+    [SerializeField] private GladiatorAgent[] enemyAgents;
 
     private bool _episodeEnding;
 
@@ -44,6 +45,11 @@ public class TrainingBootstrapper : MonoBehaviour
             if (agent != null)
                 agent.GiveEndReward(allyWon);
         }
+        foreach (GladiatorAgent agent in enemyAgents)
+        {
+            if (agent != null)
+                agent.GiveEndReward(allyWon);
+        }
 
         BattleStartPayload payload = CreatePayload();
         var (allyPos, enemyPos) = GenerateRandomPlacements(payload.AllyUnits.Count, payload.EnemyUnits.Count);
@@ -52,6 +58,11 @@ public class TrainingBootstrapper : MonoBehaviour
         LinkAgentsToUnits();
 
         foreach (GladiatorAgent agent in allyAgents)
+        {
+            if (agent != null)
+                agent.EndEpisode();
+        }
+        foreach (GladiatorAgent agent in enemyAgents)
         {
             if (agent != null)
                 agent.EndEpisode();
@@ -90,14 +101,17 @@ public class TrainingBootstrapper : MonoBehaviour
     private void LinkAgentsToUnits()
     {
         var allyUnits = new List<BattleRuntimeUnit>();
+        var enemyUnits = new List<BattleRuntimeUnit>();
         foreach (BattleRuntimeUnit unit in battleSceneFlowManager.RuntimeUnits)
         {
             unit.SetExternallyControlled(true);
-            if (!unit.IsEnemy)
+            if (unit.IsEnemy)
+                enemyUnits.Add(unit);
+            else
                 allyUnits.Add(unit);
         }
 
-        Debug.Log($"[TrainingBootstrapper] Linking agents to units. Found {allyUnits.Count} ally units and {allyAgents.Length} ally agents.");
+        Debug.Log($"[TrainingBootstrapper] Linking agents: {allyUnits.Count} ally units / {allyAgents.Length} ally agents, {enemyUnits.Count} enemy units / {enemyAgents.Length} enemy agents.");
         for (int i = 0; i < allyAgents.Length; i++)
         {
             if (allyAgents[i] == null)
@@ -105,6 +119,14 @@ public class TrainingBootstrapper : MonoBehaviour
 
             BattleRuntimeUnit unit = i < allyUnits.Count ? allyUnits[i] : null;
             allyAgents[i].Initialize(unit, battleSceneFlowManager);
+        }
+        for (int i = 0; i < enemyAgents.Length; i++)
+        {
+            if (enemyAgents[i] == null)
+                continue;
+
+            BattleRuntimeUnit unit = i < enemyUnits.Count ? enemyUnits[i] : null;
+            enemyAgents[i].Initialize(unit, battleSceneFlowManager);
         }
     }
 
