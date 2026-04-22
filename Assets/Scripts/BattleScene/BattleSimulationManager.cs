@@ -172,18 +172,6 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
         _isTemporarilyPaused = false;
         _battleTickCount = 0;
         _initialized = true;
-
-        if (_statusGridUIManager != null)
-        {
-            _statusGridUIManager.Initialize(this, _runtimeUnits, _battleSceneUIManager);
-            _statusGridUIManager.Refresh();
-        }
-
-        if (_battleSceneUIManager != null)
-        {
-            _battleSceneUIManager.Initialize();
-            _battleSceneUIManager.HideAll();
-        }
     }
 
     private void Update()

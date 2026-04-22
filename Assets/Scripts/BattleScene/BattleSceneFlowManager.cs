@@ -34,6 +34,7 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
     [SerializeField] private bool autoBootstrapFromSessionManager = true;
 
     private readonly List<BattleRuntimeUnit> _runtimeUnits = new List<BattleRuntimeUnit>();
+    private SpawnResult _spawnResult;
     // BattleScene 진입 시 payload를 clone해 보관. F7 재시작 시 이 snapshot을 다시 clone해서 사용한다.
     private BattleStartPayload _initialPayloadSnapshot;
 
@@ -98,7 +99,7 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
     {
         if (_initialPayloadSnapshot == null)
         {
-            Debug.LogError("[BattleSceneFlowManager] Restart failed. Initial payload snapshot is null.", this);
+            Debug.LogError("[FlowManager] RestartCurrentBattle() called before initial Bootstrap.", this);
             return false;
         }
 
@@ -141,11 +142,17 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
             return false;
         }
 
+        _initialPayloadSnapshot = ClonePayload(payload);
+
         Vector3 ExtractPosition(Transform placeholder)
         {
             return placeholder != null ? placeholder.position : Vector3.zero;
         }
-        return BootstrapCore(payload, allyPlaceholders.Select(ExtractPosition).ToArray(), enemyPlaceholders.Select(ExtractPosition).ToArray());
+
+        return BootstrapCore(
+            ClonePayload(_initialPayloadSnapshot),
+            allyPlaceholders.Select(ExtractPosition).ToArray(),
+            enemyPlaceholders.Select(ExtractPosition).ToArray());
     }
 
     // TrainingBootstrapper에서 무작위 배치 시 사용한다.
@@ -162,38 +169,41 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
     {
         if (payload == null)
             return false;
+
         if (runtimeUnitRootPrefab == null || battleSimulationManager == null || battlefieldCollider == null)
             return false;
+
         if (payload.AllyUnits == null || payload.AllyUnits.Count == 0)
             return false;
         if (payload.EnemyUnits == null || payload.EnemyUnits.Count == 0)
             return false;
 
-        if (battleSceneUIManager != null)
+        try
         {
-            battleSceneUIManager.Initialize();
-            battleSceneUIManager.HideAll();
+            var context = new BattleSceneContext(
+                battleSimulationManager,
+                battlefieldCollider,
+                battleStatusGridUIManager,
+                battleSceneUIManager,
+                battleOrdersManager);
+
+            _spawnResult = BattleBootstrapper.Bootstrap(
+                payload,
+                runtimeUnitRootPrefab,
+                runtimeUnitRoot,
+                allyPositions,
+                enemyPositions,
+                context);
         }
-
-        _runtimeUnits.Clear();
-
-        // 아군: 유닛 번호 1~6, 적군: 유닛 번호 7~12
-        bool allyOk = SpawnTeam(payload.AllyUnits, allyPositions, false, 1);
-        bool enemyOk = SpawnTeam(payload.EnemyUnits, enemyPositions, true, 7);
-
-        if (!allyOk || !enemyOk)
+        catch (Exception exception)
         {
-            Debug.LogError("[BattleSceneFlowManager] BootstrapCore failed. Team spawning failed.", this);
+            Debug.LogError($"[BattleSceneFlowManager] BootstrapCore failed. {exception.Message}", this);
             return false;
         }
 
-        if (battleOrdersManager != null)
-            battleOrdersManager.Initialize(_runtimeUnits, battlefieldCollider);
-
-        battleSimulationManager.Initialize(_runtimeUnits, battlefieldCollider, battleStatusGridUIManager, battleSceneUIManager, payload);
-
-        if (battleSceneUIManager != null)
-            battleSceneUIManager.RefreshSpeedText();
+        _runtimeUnits.Clear();
+        if (_spawnResult != null)
+            _runtimeUnits.AddRange(_spawnResult.Units);
 
         OnUnitsSpawned?.Invoke();
         return true;
@@ -216,6 +226,7 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
         }
 
         _runtimeUnits.Clear();
+        _spawnResult = null;
     }
 
     private bool ValidateBootstrapSetup(BattleStartPayload payload)
@@ -241,44 +252,6 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
             return false;
         if (payload.EnemyUnits == null || payload.EnemyUnits.Count == 0)
             return false;
-
-        return true;
-    }
-
-    private bool SpawnTeam(
-        IReadOnlyList<BattleUnitSnapshot> snapshots,
-        Vector3[] positions,
-        bool isEnemy,
-        int unitNumberStart
-        )
-    {
-        if (snapshots == null || positions == null)
-            return false;
-
-        int spawnCount = Mathf.Min(6, Mathf.Min(snapshots.Count, positions.Length));
-        Transform parent = runtimeUnitRoot != null ? runtimeUnitRoot : battlefieldCollider.transform;
-
-        for (int i = 0; i < spawnCount; i++)
-        {
-            BattleUnitSnapshot snapshot = snapshots[i];
-            if (snapshot == null)
-                continue;
-
-            GameObject runtimeRoot = Instantiate(runtimeUnitRootPrefab, parent);
-            BattleRuntimeUnit runtimeUnit = runtimeRoot.GetComponentInChildren<BattleRuntimeUnit>(true);
-
-            if (runtimeUnit == null)
-            {
-                Destroy(runtimeRoot);
-                return false;
-            }
-
-            runtimeUnit.SetRuntimeRootObject(runtimeRoot);
-            runtimeUnit.Initialize(snapshot.Clone(), unitNumberStart + i, isEnemy);
-            runtimeUnit.PlaceAt(positions[i], battlefieldCollider.transform);
-
-            _runtimeUnits.Add(runtimeUnit);
-        }
 
         return true;
     }
