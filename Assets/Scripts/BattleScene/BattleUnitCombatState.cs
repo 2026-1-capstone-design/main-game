@@ -32,10 +32,16 @@ public sealed class BattleUnitCombatState
 
     // ── 바디 반경 (분리/클램프 계산용) ────────────────────────────
     public float BodyRadius { get; private set; }
+    public Vector3 Position { get; private set; }
 
     public void SetBodyRadius(float bodyRadius)
     {
         BodyRadius = Mathf.Max(0f, bodyRadius);
+    }
+
+    public void SyncPosition(Vector3 worldPosition)
+    {
+        Position = worldPosition;
     }
 
     // ── 버프 ───────────────────────────────────────────────────────
@@ -109,8 +115,12 @@ public sealed class BattleUnitCombatState
             IsCombatDisabled = true;
             CurrentHealth = 0f;
             AttackCooldownRemaining = 0f;
+            SkillCooldownRemaining = 0f;
             CurrentAction = "Disabled";
             CurrentActionType = BattleActionType.None;
+            _attackLockRemaining = 0f;
+            _skillLockRemaining = 0f;
+            ClearTargets();
             SetIdleState();
             OnDied?.Invoke();
         }
@@ -136,7 +146,10 @@ public sealed class BattleUnitCombatState
     {
         IsMoving = isMoving;
         if (isMoving)
+        {
             IsAttacking = false;
+            _attackLockRemaining = 0f;
+        }
         OnMovingStateChanged?.Invoke(IsMoving);
     }
 
@@ -144,6 +157,8 @@ public sealed class BattleUnitCombatState
     {
         bool wasAttacking = IsAttacking;
         IsAttacking = isAttacking;
+        if (!isAttacking)
+            _attackLockRemaining = 0f;
         if (isAttacking)
         {
             IsMoving = false;
@@ -156,6 +171,7 @@ public sealed class BattleUnitCombatState
     {
         IsMoving = false;
         IsAttacking = false;
+        _attackLockRemaining = 0f;
         OnIdleStateEntered?.Invoke();
     }
 
@@ -212,6 +228,14 @@ public sealed class BattleUnitCombatState
     public bool HasPlannedDesiredPosition { get; private set; }
     public bool IsMoving { get; private set; }
     public bool IsAttacking { get; private set; }
+    public BattleUnitCombatState CurrentTarget { get; private set; }
+    public BattleUnitCombatState PlannedTargetEnemy { get; private set; }
+    public BattleUnitCombatState PlannedTargetAlly { get; private set; }
+
+    private float _attackLockRemaining;
+    private float _skillLockRemaining;
+    public bool IsAttackLocked => _attackLockRemaining > 0f;
+    public bool IsSkillLocked => _skillLockRemaining > 0f;
 
     // ── 생성자 ─────────────────────────────────────────────────────
     public BattleUnitCombatState(BattleUnitSnapshot snapshot, int unitNumber, bool isEnemy)
@@ -257,6 +281,12 @@ public sealed class BattleUnitCombatState
         HasPlannedDesiredPosition = false;
         IsMoving = false;
         IsAttacking = false;
+        Position = Vector3.zero;
+        CurrentTarget = null;
+        PlannedTargetEnemy = null;
+        PlannedTargetAlly = null;
+        _attackLockRemaining = 0f;
+        _skillLockRemaining = 0f;
     }
 
     // ── 공격 쿨다운 ────────────────────────────────────────────────
@@ -274,6 +304,37 @@ public sealed class BattleUnitCombatState
     {
         float cooldown = AttackSpeed > 0f ? 1f / AttackSpeed : float.MaxValue;
         AttackCooldownRemaining = Mathf.Max(0f, cooldown);
+    }
+
+    public void StartAttackLock(float animationDuration)
+    {
+        IsAttacking = true;
+        IsMoving = false;
+        _attackLockRemaining = Mathf.Max(0f, animationDuration);
+    }
+
+    public void TickAttackLock(float deltaTime)
+    {
+        if (_attackLockRemaining <= 0f)
+        {
+            if (IsAttacking)
+                IsAttacking = false;
+            return;
+        }
+
+        _attackLockRemaining = Mathf.Max(0f, _attackLockRemaining - Mathf.Max(0f, deltaTime));
+        if (_attackLockRemaining <= 0f)
+            IsAttacking = false;
+    }
+
+    public void StartSkillLock(float animationDuration)
+    {
+        _skillLockRemaining = Mathf.Max(0f, animationDuration);
+    }
+
+    public void TickSkillLock(float deltaTime)
+    {
+        _skillLockRemaining = Mathf.Max(0f, _skillLockRemaining - Mathf.Max(0f, deltaTime));
     }
 
     // ── 파라미터 / 점수 세터 ──────────────────────────────────────
@@ -348,5 +409,24 @@ public sealed class BattleUnitCombatState
                 count++;
         }
         return count;
+    }
+
+    public void SetCurrentTarget(BattleUnitCombatState target)
+    {
+        CurrentTarget = target;
+    }
+
+    public void SetPlannedTargets(BattleUnitCombatState enemy, BattleUnitCombatState ally)
+    {
+        PlannedTargetEnemy = enemy;
+        PlannedTargetAlly = ally;
+        CurrentTarget = enemy;
+    }
+
+    public void ClearTargets()
+    {
+        CurrentTarget = null;
+        PlannedTargetEnemy = null;
+        PlannedTargetAlly = null;
     }
 }

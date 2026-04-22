@@ -4,7 +4,7 @@ public sealed class EngageNearestPlanner : IBattleActionPlanner
 
     public BattleActionExecutionPlan Build(BattleRuntimeUnit unit, BattleFieldView field)
     {
-        BattleRuntimeUnit target = field.FindNearestLivingEnemy(unit);
+        BattleUnitCombatState target = field.FindNearestLivingEnemy(unit.State);
         return new BattleActionExecutionPlan
         {
             Action = BattleActionType.EngageNearest,
@@ -16,5 +16,5 @@ public sealed class EngageNearestPlanner : IBattleActionPlanner
     }
 
     public bool IsUsable(BattleRuntimeUnit unit, BattleActionExecutionPlan plan, BattleFieldView field)
-        => field.IsValidEnemyTarget(unit, plan.TargetEnemy);
+        => field.IsValidEnemyTarget(unit.State, plan.TargetEnemy);
 }

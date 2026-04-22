@@ -56,6 +56,9 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
     public bool verboseLog = false;
 
     private readonly List<BattleRuntimeUnit> _runtimeUnits = new List<BattleRuntimeUnit>(12);
+    private readonly List<BattleUnitCombatState> _unitStates = new List<BattleUnitCombatState>(12);
+    private readonly Dictionary<BattleUnitCombatState, BattleRuntimeUnit> _runtimeUnitByState
+        = new Dictionary<BattleUnitCombatState, BattleRuntimeUnit>(12);
 
     // 3D 전장 클램프를 위한 BoxCollider
     private BoxCollider _battlefieldCollider;
@@ -137,6 +140,8 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
         }
 
         _runtimeUnits.Clear();
+        _unitStates.Clear();
+        _runtimeUnitByState.Clear();
         _battlefieldCollider = battlefieldCollider; // 저장
 
         for (int i = 0; i < runtimeUnits.Count; i++)
@@ -146,19 +151,21 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
                 continue;
 
             unit.State.SetBodyRadius(unitBodyRadius);
-            unit.ClearCurrentTarget();
+            unit.ClearExecutionPlan();
             unit.State.ClearAttackCooldown();
             unit.State.ClearSkillCooldown();
             unit.State.SetIdleState();
 
             _runtimeUnits.Add(unit);
+            _unitStates.Add(unit.State);
+            _runtimeUnitByState[unit.State] = unit;
         }
 
         _statusGridUIManager = statusGridUIManager;
         _battleSceneUIManager = battleSceneUIManager;
         _payload = payload;
 
-        _fieldView = new BattleFieldView(_runtimeUnits, BuildParameterRadii(), escapeTowardTeamBlend);
+        _fieldView = new BattleFieldView(_unitStates, BuildParameterRadii(), escapeTowardTeamBlend);
         _planners = BuildPlannerRegistry();
         _skillRegistry = new BattleSkillRegistry(new IBattleSkill[]
         {
@@ -259,9 +266,8 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
                 unit.State.TickAttackCooldown(tickDeltaTime);
                 unit.State.TickSkillCooldown(tickDeltaTime);
                 unit.State.TickBufflCooldown(tickDeltaTime);
-
-                if (unit.IsAttacking && !unit.IsAttackAnimationPlaying())
-                    unit.State.SetAttackState(false);
+                unit.State.TickAttackLock(tickDeltaTime);
+                unit.State.TickSkillLock(tickDeltaTime);
             }
         }
     }
@@ -274,7 +280,7 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
         {
             BattleRuntimeUnit u = _runtimeUnits[i];
             if (u != null && !u.IsCombatDisabled)
-                allViews.Add(BattleUnitView.From(u));
+                allViews.Add(BattleUnitView.From(u.State));
         }
 
         BattleParameterRadii radii = BuildParameterRadii();
@@ -285,7 +291,7 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
             if (unit == null || unit.IsCombatDisabled)
                 continue;
 
-            BattleUnitView self = BattleUnitView.From(unit);
+            BattleUnitView self = BattleUnitView.From(unit.State);
 
             var allies = new List<BattleUnitView>();
             var enemies = new List<BattleUnitView>();
@@ -572,9 +578,9 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
                 continue;
             }
 
-            BattleRuntimeUnit targetEnemy = unit.PlannedTargetEnemy;
+            BattleUnitCombatState targetEnemy = unit.PlannedTargetEnemy;
 
-            if (_fieldView.IsValidEnemyTarget(unit, targetEnemy) && _fieldView.IsWithinEffectiveAttackDistance(unit, targetEnemy))
+            if (_fieldView.IsValidEnemyTarget(unit.State, targetEnemy) && _fieldView.IsWithinEffectiveAttackDistance(unit.State, targetEnemy))
             {
                 if (unit.IsMoving)
                     unit.State.SetIdleState();
@@ -593,7 +599,7 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
                 continue;
             }
 
-            if (_fieldView.IsValidEnemyTarget(unit, targetEnemy))
+            if (_fieldView.IsValidEnemyTarget(unit.State, targetEnemy))
             {
                 unit.FaceTarget(unit.PlannedDesiredPosition); //바라보도록
 
@@ -616,21 +622,22 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
             if (attacker == null || attacker.IsCombatDisabled)
                 continue;            //전투 불가능한 상태
 
-            BattleRuntimeUnit target = attacker.PlannedTargetEnemy;
-            if (!_fieldView.IsValidEnemyTarget(attacker, target))
+            BattleUnitCombatState target = attacker.PlannedTargetEnemy;
+            if (!_fieldView.IsValidEnemyTarget(attacker.State, target))
                 continue;                    //유효하지 않은 적
-            if (!_fieldView.IsWithinEffectiveAttackDistance(attacker, target))
+            if (!_fieldView.IsWithinEffectiveAttackDistance(attacker.State, target))
                 continue;       //사거리 안
             if (attacker.AttackCooldownRemaining > 0f)
                 continue;                    //공격 쿨이 남음
 
             attacker.State.SetAttackState(true);        //실질적으로 때리는 타이밍
 
-            target.State.ApplyDamage(attacker.Attack); //데미지 적용
-            attacker.RaiseAttackLanded(target, target.IsCombatDisabled);
+            target.ApplyDamage(attacker.Attack); //데미지 적용
+            BattleRuntimeUnit targetRuntime = ResolveRuntimeUnit(target);
+            attacker.RaiseAttackLanded(targetRuntime, target.IsCombatDisabled);
 
             attacker.State.ResetAttackCooldown();       //공격 쿨 돌리고
-            // SetAttackState(false)는 TickAllCooldowns에서 애니메이션 종료 후 호출
+            // SetAttackState(false)는 TickAttackLock에서 animation duration 기준으로 호출
         }
     }
 
@@ -650,7 +657,7 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
                 continue;
 
             skill.Apply(unit, _fieldView, this);
-            unit.SetSkillState();           // 비주얼(Animator 트리거)은 BRU에 남음
+            unit.SetSkillState(unit.GetSkillAnimationDuration()); // 비주얼(Animator 트리거)은 BRU에 남음
             unit.State.ResetSkillCooldown();
         }
     }
@@ -723,7 +730,7 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
         return modified;
     }
 
-    private bool MoveTowardsTarget(BattleRuntimeUnit mover, BattleRuntimeUnit target, float tickDeltaTime)
+    private bool MoveTowardsTarget(BattleRuntimeUnit mover, BattleUnitCombatState target, float tickDeltaTime)
     {
         if (mover == null || target == null)
             return false;
@@ -736,7 +743,7 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
         toTarget.y = 0f;
 
         float centerDistance = toTarget.magnitude;
-        float effectiveAttackDistance = _fieldView.GetEffectiveAttackDistance(mover, target);
+        float effectiveAttackDistance = _fieldView.GetEffectiveAttackDistance(mover.State, target);
 
         if (centerDistance <= effectiveAttackDistance)
             return false;
@@ -751,6 +758,13 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
         mover.SetPosition(currentPosition + direction * moveDistance);
         mover.ClampInsideBattlefield(_battlefieldCollider);
         return true;
+    }
+
+    private BattleRuntimeUnit ResolveRuntimeUnit(BattleUnitCombatState state)
+    {
+        if (state == null)
+            return null;
+        return _runtimeUnitByState.TryGetValue(state, out BattleRuntimeUnit runtime) ? runtime : null;
     }
 
     private bool MoveTowardsPosition(BattleRuntimeUnit mover, Vector3 desiredPosition, float tickDeltaTime)

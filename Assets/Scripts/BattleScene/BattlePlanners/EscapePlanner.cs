@@ -7,7 +7,7 @@ public sealed class EscapePlanner : IBattleActionPlanner
     public BattleActionExecutionPlan Build(BattleRuntimeUnit unit, BattleFieldView field)
     {
         Vector3 selfPos = unit.Position;
-        Vector3 pressureCenter = field.ComputeEnemyPressureCenter(unit);
+        Vector3 pressureCenter = field.ComputeEnemyPressureCenter(unit.State);
         Vector3 away = selfPos - pressureCenter;
         away.y = 0f;
 
@@ -15,7 +15,7 @@ public sealed class EscapePlanner : IBattleActionPlanner
             away = unit.IsEnemy ? Vector3.right : Vector3.left;
         away.Normalize();
 
-        Vector3 teamCenter = field.ComputeTeamCenter(unit.IsEnemy);
+        Vector3 teamCenter = field.ComputeTeamCenter(unit.State.IsEnemy);
         Vector3 towardTeam = (teamCenter - selfPos);
         towardTeam.y = 0f;
         towardTeam.Normalize();
@@ -35,5 +35,5 @@ public sealed class EscapePlanner : IBattleActionPlanner
     }
 
     public bool IsUsable(BattleRuntimeUnit unit, BattleActionExecutionPlan plan, BattleFieldView field)
-        => plan.HasDesiredPosition || field.IsValidEnemyTarget(unit, plan.TargetEnemy);
+        => plan.HasDesiredPosition || field.IsValidEnemyTarget(unit.State, plan.TargetEnemy);
 }

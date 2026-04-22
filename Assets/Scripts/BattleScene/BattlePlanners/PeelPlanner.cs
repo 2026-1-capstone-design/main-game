@@ -6,8 +6,8 @@ public sealed class PeelPlanner : IBattleActionPlanner
 
     public BattleActionExecutionPlan Build(BattleRuntimeUnit unit, BattleFieldView field)
     {
-        BattleRuntimeUnit ally = field.FindMostPressuredAlly(unit);
-        BattleRuntimeUnit enemy = field.FindBestPeelEnemy(unit, ally);
+        BattleUnitCombatState ally = field.FindMostPressuredAlly(unit.State);
+        BattleUnitCombatState enemy = field.FindBestPeelEnemy(unit.State, ally);
 
         Vector3 desiredPosition = ally != null ? ally.Position : unit.Position;
         bool hasDesiredPosition = ally != null;
@@ -29,5 +29,5 @@ public sealed class PeelPlanner : IBattleActionPlanner
     }
 
     public bool IsUsable(BattleRuntimeUnit unit, BattleActionExecutionPlan plan, BattleFieldView field)
-        => field.IsValidEnemyTarget(unit, plan.TargetEnemy);
+        => field.IsValidEnemyTarget(unit.State, plan.TargetEnemy);
 }

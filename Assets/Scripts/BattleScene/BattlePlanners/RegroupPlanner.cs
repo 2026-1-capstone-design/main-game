@@ -9,11 +9,11 @@ public sealed class RegroupPlanner : IBattleActionPlanner
             Action = BattleActionType.RegroupToAllies,
             TargetEnemy = null,
             TargetAlly = null,
-            DesiredPosition = field.ComputeTeamCenter(unit.IsEnemy),
+            DesiredPosition = field.ComputeTeamCenter(unit.State.IsEnemy),
             HasDesiredPosition = true
         };
     }
 
     public bool IsUsable(BattleRuntimeUnit unit, BattleActionExecutionPlan plan, BattleFieldView field)
-        => plan.HasDesiredPosition || field.IsValidEnemyTarget(unit, plan.TargetEnemy);
+        => plan.HasDesiredPosition || field.IsValidEnemyTarget(unit.State, plan.TargetEnemy);
 }
