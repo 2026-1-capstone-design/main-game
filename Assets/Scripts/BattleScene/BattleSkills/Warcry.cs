@@ -12,15 +12,11 @@ public sealed class WarcrySkill : IBattleSkill
 
     public void Apply(BattleRuntimeUnit caster, BattleFieldView field, ISkillEffectApplier applier)
     {
-        var sim = applier as BattleSimulationManager;
-        if (sim != null)
+        foreach (var unit in applier.AllUnits)
         {
-            foreach (var unit in sim.RuntimeUnits)
+            if (unit != null && !unit.IsCombatDisabled && unit.IsEnemy == caster.IsEnemy)
             {
-                if (unit != null && !unit.IsCombatDisabled && unit.IsEnemy == caster.IsEnemy)
-                {
-                    applier.ApplyBuff(unit.State, BuffType.AttackDamage, 3, 10f); // 공격력 +30
-                }
+                applier.ApplyBuff(unit, BuffType.AttackDamage, 3, 10f); // 공격력 +30
             }
         }
     }

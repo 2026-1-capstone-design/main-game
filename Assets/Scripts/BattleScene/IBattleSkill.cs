@@ -2,9 +2,10 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // 스킬 효과를 실제로 적용하는 실행자 인터페이스.
-// BattleSimulationManager가 구현하며, 테스트 시에는 Test-double로 대체 가능.
+// SkillEffectApplier가 구현하며, 테스트 시에는 Test-double로 대체 가능.
 public interface ISkillEffectApplier
 {
+    IEnumerable<BattleUnitCombatState> AllUnits { get; }
     void ApplyDamage(BattleUnitCombatState target, float amount);
     void AddKnockback(BattleUnitCombatState target, Vector3 direction, float force);
     void ApplyHeal(BattleUnitCombatState caster, float amount);

@@ -9,18 +9,19 @@ public sealed class RevolverFanningSkill : IBattleSkill
     public IReadOnlyList<WeaponType> CompatibleWeaponTypes { get; } = new[] { WeaponType.handGun };
 
     public bool CanActivate(BattleRuntimeUnit caster, BattleFieldView field) =>
-        caster.PlannedTargetEnemy != null && field.IsWithinEffectiveAttackDistance(caster, caster.PlannedTargetEnemy);
+        caster.PlannedTargetEnemy != null
+        && field.IsWithinEffectiveAttackDistance(caster.State, caster.PlannedTargetEnemy);
 
     public void Apply(BattleRuntimeUnit caster, BattleFieldView field, ISkillEffectApplier applier)
     {
-        BattleRuntimeUnit target = caster.PlannedTargetEnemy;
+        var target = caster.PlannedTargetEnemy;
         if (target == null)
             return;
 
         // 6연발 데미지 적용
         for (int i = 0; i < 6; i++)
         {
-            applier.ApplyDamage(target.State, caster.Attack * 0.5f);
+            applier.ApplyDamage(target, caster.Attack * 0.5f);
         }
     }
 }

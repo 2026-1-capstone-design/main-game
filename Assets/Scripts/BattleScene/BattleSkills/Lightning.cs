@@ -12,23 +12,17 @@ public sealed class LightningSkill : IBattleSkill
 
     public void Apply(BattleRuntimeUnit caster, BattleFieldView field, ISkillEffectApplier applier)
     {
-        BattleRuntimeUnit target = caster.PlannedTargetEnemy;
+        var target = caster.PlannedTargetEnemy;
         if (target == null)
             return;
 
-        var sim = applier as BattleSimulationManager;
-        if (sim != null)
+        foreach (var unit in applier.AllUnits)
         {
-            foreach (var unit in sim.RuntimeUnits)
-            {
-                if (unit != null && !unit.IsCombatDisabled && unit.IsEnemy != caster.IsEnemy)
-                {
-                    if (Vector3.Distance(target.Position, unit.Position) <= 40f) // 광역 반경 40
-                    {
-                        applier.ApplyDamage(unit.State, caster.Attack * 1.5f);
-                    }
-                }
-            }
+            if (unit.IsCombatDisabled || unit.IsEnemy == caster.IsEnemy)
+                continue;
+
+            if (Vector3.Distance(target.Position, unit.Position) <= 40f)
+                applier.ApplyDamage(unit, caster.Attack * 1.5f);
         }
     }
 }

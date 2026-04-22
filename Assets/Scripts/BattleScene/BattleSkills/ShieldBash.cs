@@ -9,19 +9,20 @@ public sealed class ShieldBashSkill : IBattleSkill
     public IReadOnlyList<WeaponType> CompatibleWeaponTypes { get; } = new[] { WeaponType.shield };
 
     public bool CanActivate(BattleRuntimeUnit caster, BattleFieldView field) =>
-        caster.PlannedTargetEnemy != null && field.IsWithinEffectiveAttackDistance(caster, caster.PlannedTargetEnemy);
+        caster.PlannedTargetEnemy != null
+        && field.IsWithinEffectiveAttackDistance(caster.State, caster.PlannedTargetEnemy);
 
     public void Apply(BattleRuntimeUnit caster, BattleFieldView field, ISkillEffectApplier applier)
     {
-        BattleRuntimeUnit target = caster.PlannedTargetEnemy;
+        var target = caster.PlannedTargetEnemy;
         if (target == null)
             return;
 
-        applier.ApplyDamage(target.State, caster.Attack * 1.0f);
+        applier.ApplyDamage(target, caster.Attack * 1.0f);
         Vector3 pushDir = target.Position - caster.Position;
-        applier.AddKnockback(target.State, pushDir, 120f); // 강력한 넉백
+        applier.AddKnockback(target, pushDir, 120f); // 강력한 넉백
 
         // 공격력 디버프 (음수 레벨 부여)
-        applier.ApplyBuff(target.State, BuffType.AttackDamage, -3, 6f);
+        applier.ApplyBuff(target, BuffType.AttackDamage, -3, 6f);
     }
 }

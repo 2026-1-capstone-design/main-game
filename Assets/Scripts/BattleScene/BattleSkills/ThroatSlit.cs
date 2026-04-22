@@ -12,7 +12,7 @@ public sealed class ThroatSlitSkill : IBattleSkill
 
     public void Apply(BattleRuntimeUnit caster, BattleFieldView field, ISkillEffectApplier applier)
     {
-        BattleRuntimeUnit target = caster.PlannedTargetEnemy;
+        var target = caster.PlannedTargetEnemy;
         if (target == null)
             return;
 
@@ -22,6 +22,6 @@ public sealed class ThroatSlitSkill : IBattleSkill
         behindPos.y = caster.Position.y;
 
         caster.SetPosition(behindPos); // 텔레포트
-        applier.ApplyDamage(target.State, caster.Attack * 2.0f);
+        applier.ApplyDamage(target, caster.Attack * 2.0f);
     }
 }

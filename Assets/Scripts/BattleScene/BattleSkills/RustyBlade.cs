@@ -9,11 +9,12 @@ public sealed class RustyBladeSkill : IBattleSkill
     public IReadOnlyList<WeaponType> CompatibleWeaponTypes { get; } = new[] { WeaponType.dagger };
 
     public bool CanActivate(BattleRuntimeUnit caster, BattleFieldView field) =>
-        caster.PlannedTargetEnemy != null && field.IsWithinEffectiveAttackDistance(caster, caster.PlannedTargetEnemy);
+        caster.PlannedTargetEnemy != null
+        && field.IsWithinEffectiveAttackDistance(caster.State, caster.PlannedTargetEnemy);
 
     public void Apply(BattleRuntimeUnit caster, BattleFieldView field, ISkillEffectApplier applier)
     {
-        applier.ApplyDamage(caster.PlannedTargetEnemy.State, caster.Attack);
-        applier.ApplyBuff(caster.PlannedTargetEnemy.State, BuffType.BleedDamage, 1, 5f);
+        applier.ApplyDamage(caster.PlannedTargetEnemy, caster.Attack);
+        applier.ApplyBuff(caster.PlannedTargetEnemy, BuffType.BleedDamage, 1, 5f);
     }
 }

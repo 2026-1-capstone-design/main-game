@@ -9,11 +9,12 @@ public sealed class HeadStrikeSkill : IBattleSkill
     public IReadOnlyList<WeaponType> CompatibleWeaponTypes { get; } = new[] { WeaponType.spear };
 
     public bool CanActivate(BattleRuntimeUnit caster, BattleFieldView field) =>
-        caster.PlannedTargetEnemy != null && field.IsWithinEffectiveAttackDistance(caster, caster.PlannedTargetEnemy);
+        caster.PlannedTargetEnemy != null
+        && field.IsWithinEffectiveAttackDistance(caster.State, caster.PlannedTargetEnemy);
 
     public void Apply(BattleRuntimeUnit caster, BattleFieldView field, ISkillEffectApplier applier)
     {
-        applier.ApplyDamage(caster.PlannedTargetEnemy.State, caster.Attack * 1.5f);
-        applier.ApplyBuff(caster.PlannedTargetEnemy.State, BuffType.Stun, 1, 3f);
+        applier.ApplyDamage(caster.PlannedTargetEnemy, caster.Attack * 1.5f);
+        applier.ApplyBuff(caster.PlannedTargetEnemy, BuffType.Stun, 1, 3f);
     }
 }

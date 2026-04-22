@@ -9,10 +9,11 @@ public sealed class FireballSkill : IBattleSkill
     public IReadOnlyList<WeaponType> CompatibleWeaponTypes { get; } = new[] { WeaponType.staff };
 
     public bool CanActivate(BattleRuntimeUnit caster, BattleFieldView field) =>
-        caster.PlannedTargetEnemy != null && field.IsWithinEffectiveAttackDistance(caster, caster.PlannedTargetEnemy);
+        caster.PlannedTargetEnemy != null
+        && field.IsWithinEffectiveAttackDistance(caster.State, caster.PlannedTargetEnemy);
 
     public void Apply(BattleRuntimeUnit caster, BattleFieldView field, ISkillEffectApplier applier)
     {
-        applier.ApplyDamage(caster.PlannedTargetEnemy.State, caster.Attack * 2.5f);
+        applier.ApplyDamage(caster.PlannedTargetEnemy, caster.Attack * 2.5f);
     }
 }

@@ -27,6 +27,7 @@ public sealed class BattleStatusGridUIManager : MonoBehaviour
     private TMP_Text[] enemyStatusTexts = new TMP_Text[6];
 
     private BattleSimulationManager _simulationManager;
+    private BattleSimulationManager _subscribedSimulationManager;
     private BattleSceneUIManager _battleSceneUIManager;
     private readonly BattleRuntimeUnit[] _allyUnits = new BattleRuntimeUnit[6];
     private readonly BattleRuntimeUnit[] _enemyUnits = new BattleRuntimeUnit[6];
@@ -40,11 +41,17 @@ public sealed class BattleStatusGridUIManager : MonoBehaviour
     {
         _simulationManager = simulationManager;
         _battleSceneUIManager = battleSceneUIManager;
+        RebindSimulationEvents();
         BindUnits(runtimeUnits);
 
         BindAllyOrderButtons();
         UpdateAllyOrderButtonInteractableStates();
         _initialized = true;
+    }
+
+    private void OnDestroy()
+    {
+        UnbindSimulationEvents();
     }
 
     public void BindUnits(IReadOnlyList<BattleRuntimeUnit> runtimeUnits)
@@ -249,5 +256,40 @@ public sealed class BattleStatusGridUIManager : MonoBehaviour
             + $"rg{s.RegroupToAllies:0.0} "
             + $"cl{s.CollapseOnCluster:0.0} "
             + $"en{s.EngageNearest:0.0}";
+    }
+
+    private void RebindSimulationEvents()
+    {
+        if (_subscribedSimulationManager == _simulationManager)
+            return;
+
+        UnbindSimulationEvents();
+        _subscribedSimulationManager = _simulationManager;
+
+        if (_subscribedSimulationManager == null)
+            return;
+
+        _subscribedSimulationManager.OnSimulationTicked += HandleSimulationTicked;
+        _subscribedSimulationManager.OnBattleFinished += HandleBattleFinished;
+    }
+
+    private void UnbindSimulationEvents()
+    {
+        if (_subscribedSimulationManager == null)
+            return;
+
+        _subscribedSimulationManager.OnSimulationTicked -= HandleSimulationTicked;
+        _subscribedSimulationManager.OnBattleFinished -= HandleBattleFinished;
+        _subscribedSimulationManager = null;
+    }
+
+    private void HandleSimulationTicked(SimulationTickData _)
+    {
+        Refresh();
+    }
+
+    private void HandleBattleFinished(BattleOutcome _)
+    {
+        Refresh();
     }
 }
