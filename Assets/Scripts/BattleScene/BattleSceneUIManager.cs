@@ -66,6 +66,7 @@ public sealed class BattleSceneUIManager : MonoBehaviour
     }
 
     private SceneLoader _sceneLoader;
+    private BattleSimulationManager _subscribedSimulationManager;
     private bool _initialized;
     private bool _isNavigating;
 
@@ -89,6 +90,7 @@ public sealed class BattleSceneUIManager : MonoBehaviour
         }
 
         _sceneLoader = SceneLoader.Instance;
+        EnsureBattleSimulationManager();
 
         BindButton(confirmButton, OnConfirmClicked);
         BindButton(speedUpButton, OnSpeedUpClicked);
@@ -107,6 +109,11 @@ public sealed class BattleSceneUIManager : MonoBehaviour
         RefreshButtonStates();
 
         _initialized = true;
+    }
+
+    private void OnDestroy()
+    {
+        UnbindSimulationEvents();
     }
 
     public void ShowBattleEndPanel(BattleResolution resolution)
@@ -660,6 +667,36 @@ public sealed class BattleSceneUIManager : MonoBehaviour
         {
             battleSimulationManager = FindFirstObjectByType<BattleSimulationManager>();
         }
+
+        RebindSimulationEvents();
+    }
+
+    private void RebindSimulationEvents()
+    {
+        if (_subscribedSimulationManager == battleSimulationManager)
+            return;
+
+        UnbindSimulationEvents();
+        _subscribedSimulationManager = battleSimulationManager;
+
+        if (_subscribedSimulationManager == null)
+            return;
+
+        _subscribedSimulationManager.OnBattleFinished += HandleBattleFinished;
+    }
+
+    private void UnbindSimulationEvents()
+    {
+        if (_subscribedSimulationManager == null)
+            return;
+
+        _subscribedSimulationManager.OnBattleFinished -= HandleBattleFinished;
+        _subscribedSimulationManager = null;
+    }
+
+    private void HandleBattleFinished(BattleOutcome outcome)
+    {
+        ShowBattleEndPanel(outcome.Resolution);
     }
 
     private void EnsureBattleOrdersManager()

@@ -68,9 +68,7 @@ public static class BattleBootstrapper
         context.SimulationManager.Initialize(
             spawned.Units,
             context.BattlefieldCollider,
-            context.StatusGridUI,
-            context.SceneUI,
-            payload);
+            payload: payload);
     }
 
     public static void InitializeUI(SpawnResult spawned, BattleSceneContext context)
