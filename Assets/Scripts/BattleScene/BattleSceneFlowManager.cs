@@ -273,6 +273,7 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
                 return false;
             }
 
+            runtimeUnit.SetRuntimeRootObject(runtimeRoot);
             runtimeUnit.Initialize(snapshot.Clone(), unitNumberStart + i, isEnemy);
             runtimeUnit.PlaceAt(positions[i], battlefieldCollider.transform);
 

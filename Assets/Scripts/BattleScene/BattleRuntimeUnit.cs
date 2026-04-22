@@ -28,7 +28,8 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     // ── 순수 전투 상태 (Animator/UI 없음) ─────────────────────────
     public BattleUnitCombatState State { get; private set; }
 
-    public GameObject RuntimeRootObject => gameObject;
+    private GameObject _runtimeRootObject;
+    public GameObject RuntimeRootObject => _runtimeRootObject != null ? _runtimeRootObject : gameObject;
 
     // ── 정체성 프로퍼티 (State 위임) ──────────────────────────────
     public int UnitNumber => State.UnitNumber;
@@ -76,6 +77,12 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     // ── ML-Agents 외부 제어 ───────────────────────────────────────
     // true면 BattleSimulationManager의 AI 파이프라인(CommitOrSwitch, BuildPlan)을 스킵한다.
     public bool IsExternallyControlled { get; private set; }
+
+    // 공격이 실제로 적에게 적중했을 때 발화한다. (target, wasKillingBlow)
+    public event Action<BattleRuntimeUnit, bool> OnAttackLanded;
+
+    public void RaiseAttackLanded(BattleRuntimeUnit target, bool wasKill)
+        => OnAttackLanded?.Invoke(target, wasKill);
     public Vector3 ExternalMoveDirection { get; private set; }
     public float ExternalRotationDelta { get; private set; }
 
@@ -96,6 +103,11 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     public void Rotate(float deltaAngleDeg)
     {
         transform.Rotate(0f, deltaAngleDeg, 0f, Space.World);
+    }
+
+    public void SetRuntimeRootObject(GameObject runtimeRootObject)
+    {
+        _runtimeRootObject = runtimeRootObject;
     }
 
     // ── 파라미터 / 점수 (State 위임) ──────────────────────────────

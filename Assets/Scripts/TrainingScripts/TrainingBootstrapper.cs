@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using BattleTest;
 using UnityEngine;
 
@@ -18,6 +18,8 @@ public class TrainingBootstrapper : MonoBehaviour
     [SerializeField] private GladiatorAgent[] allyAgents;
     [SerializeField] private GladiatorAgent[] enemyAgents;
 
+    private const int BattleTimeoutTicks = 1 * 60 * 60;
+
     private bool _episodeEnding;
 
     private void Start()
@@ -34,41 +36,61 @@ public class TrainingBootstrapper : MonoBehaviour
 
     private void Update()
     {
-        if (_episodeEnding || !battleSimulationManager.IsBattleFinished)
+        if (_episodeEnding)
             return;
 
+        // Debug.Log("[TrainingBootstrapper] Tick: " + battleSimulationManager.BattleTickCount);
+        // if (!battleSimulationManager.IsBattleFinished
+        //     && battleSimulationManager.BattleTickCount >= BattleTimeoutTicks)
+        // {
+        //     ResetEpisode(isTimeout: true);
+        //     return;
+        // }
+
+        if (battleSimulationManager.IsBattleFinished)
+            ResetEpisode(isTimeout: false);
+    }
+
+    private void ResetEpisode(bool isTimeout)
+    {
         _episodeEnding = true;
 
-        bool allyWon = CheckAllyWon();
-        foreach (GladiatorAgent agent in allyAgents)
-        {
-            if (agent != null)
-                agent.GiveEndReward(allyWon);
-        }
-        foreach (GladiatorAgent agent in enemyAgents)
-        {
-            if (agent != null)
-                agent.GiveEndReward(allyWon);
-        }
+        ForEachAgent(agent => agent.EndEpisode());
 
         BattleStartPayload payload = CreatePayload();
         var (allyPos, enemyPos) = GenerateRandomPlacements(payload.AllyUnits.Count, payload.EnemyUnits.Count);
-        battleSceneFlowManager.ResetAndBootstrap(payload, allyPos, enemyPos);
+        bool resetOk = battleSceneFlowManager.ResetAndBootstrap(payload, allyPos, enemyPos);
+        if (!resetOk)
+        {
+            Debug.LogError("[TrainingBootstrapper] ResetEpisode failed. Could not reset battlefield.", this);
+            _episodeEnding = false;
+            return;
+        }
+
+        // if (isTimeout)
+        // {
+        //     Debug.LogWarning("[TrainingBootstrapper] Episode ended due to timeout.");
+        //     ForEachAgent(agent => agent.AddReward(-1000f)); // Timeout 패널티
+        // }
+
         RefreshAllUnitAnimations();
         LinkAgentsToUnits();
 
+        _episodeEnding = false;
+    }
+
+    private void ForEachAgent(System.Action<GladiatorAgent> action)
+    {
         foreach (GladiatorAgent agent in allyAgents)
         {
             if (agent != null)
-                agent.EndEpisode();
+                action(agent);
         }
         foreach (GladiatorAgent agent in enemyAgents)
         {
             if (agent != null)
-                agent.EndEpisode();
+                action(agent);
         }
-
-        _episodeEnding = false;
     }
 
     private void RefreshAllUnitAnimations()
@@ -128,22 +150,6 @@ public class TrainingBootstrapper : MonoBehaviour
             BattleRuntimeUnit unit = i < enemyUnits.Count ? enemyUnits[i] : null;
             enemyAgents[i].Initialize(unit, battleSceneFlowManager);
         }
-    }
-
-    private bool CheckAllyWon()
-    {
-        bool hasLivingAlly = false;
-        bool hasLivingEnemy = false;
-        foreach (BattleRuntimeUnit unit in battleSceneFlowManager.RuntimeUnits)
-        {
-            if (unit.IsCombatDisabled)
-                continue;
-            if (unit.IsEnemy)
-                hasLivingEnemy = true;
-            else
-                hasLivingAlly = true;
-        }
-        return hasLivingAlly && !hasLivingEnemy;
     }
 
     // 원형 경기장을 원점을 지나는 랜덤 직선으로 반으로 나눈 뒤,

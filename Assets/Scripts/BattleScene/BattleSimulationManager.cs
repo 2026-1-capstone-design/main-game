@@ -72,6 +72,7 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
     private bool _isTemporarilyPaused;
     private float _tickAccumulator;
     private float _tickInterval;
+    private int _battleTickCount;
 
     public IReadOnlyList<BattleRuntimeUnit> RuntimeUnits => _runtimeUnits;
     public float SimulationSpeedMultiplier => simulationSpeedMultiplier;
@@ -79,6 +80,23 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
     public bool IsBattleFinished => _battleFinished;
     public bool IsTemporarilyPaused => _isTemporarilyPaused;
     public BattleStartPayload InitialPayload => _payload;
+    public int BattleTickCount => _battleTickCount;
+
+    // TrainingBootstrapper 등 외부에서 전투를 강제 종료할 때 사용한다.
+    public void ForceFinishBattle()
+    {
+        if (_battleFinished)
+            return;
+        _battleFinished = true;
+        for (int i = 0; i < _runtimeUnits.Count; i++)
+        {
+            BattleRuntimeUnit unit = _runtimeUnits[i];
+            if (unit != null && !unit.IsCombatDisabled)
+                unit.SetIdleState();
+        }
+        if (_statusGridUIManager != null)
+            _statusGridUIManager.Refresh();
+    }
 
     private void Reset()
     {
@@ -152,6 +170,7 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
         _tickInterval = 1f / Mathf.Max(1f, simulationTickRate);
         _battleFinished = false;
         _isTemporarilyPaused = false;
+        _battleTickCount = 0;
         _initialized = true;
 
         if (_statusGridUIManager != null)
@@ -172,7 +191,9 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
         if (!_initialized || _battleFinished || _isTemporarilyPaused)
             return;
 
-        float scaledDeltaTime = Time.unscaledDeltaTime * Mathf.Max(0f, simulationSpeedMultiplier);
+        // Time.deltaTime respects Time.timeScale set by ML-Agents, enabling fast training.
+        // In normal gameplay Time.timeScale == 1, so behaviour is identical to before.
+        float scaledDeltaTime = Time.deltaTime * Mathf.Max(0f, simulationSpeedMultiplier);
         _tickAccumulator += scaledDeltaTime;
 
         while (_tickAccumulator >= _tickInterval)
@@ -223,6 +244,7 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
     // 9. 공격 → 10. 스킬 → 11. 승패 판정
     private void StepSimulation(float tickDeltaTime)
     {
+        _battleTickCount++;
         TickAllCooldowns(tickDeltaTime);
         ComputeAllParameters();
         EvaluateAllActionScores();
@@ -617,6 +639,7 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
             attacker.State.SetAttackState(true);        //실질적으로 때리는 타이밍
 
             target.State.ApplyDamage(attacker.Attack); //데미지 적용
+            attacker.RaiseAttackLanded(target, target.IsCombatDisabled);
 
             attacker.State.ResetAttackCooldown();       //공격 쿨 돌리고
             // SetAttackState(false)는 TickAllCooldowns에서 애니메이션 종료 후 호출
