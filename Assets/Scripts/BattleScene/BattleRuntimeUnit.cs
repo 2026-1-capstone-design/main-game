@@ -90,9 +90,8 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     public bool IsMoving => State.IsMoving;
     public bool IsAttacking => State.IsAttacking;
 
-    // ── 위치 (transform 직접) ─────────────────────────────────────
-    // 유닛 위치/클램프 기준은 스크립트가 붙은 자기 자신이 아니라 부모 Root(3D: SphereCollider).
-    public Vector3 Position => transform.position;
+    // ── 위치 (State 위임) ────────────────────────────────────────
+    public Vector3 Position => State != null ? State.Position : transform.position;
 
     // ── ML-Agents 외부 제어 ───────────────────────────────────────
     // true면 BattleSimulationManager의 AI 파이프라인(CommitOrSwitch, BuildPlan)을 스킵한다.
@@ -116,8 +115,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
 
     public void SetExternalAttackTarget(BattleRuntimeUnit target)
     {
-        PlannedTargetEnemy = target;
-        CurrentTarget = target;
+        State.SetPlannedTargets(target != null ? target.State : null, null);
     }
 
     public void Rotate(float deltaAngleDeg)
@@ -137,10 +135,10 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     public BattleActionType TopScoredAction => State.TopScoredAction;
     public float TopScoredValue => State.TopScoredValue;
 
-    // ── 실행 플랜 (BRU 참조는 BRU가 직접 보유 — 순환 의존 방지) ──
-    public BattleRuntimeUnit PlannedTargetEnemy { get; private set; }
-    public BattleRuntimeUnit PlannedTargetAlly { get; private set; }
-    public BattleRuntimeUnit CurrentTarget { get; private set; }
+    // ── 실행 플랜 타겟 (State 위임) ───────────────────────────────
+    public BattleUnitCombatState PlannedTargetEnemy => State.PlannedTargetEnemy;
+    public BattleUnitCombatState PlannedTargetAlly => State.PlannedTargetAlly;
+    public BattleUnitCombatState CurrentTarget => State.CurrentTarget;
 
     public Vector3 PlannedDesiredPosition => State.PlannedDesiredPosition;
     public bool HasPlannedDesiredPosition => State.HasPlannedDesiredPosition;
@@ -204,6 +202,8 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
 
     [SerializeField]
     private Transform rootFeet; // FEET 폴더 연결
+    private float _attackAnimationClipLength = -1f;
+    private float _skillAnimationClipLength = 0.5f;
 
     // animationProvider가 null이면 AnimationManager.Instance로 폴백한다.
     public void Initialize(
@@ -230,9 +230,8 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         State.OnIdleStateEntered += () => _myAnimation?.SetBool("isMoving", false);
         State.OnAttackTriggered += HandleAttackTriggered;
 
-        PlannedTargetEnemy = null;
-        PlannedTargetAlly = null;
-        CurrentTarget = null;
+        State.SyncPosition(transform.position);
+        State.ClearTargets();
 
         _myAnimation = transform.GetComponent<Animator>();
 
@@ -293,7 +292,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
             if (weaponMotion != null)
             {
                 _myAnimation.runtimeAnimatorController = weaponMotion;
-                Debug.Log("무기 처리 완료");
+                _attackAnimationClipLength = -1f;
             }
         }
 
@@ -315,6 +314,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         AnimationClip skillAnimation = provider.getAnimation(skillId);
         float cooltime = provider.getCooltime(skillId);
         skillType type = provider.getSkillType(skillId);
+        _skillAnimationClipLength = skillAnimation != null ? skillAnimation.length : 0.5f;
 
         State.SetSkillInfo(skillId, cooltime, type);
 
@@ -379,9 +379,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     // ── 사망 처리 (OnDied 이벤트 핸들러) ─────────────────────────
     private void HandleUnitDied()
     {
-        PlannedTargetEnemy = null;
-        PlannedTargetAlly = null;
-        CurrentTarget = null;
+        State.ClearTargets();
 
         if (_myAnimation != null)
         {
@@ -396,6 +394,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     private void HandleAttackTriggered()
     {
         _myAnimation?.SetTrigger("attack");
+        State.StartAttackLock(GetAttackAnimationDuration());
 
         if (PlannedTargetEnemy != null)
             FaceTarget(PlannedTargetEnemy.Position);
@@ -410,30 +409,47 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
             _myAnimation.speed = speedMultiplier;
     }
 
-    public bool IsAttackAnimationPlaying()
+    private float GetAttackAnimationDuration()
     {
         if (_myAnimation == null)
-            return false;
+            return 0.5f;
 
-        var info = _myAnimation.GetCurrentAnimatorStateInfo(0);
-        if (info.IsName("attack1") && info.normalizedTime < 1f)
-            return true;
-
-        // idle → attack1 트랜지션 중에는 현재 상태가 아직 attack1이 아니므로 목적지도 확인
-        if (_myAnimation.IsInTransition(0))
+        if (_attackAnimationClipLength <= 0f)
         {
-            var nextInfo = _myAnimation.GetNextAnimatorStateInfo(0);
-            if (nextInfo.IsName("attack1"))
-                return true;
+            RuntimeAnimatorController controller = _myAnimation.runtimeAnimatorController;
+            AnimationClip[] clips = controller != null ? controller.animationClips : null;
+            if (clips != null)
+            {
+                for (int i = 0; i < clips.Length; i++)
+                {
+                    AnimationClip clip = clips[i];
+                    if (clip == null)
+                        continue;
+                    if (clip.name.IndexOf("attack", StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        _attackAnimationClipLength = clip.length;
+                        break;
+                    }
+                }
+            }
         }
 
-        return false;
+        float baseLength = _attackAnimationClipLength > 0f ? _attackAnimationClipLength : 0.5f;
+        return baseLength / Mathf.Max(0.01f, _myAnimation.speed);
+    }
+
+    public float GetSkillAnimationDuration()
+    {
+        if (_myAnimation == null)
+            return _skillAnimationClipLength;
+        return Mathf.Max(0f, _skillAnimationClipLength) / Mathf.Max(0.01f, _myAnimation.speed);
     }
 
     // ── 스킬 실행 비주얼 ──────────────────────────────────────────
-    public void SetSkillState()
+    public void SetSkillState(float animationDuration)
     {
         _myAnimation?.SetTrigger("skill");
+        State.StartSkillLock(animationDuration);
         if (PlannedTargetEnemy != null)
             FaceTarget(PlannedTargetEnemy.Position);
         else if (CurrentTarget != null)
@@ -444,15 +460,10 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
 
     public void SetBodyRadius(float bodyRadius) => State.SetBodyRadius(bodyRadius);
 
-    public void ClearCurrentTarget()
-    {
-        CurrentTarget = null;
-    }
+    public void ClearCurrentTarget() => State.SetCurrentTarget(null);
 
-    public void SetCurrentTarget(BattleRuntimeUnit target)
-    {
-        CurrentTarget = target;
-    }
+    public void SetCurrentTarget(BattleRuntimeUnit target) =>
+        State.SetCurrentTarget(target != null ? target.State : null);
 
     public void SetCurrentParameters(BattleParameterSet raw, BattleParameterSet modified) =>
         State.SetCurrentParameters(raw, modified);
@@ -469,17 +480,13 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
 
     public void SetExecutionPlan(BattleActionExecutionPlan plan)
     {
-        PlannedTargetEnemy = plan.TargetEnemy;
-        PlannedTargetAlly = plan.TargetAlly;
-        CurrentTarget = plan.TargetEnemy;
+        State.SetPlannedTargets(plan.TargetEnemy, plan.TargetAlly);
         State.SetExecutionPlanPosition(plan.DesiredPosition, plan.HasDesiredPosition);
     }
 
     public void ClearExecutionPlan()
     {
-        PlannedTargetEnemy = null;
-        PlannedTargetAlly = null;
-        CurrentTarget = null;
+        State.ClearTargets();
         State.ClearExecutionPlanPosition();
     }
 
@@ -536,6 +543,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     public void SetPosition(Vector3 newPosition)
     {
         transform.position = newPosition;
+        State?.SyncPosition(newPosition);
     }
 
     public void FaceTarget(Vector3 targetPos)
@@ -553,6 +561,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
 
         transform.position = worldPos;
         transform.rotation = Quaternion.identity;
+        State?.SyncPosition(transform.position);
     }
 
     /*
@@ -595,7 +604,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         {
             Vector3 clampedPosition = center + (offset.normalized * maxRadius);
             clampedPosition.y = transform.position.y;
-            transform.position = clampedPosition;
+            SetPosition(clampedPosition);
         }
     }
 

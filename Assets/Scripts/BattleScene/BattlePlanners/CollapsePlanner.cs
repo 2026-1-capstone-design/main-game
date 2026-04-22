@@ -6,8 +6,8 @@ public sealed class CollapsePlanner : IBattleActionPlanner
 
     public BattleActionExecutionPlan Build(BattleRuntimeUnit unit, BattleFieldView field)
     {
-        Vector3 clusterCenter = field.ComputeTeamCenter(!unit.IsEnemy);
-        BattleRuntimeUnit target = field.FindEnemyClosestToPoint(unit, clusterCenter);
+        Vector3 clusterCenter = field.ComputeTeamCenter(!unit.State.IsEnemy);
+        BattleUnitCombatState target = field.FindEnemyClosestToPoint(unit.State, clusterCenter);
 
         return new BattleActionExecutionPlan
         {
@@ -20,5 +20,5 @@ public sealed class CollapsePlanner : IBattleActionPlanner
     }
 
     public bool IsUsable(BattleRuntimeUnit unit, BattleActionExecutionPlan plan, BattleFieldView field) =>
-        plan.HasDesiredPosition || field.IsValidEnemyTarget(unit, plan.TargetEnemy);
+        plan.HasDesiredPosition || field.IsValidEnemyTarget(unit.State, plan.TargetEnemy);
 }

@@ -4,7 +4,7 @@ public sealed class DiveBacklinePlanner : IBattleActionPlanner
 
     public BattleActionExecutionPlan Build(BattleRuntimeUnit unit, BattleFieldView field)
     {
-        BattleRuntimeUnit target = field.FindBestBacklineEnemy(unit);
+        BattleUnitCombatState target = field.FindBestBacklineEnemy(unit.State);
         return new BattleActionExecutionPlan
         {
             Action = BattleActionType.DiveEnemyBackline,
@@ -16,5 +16,5 @@ public sealed class DiveBacklinePlanner : IBattleActionPlanner
     }
 
     public bool IsUsable(BattleRuntimeUnit unit, BattleActionExecutionPlan plan, BattleFieldView field) =>
-        field.IsValidEnemyTarget(unit, plan.TargetEnemy);
+        field.IsValidEnemyTarget(unit.State, plan.TargetEnemy);
 }

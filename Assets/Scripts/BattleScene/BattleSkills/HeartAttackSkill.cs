@@ -11,17 +11,18 @@ public sealed class HeartAttackSkill : IBattleSkill
 
     public bool CanActivate(BattleRuntimeUnit caster, BattleFieldView field)
     {
-        BattleRuntimeUnit target = caster.PlannedTargetEnemy;
-        return field.IsValidEnemyTarget(caster, target) && field.IsWithinEffectiveAttackDistance(caster, target);
+        BattleUnitCombatState target = caster.PlannedTargetEnemy;
+        return field.IsValidEnemyTarget(caster.State, target)
+            && field.IsWithinEffectiveAttackDistance(caster.State, target);
     }
 
     public void Apply(BattleRuntimeUnit caster, BattleFieldView field, ISkillEffectApplier applier)
     {
-        BattleRuntimeUnit target = caster.PlannedTargetEnemy;
+        BattleUnitCombatState target = caster.PlannedTargetEnemy;
         if (target == null)
             return;
         Vector3 pushDir = target.Position - caster.Position;
-        applier.ApplyDamage(target.State, 20f);
-        applier.AddKnockback(target.State, pushDir, 50f);
+        applier.ApplyDamage(target, 20f);
+        applier.AddKnockback(target, pushDir, 50f);
     }
 }

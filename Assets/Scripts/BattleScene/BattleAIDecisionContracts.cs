@@ -438,6 +438,14 @@ public readonly struct BattleUnitView
 
     public static BattleUnitView From(BattleRuntimeUnit u)
     {
+        return From(u != null ? u.State : null);
+    }
+
+    public static BattleUnitView From(BattleUnitCombatState u)
+    {
+        if (u == null)
+            return default;
+
         return new BattleUnitView(
             u.UnitNumber,
             u.IsEnemy,
@@ -457,10 +465,8 @@ public readonly struct BattleUnitView
 public struct BattleActionExecutionPlan
 {
     public BattleActionType Action;
-    public BattleRuntimeUnit TargetEnemy;
-    public BattleRuntimeUnit TargetAlly;
-
-    // 3D 평면을 위해 Vector3로 변경
+    public BattleUnitCombatState TargetEnemy;
+    public BattleUnitCombatState TargetAlly;
     public Vector3 DesiredPosition;
     public bool HasDesiredPosition;
 }

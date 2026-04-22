@@ -4,7 +4,7 @@ public sealed class AssassinatePlanner : IBattleActionPlanner
 
     public BattleActionExecutionPlan Build(BattleRuntimeUnit unit, BattleFieldView field)
     {
-        BattleRuntimeUnit target = field.FindBestIsolatedEnemy(unit);
+        BattleUnitCombatState target = field.FindBestIsolatedEnemy(unit.State);
         return new BattleActionExecutionPlan
         {
             Action = BattleActionType.AssassinateIsolatedEnemy,
@@ -16,5 +16,5 @@ public sealed class AssassinatePlanner : IBattleActionPlanner
     }
 
     public bool IsUsable(BattleRuntimeUnit unit, BattleActionExecutionPlan plan, BattleFieldView field) =>
-        field.IsValidEnemyTarget(unit, plan.TargetEnemy);
+        field.IsValidEnemyTarget(unit.State, plan.TargetEnemy);
 }
