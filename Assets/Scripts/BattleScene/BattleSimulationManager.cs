@@ -20,12 +20,10 @@ public enum BuffType
     AttackDamage = 3,
     RedudeDamage = 4,
 
-
     //부정 버프
     BleedDamage,
-    MoveReduce,
-    DamageReduce,
-    FearDamage
+    Taunt,
+    Stun,
 }
 
 
@@ -58,7 +56,7 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
     private readonly List<BattleRuntimeUnit> _runtimeUnits = new List<BattleRuntimeUnit>(12);
 
     // 3D 전장 클램프를 위한 BoxCollider
-    private BoxCollider _battlefieldCollider;
+    private SphereCollider _battlefieldCollider;
     private BattleStatusGridUIManager _statusGridUIManager;
     private BattleSceneUIManager _battleSceneUIManager;
     private BattleStartPayload _payload;
@@ -104,7 +102,7 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
     // BoxCollider로 파라미터 변경
     public void Initialize(
         IReadOnlyList<BattleRuntimeUnit> runtimeUnits,
-        BoxCollider battlefieldCollider,
+        SphereCollider battlefieldCollider,
         BattleStatusGridUIManager statusGridUIManager = null,
         BattleSceneUIManager battleSceneUIManager = null,
         BattleStartPayload payload = null)
@@ -146,6 +144,18 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
         {
             new HeartAttackSkill(),
             new MadnessSkill(),
+            new BayonetChargeSkill(),
+            new FireballSkill(),
+            new HeadStrikeSkill(),
+            new LightningSkill(),
+            new LongGripSkill(),
+            new RevolverFanningSkill(),
+            new RustyBladeSkill(),
+            new ShieldBashSkill(),
+            new SpiralSlashSkill(),
+            new StimpackSkill(),
+            new ThroatSlitSkill(),
+            new WarcrySkill()
         });
 
         _tickAccumulator = 0f;
@@ -529,7 +539,7 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
         for (int i = 0; i < _runtimeUnits.Count; i++)
         {
             BattleRuntimeUnit unit = _runtimeUnits[i];
-            if (unit == null || unit.IsCombatDisabled)
+            if (unit == null || unit.IsCombatDisabled || unit.State.IsStunned)
                 continue;
 
             BattleRuntimeUnit targetEnemy = unit.PlannedTargetEnemy;
@@ -573,7 +583,7 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
         for (int i = 0; i < _runtimeUnits.Count; i++)
         {
             BattleRuntimeUnit attacker = _runtimeUnits[i];
-            if (attacker == null || attacker.IsCombatDisabled)
+            if (attacker == null || attacker.IsCombatDisabled || attacker.State.IsStunned)
                 continue;            //전투 불가능한 상태
 
             BattleRuntimeUnit target = attacker.PlannedTargetEnemy;
@@ -598,7 +608,7 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
     {
         foreach (BattleRuntimeUnit unit in _runtimeUnits)
         {
-            if (unit == null || unit.IsCombatDisabled)
+            if (unit == null || unit.IsCombatDisabled || unit.State.IsStunned)
                 continue;
             if (unit.SkillCooldownRemaining > 0f)
                 continue;
@@ -640,29 +650,6 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
                 _runtimeUnits[i].TickKnockback(tickDeltaTime);
             }
         }
-
-
-
-        //버프 or 디버프
-        for (int i = 0; i < _runtimeUnits.Count; i++)
-        {
-            if (_runtimeUnits[i] != null && !_runtimeUnits[i].IsCombatDisabled)
-            {
-                int buffNum = _runtimeUnits[i].State.BuffNum();
-
-
-
-
-
-
-
-
-
-            }
-        }
-
-
-
 
     }
 

@@ -5,7 +5,7 @@ using UnityEngine;
 // BattleSceneFlowManager 책임:
 // - BattleSessionManager에서 payload 읽기
 // - ally/enemy snapshot 기반 runtime unit 12개 생성 (ally 1~6 / enemy 7~12 번호 부여)
-// - Battlefield(BoxCollider) 위 placeholder 기준 배치
+// - Battlefield(Shpereollider) 위 placeholder 기준 배치
 // - BattleSimulationManager 초기화
 // - BattleSceneUIManager / BattleStatusGridUIManager와 연결
 // - 초기 payload snapshot 보관 및 clone 재사용 (F7 in-place restart)
@@ -14,8 +14,8 @@ using UnityEngine;
 public sealed class BattleSceneFlowManager : MonoBehaviour
 {
     [Header("Spawn")]
-    // RectTransform 대신 3D BoxCollider로 교체된 전장 영역
-    [SerializeField] private BoxCollider battlefieldCollider;
+    // RectTransform 대신 3D SphereCollider로 교체된 전장 영역
+    [SerializeField] private SphereCollider battlefieldCollider;
     [SerializeField] private GameObject runtimeUnitRootPrefab;
     [SerializeField] private Transform runtimeUnitRoot;
     [SerializeField] private Transform[] allyPlaceholders = new Transform[6];

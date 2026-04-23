@@ -5,6 +5,7 @@ using UnityEngine;
 // BattleUnitCombatState: 순수 전투 상태 컨테이너 (MonoBehaviour 없음, Unity 씬 의존 없음)
 // BattleRuntimeUnit이 소유하며, BattleSimulationManager가 이 객체를 통해 전투 상태를 읽고 쓴다.
 // Animator, UI, Transform 등 비주얼 관련 로직은 포함하지 않는다.
+[Serializable]
 public sealed class BattleUnitCombatState
 {
     // ── 유닛 정체성 ────────────────────────────────────────────────
@@ -19,16 +20,16 @@ public sealed class BattleUnitCombatState
     public bool IsCombatDisabled { get; private set; }
 
     // ── 기본 스탯 (스냅샷에서 읽어온 원본값) ──────────────────────
-    public float BaseAttack { get; private set; }
-    public float BaseAttackSpeed { get; private set; }
-    public float BaseMoveSpeed { get; private set; }
-    public float BaseAttackRange { get; private set; }
+    [SerializeField] public float BaseAttack;
+    [SerializeField] public float BaseAttackSpeed;
+    [SerializeField] public float BaseMoveSpeed;
+    [SerializeField] public float BaseAttackRange;
 
     // ── 실효 스탯 (버프 반영 계산값) ──────────────────────────────
-    public float Attack => Mathf.Max(0f, BaseAttack + GetBuffLevel(BuffType.AttackDamage) * 10f);
-    public float AttackSpeed => Mathf.Max(0f, BaseAttackSpeed + GetBuffLevel(BuffType.AttackSpeed) * 0.2f);
-    public float MoveSpeed => Mathf.Max(0f, BaseMoveSpeed + GetBuffLevel(BuffType.MoveSpeed) * 0.5f);
-    public float AttackRange => Mathf.Max(0f, BaseAttackRange + GetBuffLevel(BuffType.AttackRange) * 0.5f);
+    [SerializeField] public float Attack => Mathf.Max(0f, BaseAttack + GetBuffLevel(BuffType.AttackDamage) * 10f);
+    [SerializeField] public float AttackSpeed => Mathf.Max(0f, BaseAttackSpeed + GetBuffLevel(BuffType.AttackSpeed) * 0.2f);
+    [SerializeField] public float MoveSpeed => Mathf.Max(0f, BaseMoveSpeed + GetBuffLevel(BuffType.MoveSpeed) * 0.5f);
+    [SerializeField] public float AttackRange => Mathf.Max(0f, BaseAttackRange + GetBuffLevel(BuffType.AttackRange) * 0.5f);
 
     // ── 바디 반경 (분리/클램프 계산용) ────────────────────────────
     public float BodyRadius { get; private set; }
@@ -39,9 +40,12 @@ public sealed class BattleUnitCombatState
     }
 
     // ── 버프 ───────────────────────────────────────────────────────
-    private readonly List<BuffType> _buffs = new List<BuffType>();
-    private readonly List<int> _buffLevel = new List<int>();
-    private readonly List<float> _buffCooldownRemaining = new List<float>();
+    [SerializeField] private List<BuffType> _buffs = new List<BuffType>();
+    [SerializeField] private List<int> _buffLevel = new List<int>();
+    [SerializeField] private List<float> _buffCooldownRemaining = new List<float>();
+
+    public bool IsStunned => GetBuffLevel(BuffType.Stun) > 0;
+    public bool HasTaunt => GetBuffLevel(BuffType.Taunt) > 0;
 
     // ── 넉백 ───────────────────────────────────────────────────────
     public Vector3 CurrentKnockback { get; private set; }
@@ -198,9 +202,9 @@ public sealed class BattleUnitCombatState
     public float AttackCooldownRemaining { get; private set; }
 
     // ── 스킬 정보 / 스킬 쿨다운 ────────────────────────────────────
-    public WeaponSkillId HaveSkill { get; private set; }
+    [SerializeField] public WeaponSkillId HaveSkill;
     public float SkillCooltime { get; private set; }
-    public skillType SkillType { get; private set; }
+    [SerializeField] public skillType SkillType { get; private set; }
     public float SkillCooldownRemaining { get; private set; }
 
     // ── 실행 플랜 위치 / 이동-공격 플래그 ─────────────────────────
@@ -331,7 +335,23 @@ public sealed class BattleUnitCombatState
                 _buffCooldownRemaining.RemoveAt(i);
             }
         }
+
+        Debuff(deltaTime);
     }
+
+    private void Debuff(float deltaTime)
+    {
+        int totalBleedLevel = 0;
+
+        totalBleedLevel = GetBuffLevel(BuffType.BleedDamage);
+
+        if(totalBleedLevel > 0 && !IsCombatDisabled)
+        {
+            ApplyDamage(totalBleedLevel * 5);
+        }
+    }
+
+
 
     public int BuffNum() => _buffs.Count;
 
@@ -341,7 +361,7 @@ public sealed class BattleUnitCombatState
         for (int i = 0; i < _buffs.Count; i++)
         {
             if (_buffs[i] == type)
-                count++;
+                count += _buffLevel[i];
         }
         return count;
     }

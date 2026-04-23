@@ -36,7 +36,13 @@ public sealed class BattleUnitSnapshot
     public GameObject LeftWeaponPrefab { get; }
     public GameObject RightWeaponPrefab { get; }
 
+
+    //무기 스킬
     public WeaponSkillId WeaponSkillId { get; }
+
+    //커스터마이징 배열
+    public int[] CustomizeIndicates {get;}
+
     public bool IsRanged { get; }
     public bool UseProjectile { get; }
     public Sprite PortraitSprite { get; }
@@ -61,6 +67,7 @@ public sealed class BattleUnitSnapshot
         GameObject leftWeaponPrefab,
         GameObject rightWeaponPrefab,
         WeaponSkillId weaponSkillId,
+        int[] customizeIndicates,
         bool isRanged,
         bool useProjectile,
         Sprite portraitSprite)
@@ -87,8 +94,10 @@ public sealed class BattleUnitSnapshot
         LeftWeaponPrefab = leftWeaponPrefab;
         RightWeaponPrefab = rightWeaponPrefab;
 
-
         WeaponSkillId = weaponSkillId;
+
+        CustomizeIndicates = customizeIndicates;
+
         IsRanged = isRanged;
         UseProjectile = useProjectile;
         PortraitSprite = portraitSprite;
@@ -118,6 +127,7 @@ public sealed class BattleUnitSnapshot
             LeftWeaponPrefab,
             RightWeaponPrefab,
             WeaponSkillId,
+            CustomizeIndicates,
             IsRanged,
             UseProjectile,
             PortraitSprite
@@ -191,6 +201,7 @@ public sealed class BattleUnitSnapshot
             leftPrefab,
             rightPrefab,
             weaponSkillId,
+            source.CustomizeIndicates,
             isRanged,
             useProjectile,
             resolvedPortrait

@@ -22,7 +22,7 @@ public sealed class BattleOrdersManager : MonoBehaviour
     private readonly BattleRuntimeUnit[] _allyUnits = new BattleRuntimeUnit[6];
     private readonly BattleRuntimeUnit[] _enemyUnits = new BattleRuntimeUnit[6];
 
-    private BoxCollider _battlefieldCollider;
+    private SphereCollider _battlefieldCollider;
     private bool _initialized;
     private int _requestSequence;
 
@@ -31,7 +31,7 @@ public sealed class BattleOrdersManager : MonoBehaviour
         Initialize(runtimeUnits, null);
     }
 
-    public void Initialize(IReadOnlyList<BattleRuntimeUnit> runtimeUnits, BoxCollider battlefieldCollider)
+    public void Initialize(IReadOnlyList<BattleRuntimeUnit> runtimeUnits, SphereCollider battlefieldCollider)
     {
         for (int i = 0; i < _allyUnits.Length; i++)
         {

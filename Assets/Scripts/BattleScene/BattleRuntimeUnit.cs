@@ -26,7 +26,9 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     [SerializeField] private Sprite EnemybarSprite;
 
     // ── 순수 전투 상태 (Animator/UI 없음) ─────────────────────────
-    public BattleUnitCombatState State { get; private set; }
+    [Header("Runtime State (Debug)")]
+    [SerializeField] private BattleUnitCombatState state;
+    [SerializeField] public BattleUnitCombatState State => state;
 
     public GameObject RuntimeRootObject => gameObject;
 
@@ -39,7 +41,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     public int Level => State.Level;
 
     // ── 체력 (State 위임) ─────────────────────────────────────────
-    public float MaxHealth => State.MaxHealth;
+    [SerializeField] public float MaxHealth => State.MaxHealth;
     public float CurrentHealth => State.CurrentHealth;
     public bool IsCombatDisabled => State.IsCombatDisabled;
 
@@ -97,6 +99,25 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     [SerializeField] private GameObject _spawnedLeftWeapon;
     [SerializeField] private GameObject _spawnedRightWeapon;
     [SerializeField] private Animator _myAnimation;
+    [SerializeField] private WeaponType HaveWeapon;
+
+    //customize
+    [Header("Skin Part Roots")]
+    [SerializeField] private Transform rootFullHead; // HEADS 폴더 연결
+    [SerializeField] private Transform rootNose;     // NOSES 폴더 연결
+    [SerializeField] private Transform rootHair;     // HAIRS 폴더 연결
+    [SerializeField] private Transform rootFaceHair; // FACE HAIRS 폴더 연결
+    [SerializeField] private Transform rootEyes;     // EYES 폴더 연결
+    [SerializeField] private Transform rootEyebrows; // EYEBROWS 폴더 연결
+    [SerializeField] private Transform rootEars;     // EARS 폴더 연결
+
+    [SerializeField] private Transform rootChest;    // CHESTS 폴더 연결
+    [SerializeField] private Transform rootArms;     // ARMS 폴더 연결
+    [SerializeField] private Transform rootBelt;     // BELTS 폴더 연결
+    [SerializeField] private Transform rootLegs;     // LEGS 폴더 연결
+    [SerializeField] private Transform rootFeet;     // FEET 폴더 연결
+
+
 
     // animationProvider가 null이면 AnimationManager.Instance로 폴백한다.
     public void Initialize(BattleUnitSnapshot snapshot, int unitNumber, bool isEnemy,
@@ -111,7 +132,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         Snapshot = snapshot;
 
         // ── State 생성 및 이벤트 구독 ────────────────────────────
-        State = new BattleUnitCombatState(snapshot, unitNumber, isEnemy);
+        state = new BattleUnitCombatState(snapshot, unitNumber, isEnemy);
         State.OnHealthChanged += _ => RefreshHPbar();
         State.OnDied += HandleUnitDied;
         State.OnActionTypeChanged += (_, _) => RefreshStatusText();
@@ -128,6 +149,8 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         IAnimationProvider provider = animationProvider ?? AnimationManager.Instance;
         EquipWeaponFromSnapShot(provider);
         EquipSkillFromSnapShot(provider);
+
+        EquipSkinFromSnapshot();
 
         if (isEnemy)
             HPbar.sprite = EnemybarSprite;
@@ -158,27 +181,35 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         if (Snapshot == null)
             return;
 
+
+
+        //넣을 떄 주석 처리 필요 -> 위치 이미 할당됨
         if (Snapshot.LeftWeaponPrefab != null && leftHandSocket != null)
         {
             Debug.Log("왼손 무기 장착");
             _spawnedLeftWeapon = Instantiate(Snapshot.LeftWeaponPrefab, leftHandSocket);
-            _spawnedLeftWeapon.transform.localPosition = Vector3.zero;
-            _spawnedLeftWeapon.transform.localRotation = Quaternion.identity;
+            //_spawnedLeftWeapon.transform.localPosition = Vector3.zero;
+            //_spawnedLeftWeapon.transform.localRotation = Quaternion.identity;
         }
         if (Snapshot.RightWeaponPrefab != null && rightHandSocket != null)
         {
             Debug.Log("오른손 무기 장착");
             _spawnedRightWeapon = Instantiate(Snapshot.RightWeaponPrefab, rightHandSocket);
-            _spawnedRightWeapon.transform.localPosition = Vector3.zero;
-            _spawnedRightWeapon.transform.localRotation = Quaternion.identity;
+            //_spawnedRightWeapon.transform.localPosition = Vector3.zero;
+            //_spawnedRightWeapon.transform.localRotation = Quaternion.identity;
         }
 
         if (_myAnimation != null && provider != null)
         {
             AnimatorOverrideController weaponMotion = provider.GetControllerByWeaponType(Snapshot.WeaponType);
             if (weaponMotion != null)
+            {
                 _myAnimation.runtimeAnimatorController = weaponMotion;
+                Debug.Log("무기 처리 완료");
+            }
         }
+
+        HaveWeapon = Snapshot.WeaponType;
     }
 
     private void EquipSkillFromSnapShot(IAnimationProvider provider)
@@ -203,10 +234,64 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         {
             RuntimeAnimatorController current = _myAnimation.runtimeAnimatorController;
             AnimatorOverrideController local = new AnimatorOverrideController(current);
+
+            if (current is AnimatorOverrideController existingOverride)
+            {
+                var overrides = new List<KeyValuePair<AnimationClip, AnimationClip>>();
+                existingOverride.GetOverrides(overrides);
+                local.ApplyOverrides(overrides);
+            }
+
             local["HumanM@MiningOneHand01_L - Ground"] = skillAnimation;
             _myAnimation.runtimeAnimatorController = local;
         }
     }
+
+
+
+    // ── 커스터마이즈 ─────────────────────────
+    private void EquipSkinFromSnapshot()
+    {
+        if (Snapshot == null || Snapshot.CustomizeIndicates == null)
+            return;
+
+        Debug.Log("값은 들어옴");
+
+
+        int[] indicates = Snapshot.CustomizeIndicates;
+
+        // 1. 머리 및 세부 얼굴 파츠 토글
+        ActivateSpecificSkinPart(rootFullHead, indicates[(int)SkinPart.FullHead]);
+        ActivateSpecificSkinPart(rootNose, indicates[(int)SkinPart.Nose]);
+        ActivateSpecificSkinPart(rootHair, indicates[(int)SkinPart.Hair]);
+        ActivateSpecificSkinPart(rootFaceHair, indicates[(int)SkinPart.Face]);
+        ActivateSpecificSkinPart(rootEyes, indicates[(int)SkinPart.Eyes]);
+        ActivateSpecificSkinPart(rootEyebrows, indicates[(int)SkinPart.Eyebrows]);
+        ActivateSpecificSkinPart(rootEars, indicates[(int)SkinPart.Ears]);
+
+        // 2. 공통 바디 파츠 토글
+        ActivateSpecificSkinPart(rootChest, indicates[(int)SkinPart.Chest]);
+        ActivateSpecificSkinPart(rootArms, indicates[(int)SkinPart.Arms]);
+        ActivateSpecificSkinPart(rootBelt, indicates[(int)SkinPart.Belt]);
+        ActivateSpecificSkinPart(rootLegs, indicates[(int)SkinPart.Legs]);
+        ActivateSpecificSkinPart(rootFeet, indicates[(int)SkinPart.Feet]);
+    }
+    private void ActivateSpecificSkinPart(Transform parentRoot, int targetIndex)
+    {
+        if (parentRoot == null)
+            return;
+
+        // 부모안 모든 파츠 확인
+        for (int i = 0; i < parentRoot.childCount; i++)
+        {
+            // targetIndex가 -1이면 모든 자식의 활성화 상태가 false가 됩니다. (즉, 안 입음)
+            // i와 targetIndex가 같을 때만 true가 되어 해당 옷이 나타납니다.
+            parentRoot.GetChild(i).gameObject.SetActive(i == targetIndex);
+        }
+    }
+
+
+
 
     // ── 사망 처리 (OnDied 이벤트 핸들러) ─────────────────────────
     private void HandleUnitDied()
@@ -353,24 +438,50 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         transform.rotation = placeholder.rotation;
     }
 
-    public void ClampInsideBattlefield(BoxCollider battlefieldCollider)
+    /*
+        public void ClampInsideBattlefield(BoxCollider battlefieldCollider)
+        {
+            if (battlefieldCollider == null)
+                return;
+
+            Vector3 pos = transform.position;
+            Bounds bounds = battlefieldCollider.bounds;
+
+            float minX = bounds.min.x + BodyRadius;
+            float maxX = bounds.max.x - BodyRadius;
+            float minZ = bounds.min.z + BodyRadius;
+            float maxZ = bounds.max.z - BodyRadius;
+
+            pos.x = Mathf.Clamp(pos.x, minX, maxX);
+            pos.z = Mathf.Clamp(pos.z, minZ, maxZ);
+
+            transform.position = pos;
+        }
+    */
+    public void ClampInsideBattlefield(SphereCollider sphereCollider)
     {
-        if (battlefieldCollider == null)
+        if (sphereCollider == null)
             return;
 
-        Vector3 pos = transform.position;
-        Bounds bounds = battlefieldCollider.bounds;
+        // 1. 원의 중심과 반지름을 가져옵니다.
+        Vector3 center = sphereCollider.transform.position;
+        // 반지름에서 유닛의 반지름(BodyRadius)만큼 뺀 값이 실제 한계선입니다.
+        float maxRadius = (sphereCollider.radius * sphereCollider.transform.lossyScale.x) - BodyRadius;
 
-        float minX = bounds.min.x + BodyRadius;
-        float maxX = bounds.max.x - BodyRadius;
-        float minZ = bounds.min.z + BodyRadius;
-        float maxZ = bounds.max.z - BodyRadius;
+        // 2. 중심에서 유닛까지의 방향과 거리를 계산합니다.
+        Vector3 offset = transform.position - center;
+        offset.y = 0; // 높이는 무시 (평면 전투 기준)
+        float distance = offset.magnitude;
 
-        pos.x = Mathf.Clamp(pos.x, minX, maxX);
-        pos.z = Mathf.Clamp(pos.z, minZ, maxZ);
-
-        transform.position = pos;
+        // 3. 거리가 반지름보다 멀어지면 위치를 강제로 조정합니다.
+        if (distance > maxRadius)
+        {
+            Vector3 clampedPosition = center + (offset.normalized * maxRadius);
+            clampedPosition.y = transform.position.y;
+            transform.position = clampedPosition;
+        }
     }
+
 
     // ── 배치 ──────────────────────────────────────────────────────
 

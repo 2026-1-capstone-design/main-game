@@ -340,6 +340,8 @@ public sealed class RecruitFactory : MonoBehaviour
         int loyalty = RollLoyaltyFromPersonality(personality, streamType);
         int upkeep = Mathf.Max(0, _balance.upkeepPerLevel * level);
 
+        int[] randomIndicates = GladiatorSkinManager.Instance.GenerateRandomSkinIndicates();
+
         string displayName;
         if (useSessionNameCounter && _sessionManager != null)
         {
@@ -361,7 +363,8 @@ public sealed class RecruitFactory : MonoBehaviour
             trait,
             personality,
             null,
-            null
+            null,
+            randomIndicates
         );
 
         preview.FinalHealthVariancePercent = _randomManager.NextFloatRange(
@@ -413,6 +416,8 @@ public sealed class RecruitFactory : MonoBehaviour
         int loyalty = RollLoyaltyFromPersonality(personality, streamType);
         int upkeep = Mathf.Max(0, _balance.upkeepPerLevel * level);
 
+        int[] randomIndicates = GladiatorSkinManager.Instance.GenerateRandomSkinIndicates();
+
         string displayName;
         if (useSessionNameCounter && _sessionManager != null)
         {
@@ -434,7 +439,8 @@ public sealed class RecruitFactory : MonoBehaviour
             trait,
             personality,
             null,
-            null
+            null,
+            randomIndicates
         );
 
         preview.FinalHealthVariancePercent = _randomManager.NextFloatRange(

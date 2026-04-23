@@ -30,6 +30,9 @@ public sealed class OwnedGladiatorData
     public float FinalHealthVariancePercent { get; set; }
     public float FinalAttackVariancePercent { get; set; }
 
+    //커스터마이즈 정보
+    public int[] CustomizeIndicates {get; set;}
+
     // 실제 보유 검투사 1명의 기본 정보를 담는 런타임 데이터 생성자
     // 초기엔 캐시 스탯이 비어 있고, 이후 별도 RefreshDerivedStats로 완성이되는 것
     public OwnedGladiatorData(
@@ -43,7 +46,9 @@ public sealed class OwnedGladiatorData
         TraitSO trait,
         PersonalitySO personality,
         PerkSO equippedPerk,
-        OwnedWeaponData equippedWeapon)
+        OwnedWeaponData equippedWeapon,
+        int[] customizeIndicates
+        )
     {
         RuntimeId = runtimeId;
         DisplayName = string.IsNullOrWhiteSpace(displayName) ? "Gladiator" : displayName;
@@ -68,5 +73,7 @@ public sealed class OwnedGladiatorData
 
         FinalHealthVariancePercent = 0f;
         FinalAttackVariancePercent = 0f;
+
+        CustomizeIndicates = customizeIndicates;
     }
 }

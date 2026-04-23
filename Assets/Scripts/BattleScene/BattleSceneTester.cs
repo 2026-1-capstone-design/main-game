@@ -164,6 +164,12 @@ public sealed class BattleSceneTester : MonoBehaviour
             rightPrefab = entry.weaponData.rightWeaponPrefab;
             isRanged = entry.weaponData.isRanged;
             useProjectile = entry.weaponData.useProjectile;
+
+            finalAtk += entry.weaponData.baseAttackBonus;
+            finalAtkSpeed += entry.weaponData.baseAttackSpeedBonus;
+            finalHp += entry.weaponData.baseHealthBonus;
+            finalMove += entry.weaponData.baseMoveSpeedBonus;
+            finalRange += entry.weaponData.baseAttackRangeBonus;
         }
 
         // Weapon Overrides
@@ -172,6 +178,10 @@ public sealed class BattleSceneTester : MonoBehaviour
             isRanged = entry.isRanged;
             useProjectile = entry.useProjectile;
         }
+
+        int[] randomSkins = GladiatorSkinManager.Instance != null
+        ? GladiatorSkinManager.Instance.GenerateRandomSkinIndicates()
+        : null;
 
         return new BattleUnitSnapshot(
             sourceRuntimeId: id,
@@ -195,6 +205,7 @@ public sealed class BattleSceneTester : MonoBehaviour
             weaponSkillId: entry.weaponSkillId,
             isRanged: isRanged,
             useProjectile: useProjectile,
+            customizeIndicates: randomSkins,
             portraitSprite: classSO.icon
         );
     }

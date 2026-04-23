@@ -21,6 +21,8 @@ MonoBehaviour:
   - {fileID: 11400000, guid: dbdb181f9c76fca4d932bbbdbf2ded9b, type: 2}
   - {fileID: 11400000, guid: 3da7b72ba791cd940915b68cc3d6a124, type: 2}
   - {fileID: 11400000, guid: 8f15a2a951e32fa44914883dd11d291f, type: 2}
+  - {fileID: 11400000, guid: 3f69dd2a1b6d04140a0d6b09f9c06b82, type: 2}
+  - {fileID: 11400000, guid: ab1629e5d89986f4595fdae5ee52b07e, type: 2}
   weaponSkills:
   - {fileID: 11400000, guid: 27bcb74d2b344cc4e9701b2f22f85abc, type: 2}
   - {fileID: 11400000, guid: 44c252fd9a22320448bf341aec79d172, type: 2}

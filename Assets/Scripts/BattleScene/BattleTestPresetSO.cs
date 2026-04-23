@@ -9,9 +9,12 @@ namespace BattleTest
         public GladiatorClassSO classSO;
         public int level;
 
-        [Header("Weapon & Skill")]
+        [Header("Weapon")]
         [Tooltip("WeaponSO 에셋을 드래그해서 넣으세요. 무기 모델과 애니메이션 타입이 자동으로 결정됩니다.")]
         public WeaponSO weaponData;
+
+        [Header("Skill Data")]
+        [Tooltip("테스트할 스킬을 직접 지정합니다.")]
         public WeaponSkillId weaponSkillId;
 
         [Header("Stat Overrides (0 = Use Class Defaults)")]

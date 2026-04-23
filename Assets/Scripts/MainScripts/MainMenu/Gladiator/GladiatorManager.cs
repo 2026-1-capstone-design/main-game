@@ -297,7 +297,8 @@ public sealed class GladiatorManager : SingletonBehaviour<GladiatorManager>
             marketPreview.Trait,
             marketPreview.Personality,
             marketPreview.EquippedPerk,
-            marketPreview.EquippedWeapon
+            marketPreview.EquippedWeapon,
+            marketPreview.CustomizeIndicates
         );
 
         purchased.FinalHealthVariancePercent = marketPreview.FinalHealthVariancePercent;
@@ -425,6 +426,10 @@ public sealed class GladiatorManager : SingletonBehaviour<GladiatorManager>
 
         string displayName = sessionManager.ConsumeNextClassName(gladiatorTemplate.className);
 
+        //외형 추가
+        int[] randomIndicates = GladiatorSkinManager.Instance.GenerateRandomSkinIndicates();
+
+
         int level = 1;
         int exp = 0;
         int loyalty = RollLoyaltyFromPersonality(personality, RandomStreamType.Recruit);
@@ -443,7 +448,8 @@ public sealed class GladiatorManager : SingletonBehaviour<GladiatorManager>
             trait,
             personality,
             null,
-            null
+            null,
+            randomIndicates
         );
 
         starter.FinalHealthVariancePercent = 0f;

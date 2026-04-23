@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6d1e5538de34e1a4d89097cdbe7490f0, type: 3}
+  m_Name: TEST
+  m_EditorClassIdentifier: 
+  scenarioName: Test Scenario
+  allyTeam:
+  - classSO: {fileID: 11400000, guid: 6846407ed22928941b371aab2d355ecf, type: 2}
+    level: 0
+    weaponData: {fileID: 11400000, guid: 1125cefdf7e96c04cb5c836ceef728b5, type: 2}
+    weaponSkillId: 5
+    healthOverride: 200000
+    attackOverride: 0
+    attackSpeedOverride: 0
+    moveSpeedOverride: 0
+    attackRangeOverride: 0
+    statMultiplier: 0
+  enemyTeam:
+  - classSO: {fileID: 11400000, guid: 6846407ed22928941b371aab2d355ecf, type: 2}
+    level: 0
+    weaponData: {fileID: 11400000, guid: 8f15a2a951e32fa44914883dd11d291f, type: 2}
+    weaponSkillId: 8
+    healthOverride: 200000
+    attackOverride: 0
+    attackSpeedOverride: 0
+    moveSpeedOverride: 0
+    attackRangeOverride: 0
+    statMultiplier: 0
+  battleSeed: 12345
+  enemyAverageLevel: 1
+  previewRewardGold: 100

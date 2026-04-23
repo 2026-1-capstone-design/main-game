@@ -1197,51 +1197,23 @@ MonoBehaviour:
   HPbar: {fileID: 7320145767713028876}
   AllybarSprite: {fileID: 21300000, guid: 699c0fca129024d4ba26213a8a0fa61b, type: 3}
   EnemybarSprite: {fileID: 21300000, guid: 6802f9360373f2941b8cbbc965f51fbc, type: 3}
-  BaseAttack: 0
-  BaseAttackSpeed: 0
-  BaseMoveSpeed: 0
-  BaseAttackRange: 0
-  <CurrentRawParameters>k__BackingField:
-    SelfHpLow: 0
-    SelfSurroundedByEnemies: 0
-    LowHealthAllyProximity: 0
-    AllyUnderFocusPressure: 0
-    AllyFrontlineGap: 0
-    IsolatedEnemyVulnerability: 0
-    EnemyClusterDensity: 0
-    DistanceToTeamCenter: 0
-    SelfCanAttackNow: 0
-  <CurrentModifiedParameters>k__BackingField:
-    SelfHpLow: 0
-    SelfSurroundedByEnemies: 0
-    LowHealthAllyProximity: 0
-    AllyUnderFocusPressure: 0
-    AllyFrontlineGap: 0
-    IsolatedEnemyVulnerability: 0
-    EnemyClusterDensity: 0
-    DistanceToTeamCenter: 0
-    SelfCanAttackNow: 0
-  <CurrentScores>k__BackingField:
-    AssassinateIsolatedEnemy: 0
-    DiveEnemyBackline: 0
-    PeelForWeakAlly: 0
-    EscapeFromPressure: 0
-    RegroupToAllies: 0
-    CollapseOnCluster: 0
-    EngageNearest: 0
-  <TopScoredAction>k__BackingField: 0
-  <TopScoredValue>k__BackingField: 0
   leftHandSocket: {fileID: 1606065728930838221}
   rightHandSocket: {fileID: 1819913240511738558}
   _spawnedLeftWeapon: {fileID: 0}
   _spawnedRightWeapon: {fileID: 0}
   _myAnimation: {fileID: 0}
-  HaveSkill: 0
-  skillCooltime: 0
-  _skillType: 0
-  Buffs: 
-  BuffCooldownRemaining: []
-  BuffLevel: 
+  rootFullHead: {fileID: 7644792217674140775}
+  rootNose: {fileID: 7644792217128995756}
+  rootHair: {fileID: 7644792217756776566}
+  rootFaceHair: {fileID: 7644792218334113111}
+  rootEyes: {fileID: 7644792217884240638}
+  rootEyebrows: {fileID: 7644792219062460527}
+  rootEars: {fileID: 7644792218918664756}
+  rootChest: {fileID: 7644792218367488160}
+  rootArms: {fileID: 7644792217518017921}
+  rootBelt: {fileID: 7644792219097763447}
+  rootLegs: {fileID: 7644792217996117258}
+  rootFeet: {fileID: 7644792217273691673}
 --- !u!1 &361804306307397501
 GameObject:
   m_ObjectHideFlags: 0

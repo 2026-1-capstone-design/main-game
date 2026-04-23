@@ -17,25 +17,6 @@ public enum WeaponType
     bow
 }
 
-public enum WeaponSkillId
-{
-    None = 0,
-    SwipeAttack = 1,
-    Madness = 2,
-    LongGrip = 3,
-    Taunt = 4,
-    HeartAttack = 5
-}
-
-public enum skillType
-{
-    None = 0,
-    attack = 1,
-    tank = 2,
-    support = 3,
-    enhance = 4
-}
-
 [CreateAssetMenu(menuName = "Prototype/Content/Weapon")]
 public sealed class WeaponSO : ScriptableObject
 {
