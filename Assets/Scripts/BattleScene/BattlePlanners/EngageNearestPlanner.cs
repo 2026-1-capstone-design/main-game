@@ -11,10 +11,10 @@ public sealed class EngageNearestPlanner : IBattleActionPlanner
             TargetEnemy = target,
             TargetAlly = null,
             DesiredPosition = target != null ? target.Position : unit.Position,
-            HasDesiredPosition = target != null
+            HasDesiredPosition = target != null,
         };
     }
 
-    public bool IsUsable(BattleRuntimeUnit unit, BattleActionExecutionPlan plan, BattleFieldView field)
-        => field.IsValidEnemyTarget(unit, plan.TargetEnemy);
+    public bool IsUsable(BattleRuntimeUnit unit, BattleActionExecutionPlan plan, BattleFieldView field) =>
+        field.IsValidEnemyTarget(unit, plan.TargetEnemy);
 }

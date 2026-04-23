@@ -13,7 +13,8 @@ public sealed class BattleFieldView
     public BattleFieldView(
         IReadOnlyList<BattleRuntimeUnit> units,
         BattleParameterRadii radii,
-        float escapeTowardTeamBlend)
+        float escapeTowardTeamBlend
+    )
     {
         _units = units;
         _radii = radii;
@@ -92,7 +93,10 @@ public sealed class BattleFieldView
             delta.y = 0f;
             float sqr = delta.sqrMagnitude;
             if (sqr < bestSqr)
-            { bestSqr = sqr; nearest = c; }
+            {
+                bestSqr = sqr;
+                nearest = c;
+            }
         }
         return nearest;
     }
@@ -114,7 +118,10 @@ public sealed class BattleFieldView
             delta.y = 0f;
             float sqr = delta.sqrMagnitude;
             if (sqr < bestSqr)
-            { bestSqr = sqr; nearest = c; }
+            {
+                bestSqr = sqr;
+                nearest = c;
+            }
         }
         return nearest;
     }
@@ -132,9 +139,16 @@ public sealed class BattleFieldView
             if (!IsValidEnemyTarget(self, enemy))
                 continue;
             float score = BattleParameterComputer.ComputeIsolatedEnemyTargetScore(
-                selfView, BattleUnitView.From(enemy), enemyViews, _radii);
+                selfView,
+                BattleUnitView.From(enemy),
+                enemyViews,
+                _radii
+            );
             if (score > bestScore)
-            { bestScore = score; best = enemy; }
+            {
+                bestScore = score;
+                best = enemy;
+            }
         }
         return best;
     }
@@ -154,12 +168,20 @@ public sealed class BattleFieldView
                 continue;
             float hpLow = enemy.MaxHealth > 0f ? Mathf.Clamp01(1f - (enemy.CurrentHealth / enemy.MaxHealth)) : 0f;
             float isolation = BattleParameterComputer.ComputeIsolatedEnemyTargetScore(
-                selfView, BattleUnitView.From(enemy), enemyViews, _radii);
+                selfView,
+                BattleUnitView.From(enemy),
+                enemyViews,
+                _radii
+            );
             float backlineFactor = Mathf.Clamp01(
-                Vector3.Distance(enemy.Position, enemyCenter) / _radii.teamCenterDistanceRadius);
+                Vector3.Distance(enemy.Position, enemyCenter) / _radii.teamCenterDistanceRadius
+            );
             float score = hpLow * 0.45f + isolation * 0.35f + backlineFactor * 0.20f;
             if (score > bestScore)
-            { bestScore = score; best = enemy; }
+            {
+                bestScore = score;
+                best = enemy;
+            }
         }
         return best;
     }
@@ -178,10 +200,15 @@ public sealed class BattleFieldView
             float hpLow = ally.MaxHealth > 0f ? Mathf.Clamp01(1f - (ally.CurrentHealth / ally.MaxHealth)) : 0f;
             float hpFactor = 0.5f + 0.5f * hpLow;
             float distWeight = BattleParameterComputer.LinearFalloff(
-                Vector3.Distance(self.Position, ally.Position), _radii.peelRadius);
+                Vector3.Distance(self.Position, ally.Position),
+                _radii.peelRadius
+            );
             float score = focusRatio * hpFactor * distWeight;
             if (score > bestScore)
-            { bestScore = score; best = ally; }
+            {
+                bestScore = score;
+                best = ally;
+            }
         }
         return best;
     }
@@ -202,7 +229,10 @@ public sealed class BattleFieldView
             float dist = Vector3.Distance(enemy.Position, protectedAlly.Position);
             float score = 1f - Mathf.Clamp01(dist / _radii.peelRadius);
             if (score > bestScore)
-            { bestScore = score; best = enemy; }
+            {
+                bestScore = score;
+                best = enemy;
+            }
         }
         return best != null ? best : FindNearestLivingEnemy(self);
     }
@@ -218,7 +248,10 @@ public sealed class BattleFieldView
                 continue;
             float d = Vector3.Distance(enemy.Position, point);
             if (d < bestDist)
-            { bestDist = d; best = enemy; }
+            {
+                bestDist = d;
+                best = enemy;
+            }
         }
         return best;
     }

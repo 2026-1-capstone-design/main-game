@@ -10,7 +10,8 @@ public static class BattleParameterComputer
         BattleUnitView self,
         IReadOnlyList<BattleUnitView> allies,
         IReadOnlyList<BattleUnitView> enemies,
-        BattleParameterRadii radii)
+        BattleParameterRadii radii
+    )
     {
         BattleParameterSet p = default;
         p.SelfHpLow = ComputeSelfHpLow(self);
@@ -35,7 +36,11 @@ public static class BattleParameterComputer
         return Mathf.Clamp01(1f - (self.CurrentHealth / self.MaxHealth));
     }
 
-    private static float ComputeSelfSurroundedByEnemies(BattleUnitView self, IReadOnlyList<BattleUnitView> enemies, float surroundRadius)
+    private static float ComputeSelfSurroundedByEnemies(
+        BattleUnitView self,
+        IReadOnlyList<BattleUnitView> enemies,
+        float surroundRadius
+    )
     {
         float sum = 0f;
         for (int i = 0; i < enemies.Count; i++)
@@ -43,7 +48,11 @@ public static class BattleParameterComputer
         return Mathf.Clamp01(sum / 3f);
     }
 
-    private static float ComputeLowHealthAllyProximity(BattleUnitView self, IReadOnlyList<BattleUnitView> allies, float helpRadius)
+    private static float ComputeLowHealthAllyProximity(
+        BattleUnitView self,
+        IReadOnlyList<BattleUnitView> allies,
+        float helpRadius
+    )
     {
         float sum = 0f;
         for (int i = 0; i < allies.Count; i++)
@@ -55,7 +64,12 @@ public static class BattleParameterComputer
         return Mathf.Clamp01(sum / 2f);
     }
 
-    private static float ComputeAllyUnderFocusPressure(BattleUnitView self, IReadOnlyList<BattleUnitView> allies, IReadOnlyList<BattleUnitView> enemies, float peelRadius)
+    private static float ComputeAllyUnderFocusPressure(
+        BattleUnitView self,
+        IReadOnlyList<BattleUnitView> allies,
+        IReadOnlyList<BattleUnitView> enemies,
+        float peelRadius
+    )
     {
         float best = 0f;
         for (int i = 0; i < allies.Count; i++)
@@ -91,14 +105,21 @@ public static class BattleParameterComputer
                     nearest = d;
             }
             if (nearest < float.MaxValue)
-            { sumNearest += nearest; count++; }
+            {
+                sumNearest += nearest;
+                count++;
+            }
         }
         if (count == 0)
             return 0f;
         return Mathf.Clamp01((sumNearest / count) / frontlineGapRadius);
     }
 
-    private static float ComputeIsolatedEnemyVulnerability(BattleUnitView self, IReadOnlyList<BattleUnitView> enemies, BattleParameterRadii radii)
+    private static float ComputeIsolatedEnemyVulnerability(
+        BattleUnitView self,
+        IReadOnlyList<BattleUnitView> enemies,
+        BattleParameterRadii radii
+    )
     {
         float best = 0f;
         for (int i = 0; i < enemies.Count; i++)
@@ -129,7 +150,11 @@ public static class BattleParameterComputer
         return Mathf.Clamp01(sum / pairCount);
     }
 
-    private static float ComputeDistanceToTeamCenter(BattleUnitView self, IReadOnlyList<BattleUnitView> allies, float teamCenterDistanceRadius)
+    private static float ComputeDistanceToTeamCenter(
+        BattleUnitView self,
+        IReadOnlyList<BattleUnitView> allies,
+        float teamCenterDistanceRadius
+    )
     {
         Vector3 teamCenter = ComputeTeamCenter(allies, self.Position);
         return Mathf.Clamp01(Vector3.Distance(self.Position, teamCenter) / teamCenterDistanceRadius);
@@ -152,7 +177,8 @@ public static class BattleParameterComputer
         BattleUnitView self,
         BattleUnitView enemy,
         IReadOnlyList<BattleUnitView> allEnemies,
-        BattleParameterRadii radii)
+        BattleParameterRadii radii
+    )
     {
         float nearestSupportDistance = float.MaxValue;
         for (int i = 0; i < allEnemies.Count; i++)
@@ -169,7 +195,8 @@ public static class BattleParameterComputer
 
         float isolation = Mathf.Clamp01(nearestSupportDistance / radii.isolationRadius);
         float hpLow = Mathf.Clamp01(1f - (enemy.CurrentHealth / Mathf.Max(1f, enemy.MaxHealth)));
-        float reachFactor = 0.35f + 0.65f * LinearFalloff(Vector3.Distance(self.Position, enemy.Position), radii.assassinReachRadius);
+        float reachFactor =
+            0.35f + 0.65f * LinearFalloff(Vector3.Distance(self.Position, enemy.Position), radii.assassinReachRadius);
         return isolation * (0.6f + 0.4f * hpLow) * reachFactor;
     }
 

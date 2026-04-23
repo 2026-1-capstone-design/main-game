@@ -1,14 +1,14 @@
-using UnityEngine;
-using UnityEngine.InputSystem;
-using UnityEngine.EventSystems;
 using TMPro;
+using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 
 [DisallowMultipleComponent]
 public sealed class CameraView : MonoBehaviour
 {
     [Header("References")]
-    public Transform centerTarget;   // 경기장 중심
-    public Transform startPoint;     // 시작점
+    public Transform centerTarget; // 경기장 중심
+    public Transform startPoint; // 시작점
     public Camera targetCamera;
 
     [Header("Orbit")]
@@ -197,7 +197,10 @@ public sealed class CameraView : MonoBehaviour
 
         if (_orbitRadius <= 0.001f)
         {
-            Debug.LogWarning("[CameraView] startPoint is vertically aligned with centerTarget. Orbit radius was too small, so a fallback radius was applied.", this);
+            Debug.LogWarning(
+                "[CameraView] startPoint is vertically aligned with centerTarget. Orbit radius was too small, so a fallback radius was applied.",
+                this
+            );
             _orbitRadius = 0.01f;
             flatOffset = Vector3.forward * _orbitRadius;
         }

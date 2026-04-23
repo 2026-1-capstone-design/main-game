@@ -24,10 +24,10 @@ public sealed class PeelPlanner : IBattleActionPlanner
             TargetEnemy = enemy,
             TargetAlly = ally,
             DesiredPosition = desiredPosition,
-            HasDesiredPosition = hasDesiredPosition
+            HasDesiredPosition = hasDesiredPosition,
         };
     }
 
-    public bool IsUsable(BattleRuntimeUnit unit, BattleActionExecutionPlan plan, BattleFieldView field)
-        => field.IsValidEnemyTarget(unit, plan.TargetEnemy);
+    public bool IsUsable(BattleRuntimeUnit unit, BattleActionExecutionPlan plan, BattleFieldView field) =>
+        field.IsValidEnemyTarget(unit, plan.TargetEnemy);
 }

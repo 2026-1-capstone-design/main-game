@@ -4,12 +4,13 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public sealed class RecruitFactory : MonoBehaviour
 {
-    [SerializeField] private bool verboseLog = true;
+    [SerializeField]
+    private bool verboseLog = true;
 
     private ContentDatabaseProvider _contentDatabaseProvider;
     private SessionManager _sessionManager;
     private RandomManager _randomManager;
-    private EquipmentFactory _equipmentFactory;            // 적 프리뷰 생성 시 무기를 붙여야 되니까
+    private EquipmentFactory _equipmentFactory; // 적 프리뷰 생성 시 무기를 붙여야 되니까
     private BalanceSO _balance;
     private bool _initialized;
 
@@ -19,7 +20,8 @@ public sealed class RecruitFactory : MonoBehaviour
         ContentDatabaseProvider contentDatabaseProvider,
         SessionManager sessionManager,
         RandomManager randomManager,
-        EquipmentFactory equipmentFactory)
+        EquipmentFactory equipmentFactory
+    )
     {
         if (_initialized)
         {
@@ -66,16 +68,15 @@ public sealed class RecruitFactory : MonoBehaviour
 
         if (verboseLog)
         {
-            int templateCount = _contentDatabaseProvider.GladiatorClasses != null
-                ? _contentDatabaseProvider.GladiatorClasses.Count
-                : 0;
+            int templateCount =
+                _contentDatabaseProvider.GladiatorClasses != null ? _contentDatabaseProvider.GladiatorClasses.Count : 0;
 
             Debug.Log(
-                $"[RecruitFactory] Initialized. " +
-                $"GladiatorTemplateCount={templateCount}, " +
-                $"TraitCount={_contentDatabaseProvider.Traits.Count}, " +
-                $"PersonalityCount={_contentDatabaseProvider.Personalities.Count}," +
-                $"EquipmentFactoryReady={(_equipmentFactory != null)}",
+                $"[RecruitFactory] Initialized. "
+                    + $"GladiatorTemplateCount={templateCount}, "
+                    + $"TraitCount={_contentDatabaseProvider.Traits.Count}, "
+                    + $"PersonalityCount={_contentDatabaseProvider.Personalities.Count},"
+                    + $"EquipmentFactoryReady={(_equipmentFactory != null)}",
                 this
             );
         }
@@ -94,7 +95,8 @@ public sealed class RecruitFactory : MonoBehaviour
         OwnedGladiatorData preview = CreatePreviewGladiatorForDay(
             currentDay,
             RandomStreamType.Recruit,
-            useSessionNameCounter: true);
+            useSessionNameCounter: true
+        );
 
         if (preview == null)
         {
@@ -108,9 +110,9 @@ public sealed class RecruitFactory : MonoBehaviour
         if (verboseLog)
         {
             Debug.Log(
-                $"[RecruitFactory] Market gladiator created. " +
-                $"Slot={slotIndex}, Name={preview.DisplayName}, " +
-                $"Level={preview.Level}, Personal={preview.Personality} Loyalty={preview.Loyalty}, Price={price}",
+                $"[RecruitFactory] Market gladiator created. "
+                    + $"Slot={slotIndex}, Name={preview.DisplayName}, "
+                    + $"Level={preview.Level}, Personal={preview.Personality} Loyalty={preview.Loyalty}, Price={price}",
                 this
             );
         }
@@ -124,7 +126,8 @@ public sealed class RecruitFactory : MonoBehaviour
     public List<BattleEncounterPreview> CreateBattleEncounterPreviewsForDay(
         int currentDay,
         int encounterCount = 4,
-        int unitsPerEncounter = 6)
+        int unitsPerEncounter = 6
+    )
     {
         List<BattleEncounterPreview> encounters = new List<BattleEncounterPreview>(encounterCount);
 
@@ -142,7 +145,7 @@ public sealed class RecruitFactory : MonoBehaviour
             BattleEncounterDifficulty.VeryLow,
             BattleEncounterDifficulty.Low,
             BattleEncounterDifficulty.Medium,
-            BattleEncounterDifficulty.High
+            BattleEncounterDifficulty.High,
         };
 
         int buildCount = Mathf.Min(Mathf.Max(1, encounterCount), orderedDifficulties.Length);
@@ -155,7 +158,8 @@ public sealed class RecruitFactory : MonoBehaviour
                 safeDay,
                 encounterIndex,
                 difficulty,
-                unitsPerEncounter);
+                unitsPerEncounter
+            );
 
             if (encounter != null)
             {
@@ -169,9 +173,9 @@ public sealed class RecruitFactory : MonoBehaviour
             {
                 BattleEncounterPreview encounter = encounters[i];
                 Debug.Log(
-                    $"[RecruitFactory] Battle encounter cached. " +
-                    $"Index={encounter.EncounterIndex}, Difficulty={encounter.Difficulty}, " +
-                    $"AvgLv={encounter.AverageLevel:0.0}, RewardPreview={encounter.PreviewRewardGold}",
+                    $"[RecruitFactory] Battle encounter cached. "
+                        + $"Index={encounter.EncounterIndex}, Difficulty={encounter.Difficulty}, "
+                        + $"AvgLv={encounter.AverageLevel:0.0}, RewardPreview={encounter.PreviewRewardGold}",
                     this
                 );
             }
@@ -183,10 +187,11 @@ public sealed class RecruitFactory : MonoBehaviour
     // 특정 난이도의 적 팀 1개를 실제로 구성함.
     // 적 유닛 레벨 분배, 적 검투사 preview 생성, 랜덤 무기 장착, snapshot 변환까지 담당.
     private BattleEncounterPreview CreateBattleEncounterPreviewForDifficulty(
-    int currentDay,
-    int encounterIndex,
-    BattleEncounterDifficulty difficulty,
-    int unitsPerEncounter)
+        int currentDay,
+        int encounterIndex,
+        BattleEncounterDifficulty difficulty,
+        int unitsPerEncounter
+    )
     {
         List<BattleUnitSnapshot> units = new List<BattleUnitSnapshot>(unitsPerEncounter);
         List<int> unitLevels = BuildEncounterUnitLevels(currentDay, difficulty, unitsPerEncounter);
@@ -197,13 +202,14 @@ public sealed class RecruitFactory : MonoBehaviour
             OwnedGladiatorData preview = CreatePreviewGladiatorAtLevel(
                 unitLevels[unitIndex],
                 RandomStreamType.BattleEncounter,
-                useSessionNameCounter: false);
+                useSessionNameCounter: false
+            );
 
             if (preview == null)
             {
                 Debug.LogError(
-                    $"[RecruitFactory] Failed to create battle encounter preview. " +
-                    $"EncounterIndex={encounterIndex}, Difficulty={difficulty}, UnitIndex={unitIndex}",
+                    $"[RecruitFactory] Failed to create battle encounter preview. "
+                        + $"EncounterIndex={encounterIndex}, Difficulty={difficulty}, UnitIndex={unitIndex}",
                     this
                 );
                 return null;
@@ -212,8 +218,8 @@ public sealed class RecruitFactory : MonoBehaviour
             if (!TryEquipRandomWeaponForBattlePreview(preview, currentDay))
             {
                 Debug.LogError(
-                    $"[RecruitFactory] Failed to equip random weapon on battle preview. " +
-                    $"EncounterIndex={encounterIndex}, Difficulty={difficulty}, UnitIndex={unitIndex}",
+                    $"[RecruitFactory] Failed to equip random weapon on battle preview. "
+                        + $"EncounterIndex={encounterIndex}, Difficulty={difficulty}, UnitIndex={unitIndex}",
                     this
                 );
                 return null;
@@ -225,8 +231,8 @@ public sealed class RecruitFactory : MonoBehaviour
             if (snapshot == null)
             {
                 Debug.LogError(
-                    $"[RecruitFactory] Failed to convert battle preview to snapshot. " +
-                    $"EncounterIndex={encounterIndex}, Difficulty={difficulty}, UnitIndex={unitIndex}",
+                    $"[RecruitFactory] Failed to convert battle preview to snapshot. "
+                        + $"EncounterIndex={encounterIndex}, Difficulty={difficulty}, UnitIndex={unitIndex}",
                     this
                 );
                 return null;
@@ -239,13 +245,7 @@ public sealed class RecruitFactory : MonoBehaviour
         float averageLevel = units.Count > 0 ? totalLevel / units.Count : 0f;
         int previewRewardGold = CalculatePreviewRewardForDifficulty(currentDay, difficulty);
 
-        return new BattleEncounterPreview(
-            encounterIndex,
-            units,
-            averageLevel,
-            previewRewardGold,
-            difficulty
-        );
+        return new BattleEncounterPreview(encounterIndex, units, averageLevel, previewRewardGold, difficulty);
     }
 
     // 난이도와 날짜에 맞춰 적 팀 전체 레벨 총량을 정하고,
@@ -253,9 +253,10 @@ public sealed class RecruitFactory : MonoBehaviour
     // 리팩토링 대상: 현재는 총량을 정하고 분배하는 방식이므로 레벨이 정수로 딱 떨어진다.
     // 추후 약간의 노이즈를 위해 개별 분포를 적용할 수 있음.
     private List<int> BuildEncounterUnitLevels(
-    int currentDay,
-    BattleEncounterDifficulty difficulty,
-    int unitsPerEncounter)
+        int currentDay,
+        BattleEncounterDifficulty difficulty,
+        int unitsPerEncounter
+    )
     {
         List<int> levels = new List<int>(unitsPerEncounter);
 
@@ -275,9 +276,8 @@ public sealed class RecruitFactory : MonoBehaviour
             levels.Add(baseLevel);
         }
 
-        int startIndex = _randomManager != null
-            ? _randomManager.NextInt(RandomStreamType.BattleEncounter, 0, unitsPerEncounter)
-            : 0;
+        int startIndex =
+            _randomManager != null ? _randomManager.NextInt(RandomStreamType.BattleEncounter, 0, unitsPerEncounter) : 0;
 
         for (int i = 0; i < remainder; i++)
         {
@@ -312,7 +312,8 @@ public sealed class RecruitFactory : MonoBehaviour
     private OwnedGladiatorData CreatePreviewGladiatorAtLevel(
         int fixedLevel,
         RandomStreamType streamType,
-        bool useSessionNameCounter)
+        bool useSessionNameCounter
+    )
     {
         GladiatorClassSO gladiatorTemplate = _contentDatabaseProvider.GladiatorTemplate;
         TraitSO trait = PickRandomNonNull(_contentDatabaseProvider.Traits, streamType);
@@ -388,7 +389,8 @@ public sealed class RecruitFactory : MonoBehaviour
     private OwnedGladiatorData CreatePreviewGladiatorForDay(
         int currentDay,
         RandomStreamType streamType,
-        bool useSessionNameCounter)
+        bool useSessionNameCounter
+    )
     {
         GladiatorClassSO gladiatorTemplate = _contentDatabaseProvider.GladiatorTemplate;
         TraitSO trait = PickRandomNonNull(_contentDatabaseProvider.Traits, streamType);
@@ -483,7 +485,7 @@ public sealed class RecruitFactory : MonoBehaviour
             BattleEncounterDifficulty.Low => 0.9f,
             BattleEncounterDifficulty.Medium => 1.0f,
             BattleEncounterDifficulty.High => 1.1f,
-            _ => 1.0f
+            _ => 1.0f,
         };
 
         return Mathf.Max(0, Mathf.RoundToInt(baseReward * multiplier));
@@ -613,7 +615,11 @@ public sealed class RecruitFactory : MonoBehaviour
             if (gladiator.CachedMaxHealth > oldMaxHealth)
             {
                 float gainedMaxHealth = gladiator.CachedMaxHealth - oldMaxHealth;
-                gladiator.CurrentHealth = Mathf.Clamp(oldCurrentHealth + gainedMaxHealth, 0f, gladiator.CachedMaxHealth);
+                gladiator.CurrentHealth = Mathf.Clamp(
+                    oldCurrentHealth + gainedMaxHealth,
+                    0f,
+                    gladiator.CachedMaxHealth
+                );
             }
             else
             {
@@ -622,7 +628,8 @@ public sealed class RecruitFactory : MonoBehaviour
         }
     }
 
-    private T PickRandomNonNull<T>(IReadOnlyList<T> list, RandomStreamType streamType) where T : class
+    private T PickRandomNonNull<T>(IReadOnlyList<T> list, RandomStreamType streamType)
+        where T : class
     {
         if (list == null || list.Count == 0)
         {
@@ -675,7 +682,10 @@ public sealed class RecruitFactory : MonoBehaviour
 
         if (_equipmentFactory == null)
         {
-            Debug.LogError("[RecruitFactory] TryEquipRandomWeaponForBattlePreview failed because equipmentFactory is null.", this);
+            Debug.LogError(
+                "[RecruitFactory] TryEquipRandomWeaponForBattlePreview failed because equipmentFactory is null.",
+                this
+            );
             return false;
         }
 

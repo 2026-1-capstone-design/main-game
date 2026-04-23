@@ -23,11 +23,7 @@ public sealed class OwnedWeaponData
     public float FinalAttackBonusVariancePercent { get; set; }
     public float FinalHealthBonusVariancePercent { get; set; }
 
-    public OwnedWeaponData(
-        int runtimeId,
-        string displayName,
-        int level,
-        WeaponSO weapon)
+    public OwnedWeaponData(int runtimeId, string displayName, int level, WeaponSO weapon)
     {
         RuntimeId = runtimeId;
         DisplayName = string.IsNullOrWhiteSpace(displayName) ? "Weapon" : displayName;

@@ -1,6 +1,7 @@
 using UnityEngine;
 
-public abstract class SingletonBehaviour<T> : MonoBehaviour where T : MonoBehaviour
+public abstract class SingletonBehaviour<T> : MonoBehaviour
+    where T : MonoBehaviour
 {
     public static T Instance { get; private set; }
 
@@ -10,7 +11,10 @@ public abstract class SingletonBehaviour<T> : MonoBehaviour where T : MonoBehavi
     {
         if (Instance != null && Instance != this)
         {
-            Debug.LogWarning($"[{typeof(T).Name}] Duplicate instance detected on '{gameObject.name}'. Destroying duplicate root.", this);
+            Debug.LogWarning(
+                $"[{typeof(T).Name}] Duplicate instance detected on '{gameObject.name}'. Destroying duplicate root.",
+                this
+            );
             Destroy(gameObject);
             return;
         }

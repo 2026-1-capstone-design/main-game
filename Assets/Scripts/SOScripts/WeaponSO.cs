@@ -14,7 +14,7 @@ public enum WeaponType
     dualGun,
     rifle,
     staff,
-    bow
+    bow,
 }
 
 [CreateAssetMenu(menuName = "Prototype/Content/Weapon")]

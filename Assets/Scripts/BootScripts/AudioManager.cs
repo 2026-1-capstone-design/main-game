@@ -4,18 +4,34 @@ using UnityEngine;
 public sealed class AudioManager : SingletonBehaviour<AudioManager>
 {
     [Header("Sources (optional)")]
-    [SerializeField] private AudioSource bgmSource;
-    [SerializeField] private AudioSource sfxSource;
+    [SerializeField]
+    private AudioSource bgmSource;
+
+    [SerializeField]
+    private AudioSource sfxSource;
 
     [Header("Volume")]
-    [Range(0f, 1f)][SerializeField] private float masterVolume = 1f;
-    [Range(0f, 1f)][SerializeField] private float bgmVolume = 1f;
-    [Range(0f, 1f)][SerializeField] private float sfxVolume = 1f;
+    [Range(0f, 1f)]
+    [SerializeField]
+    private float masterVolume = 1f;
+
+    [Range(0f, 1f)]
+    [SerializeField]
+    private float bgmVolume = 1f;
+
+    [Range(0f, 1f)]
+    [SerializeField]
+    private float sfxVolume = 1f;
 
     [Header("Mute")]
-    [SerializeField] private bool muteAll = false;
-    [SerializeField] private bool muteBgm = false;
-    [SerializeField] private bool muteSfx = false;
+    [SerializeField]
+    private bool muteAll = false;
+
+    [SerializeField]
+    private bool muteBgm = false;
+
+    [SerializeField]
+    private bool muteSfx = false;
 
     protected override void Awake()
     {

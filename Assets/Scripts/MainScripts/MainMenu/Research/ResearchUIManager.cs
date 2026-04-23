@@ -7,18 +7,26 @@ using UnityEngine.UI;
 public sealed class ResearchUIManager : MonoBehaviour
 {
     [Header("Panel")]
-    [SerializeField] private GameObject panelRoot;
+    [SerializeField]
+    private GameObject panelRoot;
 
     [Header("Buttons")]
-    [SerializeField] private Button testButton;
-    [SerializeField] private Button backButton;
+    [SerializeField]
+    private Button testButton;
+
+    [SerializeField]
+    private Button backButton;
 
     [Header("Viewer")]
-    [SerializeField] private OwnedItemGridViewer perkViewer;
+    [SerializeField]
+    private OwnedItemGridViewer perkViewer;
 
     [Header("Optional Labels")]
-    [SerializeField] private TMP_Text headerText;
-    [SerializeField] private TMP_Text statusText;
+    [SerializeField]
+    private TMP_Text headerText;
+
+    [SerializeField]
+    private TMP_Text statusText;
 
     private readonly List<OwnedItemViewData> _perkViewBuffer = new List<OwnedItemViewData>();
 
@@ -83,11 +91,7 @@ public sealed class ResearchUIManager : MonoBehaviour
                     continue;
                 }
 
-                _perkViewBuffer.Add(new OwnedItemViewData(
-                    perk.icon,
-                    perk.perkName,
-                    perk
-                ));
+                _perkViewBuffer.Add(new OwnedItemViewData(perk.icon, perk.perkName, perk));
             }
         }
 

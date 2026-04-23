@@ -7,38 +7,70 @@ using UnityEngine.UI;
 public sealed class BattleUIManager : MonoBehaviour
 {
     [Header("Battle Preparation Panel")]
-    [SerializeField] private GameObject battlePanelRoot;
-    [SerializeField] private TMP_Text battleBodyText;
+    [SerializeField]
+    private GameObject battlePanelRoot;
+
+    [SerializeField]
+    private TMP_Text battleBodyText;
 
     [Header("Very Low Row")]
-    [SerializeField] private Image[] veryLowEnemyImages = new Image[6];
-    [SerializeField] private TMP_Text veryLowSummaryText;
-    [SerializeField] private Button veryLowRowButton;
-    [SerializeField] private GameObject veryLowSelectedOverlay;
+    [SerializeField]
+    private Image[] veryLowEnemyImages = new Image[6];
+
+    [SerializeField]
+    private TMP_Text veryLowSummaryText;
+
+    [SerializeField]
+    private Button veryLowRowButton;
+
+    [SerializeField]
+    private GameObject veryLowSelectedOverlay;
 
     [Header("Low Row")]
-    [SerializeField] private Image[] lowEnemyImages = new Image[6];
-    [SerializeField] private TMP_Text lowSummaryText;
-    [SerializeField] private Button lowRowButton;
-    [SerializeField] private GameObject lowSelectedOverlay;
+    [SerializeField]
+    private Image[] lowEnemyImages = new Image[6];
+
+    [SerializeField]
+    private TMP_Text lowSummaryText;
+
+    [SerializeField]
+    private Button lowRowButton;
+
+    [SerializeField]
+    private GameObject lowSelectedOverlay;
 
     [Header("Medium Row")]
-    [SerializeField] private Image[] mediumEnemyImages = new Image[6];
-    [SerializeField] private TMP_Text mediumSummaryText;
-    [SerializeField] private Button mediumRowButton;
-    [SerializeField] private GameObject mediumSelectedOverlay;
+    [SerializeField]
+    private Image[] mediumEnemyImages = new Image[6];
+
+    [SerializeField]
+    private TMP_Text mediumSummaryText;
+
+    [SerializeField]
+    private Button mediumRowButton;
+
+    [SerializeField]
+    private GameObject mediumSelectedOverlay;
 
     [Header("High Row")]
-    [SerializeField] private Image[] highEnemyImages = new Image[6];
-    [SerializeField] private TMP_Text highSummaryText;
-    [SerializeField] private Button highRowButton;
-    [SerializeField] private GameObject highSelectedOverlay;
+    [SerializeField]
+    private Image[] highEnemyImages = new Image[6];
+
+    [SerializeField]
+    private TMP_Text highSummaryText;
+
+    [SerializeField]
+    private Button highRowButton;
+
+    [SerializeField]
+    private GameObject highSelectedOverlay;
 
     [Header("Preparation Buttons")]
-    [SerializeField] private Button startButton;
-    [SerializeField] private Button backButton;
+    [SerializeField]
+    private Button startButton;
 
-
+    [SerializeField]
+    private Button backButton;
 
     private MainFlowManager _flow;
     private BattleManager _battleManager;
@@ -61,7 +93,6 @@ public sealed class BattleUIManager : MonoBehaviour
         BindButton(startButton, OnStartClicked);
         BindButton(backButton, OnBackClicked);
 
-
         CloseAll();
 
         _initialized = true;
@@ -72,8 +103,7 @@ public sealed class BattleUIManager : MonoBehaviour
         IReadOnlyList<BattleEncounterPreview> encounters =
             _battleManager != null ? _battleManager.DailyEncounters : null;
 
-        int selectedIndex =
-            _battleManager != null ? _battleManager.SelectedEncounterIndex : -1;
+        int selectedIndex = _battleManager != null ? _battleManager.SelectedEncounterIndex : -1;
 
         OpenBattlePanel(encounters, selectedIndex);
     }
@@ -103,7 +133,6 @@ public sealed class BattleUIManager : MonoBehaviour
         {
             backButton.interactable = true;
         }
-
     }
 
     public void RefreshSelection(int selectedIndex)
@@ -132,14 +161,14 @@ public sealed class BattleUIManager : MonoBehaviour
         {
             backButton.interactable = true;
         }
-
     }
 
     private void RenderEncounterRow(
         BattleEncounterPreview encounter,
         Image[] slotImages,
         TMP_Text summaryText,
-        Button rowButton)
+        Button rowButton
+    )
     {
         bool hasEncounter = encounter != null;
 
@@ -184,7 +213,10 @@ public sealed class BattleUIManager : MonoBehaviour
         }
     }
 
-    private static BattleEncounterPreview GetEncounterOrNull(IReadOnlyList<BattleEncounterPreview> encounters, int index)
+    private static BattleEncounterPreview GetEncounterOrNull(
+        IReadOnlyList<BattleEncounterPreview> encounters,
+        int index
+    )
     {
         if (encounters == null)
         {
@@ -246,7 +278,6 @@ public sealed class BattleUIManager : MonoBehaviour
             _flow.HandleBattlePreparationBackRequested();
         }
     }
-
 
     private static void BindButton(Button button, UnityEngine.Events.UnityAction action)
     {

@@ -7,14 +7,15 @@ public enum BattleEncounterDifficulty
     VeryLow = -1,
     Low = 0,
     Medium = 1,
-    High = 2
+    High = 2,
 }
 
 [Serializable]
 public sealed class BattleUnitSnapshot
 {
-    public int SourceRuntimeId { get; }         // 원본인 OwnedGladiatorData의 RuntimeId.
-                                                // 전투 중 유닛이 어떤 실제로 중인 보유 검투사에서 복사됐는지 추적할 때 기준이 된다.
+    public int SourceRuntimeId { get; } // 원본인 OwnedGladiatorData의 RuntimeId.
+
+    // 전투 중 유닛이 어떤 실제로 중인 보유 검투사에서 복사됐는지 추적할 때 기준이 된다.
     public bool IsEnemy { get; }
     public string DisplayName { get; }
     public int Level { get; }
@@ -36,12 +37,11 @@ public sealed class BattleUnitSnapshot
     public GameObject LeftWeaponPrefab { get; }
     public GameObject RightWeaponPrefab { get; }
 
-
     //무기 스킬
     public WeaponSkillId WeaponSkillId { get; }
 
     //커스터마이징 배열
-    public int[] CustomizeIndicates {get;}
+    public int[] CustomizeIndicates { get; }
 
     public bool IsRanged { get; }
     public bool UseProjectile { get; }
@@ -70,7 +70,8 @@ public sealed class BattleUnitSnapshot
         int[] customizeIndicates,
         bool isRanged,
         bool useProjectile,
-        Sprite portraitSprite)
+        Sprite portraitSprite
+    )
     {
         SourceRuntimeId = sourceRuntimeId;
         IsEnemy = isEnemy;
@@ -139,7 +140,8 @@ public sealed class BattleUnitSnapshot
     public static BattleUnitSnapshot FromOwnedGladiator(
         OwnedGladiatorData source,
         bool isEnemy,
-        Sprite portraitSprite = null)
+        Sprite portraitSprite = null
+    )
     {
         if (source == null)
         {
@@ -156,7 +158,6 @@ public sealed class BattleUnitSnapshot
 
         GameObject leftPrefab = null;
         GameObject rightPrefab = null;
-
 
         WeaponSkillId weaponSkillId = WeaponSkillId.None;
         bool isRanged = false;
@@ -214,7 +215,7 @@ public sealed class BattleEncounterPreview
 {
     private readonly List<BattleUnitSnapshot> _enemyUnits = new List<BattleUnitSnapshot>();
 
-    public int EncounterIndex { get; set; }         // '메인 씬의 전투 패널 상의' 전투 후보 목록에서 이 적 팀이 몇 번째 줄인지 나타내는 인덱스
+    public int EncounterIndex { get; set; } // '메인 씬의 전투 패널 상의' 전투 후보 목록에서 이 적 팀이 몇 번째 줄인지 나타내는 인덱스
     public BattleEncounterDifficulty Difficulty { get; set; }
     public float AverageLevel { get; }
     public int PreviewRewardGold { get; set; }
@@ -230,7 +231,8 @@ public sealed class BattleEncounterPreview
         IEnumerable<BattleUnitSnapshot> enemyUnits,
         float averageLevel,
         int previewRewardGold,
-        BattleEncounterDifficulty difficulty)
+        BattleEncounterDifficulty difficulty
+    )
     {
         EncounterIndex = Mathf.Max(0, encounterIndex);
         AverageLevel = Mathf.Max(0f, averageLevel);
@@ -264,6 +266,7 @@ public sealed class BattleStartPayload
     public int SelectedEncounterIndex { get; }
     public float EnemyAverageLevel { get; }
     public int PreviewRewardGold { get; }
+
     // 랜덤매니저에서 쓸 시드
     public int BattleSeed { get; }
 
@@ -275,7 +278,8 @@ public sealed class BattleStartPayload
         int selectedEncounterIndex,
         float enemyAverageLevel,
         int previewRewardGold,
-        int battleSeed)
+        int battleSeed
+    )
     {
         if (allyUnits != null)
         {

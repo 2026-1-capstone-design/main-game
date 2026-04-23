@@ -16,6 +16,5 @@ public sealed class BattleSkillRegistry
             _skills[skill.SkillId] = skill;
     }
 
-    public IBattleSkill Get(WeaponSkillId id)
-        => _skills.TryGetValue(id, out IBattleSkill skill) ? skill : _default;
+    public IBattleSkill Get(WeaponSkillId id) => _skills.TryGetValue(id, out IBattleSkill skill) ? skill : _default;
 }

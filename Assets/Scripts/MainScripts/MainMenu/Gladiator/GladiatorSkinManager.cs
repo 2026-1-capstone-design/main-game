@@ -2,19 +2,19 @@ using UnityEngine;
 
 public enum SkinPart
 {
-    FullHead = 0,   // 통짜 머리(투구 등)
-    Nose = 1,       // 코
-    Hair = 2,       // 헤어
-    Face = 3,       // 얼굴형
-    Eyes = 4,       // 눈
-    Eyebrows = 5,   // 눈썹
-    Ears = 6,       // 귀
-    Chest = 7,      // 가슴
-    Arms = 8,       // 팔
-    Belt = 9,       // 벨트
-    Legs = 10,      // 다리
-    Feet = 11,      // 발
-    TotalCount = 12 // 배열의 총 크기
+    FullHead = 0, // 통짜 머리(투구 등)
+    Nose = 1, // 코
+    Hair = 2, // 헤어
+    Face = 3, // 얼굴형
+    Eyes = 4, // 눈
+    Eyebrows = 5, // 눈썹
+    Ears = 6, // 귀
+    Chest = 7, // 가슴
+    Arms = 8, // 팔
+    Belt = 9, // 벨트
+    Legs = 10, // 다리
+    Feet = 11, // 발
+    TotalCount = 12, // 배열의 총 크기
 }
 
 [DisallowMultipleComponent]

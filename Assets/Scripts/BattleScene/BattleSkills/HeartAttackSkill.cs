@@ -7,14 +7,12 @@ public sealed class HeartAttackSkill : IBattleSkill
     public WeaponSkillId SkillId => WeaponSkillId.HeartAttack;
     public skillType SkillCategory => skillType.attack;
 
-    public IReadOnlyList<WeaponType> CompatibleWeaponTypes { get; } =
-        new[] { WeaponType.oneHand, WeaponType.twoHand };
+    public IReadOnlyList<WeaponType> CompatibleWeaponTypes { get; } = new[] { WeaponType.oneHand, WeaponType.twoHand };
 
     public bool CanActivate(BattleRuntimeUnit caster, BattleFieldView field)
     {
         BattleRuntimeUnit target = caster.PlannedTargetEnemy;
-        return field.IsValidEnemyTarget(caster, target)
-            && field.IsWithinEffectiveAttackDistance(caster, target);
+        return field.IsValidEnemyTarget(caster, target) && field.IsWithinEffectiveAttackDistance(caster, target);
     }
 
     public void Apply(BattleRuntimeUnit caster, BattleFieldView field, ISkillEffectApplier applier)

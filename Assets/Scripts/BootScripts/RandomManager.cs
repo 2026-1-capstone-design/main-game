@@ -6,24 +6,25 @@ public enum RandomStreamType
     Recruit = 0,
     Equipment = 1,
     BattleEncounter = 2,
-    BattleSimulation = 3
+    BattleSimulation = 3,
 }
 
 [DisallowMultipleComponent]
 public sealed class RandomManager : SingletonBehaviour<RandomManager>
 {
-    [SerializeField] private bool verboseLog = true;
+    [SerializeField]
+    private bool verboseLog = true;
 
-    private System.Random _recruitRng;      // 검투사 생성 전용 난수 스트림
-    private System.Random _equipmentRng;       // 장비 난수
-    private System.Random _battleEncounterRng;      //전투 상대 난수
-    private System.Random _battleSimulationRng;     // 실제 전투 난수
+    private System.Random _recruitRng; // 검투사 생성 전용 난수 스트림
+    private System.Random _equipmentRng; // 장비 난수
+    private System.Random _battleEncounterRng; //전투 상대 난수
+    private System.Random _battleSimulationRng; // 실제 전투 난수
 
     private bool _initialized;
     private bool _loggedAutoInitWarning;
 
-    public int SessionSeed { get; private set; }        // 현재 세션의 기준 시드. 모든 난수 스트림은 이 값을 바탕으로 파생됨
-    public bool IsInitialized => _initialized;          // 세션용 난수 스트림 초기화 완료 여부
+    public int SessionSeed { get; private set; } // 현재 세션의 기준 시드. 모든 난수 스트림은 이 값을 바탕으로 파생됨
+    public bool IsInitialized => _initialized; // 세션용 난수 스트림 초기화 완료 여부
 
     // 새 세션의 기준 시드를 정하고
     // 모든 시스템 전용 RNG를 서로 다른 salt로 분리 생성
@@ -119,7 +120,7 @@ public sealed class RandomManager : SingletonBehaviour<RandomManager>
             RandomStreamType.Equipment => _equipmentRng,
             RandomStreamType.BattleEncounter => _battleEncounterRng,
             RandomStreamType.BattleSimulation => _battleSimulationRng,
-            _ => _recruitRng
+            _ => _recruitRng,
         };
     }
 
@@ -130,7 +131,10 @@ public sealed class RandomManager : SingletonBehaviour<RandomManager>
 
         if (!_loggedAutoInitWarning)
         {
-            Debug.LogWarning("[RandomManager] Used before InitializeForNewSession(). Auto-initializing with time-based seed.", this);
+            Debug.LogWarning(
+                "[RandomManager] Used before InitializeForNewSession(). Auto-initializing with time-based seed.",
+                this
+            );
             _loggedAutoInitWarning = true;
         }
 

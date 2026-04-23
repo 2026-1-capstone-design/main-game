@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-
 // BattleSimulationManager 책임 (실제 전투 본체):
 // 1. fixed tick 기반 시뮬레이션 루프
 // 2. RAW 파라미터 9개 계산 → 현재 행동 기준 MOD 파라미터 보정
@@ -25,7 +24,6 @@ public enum BuffType
     Taunt,
     Stun,
 }
-
 
 [DisallowMultipleComponent]
 public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
@@ -105,7 +103,8 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
         SphereCollider battlefieldCollider,
         BattleStatusGridUIManager statusGridUIManager = null,
         BattleSceneUIManager battleSceneUIManager = null,
-        BattleStartPayload payload = null)
+        BattleStartPayload payload = null
+    )
     {
         if (aiTuning != null)
             aiTuning.EnsureDefaultActionTunings();
@@ -140,23 +139,25 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
 
         _fieldView = new BattleFieldView(_runtimeUnits, BuildParameterRadii(), escapeTowardTeamBlend);
         _planners = BuildPlannerRegistry();
-        _skillRegistry = new BattleSkillRegistry(new IBattleSkill[]
-        {
-            new HeartAttackSkill(),
-            new MadnessSkill(),
-            new BayonetChargeSkill(),
-            new FireballSkill(),
-            new HeadStrikeSkill(),
-            new LightningSkill(),
-            new LongGripSkill(),
-            new RevolverFanningSkill(),
-            new RustyBladeSkill(),
-            new ShieldBashSkill(),
-            new SpiralSlashSkill(),
-            new StimpackSkill(),
-            new ThroatSlitSkill(),
-            new WarcrySkill()
-        });
+        _skillRegistry = new BattleSkillRegistry(
+            new IBattleSkill[]
+            {
+                new HeartAttackSkill(),
+                new MadnessSkill(),
+                new BayonetChargeSkill(),
+                new FireballSkill(),
+                new HeadStrikeSkill(),
+                new LightningSkill(),
+                new LongGripSkill(),
+                new RevolverFanningSkill(),
+                new RustyBladeSkill(),
+                new ShieldBashSkill(),
+                new SpiralSlashSkill(),
+                new StimpackSkill(),
+                new ThroatSlitSkill(),
+                new WarcrySkill(),
+            }
+        );
 
         _tickAccumulator = 0f;
         _tickInterval = 1f / Mathf.Max(1f, simulationTickRate);
@@ -219,9 +220,6 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
         SetSimulationSpeedMultiplier(simulationSpeedMultiplier * multiplier);
     }
 
-
-
-
     public void SetTemporaryPause(bool isPaused)
     {
         _isTemporarilyPaused = isPaused;
@@ -242,7 +240,7 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
         ExecuteMovementPhase(tickDeltaTime);
         ResolveUnitSeparation();
         ExecuteAttackPhase();
-        ExecuteSkillPhase();            //스킬
+        ExecuteSkillPhase(); //스킬
         TryFinishBattle();
 
         if (_statusGridUIManager != null)
@@ -320,7 +318,7 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
             isolationRadius = aiTuning.isolationRadius,
             assassinReachRadius = aiTuning.assassinReachRadius,
             clusterRadius = aiTuning.clusterRadius,
-            teamCenterDistanceRadius = aiTuning.teamCenterDistanceRadius
+            teamCenterDistanceRadius = aiTuning.teamCenterDistanceRadius,
         };
     }
 
@@ -334,7 +332,7 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
             new EscapePlanner(),
             new RegroupPlanner(),
             new CollapsePlanner(),
-            new EngageNearestPlanner()
+            new EngageNearestPlanner(),
         };
         var dict = new Dictionary<BattleActionType, IBattleActionPlanner>(planners.Length);
         foreach (var p in planners)
@@ -351,8 +349,16 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
                 continue;
 
             WeaponType weaponType = unit.Snapshot != null ? unit.Snapshot.WeaponType : WeaponType.None;
-            BattleActionScoreSet scores = BattleActionScorer.Evaluate(unit.CurrentModifiedParameters, weaponType, aiTuning != null ? aiTuning.actionTunings : null);
-            scores = BattleActionScorer.ApplyEscapeReengageBias(unit.CurrentActionType, unit.CurrentRawParameters, scores);
+            BattleActionScoreSet scores = BattleActionScorer.Evaluate(
+                unit.CurrentModifiedParameters,
+                weaponType,
+                aiTuning != null ? aiTuning.actionTunings : null
+            );
+            scores = BattleActionScorer.ApplyEscapeReengageBias(
+                unit.CurrentActionType,
+                unit.CurrentRawParameters,
+                scores
+            );
             unit.State.SetCurrentScores(scores);
         }
     }
@@ -370,7 +376,13 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
             BattleActionScoreSet scores = unit.CurrentScores;
             BattleActionType currentAction = unit.CurrentActionType;
 
-            GetBestActionRespectingEscapeLimit(unit, scores, BattleActionType.None, out BattleActionType bestAction, out float bestScore);
+            GetBestActionRespectingEscapeLimit(
+                unit,
+                scores,
+                BattleActionType.None,
+                out BattleActionType bestAction,
+                out float bestScore
+            );
 
             if (currentAction == BattleActionType.None)
             {
@@ -382,7 +394,13 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
             float decayedKeepBehaving = unit.KeepBehaving - (decay * tickDeltaTime);
             float nextActionTimer = unit.ActionTimer + tickDeltaTime;
 
-            GetBestActionRespectingEscapeLimit(unit, scores, currentAction, out BattleActionType bestOtherAction, out float bestOtherScore);
+            GetBestActionRespectingEscapeLimit(
+                unit,
+                scores,
+                currentAction,
+                out BattleActionType bestOtherAction,
+                out float bestOtherScore
+            );
 
             if (bestOtherScore > decayedKeepBehaving)
             {
@@ -423,7 +441,11 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
         int count = 0;
         for (int i = 0; i < _runtimeUnits.Count; i++)
         {
-            if (_runtimeUnits[i] != null && !_runtimeUnits[i].IsCombatDisabled && _runtimeUnits[i].CurrentActionType == BattleActionType.EscapeFromPressure)
+            if (
+                _runtimeUnits[i] != null
+                && !_runtimeUnits[i].IsCombatDisabled
+                && _runtimeUnits[i].CurrentActionType == BattleActionType.EscapeFromPressure
+            )
             {
                 count++;
             }
@@ -447,19 +469,74 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
         return GetCurrentEscapeUnitCount() < GetMaxEscapeUnitCount();
     }
 
-    private void GetBestActionRespectingEscapeLimit(BattleRuntimeUnit unit, BattleActionScoreSet scores, BattleActionType excludedAction, out BattleActionType bestAction, out float bestScore)
+    private void GetBestActionRespectingEscapeLimit(
+        BattleRuntimeUnit unit,
+        BattleActionScoreSet scores,
+        BattleActionType excludedAction,
+        out BattleActionType bestAction,
+        out float bestScore
+    )
     {
         bool canEnterEscape = CanEnterEscapeAction(unit);
         bestAction = BattleActionType.None;
         bestScore = float.MinValue;
 
-        TryConsiderActionRespectingEscapeLimit(ref bestAction, ref bestScore, BattleActionType.AssassinateIsolatedEnemy, scores.AssassinateIsolatedEnemy, excludedAction, canEnterEscape);
-        TryConsiderActionRespectingEscapeLimit(ref bestAction, ref bestScore, BattleActionType.DiveEnemyBackline, scores.DiveEnemyBackline, excludedAction, canEnterEscape);
-        TryConsiderActionRespectingEscapeLimit(ref bestAction, ref bestScore, BattleActionType.PeelForWeakAlly, scores.PeelForWeakAlly, excludedAction, canEnterEscape);
-        TryConsiderActionRespectingEscapeLimit(ref bestAction, ref bestScore, BattleActionType.EscapeFromPressure, scores.EscapeFromPressure, excludedAction, canEnterEscape);
-        TryConsiderActionRespectingEscapeLimit(ref bestAction, ref bestScore, BattleActionType.RegroupToAllies, scores.RegroupToAllies, excludedAction, canEnterEscape);
-        TryConsiderActionRespectingEscapeLimit(ref bestAction, ref bestScore, BattleActionType.CollapseOnCluster, scores.CollapseOnCluster, excludedAction, canEnterEscape);
-        TryConsiderActionRespectingEscapeLimit(ref bestAction, ref bestScore, BattleActionType.EngageNearest, scores.EngageNearest, excludedAction, canEnterEscape);
+        TryConsiderActionRespectingEscapeLimit(
+            ref bestAction,
+            ref bestScore,
+            BattleActionType.AssassinateIsolatedEnemy,
+            scores.AssassinateIsolatedEnemy,
+            excludedAction,
+            canEnterEscape
+        );
+        TryConsiderActionRespectingEscapeLimit(
+            ref bestAction,
+            ref bestScore,
+            BattleActionType.DiveEnemyBackline,
+            scores.DiveEnemyBackline,
+            excludedAction,
+            canEnterEscape
+        );
+        TryConsiderActionRespectingEscapeLimit(
+            ref bestAction,
+            ref bestScore,
+            BattleActionType.PeelForWeakAlly,
+            scores.PeelForWeakAlly,
+            excludedAction,
+            canEnterEscape
+        );
+        TryConsiderActionRespectingEscapeLimit(
+            ref bestAction,
+            ref bestScore,
+            BattleActionType.EscapeFromPressure,
+            scores.EscapeFromPressure,
+            excludedAction,
+            canEnterEscape
+        );
+        TryConsiderActionRespectingEscapeLimit(
+            ref bestAction,
+            ref bestScore,
+            BattleActionType.RegroupToAllies,
+            scores.RegroupToAllies,
+            excludedAction,
+            canEnterEscape
+        );
+        TryConsiderActionRespectingEscapeLimit(
+            ref bestAction,
+            ref bestScore,
+            BattleActionType.CollapseOnCluster,
+            scores.CollapseOnCluster,
+            excludedAction,
+            canEnterEscape
+        );
+        TryConsiderActionRespectingEscapeLimit(
+            ref bestAction,
+            ref bestScore,
+            BattleActionType.EngageNearest,
+            scores.EngageNearest,
+            excludedAction,
+            canEnterEscape
+        );
 
         if (bestAction == BattleActionType.None)
         {
@@ -468,7 +545,14 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
         }
     }
 
-    private void TryConsiderActionRespectingEscapeLimit(ref BattleActionType bestAction, ref float bestScore, BattleActionType candidateAction, float candidateScore, BattleActionType excludedAction, bool canEnterEscape)
+    private void TryConsiderActionRespectingEscapeLimit(
+        ref BattleActionType bestAction,
+        ref float bestScore,
+        BattleActionType candidateAction,
+        float candidateScore,
+        BattleActionType excludedAction,
+        bool canEnterEscape
+    )
     {
         if (candidateAction == excludedAction)
             return;
@@ -544,7 +628,10 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
 
             BattleRuntimeUnit targetEnemy = unit.PlannedTargetEnemy;
 
-            if (_fieldView.IsValidEnemyTarget(unit, targetEnemy) && _fieldView.IsWithinEffectiveAttackDistance(unit, targetEnemy))
+            if (
+                _fieldView.IsValidEnemyTarget(unit, targetEnemy)
+                && _fieldView.IsWithinEffectiveAttackDistance(unit, targetEnemy)
+            )
             {
                 if (unit.IsMoving)
                     unit.State.SetIdleState();
@@ -584,23 +671,23 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
         {
             BattleRuntimeUnit attacker = _runtimeUnits[i];
             if (attacker == null || attacker.IsCombatDisabled || attacker.State.IsStunned)
-                continue;            //전투 불가능한 상태
+                continue; //전투 불가능한 상태
 
             BattleRuntimeUnit target = attacker.PlannedTargetEnemy;
             if (!_fieldView.IsValidEnemyTarget(attacker, target))
-                continue;                    //유효하지 않은 적
+                continue; //유효하지 않은 적
             if (!_fieldView.IsWithinEffectiveAttackDistance(attacker, target))
-                continue;       //사거리 안
+                continue; //사거리 안
             if (attacker.AttackCooldownRemaining > 0f)
-                continue;                    //공격 쿨이 남음
+                continue; //공격 쿨이 남음
 
-            attacker.State.SetAttackState(true);        //실질적으로 때리는 타이밍
+            attacker.State.SetAttackState(true); //실질적으로 때리는 타이밍
 
             target.State.ApplyDamage(attacker.Attack); //데미지 적용
 
-            attacker.State.ResetAttackCooldown();       //공격 쿨 돌리고
+            attacker.State.ResetAttackCooldown(); //공격 쿨 돌리고
 
-            attacker.State.SetAttackState(false);       //때리는 것 끝
+            attacker.State.SetAttackState(false); //때리는 것 끝
         }
     }
 
@@ -618,25 +705,21 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
                 continue;
 
             skill.Apply(unit, _fieldView, this);
-            unit.SetSkillState();           // 비주얼(Animator 트리거)은 BRU에 남음
+            unit.SetSkillState(); // 비주얼(Animator 트리거)은 BRU에 남음
             unit.State.ResetSkillCooldown();
         }
     }
 
     // ISkillEffectApplier 구현
-    void ISkillEffectApplier.ApplyDamage(BattleUnitCombatState target, float amount)
-        => target.ApplyDamage(amount);
+    void ISkillEffectApplier.ApplyDamage(BattleUnitCombatState target, float amount) => target.ApplyDamage(amount);
 
-    void ISkillEffectApplier.AddKnockback(BattleUnitCombatState target, Vector3 direction, float force)
-        => target.AddKnockback(direction, force);
+    void ISkillEffectApplier.AddKnockback(BattleUnitCombatState target, Vector3 direction, float force) =>
+        target.AddKnockback(direction, force);
 
-    void ISkillEffectApplier.ApplyHeal(BattleUnitCombatState caster, float amount)
-        => caster.ApplyHeal(amount);
+    void ISkillEffectApplier.ApplyHeal(BattleUnitCombatState caster, float amount) => caster.ApplyHeal(amount);
 
-    void ISkillEffectApplier.ApplyBuff(BattleUnitCombatState caster, BuffType type, int level, float duration)
-        => caster.BuffApply(type, level, duration);
-
-
+    void ISkillEffectApplier.ApplyBuff(BattleUnitCombatState caster, BuffType type, int level, float duration) =>
+        caster.BuffApply(type, level, duration);
 
     //Unit당 특수 상태 이상 처리,
     //개인 상태 이상은 tick당 내부에서 처리하는 것이 좋을 것 같은데...
@@ -650,12 +733,12 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
                 _runtimeUnits[i].TickKnockback(tickDeltaTime);
             }
         }
-
     }
 
-
-
-    private BattleParameterSet ApplyCurrentActionParameterModifiers(BattleRuntimeUnit unit, BattleParameterSet rawParameters)
+    private BattleParameterSet ApplyCurrentActionParameterModifiers(
+        BattleRuntimeUnit unit,
+        BattleParameterSet rawParameters
+    )
     {
         if (unit == null)
             return rawParameters;

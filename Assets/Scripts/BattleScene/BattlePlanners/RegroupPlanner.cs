@@ -10,10 +10,10 @@ public sealed class RegroupPlanner : IBattleActionPlanner
             TargetEnemy = null,
             TargetAlly = null,
             DesiredPosition = field.ComputeTeamCenter(unit.IsEnemy),
-            HasDesiredPosition = true
+            HasDesiredPosition = true,
         };
     }
 
-    public bool IsUsable(BattleRuntimeUnit unit, BattleActionExecutionPlan plan, BattleFieldView field)
-        => plan.HasDesiredPosition || field.IsValidEnemyTarget(unit, plan.TargetEnemy);
+    public bool IsUsable(BattleRuntimeUnit unit, BattleActionExecutionPlan plan, BattleFieldView field) =>
+        plan.HasDesiredPosition || field.IsValidEnemyTarget(unit, plan.TargetEnemy);
 }

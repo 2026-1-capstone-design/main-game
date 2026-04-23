@@ -37,7 +37,8 @@ public static class BattleOrdersHttpClient
         string userPayloadJson,
         int timeoutSeconds,
         Action<string, string, string, string> onSuccess,
-        Action<string> onError)
+        Action<string> onError
+    )
     {
         if (string.IsNullOrWhiteSpace(url))
         {
@@ -73,7 +74,7 @@ public static class BattleOrdersHttpClient
         {
             backendId = backendId,
             systemInstruction = systemInstruction,
-            userPayloadJson = userPayloadJson
+            userPayloadJson = userPayloadJson,
         };
 
         string requestJson = JsonUtility.ToJson(requestDto);
@@ -90,9 +91,7 @@ public static class BattleOrdersHttpClient
 
             yield return request.SendWebRequest();
 
-            string responseBody = request.downloadHandler != null
-                ? request.downloadHandler.text
-                : string.Empty;
+            string responseBody = request.downloadHandler != null ? request.downloadHandler.text : string.Empty;
 
             if (request.result != UnityWebRequest.Result.Success)
             {
@@ -113,19 +112,13 @@ public static class BattleOrdersHttpClient
                 yield break;
             }
 
-            onSuccess?.Invoke(
-                responseDto.backendId,
-                responseDto.provider,
-                responseDto.model,
-                responseDto.text);
+            onSuccess?.Invoke(responseDto.backendId, responseDto.provider, responseDto.model, responseDto.text);
         }
     }
 
     private static string BuildErrorMessage(long statusCode, string unityError, string responseBody)
     {
-        string statusText = statusCode > 0
-            ? $"Status={statusCode}"
-            : "Status=NoResponse";
+        string statusText = statusCode > 0 ? $"Status={statusCode}" : "Status=NoResponse";
 
         if (string.IsNullOrWhiteSpace(responseBody))
         {
