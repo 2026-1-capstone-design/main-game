@@ -40,7 +40,15 @@ public sealed class BattleStatusGridUIManager : MonoBehaviour
     {
         _simulationManager = simulationManager;
         _battleSceneUIManager = battleSceneUIManager;
+        BindUnits(runtimeUnits);
 
+        BindAllyOrderButtons();
+        UpdateAllyOrderButtonInteractableStates();
+        _initialized = true;
+    }
+
+    public void BindUnits(IReadOnlyList<BattleRuntimeUnit> runtimeUnits)
+    {
         for (int i = 0; i < _allyUnits.Length; i++)
         {
             _allyUnits[i] = null;
@@ -80,9 +88,7 @@ public sealed class BattleStatusGridUIManager : MonoBehaviour
             }
         }
 
-        BindAllyOrderButtons();
         UpdateAllyOrderButtonInteractableStates();
-        _initialized = true;
     }
 
     public void Refresh()

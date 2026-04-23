@@ -47,7 +47,8 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     [SerializeField]
     public BattleUnitCombatState State => state;
 
-    public GameObject RuntimeRootObject => gameObject;
+    private GameObject _runtimeRootObject;
+    public GameObject RuntimeRootObject => _runtimeRootObject != null ? _runtimeRootObject : gameObject;
 
     // ── 정체성 프로퍼티 (State 위임) ──────────────────────────────
     public int UnitNumber => State.UnitNumber;
@@ -90,8 +91,44 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     public bool IsAttacking => State.IsAttacking;
 
     // ── 위치 (transform 직접) ─────────────────────────────────────
-    // 유닛 위치/클램프 기준은 스크립트가 붙은 자기 자신이 아니라 부모 Root(3D: BoxCollider).
+    // 유닛 위치/클램프 기준은 스크립트가 붙은 자기 자신이 아니라 부모 Root(3D: SphereCollider).
     public Vector3 Position => transform.position;
+
+    // ── ML-Agents 외부 제어 ───────────────────────────────────────
+    // true면 BattleSimulationManager의 AI 파이프라인(CommitOrSwitch, BuildPlan)을 스킵한다.
+    public bool IsExternallyControlled { get; private set; }
+
+    // 공격이 실제로 적에게 적중했을 때 발화한다. (target, wasKillingBlow)
+    public event Action<BattleRuntimeUnit, bool> OnAttackLanded;
+
+    public void RaiseAttackLanded(BattleRuntimeUnit target, bool wasKill) => OnAttackLanded?.Invoke(target, wasKill);
+
+    public Vector3 ExternalMoveDirection { get; private set; }
+    public float ExternalRotationDelta { get; private set; }
+
+    public void SetExternallyControlled(bool value) => IsExternallyControlled = value;
+
+    public void SetExternalMovement(Vector3 worldDirection, float rotationDeltaDegPerSec)
+    {
+        ExternalMoveDirection = worldDirection;
+        ExternalRotationDelta = rotationDeltaDegPerSec;
+    }
+
+    public void SetExternalAttackTarget(BattleRuntimeUnit target)
+    {
+        PlannedTargetEnemy = target;
+        CurrentTarget = target;
+    }
+
+    public void Rotate(float deltaAngleDeg)
+    {
+        transform.Rotate(0f, deltaAngleDeg, 0f, Space.World);
+    }
+
+    public void SetRuntimeRootObject(GameObject runtimeRootObject)
+    {
+        _runtimeRootObject = runtimeRootObject;
+    }
 
     // ── 파라미터 / 점수 (State 위임) ──────────────────────────────
     public BattleParameterSet CurrentRawParameters => State.CurrentRawParameters;
@@ -373,6 +410,26 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
             _myAnimation.speed = speedMultiplier;
     }
 
+    public bool IsAttackAnimationPlaying()
+    {
+        if (_myAnimation == null)
+            return false;
+
+        var info = _myAnimation.GetCurrentAnimatorStateInfo(0);
+        if (info.IsName("attack1") && info.normalizedTime < 1f)
+            return true;
+
+        // idle → attack1 트랜지션 중에는 현재 상태가 아직 attack1이 아니므로 목적지도 확인
+        if (_myAnimation.IsInTransition(0))
+        {
+            var nextInfo = _myAnimation.GetNextAnimatorStateInfo(0);
+            if (nextInfo.IsName("attack1"))
+                return true;
+        }
+
+        return false;
+    }
+
     // ── 스킬 실행 비주얼 ──────────────────────────────────────────
     public void SetSkillState()
     {
@@ -489,20 +546,17 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
             transform.rotation = Quaternion.LookRotation(direction);
     }
 
-    public void PlaceOnBattlefieldPlaceholder(Transform placeholder, Transform battlefield)
+    public void PlaceAt(Vector3 worldPos, Transform battlefield)
     {
-        if (placeholder == null)
-            return;
-
         if (battlefield != null)
             transform.SetParent(battlefield, false);
 
-        transform.position = placeholder.position;
-        transform.rotation = placeholder.rotation;
+        transform.position = worldPos;
+        transform.rotation = Quaternion.identity;
     }
 
     /*
-        public void ClampInsideBattlefield(BoxCollider battlefieldCollider)
+        public void ClampInsideBattlefield(SphereCollider battlefieldCollider)
         {
             if (battlefieldCollider == null)
                 return;

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 // BattleSceneFlowManager 책임:
@@ -47,7 +48,12 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
     [SerializeField]
     private bool verboseLog = true;
 
+    // TrainingScene에서는 false로 설정해 BattleSessionManager 의존성을 우회한다.
+    [SerializeField]
+    private bool autoBootstrapFromSessionManager = true;
+
     private readonly List<BattleRuntimeUnit> _runtimeUnits = new List<BattleRuntimeUnit>();
+    private SpawnResult _spawnResult;
 
     // BattleScene 진입 시 payload를 clone해 보관. F7 재시작 시 이 snapshot을 다시 clone해서 사용한다.
     private BattleStartPayload _initialPayloadSnapshot;
@@ -59,7 +65,8 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
 
     private void Start()
     {
-        BootstrapScene();
+        if (autoBootstrapFromSessionManager)
+            BootstrapScene();
     }
 
     // BattleScene 진입 시 호출되는 초기 부트스트랩.
@@ -111,7 +118,7 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
     {
         if (_initialPayloadSnapshot == null)
         {
-            Debug.LogError("[BattleSceneFlowManager] Restart failed. Initial payload snapshot is null.", this);
+            Debug.LogError("[FlowManager] RestartCurrentBattle() called before initial Bootstrap.", this);
             return false;
         }
 
@@ -140,7 +147,7 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
         return true;
     }
 
-    private bool BootstrapFromPayload(BattleStartPayload payload)
+    public bool BootstrapFromPayload(BattleStartPayload payload)
     {
         if (payload == null)
         {
@@ -150,41 +157,78 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
 
         if (!ValidateBootstrapSetup(payload))
         {
+            Debug.LogError("[BattleSceneFlowManager] BootstrapFromPayload failed. Validation failed.", this);
             return false;
         }
 
-        if (battleSceneUIManager != null)
+        _initialPayloadSnapshot = ClonePayload(payload);
+
+        Vector3 ExtractPosition(Transform placeholder)
         {
-            battleSceneUIManager.Initialize();
-            battleSceneUIManager.HideAll();
+            return placeholder != null ? placeholder.position : Vector3.zero;
+        }
+
+        return BootstrapCore(
+            ClonePayload(_initialPayloadSnapshot),
+            allyPlaceholders.Select(ExtractPosition).ToArray(),
+            enemyPlaceholders.Select(ExtractPosition).ToArray()
+        );
+    }
+
+    // TrainingBootstrapper에서 무작위 배치 시 사용한다.
+    public bool ResetAndBootstrap(BattleStartPayload payload, Vector3[] allyPositions, Vector3[] enemyPositions)
+    {
+        DestroyRuntimeUnits();
+        bool success = BootstrapCore(payload, allyPositions, enemyPositions);
+        if (verboseLog && success)
+            Debug.Log(
+                $"[BattleSceneFlowManager] ResetAndBootstrap complete. RuntimeUnitCount={_runtimeUnits.Count}",
+                this
+            );
+        return success;
+    }
+
+    private bool BootstrapCore(BattleStartPayload payload, Vector3[] allyPositions, Vector3[] enemyPositions)
+    {
+        if (payload == null)
+            return false;
+
+        if (runtimeUnitRootPrefab == null || battleSimulationManager == null || battlefieldCollider == null)
+            return false;
+
+        if (payload.AllyUnits == null || payload.AllyUnits.Count == 0)
+            return false;
+        if (payload.EnemyUnits == null || payload.EnemyUnits.Count == 0)
+            return false;
+
+        try
+        {
+            var context = new BattleSceneContext(
+                battleSimulationManager,
+                battlefieldCollider,
+                battleStatusGridUIManager,
+                battleSceneUIManager,
+                battleOrdersManager
+            );
+
+            _spawnResult = BattleBootstrapper.Bootstrap(
+                payload,
+                runtimeUnitRootPrefab,
+                runtimeUnitRoot,
+                allyPositions,
+                enemyPositions,
+                context
+            );
+        }
+        catch (Exception exception)
+        {
+            Debug.LogError($"[BattleSceneFlowManager] BootstrapCore failed. {exception.Message}", this);
+            return false;
         }
 
         _runtimeUnits.Clear();
-
-        // 아군: 유닛 번호 1~6, 적군: 유닛 번호 7~12
-        bool allyOk = SpawnTeam(payload.AllyUnits, allyPlaceholders, false, 1);
-        bool enemyOk = SpawnTeam(payload.EnemyUnits, enemyPlaceholders, true, 7);
-
-        if (!allyOk || !enemyOk)
-        {
-            return false;
-        }
-
-        battleOrdersManager.Initialize(_runtimeUnits, battlefieldCollider);
-
-        // SimulationManager�� BoxCollider�� �����մϴ�.
-        battleSimulationManager.Initialize(
-            _runtimeUnits,
-            battlefieldCollider,
-            battleStatusGridUIManager,
-            battleSceneUIManager,
-            payload
-        );
-
-        if (battleSceneUIManager != null)
-        {
-            battleSceneUIManager.RefreshSpeedText();
-        }
+        if (_spawnResult != null)
+            _runtimeUnits.AddRange(_spawnResult.Units);
 
         OnUnitsSpawned?.Invoke();
         return true;
@@ -207,6 +251,7 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
         }
 
         _runtimeUnits.Clear();
+        _spawnResult = null;
     }
 
     private bool ValidateBootstrapSetup(BattleStartPayload payload)
@@ -217,12 +262,10 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
             return false;
         if (battleSimulationManager == null)
             return false;
-        if (battleOrdersManager == null)
-            return false;
         if (battlefieldCollider == null)
         {
             Debug.LogError(
-                "[BattleSceneFlowManager] battlefieldCollider is not assigned. Please assign a BoxCollider.",
+                "[BattleSceneFlowManager] battlefieldCollider is not assigned. Please assign a SphereCollider.",
                 this
             );
             return false;
@@ -237,51 +280,6 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
             return false;
         if (payload.EnemyUnits == null || payload.EnemyUnits.Count == 0)
             return false;
-
-        return true;
-    }
-
-    // Root 프리팹 전체를 instantiate한 뒤, 내부 자식 BattleRuntimeUnit 컴포넌트를
-    // GetComponentInChildren으로 찾는다. 실제 위치/배치는 Root RectTransform(BoxCollider) 기준.
-    private bool SpawnTeam(
-        IReadOnlyList<BattleUnitSnapshot> snapshots,
-        Transform[] placeholders,
-        bool isEnemy,
-        int unitNumberStart
-    )
-    {
-        if (snapshots == null)
-            return false;
-
-        int spawnCount = Mathf.Min(6, Mathf.Min(snapshots.Count, placeholders.Length));
-        Transform parent = runtimeUnitRoot != null ? runtimeUnitRoot : battlefieldCollider.transform;
-
-        for (int i = 0; i < spawnCount; i++)
-        {
-            BattleUnitSnapshot snapshot = snapshots[i];
-            Transform placeholder = placeholders[i];
-
-            if (snapshot == null)
-                continue;
-            if (placeholder == null)
-                return false;
-
-            GameObject runtimeRoot = Instantiate(runtimeUnitRootPrefab, parent);
-            BattleRuntimeUnit runtimeUnit = runtimeRoot.GetComponentInChildren<BattleRuntimeUnit>(true);
-
-            if (runtimeUnit == null)
-            {
-                Destroy(runtimeRoot);
-                return false;
-            }
-
-            runtimeUnit.Initialize(snapshot.Clone(), unitNumberStart + i, isEnemy);
-            runtimeUnit.PlaceOnBattlefieldPlaceholder(placeholder, battlefieldCollider.transform);
-            // �ʱ� ���� �� �� ������ Ƣ��� ������ �ִٸ� Ŭ���� ó��
-            //runtimeUnit.ClampInsideBattlefield(battlefieldCollider);
-
-            _runtimeUnits.Add(runtimeUnit);
-        }
 
         return true;
     }
