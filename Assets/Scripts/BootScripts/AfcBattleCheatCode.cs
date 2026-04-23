@@ -43,23 +43,31 @@ public sealed class AfcBattleCheatCode : MonoBehaviour
     }
 
     [Header("Scene")]
-    [SerializeField] private string mainSceneName = "MainScene";
-    [SerializeField] private string battleSceneName = "BattleScene";
+    [SerializeField]
+    private string mainSceneName = "MainScene";
+
+    [SerializeField]
+    private string battleSceneName = "BattleScene";
 
     [Header("F1/F2 Owned Gladiator Overrides (Slots 1~6)")]
-    [SerializeField] private GladiatorStatOverride[] gladiatorOverrides = new GladiatorStatOverride[6];
+    [SerializeField]
+    private GladiatorStatOverride[] gladiatorOverrides = new GladiatorStatOverride[6];
 
     [Header("F3 Encounter Override")]
-    [SerializeField] private int enemyAverageLevelOverride = 1;
+    [SerializeField]
+    private int enemyAverageLevelOverride = 1;
 
     [Header("F4 Gladiator XP")]
-    [SerializeField] private int gladiatorXpGrantAmount = 1000;
+    [SerializeField]
+    private int gladiatorXpGrantAmount = 1000;
 
     [Header("F8 Gold")]
-    [SerializeField] private int goldGrantAmount = 10000;
+    [SerializeField]
+    private int goldGrantAmount = 10000;
 
     [Header("Debug")]
-    [SerializeField] private bool verboseLog = true;
+    [SerializeField]
+    private bool verboseLog = true;
 
     private void Update()
     {
@@ -200,7 +208,10 @@ public sealed class AfcBattleCheatCode : MonoBehaviour
             return;
         }
 
-        int count = Mathf.Min(6, Mathf.Min(ownedGladiators.Count, gladiatorOverrides != null ? gladiatorOverrides.Length : 0));
+        int count = Mathf.Min(
+            6,
+            Mathf.Min(ownedGladiators.Count, gladiatorOverrides != null ? gladiatorOverrides.Length : 0)
+        );
         int equippedWeaponCount = 0;
 
         for (int i = 0; i < count; i++)
@@ -218,7 +229,8 @@ public sealed class AfcBattleCheatCode : MonoBehaviour
                 inventoryManager,
                 equipmentFactory,
                 gladiator,
-                statOverride);
+                statOverride
+            );
 
             if (equippedWeapon)
             {
@@ -235,8 +247,8 @@ public sealed class AfcBattleCheatCode : MonoBehaviour
         if (verboseLog)
         {
             Debug.Log(
-                $"[AfcBattleCheatCode] F1 applied. " +
-                $"OverriddenOwnedGladiatorCount={count}, EquippedWeaponCount={equippedWeaponCount}",
+                $"[AfcBattleCheatCode] F1 applied. "
+                    + $"OverriddenOwnedGladiatorCount={count}, EquippedWeaponCount={equippedWeaponCount}",
                 this
             );
         }
@@ -272,7 +284,10 @@ public sealed class AfcBattleCheatCode : MonoBehaviour
             return;
         }
 
-        int count = Mathf.Min(6, Mathf.Min(ownedGladiators.Count, gladiatorOverrides != null ? gladiatorOverrides.Length : 0));
+        int count = Mathf.Min(
+            6,
+            Mathf.Min(ownedGladiators.Count, gladiatorOverrides != null ? gladiatorOverrides.Length : 0)
+        );
         int equippedWeaponCount = 0;
 
         for (int i = 0; i < count; i++)
@@ -290,7 +305,8 @@ public sealed class AfcBattleCheatCode : MonoBehaviour
                 inventoryManager,
                 equipmentFactory,
                 gladiator,
-                statOverride);
+                statOverride
+            );
 
             if (equippedWeapon)
             {
@@ -301,19 +317,20 @@ public sealed class AfcBattleCheatCode : MonoBehaviour
         if (verboseLog)
         {
             Debug.Log(
-                $"[AfcBattleCheatCode] F2 applied. " +
-                $"OverriddenOwnedGladiatorCount={count}, EquippedWeaponCount={equippedWeaponCount}",
+                $"[AfcBattleCheatCode] F2 applied. "
+                    + $"OverriddenOwnedGladiatorCount={count}, EquippedWeaponCount={equippedWeaponCount}",
                 this
             );
         }
     }
 
     private bool TryApplyWeaponOverrideToGladiator(
-    GladiatorManager gladiatorManager,
-    InventoryManager inventoryManager,
-    EquipmentFactory equipmentFactory,
-    OwnedGladiatorData gladiator,
-    GladiatorStatOverride statOverride)
+        GladiatorManager gladiatorManager,
+        InventoryManager inventoryManager,
+        EquipmentFactory equipmentFactory,
+        OwnedGladiatorData gladiator,
+        GladiatorStatOverride statOverride
+    )
     {
         if (gladiatorManager == null || inventoryManager == null || equipmentFactory == null || gladiator == null)
         {
@@ -334,18 +351,21 @@ public sealed class AfcBattleCheatCode : MonoBehaviour
         if (weaponPreview == null)
         {
             Debug.LogWarning(
-                $"[AfcBattleCheatCode] Weapon override failed. " +
-                $"Gladiator={gladiator.DisplayName}, WeaponType={statOverride.weaponType}, WeaponSkillId={statOverride.weaponSkillId}",
+                $"[AfcBattleCheatCode] Weapon override failed. "
+                    + $"Gladiator={gladiator.DisplayName}, WeaponType={statOverride.weaponType}, WeaponSkillId={statOverride.weaponSkillId}",
                 this
             );
             return false;
         }
 
-        if (!inventoryManager.TryAddOwnedWeaponFromPreview(weaponPreview, out OwnedWeaponData ownedWeapon) || ownedWeapon == null)
+        if (
+            !inventoryManager.TryAddOwnedWeaponFromPreview(weaponPreview, out OwnedWeaponData ownedWeapon)
+            || ownedWeapon == null
+        )
         {
             Debug.LogWarning(
-                $"[AfcBattleCheatCode] Weapon add failed. " +
-                $"Gladiator={gladiator.DisplayName}, WeaponType={statOverride.weaponType}",
+                $"[AfcBattleCheatCode] Weapon add failed. "
+                    + $"Gladiator={gladiator.DisplayName}, WeaponType={statOverride.weaponType}",
                 this
             );
             return false;
@@ -356,8 +376,8 @@ public sealed class AfcBattleCheatCode : MonoBehaviour
             inventoryManager.RemoveOwnedWeapon(ownedWeapon);
 
             Debug.LogWarning(
-                $"[AfcBattleCheatCode] Weapon equip failed. " +
-                $"Gladiator={gladiator.DisplayName}, Weapon={ownedWeapon.DisplayName}, Reason={failReason}",
+                $"[AfcBattleCheatCode] Weapon equip failed. "
+                    + $"Gladiator={gladiator.DisplayName}, Weapon={ownedWeapon.DisplayName}, Reason={failReason}",
                 this
             );
             return false;
@@ -393,9 +413,9 @@ public sealed class AfcBattleCheatCode : MonoBehaviour
         if (verboseLog)
         {
             Debug.Log(
-                $"[AfcBattleCheatCode] F3 applied. " +
-                $"EncounterAverageLevelOverride={Mathf.Max(1, enemyAverageLevelOverride)}, " +
-                $"SelectionCleared=true, PanelRefreshed={(battleUIManager != null && battleManager.IsBattlePanelOpen)}",
+                $"[AfcBattleCheatCode] F3 applied. "
+                    + $"EncounterAverageLevelOverride={Mathf.Max(1, enemyAverageLevelOverride)}, "
+                    + $"SelectionCleared=true, PanelRefreshed={(battleUIManager != null && battleManager.IsBattlePanelOpen)}",
                 this
             );
         }
@@ -441,8 +461,8 @@ public sealed class AfcBattleCheatCode : MonoBehaviour
         if (verboseLog)
         {
             Debug.Log(
-                $"[AfcBattleCheatCode] {(disableEnemies ? "F5" : "F6")} applied. " +
-                $"Team={(disableEnemies ? "Enemy" : "Ally")}, Affected={affectedCount}",
+                $"[AfcBattleCheatCode] {(disableEnemies ? "F5" : "F6")} applied. "
+                    + $"Team={(disableEnemies ? "Enemy" : "Ally")}, Affected={affectedCount}",
                 this
             );
         }

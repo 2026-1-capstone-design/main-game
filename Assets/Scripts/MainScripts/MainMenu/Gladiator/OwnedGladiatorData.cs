@@ -2,7 +2,7 @@ using UnityEngine;
 
 public sealed class OwnedGladiatorData
 {
-    public int RuntimeId { get; }       // 실제 보유 중인 검투사를 식별하는 런타임 ID
+    public int RuntimeId { get; } // 실제 보유 중인 검투사를 식별하는 런타임 ID
 
     public string DisplayName { get; set; }
     public int Level { get; set; }
@@ -15,8 +15,7 @@ public sealed class OwnedGladiatorData
     public PersonalitySO Personality { get; }
 
     public PerkSO EquippedPerk { get; set; }
-    public OwnedWeaponData EquippedWeapon { get; set; }         // 현재 이 검투사가 장착 중인 실제 owned 무기 !!참조!!.
-
+    public OwnedWeaponData EquippedWeapon { get; set; } // 현재 이 검투사가 장착 중인 실제 owned 무기 !!참조!!.
 
     // 클래스, 레벨, 개체 분산, 장비 보너스를 반영한 실제 전투용 캐시 스탯들.
     // !!UI 표시와 전투 snapshot 생성 시 이 값을 그대로 사용함!!
@@ -43,7 +42,8 @@ public sealed class OwnedGladiatorData
         TraitSO trait,
         PersonalitySO personality,
         PerkSO equippedPerk,
-        OwnedWeaponData equippedWeapon)
+        OwnedWeaponData equippedWeapon
+    )
     {
         RuntimeId = runtimeId;
         DisplayName = string.IsNullOrWhiteSpace(displayName) ? "Gladiator" : displayName;

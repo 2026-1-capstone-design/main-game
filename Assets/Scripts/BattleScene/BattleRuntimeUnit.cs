@@ -14,16 +14,30 @@ using UnityEngine.UI;
 public sealed class BattleRuntimeUnit : MonoBehaviour
 {
     [Header("Debug")]
-    [SerializeField] private bool verboseLog = false;
+    [SerializeField]
+    private bool verboseLog = false;
 
     [Header("Visuals")]
-    [SerializeField] private GameObject dotAlly;
-    [SerializeField] private GameObject dotEnemy;
-    [SerializeField] private GameObject dotDead;
-    [SerializeField] private TMP_Text statusText;
-    [SerializeField] private Image HPbar;
-    [SerializeField] private Sprite AllybarSprite;
-    [SerializeField] private Sprite EnemybarSprite;
+    [SerializeField]
+    private GameObject dotAlly;
+
+    [SerializeField]
+    private GameObject dotEnemy;
+
+    [SerializeField]
+    private GameObject dotDead;
+
+    [SerializeField]
+    private TMP_Text statusText;
+
+    [SerializeField]
+    private Image HPbar;
+
+    [SerializeField]
+    private Sprite AllybarSprite;
+
+    [SerializeField]
+    private Sprite EnemybarSprite;
 
     // ── 순수 전투 상태 (Animator/UI 없음) ─────────────────────────
     public BattleUnitCombatState State { get; private set; }
@@ -92,15 +106,28 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     public Vector3 CurrentKnockback => State.CurrentKnockback;
 
     [Header("Weapon Sockets")]
-    [SerializeField] private Transform leftHandSocket;
-    [SerializeField] private Transform rightHandSocket;
-    [SerializeField] private GameObject _spawnedLeftWeapon;
-    [SerializeField] private GameObject _spawnedRightWeapon;
-    [SerializeField] private Animator _myAnimation;
+    [SerializeField]
+    private Transform leftHandSocket;
+
+    [SerializeField]
+    private Transform rightHandSocket;
+
+    [SerializeField]
+    private GameObject _spawnedLeftWeapon;
+
+    [SerializeField]
+    private GameObject _spawnedRightWeapon;
+
+    [SerializeField]
+    private Animator _myAnimation;
 
     // animationProvider가 null이면 AnimationManager.Instance로 폴백한다.
-    public void Initialize(BattleUnitSnapshot snapshot, int unitNumber, bool isEnemy,
-        IAnimationProvider animationProvider = null)
+    public void Initialize(
+        BattleUnitSnapshot snapshot,
+        int unitNumber,
+        bool isEnemy,
+        IAnimationProvider animationProvider = null
+    )
     {
         if (snapshot == null)
         {
@@ -145,8 +172,8 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         if (verboseLog)
         {
             Debug.Log(
-                $"[BattleRuntimeUnit] Initialized. UnitNumber={UnitNumber}, Name={DisplayName}, " +
-                $"Team={(isEnemy ? "Enemy" : "Ally")}, HP={CurrentHealth:0.##}/{MaxHealth:0.##}",
+                $"[BattleRuntimeUnit] Initialized. UnitNumber={UnitNumber}, Name={DisplayName}, "
+                    + $"Team={(isEnemy ? "Enemy" : "Ally")}, HP={CurrentHealth:0.##}/{MaxHealth:0.##}",
                 this
             );
         }
@@ -255,23 +282,29 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     // ── State 세터 위임 (SimManager 호출 진입점) ──────────────────
 
     public void SetBodyRadius(float bodyRadius) => State.SetBodyRadius(bodyRadius);
-    public void ClearCurrentTarget() { CurrentTarget = null; }
-    public void SetCurrentTarget(BattleRuntimeUnit target) { CurrentTarget = target; }
 
-    public void SetCurrentParameters(BattleParameterSet raw, BattleParameterSet modified)
-        => State.SetCurrentParameters(raw, modified);
+    public void ClearCurrentTarget()
+    {
+        CurrentTarget = null;
+    }
 
-    public void SetCurrentScores(BattleActionScoreSet scores)
-        => State.SetCurrentScores(scores);
+    public void SetCurrentTarget(BattleRuntimeUnit target)
+    {
+        CurrentTarget = target;
+    }
 
-    public void SetCurrentActionType(BattleActionType actionType, string displayName = null)
-        => State.SetCurrentActionType(actionType, displayName);
+    public void SetCurrentParameters(BattleParameterSet raw, BattleParameterSet modified) =>
+        State.SetCurrentParameters(raw, modified);
 
-    public void SetCurrentAction(string actionName)
-        => State.SetCurrentAction(actionName);
+    public void SetCurrentScores(BattleActionScoreSet scores) => State.SetCurrentScores(scores);
 
-    public void SetDecisionState(float keepBehaving, float actionTimer)
-        => State.SetDecisionState(keepBehaving, actionTimer);
+    public void SetCurrentActionType(BattleActionType actionType, string displayName = null) =>
+        State.SetCurrentActionType(actionType, displayName);
+
+    public void SetCurrentAction(string actionName) => State.SetCurrentAction(actionName);
+
+    public void SetDecisionState(float keepBehaving, float actionTimer) =>
+        State.SetDecisionState(keepBehaving, actionTimer);
 
     public void SetExecutionPlan(BattleActionExecutionPlan plan)
     {
@@ -291,25 +324,33 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
 
     // ── 쿨다운 위임 ────────────────────────────────────────────────
     public void TickAttackCooldown(float deltaTime) => State.TickAttackCooldown(deltaTime);
+
     public void ClearAttackCooldown() => State.ClearAttackCooldown();
+
     public void ResetAttackCooldown() => State.ResetAttackCooldown();
 
     public void TickSkillCooldown(float deltaTime) => State.TickSkillCooldown(deltaTime);
+
     public void ClearSkillCooldown() => State.ClearSkillCooldown();
+
     public void ResetSkillCooldown() => State.ResetSkillCooldown();
 
     public WeaponSkillId getSkill() => State.GetSkill();
+
     public skillType getSkillType() => State.GetSkillType();
 
     // ── 버프 위임 ─────────────────────────────────────────────────
     public void TickBufflCooldown(float deltaTime) => State.TickBufflCooldown(deltaTime);
+
     public void BuffApply(BuffType type, int level, float cool) => State.BuffApply(type, level, cool);
+
     public int BuffNum() => State.BuffNum();
+
     public int GetBuffLevel(BuffType type) => State.GetBuffLevel(type);
 
     // ── 넉백 위임 ─────────────────────────────────────────────────
-    public void AddKnockback(Vector3 forceDirection, float forcePower)
-        => State.AddKnockback(forceDirection, forcePower);
+    public void AddKnockback(Vector3 forceDirection, float forcePower) =>
+        State.AddKnockback(forceDirection, forcePower);
 
     public void TickKnockback(float deltaTime, float friction = 10f)
     {
@@ -320,11 +361,14 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
 
     // ── 체력 위임 ─────────────────────────────────────────────────
     public void ApplyDamage(float damage) => State.ApplyDamage(damage);
+
     public void ApplyHeal(float heal) => State.ApplyHeal(heal);
 
     // ── 이동/공격 상태 위임 ───────────────────────────────────────
     public void SetMovementState(bool isMoving) => State.SetMovementState(isMoving);
+
     public void SetAttackState(bool isAttacking) => State.SetAttackState(isAttacking);
+
     public void SetIdleState() => State.SetIdleState();
 
     // ── 위치/회전 (Transform 직접) ────────────────────────────────

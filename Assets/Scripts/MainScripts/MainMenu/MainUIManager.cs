@@ -6,17 +6,29 @@ using UnityEngine.UI;
 public sealed class MainUIManager : MonoBehaviour
 {
     [Header("Main Buttons")]
-    [SerializeField] private Button gladiatorButton;
-    [SerializeField] private Button battleButton;
-    [SerializeField] private Button researchButton;
-    [SerializeField] private Button missionButton;
-    [SerializeField] private Button marketButton;
-    [SerializeField] private Button eodButton;
+    [SerializeField]
+    private Button gladiatorButton;
+
+    [SerializeField]
+    private Button battleButton;
+
+    [SerializeField]
+    private Button researchButton;
+
+    [SerializeField]
+    private Button missionButton;
+
+    [SerializeField]
+    private Button marketButton;
+
+    [SerializeField]
+    private Button eodButton;
 
     [Header("Optional Labels")]
-    [SerializeField] private TMP_Text currentDayText;
+    [SerializeField]
+    private TMP_Text currentDayText;
 
-    private MainFlowManager _flow;      // 메인 메뉴 버튼 입력을 실제 게임 흐름 처리 함수로 넘김
+    private MainFlowManager _flow; // 메인 메뉴 버튼 입력을 실제 게임 흐름 처리 함수로 넘김
     private SessionManager _sessionManager;
     private bool _initialized;
 
@@ -161,5 +173,4 @@ public sealed class MainUIManager : MonoBehaviour
 
         button.interactable = value;
     }
-
 }

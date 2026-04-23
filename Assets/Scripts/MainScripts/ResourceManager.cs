@@ -4,10 +4,11 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public sealed class ResourceManager : SingletonBehaviour<ResourceManager>
 {
-    [SerializeField] private bool verboseLog = true;
+    [SerializeField]
+    private bool verboseLog = true;
 
-    private BalanceSO _balance;         // 초기 골드 등 자원 관련 기본 수치를 제공하는 밸런스 데이터 참조
-    private int _currentGold;           // 현재 플레이어가 실제로 보유 중인 골드
+    private BalanceSO _balance; // 초기 골드 등 자원 관련 기본 수치를 제공하는 밸런스 데이터 참조
+    private int _currentGold; // 현재 플레이어가 실제로 보유 중인 골드
     private bool _initialized;
 
     public event Action<int> GoldChanged;

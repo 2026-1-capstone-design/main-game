@@ -4,16 +4,18 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public sealed class GladiatorManager : SingletonBehaviour<GladiatorManager>
 {
-    [SerializeField] private bool verboseLog = true;
+    [SerializeField]
+    private bool verboseLog = true;
 
-    private readonly List<OwnedGladiatorData> _ownedGladiators = new List<OwnedGladiatorData>();        // 플레이어가 실제로 보유 중인 검투사 목록.
-                                                                                                        // 시장 preview나 전투 snapshot과 분리된 실제 소유 데이터다.
-                                                                                                        // 이렇게 분리한 이유는, 다른 로직들 내에서 어떤 방식으로든 변형되는 걸 방지하기 위해
+    private readonly List<OwnedGladiatorData> _ownedGladiators = new List<OwnedGladiatorData>(); // 플레이어가 실제로 보유 중인 검투사 목록.
+
+    // 시장 preview나 전투 snapshot과 분리된 실제 소유 데이터다.
+    // 이렇게 분리한 이유는, 다른 로직들 내에서 어떤 방식으로든 변형되는 걸 방지하기 위해
 
     private BalanceSO _balance;
     private RandomManager _randomManager;
     private bool _initialized;
-    private int _nextRuntimeId = 1;            // 새로 보유하게 되는 검투사에게 부여할 고유 런타임 ID
+    private int _nextRuntimeId = 1; // 새로 보유하게 되는 검투사에게 부여할 고유 런타임 ID
 
     public IReadOnlyList<OwnedGladiatorData> OwnedGladiators => _ownedGladiators;
 
@@ -88,10 +90,7 @@ public sealed class GladiatorManager : SingletonBehaviour<GladiatorManager>
 
         if (!removed)
         {
-            Debug.LogWarning(
-                $"[GladiatorManager] RemoveOwnedGladiator failed. Name={gladiator.DisplayName}",
-                this
-            );
+            Debug.LogWarning($"[GladiatorManager] RemoveOwnedGladiator failed. Name={gladiator.DisplayName}", this);
             return false;
         }
 
@@ -258,7 +257,10 @@ public sealed class GladiatorManager : SingletonBehaviour<GladiatorManager>
 
         if (verboseLog)
         {
-            Debug.Log($"[GladiatorManager] Weapon forcibly unequipped due to owner state change. Gladiator={gladiator.DisplayName}", this);
+            Debug.Log(
+                $"[GladiatorManager] Weapon forcibly unequipped due to owner state change. Gladiator={gladiator.DisplayName}",
+                this
+            );
         }
     }
 
@@ -315,8 +317,8 @@ public sealed class GladiatorManager : SingletonBehaviour<GladiatorManager>
         if (verboseLog)
         {
             Debug.Log(
-                $"[GladiatorManager] Purchased gladiator added. " +
-                $"Name={purchased.DisplayName}, Level={purchased.Level}, Loyalty={purchased.Loyalty}",
+                $"[GladiatorManager] Purchased gladiator added. "
+                    + $"Name={purchased.DisplayName}, Level={purchased.Level}, Loyalty={purchased.Loyalty}",
                 this
             );
         }
@@ -326,7 +328,10 @@ public sealed class GladiatorManager : SingletonBehaviour<GladiatorManager>
 
     // 게임 시작 시 스타터 검투사들을 생성해 보유 목록에 넣음.
     // 이미 보유 검투사가 있으면 중복 지급 안함
-    public void GrantRandomStarterGladiator(ContentDatabaseProvider contentDatabaseProvider, SessionManager sessionManager)
+    public void GrantRandomStarterGladiator(
+        ContentDatabaseProvider contentDatabaseProvider,
+        SessionManager sessionManager
+    )
     {
         GrantRandomStarterGladiators(contentDatabaseProvider, sessionManager, 1);
     }
@@ -334,7 +339,8 @@ public sealed class GladiatorManager : SingletonBehaviour<GladiatorManager>
     public void GrantRandomStarterGladiators(
         ContentDatabaseProvider contentDatabaseProvider,
         SessionManager sessionManager,
-        int count = 6)
+        int count = 6
+    )
     {
         if (!_initialized)
         {
@@ -358,7 +364,10 @@ public sealed class GladiatorManager : SingletonBehaviour<GladiatorManager>
         {
             if (verboseLog)
             {
-                Debug.Log("[GladiatorManager] Starter grant skipped because owned gladiator list is already populated.", this);
+                Debug.Log(
+                    "[GladiatorManager] Starter grant skipped because owned gladiator list is already populated.",
+                    this
+                );
             }
 
             return;
@@ -381,10 +390,10 @@ public sealed class GladiatorManager : SingletonBehaviour<GladiatorManager>
             if (verboseLog)
             {
                 Debug.Log(
-                    $"[GladiatorManager] Starter gladiator granted. " +
-                    $"Name={starter.DisplayName}, Trait={starter.Trait.traitName}, " +
-                    $"Personality={starter.Personality.personalityName}, " +
-                    $"Level={starter.Level}, Loyalty={starter.Loyalty}",
+                    $"[GladiatorManager] Starter gladiator granted. "
+                        + $"Name={starter.DisplayName}, Trait={starter.Trait.traitName}, "
+                        + $"Personality={starter.Personality.personalityName}, "
+                        + $"Level={starter.Level}, Loyalty={starter.Loyalty}",
                     this
                 );
             }
@@ -392,14 +401,18 @@ public sealed class GladiatorManager : SingletonBehaviour<GladiatorManager>
 
         if (verboseLog)
         {
-            Debug.Log($"[GladiatorManager] Starter gladiator batch complete. Requested={safeCount}, Granted={grantedCount}", this);
+            Debug.Log(
+                $"[GladiatorManager] Starter gladiator batch complete. Requested={safeCount}, Granted={grantedCount}",
+                this
+            );
         }
     }
 
     // 스타터 검투사 한명을 실제로 생성
     private OwnedGladiatorData CreateStarterGladiatorInternal(
         ContentDatabaseProvider contentDatabaseProvider,
-        SessionManager sessionManager)
+        SessionManager sessionManager
+    )
     {
         GladiatorClassSO gladiatorTemplate = contentDatabaseProvider.GladiatorTemplate;
         TraitSO trait = PickRandomNonNull(contentDatabaseProvider.Traits, RandomStreamType.Recruit);
@@ -407,7 +420,10 @@ public sealed class GladiatorManager : SingletonBehaviour<GladiatorManager>
 
         if (gladiatorTemplate == null)
         {
-            Debug.LogError("[GladiatorManager] Exactly one valid GladiatorClassSO is required for starter grant.", this);
+            Debug.LogError(
+                "[GladiatorManager] Exactly one valid GladiatorClassSO is required for starter grant.",
+                this
+            );
             return null;
         }
 
@@ -477,7 +493,10 @@ public sealed class GladiatorManager : SingletonBehaviour<GladiatorManager>
         {
             if (verboseLog)
             {
-                Debug.Log("[GladiatorManager] GrantXpToAllOwnedGladiators skipped because there are no owned gladiators.", this);
+                Debug.Log(
+                    "[GladiatorManager] GrantXpToAllOwnedGladiators skipped because there are no owned gladiators.",
+                    this
+                );
             }
 
             return;
@@ -502,8 +521,8 @@ public sealed class GladiatorManager : SingletonBehaviour<GladiatorManager>
             if (verboseLog)
             {
                 Debug.Log(
-                    $"[GladiatorManager] {logReason} granted. " +
-                    $"Name={gladiator.DisplayName}, AddedXp={safeXpAmount}, Level={gladiator.Level}, Exp={gladiator.Exp}, LevelUps={levelUpCount}",
+                    $"[GladiatorManager] {logReason} granted. "
+                        + $"Name={gladiator.DisplayName}, AddedXp={safeXpAmount}, Level={gladiator.Level}, Exp={gladiator.Exp}, LevelUps={levelUpCount}",
                     this
                 );
             }
@@ -639,7 +658,11 @@ public sealed class GladiatorManager : SingletonBehaviour<GladiatorManager>
             if (gladiator.CachedMaxHealth > oldMaxHealth)
             {
                 float gainedMaxHealth = gladiator.CachedMaxHealth - oldMaxHealth;
-                gladiator.CurrentHealth = Mathf.Clamp(oldCurrentHealth + gainedMaxHealth, 0f, gladiator.CachedMaxHealth);
+                gladiator.CurrentHealth = Mathf.Clamp(
+                    oldCurrentHealth + gainedMaxHealth,
+                    0f,
+                    gladiator.CachedMaxHealth
+                );
             }
             else
             {
@@ -689,7 +712,8 @@ public sealed class GladiatorManager : SingletonBehaviour<GladiatorManager>
         return mean + standardDeviation * standardNormal;
     }
 
-    private T PickRandomNonNull<T>(IReadOnlyList<T> list, RandomStreamType streamType) where T : class
+    private T PickRandomNonNull<T>(IReadOnlyList<T> list, RandomStreamType streamType)
+        where T : class
     {
         if (list == null || list.Count == 0)
         {

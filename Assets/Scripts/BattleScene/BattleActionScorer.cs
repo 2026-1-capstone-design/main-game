@@ -8,7 +8,8 @@ public static class BattleActionScorer
     public static BattleActionScoreSet Evaluate(
         BattleParameterSet modifiedParams,
         WeaponType weaponType,
-        IReadOnlyList<BattleActionTuning> tunings)
+        IReadOnlyList<BattleActionTuning> tunings
+    )
     {
         BattleActionScoreSet scores = default;
 
@@ -32,7 +33,8 @@ public static class BattleActionScorer
     public static BattleActionScoreSet ApplyEscapeReengageBias(
         BattleActionType currentAction,
         BattleParameterSet rawParams,
-        BattleActionScoreSet scores)
+        BattleActionScoreSet scores
+    )
     {
         if (currentAction != BattleActionType.EscapeFromPressure)
             return scores;

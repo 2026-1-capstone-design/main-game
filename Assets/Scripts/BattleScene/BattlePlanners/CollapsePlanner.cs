@@ -15,10 +15,10 @@ public sealed class CollapsePlanner : IBattleActionPlanner
             TargetEnemy = target,
             TargetAlly = null,
             DesiredPosition = clusterCenter,
-            HasDesiredPosition = true
+            HasDesiredPosition = true,
         };
     }
 
-    public bool IsUsable(BattleRuntimeUnit unit, BattleActionExecutionPlan plan, BattleFieldView field)
-        => plan.HasDesiredPosition || field.IsValidEnemyTarget(unit, plan.TargetEnemy);
+    public bool IsUsable(BattleRuntimeUnit unit, BattleActionExecutionPlan plan, BattleFieldView field) =>
+        plan.HasDesiredPosition || field.IsValidEnemyTarget(unit, plan.TargetEnemy);
 }

@@ -84,11 +84,12 @@ public sealed class BattleUnitCombatState
     }
 
     public WeaponSkillId GetSkill() => HaveSkill;
+
     public skillType GetSkillType() => SkillType;
 
     // ── 체력/사망 이벤트 ──────────────────────────────────────────
     // BattleRuntimeUnit이 구독하여 HPbar 갱신, 사망 처리를 담당한다.
-    public event Action<float> OnHealthChanged;   // float = newHealth
+    public event Action<float> OnHealthChanged; // float = newHealth
     public event Action OnDied;
 
     // ── 체력/사망 메서드 ──────────────────────────────────────────
@@ -123,9 +124,9 @@ public sealed class BattleUnitCombatState
 
     // ── 이동/공격 플래그 이벤트 ──────────────────────────────────
     // BattleRuntimeUnit이 구독하여 Animator를 업데이트한다.
-    public event Action<bool> OnMovingStateChanged;   // bool = isMoving
-    public event Action OnAttackTriggered;             // 공격 애니메이션 트리거 시점
-    public event Action OnIdleStateEntered;            // 아이들 전환 시점
+    public event Action<bool> OnMovingStateChanged; // bool = isMoving
+    public event Action OnAttackTriggered; // 공격 애니메이션 트리거 시점
+    public event Action OnIdleStateEntered; // 아이들 전환 시점
 
     // ── 이동/공격 플래그 세터 ─────────────────────────────────────
     public void SetMovementState(bool isMoving)
@@ -227,7 +228,7 @@ public sealed class BattleUnitCombatState
         BaseMoveSpeed = snapshot.MoveSpeed;
         BaseAttackRange = snapshot.AttackRange;
 
-        BodyRadius = 50f;   // SetBodyRadius로 SimManager가 덮어쓴다
+        BodyRadius = 50f; // SetBodyRadius로 SimManager가 덮어쓴다
 
         CurrentKnockback = Vector3.zero;
 

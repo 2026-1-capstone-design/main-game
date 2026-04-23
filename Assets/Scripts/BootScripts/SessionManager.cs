@@ -5,9 +5,9 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public sealed class SessionManager : SingletonBehaviour<SessionManager>
 {
-    private readonly Dictionary<string, int> _classNameCounters = new();        // 클래스별 이름 번호를 누적 관리함.
+    private readonly Dictionary<string, int> _classNameCounters = new(); // 클래스별 이름 번호를 누적 관리함.
 
-    public int CurrentDay { get; private set; } = 1;        // 현재 메인 루프의 날짜 (시장 재생성, 전투 후보 재생성, 보상 계산 등의 기준)
+    public int CurrentDay { get; private set; } = 1; // 현재 메인 루프의 날짜 (시장 재생성, 전투 후보 재생성, 보상 계산 등의 기준)
     public bool HasUsedBattleToday { get; private set; }
     public int PendingBattleRewardAmount { get; private set; }
     public bool HasPendingBattleReward => PendingBattleRewardAmount > 0;
@@ -103,13 +103,11 @@ public sealed class SessionManager : SingletonBehaviour<SessionManager>
         return 1;
     }
 
-
     public string ConsumeNextClassName(string classPrefix)
     {
         int nextNumber = ConsumeNextClassNumber(classPrefix);
         return $"{classPrefix}{nextNumber:00}";
     }
-
 
     public int PeekCurrentClassNumber(string classPrefix)
     {
@@ -120,5 +118,4 @@ public sealed class SessionManager : SingletonBehaviour<SessionManager>
 
         return _classNameCounters.TryGetValue(classPrefix, out int current) ? current : 0;
     }
-
 }

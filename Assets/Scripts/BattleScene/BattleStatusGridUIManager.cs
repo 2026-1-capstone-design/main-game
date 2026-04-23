@@ -12,14 +12,19 @@ using UnityEngine.UI;
 public sealed class BattleStatusGridUIManager : MonoBehaviour
 {
     [Header("Top")]
-    [SerializeField] private TMP_Text simulationSpeedText;  // 현재 배속 텍스트
+    [SerializeField]
+    private TMP_Text simulationSpeedText; // 현재 배속 텍스트
 
     [Header("Ally Cells (1~6)")]
-    [SerializeField] private TMP_Text[] allyStatusTexts = new TMP_Text[6];
-    [SerializeField] private Button[] allyOrderButtons = new Button[6];
+    [SerializeField]
+    private TMP_Text[] allyStatusTexts = new TMP_Text[6];
+
+    [SerializeField]
+    private Button[] allyOrderButtons = new Button[6];
 
     [Header("Enemy Cells (7~12)")]
-    [SerializeField] private TMP_Text[] enemyStatusTexts = new TMP_Text[6];
+    [SerializeField]
+    private TMP_Text[] enemyStatusTexts = new TMP_Text[6];
 
     private BattleSimulationManager _simulationManager;
     private BattleSceneUIManager _battleSceneUIManager;
@@ -30,7 +35,8 @@ public sealed class BattleStatusGridUIManager : MonoBehaviour
     public void Initialize(
         BattleSimulationManager simulationManager,
         IReadOnlyList<BattleRuntimeUnit> runtimeUnits,
-        BattleSceneUIManager battleSceneUIManager = null)
+        BattleSceneUIManager battleSceneUIManager = null
+    )
     {
         _simulationManager = simulationManager;
         _battleSceneUIManager = battleSceneUIManager;
@@ -147,26 +153,38 @@ public sealed class BattleStatusGridUIManager : MonoBehaviour
     {
         if (_battleSceneUIManager == null)
         {
-            Debug.LogWarning("[BattleStatusGridUIManager] Ally order click ignored. BattleSceneUIManager is null.", this);
+            Debug.LogWarning(
+                "[BattleStatusGridUIManager] Ally order click ignored. BattleSceneUIManager is null.",
+                this
+            );
             return;
         }
 
         if (allyIndex < 0 || allyIndex >= _allyUnits.Length)
         {
-            Debug.LogWarning($"[BattleStatusGridUIManager] Ally order click ignored. Invalid ally index={allyIndex}", this);
+            Debug.LogWarning(
+                $"[BattleStatusGridUIManager] Ally order click ignored. Invalid ally index={allyIndex}",
+                this
+            );
             return;
         }
 
         BattleRuntimeUnit targetUnit = _allyUnits[allyIndex];
         if (targetUnit == null)
         {
-            Debug.LogWarning($"[BattleStatusGridUIManager] Ally order click ignored. Ally slot {allyIndex + 1} is empty.", this);
+            Debug.LogWarning(
+                $"[BattleStatusGridUIManager] Ally order click ignored. Ally slot {allyIndex + 1} is empty.",
+                this
+            );
             return;
         }
 
         if (targetUnit.IsCombatDisabled)
         {
-            Debug.LogWarning($"[BattleStatusGridUIManager] Ally order click ignored. Ally slot {allyIndex + 1} is disabled.", this);
+            Debug.LogWarning(
+                $"[BattleStatusGridUIManager] Ally order click ignored. Ally slot {allyIndex + 1} is disabled.",
+                this
+            );
             return;
         }
 
@@ -192,40 +210,38 @@ public sealed class BattleStatusGridUIManager : MonoBehaviour
         string targetText = unit.CurrentTarget != null ? unit.CurrentTarget.UnitNumber.ToString() : "-";
         string topActionText = unit.TopScoredAction == BattleActionType.None ? "-" : unit.TopScoredAction.ToString();
 
-        return
-            $"#{unit.UnitNumber} {unit.DisplayName} {weaponType}\n" +
-            $"{hpText}\n" +
-            $"Action {unit.CurrentAction}\n" +
-            $"Move {moveText} / Attack {attackText}  {targetText}\n" +
-            $"Keep {unit.KeepBehaving:0.#} / T {unit.ActionTimer:0.#}\n" +
-            $"Top {topActionText} {unit.TopScoredValue:0.##}\n" +
-            $"R {FormatScoresCompact(unit.CurrentScores)}\n" +
-            $"RAW {FormatParametersCompact(unit.CurrentRawParameters)}\n" +
-            $"MOD {FormatParametersCompact(unit.CurrentModifiedParameters)}";
+        return $"#{unit.UnitNumber} {unit.DisplayName} {weaponType}\n"
+            + $"{hpText}\n"
+            + $"Action {unit.CurrentAction}\n"
+            + $"Move {moveText} / Attack {attackText}  {targetText}\n"
+            + $"Keep {unit.KeepBehaving:0.#} / T {unit.ActionTimer:0.#}\n"
+            + $"Top {topActionText} {unit.TopScoredValue:0.##}\n"
+            + $"R {FormatScoresCompact(unit.CurrentScores)}\n"
+            + $"RAW {FormatParametersCompact(unit.CurrentRawParameters)}\n"
+            + $"MOD {FormatParametersCompact(unit.CurrentModifiedParameters)}";
     }
 
     private string FormatParametersCompact(BattleParameterSet p)
     {
-        return
-            $"h{p.SelfHpLow:0.0} " +
-            $"s{p.SelfSurroundedByEnemies:0.0} " +
-            $"la{p.LowHealthAllyProximity:0.0} " +
-            $"fp{p.AllyUnderFocusPressure:0.0} " +
-            $"g{p.AllyFrontlineGap:0.0} " +
-            $"i{p.IsolatedEnemyVulnerability:0.0} " +
-            $"c{p.EnemyClusterDensity:0.0} " +
-            $"tc{p.DistanceToTeamCenter:0.0} " +
-            $"atk{p.SelfCanAttackNow:0.0}";
+        return $"h{p.SelfHpLow:0.0} "
+            + $"s{p.SelfSurroundedByEnemies:0.0} "
+            + $"la{p.LowHealthAllyProximity:0.0} "
+            + $"fp{p.AllyUnderFocusPressure:0.0} "
+            + $"g{p.AllyFrontlineGap:0.0} "
+            + $"i{p.IsolatedEnemyVulnerability:0.0} "
+            + $"c{p.EnemyClusterDensity:0.0} "
+            + $"tc{p.DistanceToTeamCenter:0.0} "
+            + $"atk{p.SelfCanAttackNow:0.0}";
     }
+
     private string FormatScoresCompact(BattleActionScoreSet s)
     {
-        return
-            $"as{s.AssassinateIsolatedEnemy:0.0} " +
-            $"dv{s.DiveEnemyBackline:0.0} " +
-            $"pe{s.PeelForWeakAlly:0.0} " +
-            $"es{s.EscapeFromPressure:0.0} " +
-            $"rg{s.RegroupToAllies:0.0} " +
-            $"cl{s.CollapseOnCluster:0.0} " +
-            $"en{s.EngageNearest:0.0}";
+        return $"as{s.AssassinateIsolatedEnemy:0.0} "
+            + $"dv{s.DiveEnemyBackline:0.0} "
+            + $"pe{s.PeelForWeakAlly:0.0} "
+            + $"es{s.EscapeFromPressure:0.0} "
+            + $"rg{s.RegroupToAllies:0.0} "
+            + $"cl{s.CollapseOnCluster:0.0} "
+            + $"en{s.EngageNearest:0.0}";
     }
 }

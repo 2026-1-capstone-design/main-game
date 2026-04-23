@@ -5,5 +5,7 @@ public sealed class SynergySO : ScriptableObject
 {
     public Sprite icon;
     public string synergyName;
-    [TextArea] public string description;
+
+    [TextArea]
+    public string description;
 }

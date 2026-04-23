@@ -5,17 +5,18 @@ using UnityEngine;
 public class BattleAITuningSO : ScriptableObject
 {
     [Header("AI / Action Switching")]
-    [SerializeField] public float commitmentDecayPerSecond = 0.5f;
+    [SerializeField]
+    public float commitmentDecayPerSecond = 0.5f;
 
     [Header("AI / Parameter Radii")]
-    public float surroundRadius = 350f;            // self_surrounded_by_enemies 계산 기준 반경
-    public float helpRadius = 450f;                // low_health_ally_proximity 계산 기준 반경
-    public float peelRadius = 500f;                // ally_under_focus_pressure 거리 가중치 기준 반경
-    public float frontlineGapRadius = 600f;        // ally_frontline_gap 정규화 기준 반경
-    public float isolationRadius = 450f;           // isolated_enemy_vulnerability 고립 판정 기준 반경
-    public float assassinReachRadius = 600f;       // isolated_enemy_vulnerability 자기 도달 가능 거리 기준
-    public float clusterRadius = 400f;             // enemy_cluster_density 군집 판정 기준 반경
-    public float teamCenterDistanceRadius = 800f;  // distance_to_team_center 정규화 기준 반경
+    public float surroundRadius = 350f; // self_surrounded_by_enemies 계산 기준 반경
+    public float helpRadius = 450f; // low_health_ally_proximity 계산 기준 반경
+    public float peelRadius = 500f; // ally_under_focus_pressure 거리 가중치 기준 반경
+    public float frontlineGapRadius = 600f; // ally_frontline_gap 정규화 기준 반경
+    public float isolationRadius = 450f; // isolated_enemy_vulnerability 고립 판정 기준 반경
+    public float assassinReachRadius = 600f; // isolated_enemy_vulnerability 자기 도달 가능 거리 기준
+    public float clusterRadius = 400f; // enemy_cluster_density 군집 판정 기준 반경
+    public float teamCenterDistanceRadius = 800f; // distance_to_team_center 정규화 기준 반경
 
     [Header("AI / Action Tunings")]
     public List<BattleActionTuning> actionTunings = new List<BattleActionTuning>();
@@ -72,7 +73,7 @@ public class BattleAITuningSO : ScriptableObject
         {
             actionType = actionType,
             displayName = actionType.ToString(),
-            currentActionParameterPercents = BattleParameterWeights.CreateFilled(100)
+            currentActionParameterPercents = BattleParameterWeights.CreateFilled(100),
         };
 
         switch (actionType)

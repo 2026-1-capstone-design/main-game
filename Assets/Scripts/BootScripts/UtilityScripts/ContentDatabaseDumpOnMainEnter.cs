@@ -10,8 +10,11 @@ using UnityEngine.SceneManagement;
 public sealed class ContentDatabaseDumpOnMainEnter : MonoBehaviour
 {
     [Header("Run Option")]
-    [SerializeField] private bool dumpOnStart = true;
-    [SerializeField] private bool runOnlyOncePerPlay = true;
+    [SerializeField]
+    private bool dumpOnStart = true;
+
+    [SerializeField]
+    private bool runOnlyOncePerPlay = true;
 
     private static bool s_hasDumpedThisPlay;
 
@@ -38,8 +41,8 @@ public sealed class ContentDatabaseDumpOnMainEnter : MonoBehaviour
         if (provider == null)
         {
             Debug.LogError(
-                "[ContentDatabaseDumpOnMainEnter] ContentDatabaseProvider.Instance is null. " +
-                "Boot 씬을 거치지 않고 Main 씬만 바로 실행했을 가능성이 큼.",
+                "[ContentDatabaseDumpOnMainEnter] ContentDatabaseProvider.Instance is null. "
+                    + "Boot 씬을 거치지 않고 Main 씬만 바로 실행했을 가능성이 큼.",
                 this
             );
             return;
@@ -50,8 +53,8 @@ public sealed class ContentDatabaseDumpOnMainEnter : MonoBehaviour
         if (database == null)
         {
             Debug.LogError(
-                "[ContentDatabaseDumpOnMainEnter] provider.Database 가 null임. " +
-                "AFC 오브젝트의 ContentDatabaseProvider.contentDatabase 할당을 확인해.",
+                "[ContentDatabaseDumpOnMainEnter] provider.Database 가 null임. "
+                    + "AFC 오브젝트의 ContentDatabaseProvider.contentDatabase 할당을 확인해.",
                 this
             );
             return;
@@ -112,7 +115,12 @@ public sealed class ContentDatabaseDumpOnMainEnter : MonoBehaviour
         sb.AppendLine();
     }
 
-    private static void AppendScriptableObjectDump(StringBuilder sb, string label, ScriptableObject so, string indent = "")
+    private static void AppendScriptableObjectDump(
+        StringBuilder sb,
+        string label,
+        ScriptableObject so,
+        string indent = ""
+    )
     {
         sb.AppendLine($"{indent}[{label}]");
 

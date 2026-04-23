@@ -1,6 +1,5 @@
 using UnityEngine;
 
-
 public class AnimationManager : MonoBehaviour, IAnimationProvider
 {
     public static AnimationManager Instance { get; private set; }
@@ -29,6 +28,7 @@ public class AnimationManager : MonoBehaviour, IAnimationProvider
     {
         Instance = this;
     }
+
     public AnimatorOverrideController GetControllerByWeaponType(WeaponType type)
     {
         switch (type)
@@ -61,7 +61,6 @@ public class AnimationManager : MonoBehaviour, IAnimationProvider
         }
     }
 
-
     public AnimationClip getAnimation(WeaponSkillId id)
     {
         switch (id)
@@ -73,6 +72,7 @@ public class AnimationManager : MonoBehaviour, IAnimationProvider
                 return DefaultSkill;
         }
     }
+
     public float getCooltime(WeaponSkillId id)
     {
         switch (id)
@@ -83,8 +83,8 @@ public class AnimationManager : MonoBehaviour, IAnimationProvider
             case WeaponSkillId.None:
                 return DefaultCool;
         }
-
     }
+
     public skillType getSkillType(WeaponSkillId id)
     {
         switch (id)

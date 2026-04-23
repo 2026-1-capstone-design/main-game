@@ -17,7 +17,8 @@ public sealed class BalanceSO : ScriptableObject
     public int upkeepPerLevel = 10;
 
     [Header("EOD XP")]
-    [Range(0f, 1f)] public float eodXpGainChance = 0.5f;
+    [Range(0f, 1f)]
+    public float eodXpGainChance = 0.5f;
     public int eodXpGainAmount = 500;
 
     [Header("Level Curve")]

@@ -1,6 +1,6 @@
 using System.Collections.Generic;
-using UnityEngine;
 using BattleTest;
+using UnityEngine;
 
 [DisallowMultipleComponent]
 public sealed class BattleSceneTester : MonoBehaviour
@@ -34,7 +34,9 @@ public sealed class BattleSceneTester : MonoBehaviour
 
         if (currentPreset == null)
         {
-            Debug.LogWarning("[BattleSceneTester] No preset selected! Battle will not start correctly if no payload exists.");
+            Debug.LogWarning(
+                "[BattleSceneTester] No preset selected! Battle will not start correctly if no payload exists."
+            );
             return;
         }
 
@@ -45,7 +47,9 @@ public sealed class BattleSceneTester : MonoBehaviour
         if (flowManager != null)
             flowManager.OnUnitsSpawned += RefreshAllUnitAnimations;
         else
-            Debug.LogWarning("[BattleSceneTester] BattleSceneFlowManager not found. Animation refresh will be skipped.");
+            Debug.LogWarning(
+                "[BattleSceneTester] BattleSceneFlowManager not found. Animation refresh will be skipped."
+            );
     }
 
     private void OnDestroy()
@@ -94,7 +98,9 @@ public sealed class BattleSceneTester : MonoBehaviour
                 continue;
 
             // 이미 애니메이션이 적용되어 있을 수도 있지만, 테스트 환경에서는 강제로 덮어씌움
-            AnimatorOverrideController weaponMotion = AnimationManager.Instance.GetControllerByWeaponType(unit.Snapshot.WeaponType);
+            AnimatorOverrideController weaponMotion = AnimationManager.Instance.GetControllerByWeaponType(
+                unit.Snapshot.WeaponType
+            );
             if (weaponMotion != null && animator.runtimeAnimatorController != weaponMotion)
             {
                 animator.runtimeAnimatorController = weaponMotion;
@@ -127,13 +133,18 @@ public sealed class BattleSceneTester : MonoBehaviour
         int battleSeed = preset.battleSeed != 0 ? preset.battleSeed : Random.Range(1, 1000000);
         Debug.Log("[BattleSceneTester] Generated battle seed: " + battleSeed);
         BattleStartPayload testPayload = new BattleStartPayload(
-            allySnapshots, enemySnapshots, 0,
-            preset.enemyAverageLevel, preset.previewRewardGold,
+            allySnapshots,
+            enemySnapshots,
+            0,
+            preset.enemyAverageLevel,
+            preset.previewRewardGold,
             battleSeed
         );
 
         BattleSessionManager.Instance.StorePayload(testPayload);
-        Debug.Log($"[BattleSceneTester] Stored test payload: {preset.scenarioName} (Ally:{allySnapshots.Count}, Enemy:{enemySnapshots.Count})");
+        Debug.Log(
+            $"[BattleSceneTester] Stored test payload: {preset.scenarioName} (Ally:{allySnapshots.Count}, Enemy:{enemySnapshots.Count})"
+        );
     }
 
     private BattleUnitSnapshot CreateSnapshotFromEntry(int id, bool isEnemy, BattleTestUnitConfig entry)

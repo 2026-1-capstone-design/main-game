@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-
 public struct BattleResolution
 {
     public bool WasResolved { get; private set; }
@@ -20,12 +19,11 @@ public struct BattleResolution
     }
 }
 
-
-
 [DisallowMultipleComponent]
 public sealed class BattleManager : MonoBehaviour
 {
-    [SerializeField] private bool verboseLog = true;
+    [SerializeField]
+    private bool verboseLog = true;
 
     // 오늘 날짜 기준으로 생성된 전투 후보 목록
     // 메인씬 전투 준비 패널이 이걸 그대로 씀
@@ -116,7 +114,10 @@ public sealed class BattleManager : MonoBehaviour
         {
             if (verboseLog)
             {
-                Debug.Log($"[BattleManager] InitializeDay skipped. Daily encounters already cached for Day={safeDay}", this);
+                Debug.Log(
+                    $"[BattleManager] InitializeDay skipped. Daily encounters already cached for Day={safeDay}",
+                    this
+                );
             }
 
             return;
@@ -308,7 +309,6 @@ public sealed class BattleManager : MonoBehaviour
         }
     }
 
-
     private int GetRewardPerDay()
     {
         return _balance != null ? Mathf.Max(0, _balance.battleVictoryRewardPerDay) : 100;
@@ -321,8 +321,8 @@ public sealed class BattleManager : MonoBehaviour
         if (verboseLog)
         {
             Debug.Log(
-                $"[BattleManager] Cheat encounter average level override set. " +
-                $"OverrideDayAnchor={_cheatEncounterAverageLevelOverride}",
+                $"[BattleManager] Cheat encounter average level override set. "
+                    + $"OverrideDayAnchor={_cheatEncounterAverageLevelOverride}",
                 this
             );
         }
@@ -356,19 +356,26 @@ public sealed class BattleManager : MonoBehaviour
             return encounter != null;
         }
 
-        List<BattleEncounterPreview> overriddenEncounters =
-            _recruitFactory.CreateBattleEncounterPreviewsForDay(_cheatEncounterAverageLevelOverride);
+        List<BattleEncounterPreview> overriddenEncounters = _recruitFactory.CreateBattleEncounterPreviewsForDay(
+            _cheatEncounterAverageLevelOverride
+        );
 
         if (overriddenEncounters == null || overriddenEncounters.Count == 0)
         {
-            Debug.LogWarning("[BattleManager] Cheat override encounter rebuild failed. Falling back to cached encounter.", this);
+            Debug.LogWarning(
+                "[BattleManager] Cheat override encounter rebuild failed. Falling back to cached encounter.",
+                this
+            );
             encounter = _dailyEncounters[_selectedEncounterIndex];
             return encounter != null;
         }
 
         if (_selectedEncounterIndex < 0 || _selectedEncounterIndex >= overriddenEncounters.Count)
         {
-            Debug.LogWarning("[BattleManager] Selected encounter index is invalid for overridden encounter list.", this);
+            Debug.LogWarning(
+                "[BattleManager] Selected encounter index is invalid for overridden encounter list.",
+                this
+            );
             encounter = _dailyEncounters[_selectedEncounterIndex];
             return encounter != null;
         }
@@ -378,9 +385,9 @@ public sealed class BattleManager : MonoBehaviour
         if (verboseLog && encounter != null)
         {
             Debug.Log(
-                $"[BattleManager] Using overridden encounter for battle. " +
-                $"SelectedIndex={_selectedEncounterIndex}, OverrideDayAnchor={_cheatEncounterAverageLevelOverride}, " +
-                $"AvgLv={encounter.AverageLevel:0.0}",
+                $"[BattleManager] Using overridden encounter for battle. "
+                    + $"SelectedIndex={_selectedEncounterIndex}, OverrideDayAnchor={_cheatEncounterAverageLevelOverride}, "
+                    + $"AvgLv={encounter.AverageLevel:0.0}",
                 this
             );
         }
@@ -405,8 +412,7 @@ public sealed class BattleManager : MonoBehaviour
 
         _dailyEncounters.Clear();
 
-        List<BattleEncounterPreview> encounters =
-            _recruitFactory.CreateBattleEncounterPreviewsForDay(generationAnchor);
+        List<BattleEncounterPreview> encounters = _recruitFactory.CreateBattleEncounterPreviewsForDay(generationAnchor);
 
         if (encounters != null)
         {
@@ -426,9 +432,9 @@ public sealed class BattleManager : MonoBehaviour
         if (verboseLog)
         {
             Debug.Log(
-                $"[BattleManager] Cheat encounter regeneration complete. " +
-                $"CurrentDay={currentDay}, GenerationAnchor={generationAnchor}, " +
-                $"EncounterCount={_dailyEncounters.Count}, SelectionCleared=true",
+                $"[BattleManager] Cheat encounter regeneration complete. "
+                    + $"CurrentDay={currentDay}, GenerationAnchor={generationAnchor}, "
+                    + $"EncounterCount={_dailyEncounters.Count}, SelectionCleared=true",
                 this
             );
         }

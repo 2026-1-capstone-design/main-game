@@ -4,8 +4,11 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public sealed class ResourceUIManager : MonoBehaviour
 {
-    [SerializeField] private TMP_Text goldText;
-    [SerializeField] private string goldPrefix = "Gold : ";
+    [SerializeField]
+    private TMP_Text goldText;
+
+    [SerializeField]
+    private string goldPrefix = "Gold : ";
 
     private ResourceManager _resourceManager;
 

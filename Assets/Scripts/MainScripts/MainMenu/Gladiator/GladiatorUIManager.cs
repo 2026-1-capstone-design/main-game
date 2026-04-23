@@ -7,64 +7,109 @@ using UnityEngine.UI;
 public sealed class GladiatorUIManager : MonoBehaviour
 {
     [Header("List Panel")]
-    [SerializeField] private GameObject panelRoot;
+    [SerializeField]
+    private GameObject panelRoot;
 
     [Header("List Buttons")]
-    [SerializeField] private Button backButton;
+    [SerializeField]
+    private Button backButton;
 
     [Header("List Viewer")]
-    [SerializeField] private OwnedItemGridViewer gladiatorViewer;
+    [SerializeField]
+    private OwnedItemGridViewer gladiatorViewer;
 
     [Header("List Labels")]
-    [SerializeField] private TMP_Text headerText;
-    [SerializeField] private TMP_Text statusText;
+    [SerializeField]
+    private TMP_Text headerText;
+
+    [SerializeField]
+    private TMP_Text statusText;
 
     [Header("Detail Layer")]
-    [SerializeField] private Button detailMaskButton;
-    [SerializeField] private GameObject detailPanelRoot;
+    [SerializeField]
+    private Button detailMaskButton;
+
+    [SerializeField]
+    private GameObject detailPanelRoot;
 
     [Header("Detail Text")]
-    [SerializeField] private TMP_Text detailText;
+    [SerializeField]
+    private TMP_Text detailText;
 
     [Header("Detail Gladiator Icon")]
-    [SerializeField] private Image detailGladiatorIconImage;
+    [SerializeField]
+    private Image detailGladiatorIconImage;
 
     [Header("Detail Trait Slot")]
-    [SerializeField] private Button traitSlotButton;
-    [SerializeField] private Image traitOverlayImage;
+    [SerializeField]
+    private Button traitSlotButton;
+
+    [SerializeField]
+    private Image traitOverlayImage;
 
     [Header("Detail Weapon Slot")]
-    [SerializeField] private Button weaponSlotButton;
-    [SerializeField] private Image weaponOverlayImage;
+    [SerializeField]
+    private Button weaponSlotButton;
+
+    [SerializeField]
+    private Image weaponOverlayImage;
 
     [Header("Detail Perk Slot")]
-    [SerializeField] private Button perkSlotButton;
-    [SerializeField] private Image perkOverlayImage;
+    [SerializeField]
+    private Button perkSlotButton;
+
+    [SerializeField]
+    private Image perkOverlayImage;
 
     [Header("Inventory Layer")]
-    [SerializeField] private Button inventoryMaskButton;
-    [SerializeField] private GameObject inventoryPanelRoot;
+    [SerializeField]
+    private Button inventoryMaskButton;
+
+    [SerializeField]
+    private GameObject inventoryPanelRoot;
 
     [Header("Inventory Viewer")]
-    [SerializeField] private OwnedItemGridViewer inventoryWeaponViewer;
+    [SerializeField]
+    private OwnedItemGridViewer inventoryWeaponViewer;
 
     [Header("Inventory Labels")]
-    [SerializeField] private TMP_Text inventoryHeaderText;
-    [SerializeField] private TMP_Text inventoryStatusText;
+    [SerializeField]
+    private TMP_Text inventoryHeaderText;
+
+    [SerializeField]
+    private TMP_Text inventoryStatusText;
 
     [Header("Weapon Detail Layer")]
-    [SerializeField] private Button weaponDetailMaskButton;
-    [SerializeField] private GameObject weaponDetailPanelRoot;
-    [SerializeField] private TMP_Text weaponDetailText;
-    [SerializeField] private Button weaponDetailBackButton;
-    [SerializeField] private Button weaponDetailEquipButton;
-    [SerializeField] private Button weaponDetailUnequipButton;
+    [SerializeField]
+    private Button weaponDetailMaskButton;
+
+    [SerializeField]
+    private GameObject weaponDetailPanelRoot;
+
+    [SerializeField]
+    private TMP_Text weaponDetailText;
+
+    [SerializeField]
+    private Button weaponDetailBackButton;
+
+    [SerializeField]
+    private Button weaponDetailEquipButton;
+
+    [SerializeField]
+    private Button weaponDetailUnequipButton;
 
     [Header("Already Equipped Popup")]
-    [SerializeField] private Button alreadyEquippedMaskButton;
-    [SerializeField] private GameObject alreadyEquippedPanelRoot;
-    [SerializeField] private TMP_Text alreadyEquippedText;
-    [SerializeField] private Button alreadyEquippedOkButton;
+    [SerializeField]
+    private Button alreadyEquippedMaskButton;
+
+    [SerializeField]
+    private GameObject alreadyEquippedPanelRoot;
+
+    [SerializeField]
+    private TMP_Text alreadyEquippedText;
+
+    [SerializeField]
+    private Button alreadyEquippedOkButton;
 
     private readonly List<OwnedItemViewData> _gladiatorViewBuffer = new List<OwnedItemViewData>();
     private readonly List<OwnedItemViewData> _weaponViewBuffer = new List<OwnedItemViewData>();
@@ -160,13 +205,15 @@ public sealed class GladiatorUIManager : MonoBehaviour
                     continue;
                 }
 
-                _gladiatorViewBuffer.Add(new OwnedItemViewData(
-                    gladiator.GladiatorClass.icon,
-                    gladiator.DisplayName,
-                    $"Lv.{gladiator.Level}",
-                    string.Empty,
-                    gladiator
-                ));
+                _gladiatorViewBuffer.Add(
+                    new OwnedItemViewData(
+                        gladiator.GladiatorClass.icon,
+                        gladiator.DisplayName,
+                        $"Lv.{gladiator.Level}",
+                        string.Empty,
+                        gladiator
+                    )
+                );
             }
         }
 
@@ -200,17 +247,18 @@ public sealed class GladiatorUIManager : MonoBehaviour
                     continue;
                 }
 
-                OwnedGladiatorData owner = _gladiatorManager != null
-                    ? _gladiatorManager.FindOwnerOfEquippedWeapon(weapon)
-                    : null;
+                OwnedGladiatorData owner =
+                    _gladiatorManager != null ? _gladiatorManager.FindOwnerOfEquippedWeapon(weapon) : null;
 
-                _weaponViewBuffer.Add(new OwnedItemViewData(
-                    weapon.Weapon.icon,
-                    weapon.DisplayName,
-                    $"Lv.{weapon.Level}",
-                    owner != null ? "E" : string.Empty,
-                    weapon
-                ));
+                _weaponViewBuffer.Add(
+                    new OwnedItemViewData(
+                        weapon.Weapon.icon,
+                        weapon.DisplayName,
+                        $"Lv.{weapon.Level}",
+                        owner != null ? "E" : string.Empty,
+                        weapon
+                    )
+                );
             }
         }
 
@@ -269,9 +317,10 @@ public sealed class GladiatorUIManager : MonoBehaviour
 
         Sprite gladiatorIcon = gladiator.GladiatorClass != null ? gladiator.GladiatorClass.icon : null;
         Sprite traitIcon = gladiator.Trait != null ? gladiator.Trait.icon : null;
-        Sprite weaponIcon = gladiator.EquippedWeapon != null && gladiator.EquippedWeapon.Weapon != null
-            ? gladiator.EquippedWeapon.Weapon.icon
-            : null;
+        Sprite weaponIcon =
+            gladiator.EquippedWeapon != null && gladiator.EquippedWeapon.Weapon != null
+                ? gladiator.EquippedWeapon.Weapon.icon
+                : null;
         Sprite perkIcon = gladiator.EquippedPerk != null ? gladiator.EquippedPerk.icon : null;
 
         SetPassiveImage(detailGladiatorIconImage, gladiatorIcon);
@@ -284,16 +333,16 @@ public sealed class GladiatorUIManager : MonoBehaviour
             string className = gladiator.GladiatorClass != null ? gladiator.GladiatorClass.className : "(None)";
 
             detailText.text =
-                $"Name: {gladiator.DisplayName}\r\n" +
-                $"Level: {gladiator.Level}\r\n" +
-                $"Experience: {gladiator.Exp}\r\n" +
-                $"Loyalty: {gladiator.Loyalty}\r\n" +
-                $"Upkeep: {gladiator.Upkeep}\r\n" +
-                $"Health: {gladiator.CurrentHealth:0.##} / {gladiator.CachedMaxHealth:0.##}\r\n" +
-                $"Attack: {gladiator.CachedAttack:0.##}\r\n" +
-                $"Attack Speed: {gladiator.CachedAttackSpeed:0.##}\r\n" +
-                $"Move Speed: {gladiator.CachedMoveSpeed:0.##}\r\n" +
-                $"Range: {gladiator.CachedAttackRange:0.##}";
+                $"Name: {gladiator.DisplayName}\r\n"
+                + $"Level: {gladiator.Level}\r\n"
+                + $"Experience: {gladiator.Exp}\r\n"
+                + $"Loyalty: {gladiator.Loyalty}\r\n"
+                + $"Upkeep: {gladiator.Upkeep}\r\n"
+                + $"Health: {gladiator.CurrentHealth:0.##} / {gladiator.CachedMaxHealth:0.##}\r\n"
+                + $"Attack: {gladiator.CachedAttack:0.##}\r\n"
+                + $"Attack Speed: {gladiator.CachedAttackSpeed:0.##}\r\n"
+                + $"Move Speed: {gladiator.CachedMoveSpeed:0.##}\r\n"
+                + $"Range: {gladiator.CachedAttackRange:0.##}";
         }
     }
 
@@ -327,9 +376,8 @@ public sealed class GladiatorUIManager : MonoBehaviour
             return;
         }
 
-        OwnedGladiatorData owner = _gladiatorManager != null
-            ? _gladiatorManager.FindOwnerOfEquippedWeapon(weapon)
-            : null;
+        OwnedGladiatorData owner =
+            _gladiatorManager != null ? _gladiatorManager.FindOwnerOfEquippedWeapon(weapon) : null;
 
         bool equippedByCurrent = owner != null && owner == _currentDetailGladiator;
         string weaponTypeText = weapon.Weapon != null ? weapon.Weapon.weaponType.ToString() : "(None)";
@@ -339,16 +387,16 @@ public sealed class GladiatorUIManager : MonoBehaviour
         if (weaponDetailText != null)
         {
             weaponDetailText.text =
-                $"Name: {weapon.DisplayName}\n" +
-                $"Type: {weaponTypeText}\n" +
-                $"Skill: {skillName}\n" +
-                $"Equipped By: {ownerText}\n" +
-                $"Level: {weapon.Level}\n" +
-                $"Attack Bonus: {weapon.CachedAttackBonus:0.##}\n" +
-                $"Health Bonus: {weapon.CachedHealthBonus:0.##}\n" +
-                $"Attack Speed Bonus: {weapon.CachedAttackSpeedBonus:0.##}\n" +
-                $"Move Speed Bonus: {weapon.CachedMoveSpeedBonus:0.##}\n" +
-                $"Range Bonus: {weapon.CachedAttackRangeBonus:0.##}";
+                $"Name: {weapon.DisplayName}\n"
+                + $"Type: {weaponTypeText}\n"
+                + $"Skill: {skillName}\n"
+                + $"Equipped By: {ownerText}\n"
+                + $"Level: {weapon.Level}\n"
+                + $"Attack Bonus: {weapon.CachedAttackBonus:0.##}\n"
+                + $"Health Bonus: {weapon.CachedHealthBonus:0.##}\n"
+                + $"Attack Speed Bonus: {weapon.CachedAttackSpeedBonus:0.##}\n"
+                + $"Move Speed Bonus: {weapon.CachedMoveSpeedBonus:0.##}\n"
+                + $"Range Bonus: {weapon.CachedAttackRangeBonus:0.##}";
         }
 
         if (weaponDetailEquipButton != null)
@@ -382,7 +430,11 @@ public sealed class GladiatorUIManager : MonoBehaviour
         }
 
         string failReason;
-        bool succeeded = _gladiatorManager.TryEquipWeapon(_currentDetailGladiator, _currentSelectedWeapon, out failReason);
+        bool succeeded = _gladiatorManager.TryEquipWeapon(
+            _currentDetailGladiator,
+            _currentSelectedWeapon,
+            out failReason
+        );
 
         if (!succeeded)
         {
@@ -468,6 +520,7 @@ public sealed class GladiatorUIManager : MonoBehaviour
         RefreshInventoryWeaponViewer();
         SetInventoryActive(true);
     }
+
     //이미 장착/탈착 직후 RefreshDetail()을 호출하고 있어서 아이콘은 뜬느데 혹시 모르니
     private void CloseInventoryPanel()
     {

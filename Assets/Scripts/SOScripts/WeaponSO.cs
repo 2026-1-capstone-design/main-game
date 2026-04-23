@@ -14,7 +14,7 @@ public enum WeaponType
     dualGun,
     rifle,
     staff,
-    bow
+    bow,
 }
 
 public enum WeaponSkillId
@@ -24,7 +24,7 @@ public enum WeaponSkillId
     Madness = 2,
     LongGrip = 3,
     Taunt = 4,
-    HeartAttack = 5
+    HeartAttack = 5,
 }
 
 public enum skillType
@@ -33,7 +33,7 @@ public enum skillType
     attack = 1,
     tank = 2,
     support = 3,
-    enhance = 4
+    enhance = 4,
 }
 
 [CreateAssetMenu(menuName = "Prototype/Content/Weapon")]

@@ -5,7 +5,6 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public sealed class MainFlowManager : MonoBehaviour
 {
-
     // 현재 어떤 UI가 통제권을 가지고 있는지 나타냄.
     // 메인/시장/검투사/연구/전투준비 화면 간 전환을 제어함. 이후 메뉴 추가 시 추가 필요.
     private enum UiOwner
@@ -15,30 +14,59 @@ public sealed class MainFlowManager : MonoBehaviour
         Research = 2,
         Gladiator = 3,
         Market = 4,
-        BattlePreparation = 5
+        BattlePreparation = 5,
     }
 
     [Header("Scene Managers")]
-    [SerializeField] private MainUIManager mainUIManager;
-    [SerializeField] private ResourceManager resourceManager;
-    [SerializeField] private ResourceUIManager resourceUIManager;
-    [SerializeField] private ResearchManager researchManager;
-    [SerializeField] private ResearchUIManager researchUIManager;
-    [SerializeField] private BattleManager battleManager;
-    [SerializeField] private BattleUIManager battleUIManager;
-    [SerializeField] private GladiatorManager gladiatorManager;
-    [SerializeField] private GladiatorUIManager gladiatorUIManager;
-    [SerializeField] private InventoryManager inventoryManager;
-    [SerializeField] private MarketManager marketManager;
-    [SerializeField] private MarketUIManager marketUIManager;
-    [SerializeField] private RecruitFactory recruitFactory;
-    [SerializeField] private EquipmentFactory equipmentFactory;
+    [SerializeField]
+    private MainUIManager mainUIManager;
+
+    [SerializeField]
+    private ResourceManager resourceManager;
+
+    [SerializeField]
+    private ResourceUIManager resourceUIManager;
+
+    [SerializeField]
+    private ResearchManager researchManager;
+
+    [SerializeField]
+    private ResearchUIManager researchUIManager;
+
+    [SerializeField]
+    private BattleManager battleManager;
+
+    [SerializeField]
+    private BattleUIManager battleUIManager;
+
+    [SerializeField]
+    private GladiatorManager gladiatorManager;
+
+    [SerializeField]
+    private GladiatorUIManager gladiatorUIManager;
+
+    [SerializeField]
+    private InventoryManager inventoryManager;
+
+    [SerializeField]
+    private MarketManager marketManager;
+
+    [SerializeField]
+    private MarketUIManager marketUIManager;
+
+    [SerializeField]
+    private RecruitFactory recruitFactory;
+
+    [SerializeField]
+    private EquipmentFactory equipmentFactory;
 
     [Header("Battle Scene")]
-    [SerializeField] private string battleSceneName = "BattleScene";        // 전투 시작 시 실제로 로드할 배틀씬 이름
+    [SerializeField]
+    private string battleSceneName = "BattleScene"; // 전투 시작 시 실제로 로드할 배틀씬 이름
 
     [Header("Debug")]
-    [SerializeField] private bool verboseLog = true;
+    [SerializeField]
+    private bool verboseLog = true;
 
     private SessionManager _sessionManager;
     private ContentDatabaseProvider _contentDatabaseProvider;
@@ -90,7 +118,6 @@ public sealed class MainFlowManager : MonoBehaviour
         marketManager.Initialize(recruitFactory, equipmentFactory, gladiatorManager, inventoryManager, resourceManager);
         marketManager.InitializeDay(_sessionManager.CurrentDay);
 
-
         gladiatorManager.GrantRandomStarterGladiators(_contentDatabaseProvider, _sessionManager, 6);
         inventoryManager.GrantRandomStarterWeapons(_contentDatabaseProvider);
         researchManager.Initialize(_contentDatabaseProvider);
@@ -124,24 +151,36 @@ public sealed class MainFlowManager : MonoBehaviour
 
         if (_sessionManager == null)
         {
-            Debug.LogError("[MainFlowManager] SessionManager.Instance is null. Boot Scene를 거치지 않았거나 DDOL 초기화가 안 된 상태임.", this);
+            Debug.LogError(
+                "[MainFlowManager] SessionManager.Instance is null. Boot Scene를 거치지 않았거나 DDOL 초기화가 안 된 상태임.",
+                this
+            );
             ok = false;
         }
         if (_randomManager == null)
         {
-            Debug.LogError("[MainFlowManager] RandomManager.Instance is null. Boot Scene를 거치지 않았거나 DDOL 초기화가 안 된 상태임.", this);
+            Debug.LogError(
+                "[MainFlowManager] RandomManager.Instance is null. Boot Scene를 거치지 않았거나 DDOL 초기화가 안 된 상태임.",
+                this
+            );
             ok = false;
         }
 
         if (_sceneLoader == null)
         {
-            Debug.LogError("[MainFlowManager] SceneLoader.Instance is null. Boot Scene를 거치지 않았거나 DDOL 초기화가 안 된 상태임.", this);
+            Debug.LogError(
+                "[MainFlowManager] SceneLoader.Instance is null. Boot Scene를 거치지 않았거나 DDOL 초기화가 안 된 상태임.",
+                this
+            );
             ok = false;
         }
 
         if (_battleSessionManager == null)
         {
-            Debug.LogError("[MainFlowManager] BattleSessionManager.Instance is null. Boot Scene를 거치지 않았거나 DDOL 초기화가 안 된 상태임.", this);
+            Debug.LogError(
+                "[MainFlowManager] BattleSessionManager.Instance is null. Boot Scene를 거치지 않았거나 DDOL 초기화가 안 된 상태임.",
+                this
+            );
             ok = false;
         }
 
@@ -153,7 +192,10 @@ public sealed class MainFlowManager : MonoBehaviour
 
         if (_contentDatabaseProvider == null)
         {
-            Debug.LogError("[MainFlowManager] ContentDatabaseProvider.Instance is null. Boot Scene를 거치지 않았거나 DDOL 초기화가 안 된 상태임.", this);
+            Debug.LogError(
+                "[MainFlowManager] ContentDatabaseProvider.Instance is null. Boot Scene를 거치지 않았거나 DDOL 초기화가 안 된 상태임.",
+                this
+            );
             ok = false;
         }
 
@@ -363,7 +405,10 @@ public sealed class MainFlowManager : MonoBehaviour
 
         if (verboseLog)
         {
-            Debug.Log($"[MainFlowManager] Battle encounter selected. Index={battleManager.SelectedEncounterIndex}", this);
+            Debug.Log(
+                $"[MainFlowManager] Battle encounter selected. Index={battleManager.SelectedEncounterIndex}",
+                this
+            );
         }
     }
 
@@ -396,7 +441,10 @@ public sealed class MainFlowManager : MonoBehaviour
 
         if (!Application.CanStreamedLevelBeLoaded(battleSceneName))
         {
-            Debug.LogError($"[MainFlowManager] Battle scene '{battleSceneName}' is not in Build Settings or cannot be loaded.", this);
+            Debug.LogError(
+                $"[MainFlowManager] Battle scene '{battleSceneName}' is not in Build Settings or cannot be loaded.",
+                this
+            );
             return;
         }
 
@@ -454,9 +502,10 @@ public sealed class MainFlowManager : MonoBehaviour
             return false;
         }
 
-        int battleSeed = _randomManager != null
-            ? _randomManager.NextInt(RandomStreamType.BattleSimulation, int.MinValue, int.MaxValue)
-            : Random.Range(0, int.MaxValue);
+        int battleSeed =
+            _randomManager != null
+                ? _randomManager.NextInt(RandomStreamType.BattleSimulation, int.MinValue, int.MaxValue)
+                : Random.Range(0, int.MaxValue);
 
         payload = new BattleStartPayload(
             allySnapshots,
@@ -510,7 +559,10 @@ public sealed class MainFlowManager : MonoBehaviour
 
         if (allySnapshots.Count == 0)
         {
-            Debug.LogWarning("[MainFlowManager] Cannot start battle because ally snapshot build result is empty.", this);
+            Debug.LogWarning(
+                "[MainFlowManager] Cannot start battle because ally snapshot build result is empty.",
+                this
+            );
             return false;
         }
 
@@ -520,7 +572,8 @@ public sealed class MainFlowManager : MonoBehaviour
     // 선택된 전투 후보가 들고 있는 적 preview를 실제 전투용 적 snapshot 리스트로 복사
     private bool TryBuildEnemySnapshotsForBattle(
         BattleEncounterPreview encounter,
-        out List<BattleUnitSnapshot> enemySnapshots)
+        out List<BattleUnitSnapshot> enemySnapshots
+    )
     {
         enemySnapshots = new List<BattleUnitSnapshot>(6);
 
@@ -553,7 +606,10 @@ public sealed class MainFlowManager : MonoBehaviour
 
         if (enemySnapshots.Count == 0)
         {
-            Debug.LogWarning("[MainFlowManager] Cannot start battle because enemy snapshot build result is empty.", this);
+            Debug.LogWarning(
+                "[MainFlowManager] Cannot start battle because enemy snapshot build result is empty.",
+                this
+            );
             return false;
         }
 
@@ -606,9 +662,9 @@ public sealed class MainFlowManager : MonoBehaviour
         if (verboseLog)
         {
             Debug.Log(
-                $"[MainFlowManager] Battle payload stored. " +
-                $"Allies={payload.AllyUnits.Count}, Enemies={payload.EnemyUnits.Count}, " +
-                $"EncounterIndex={payload.SelectedEncounterIndex}, BattleSeed={payload.BattleSeed}",
+                $"[MainFlowManager] Battle payload stored. "
+                    + $"Allies={payload.AllyUnits.Count}, Enemies={payload.EnemyUnits.Count}, "
+                    + $"EncounterIndex={payload.SelectedEncounterIndex}, BattleSeed={payload.BattleSeed}",
                 this
             );
         }
@@ -704,13 +760,19 @@ public sealed class MainFlowManager : MonoBehaviour
     {
         if (_sessionManager == null)
         {
-            Debug.LogError("[MainFlowManager] SessionManager is null while trying to grant pending battle reward.", this);
+            Debug.LogError(
+                "[MainFlowManager] SessionManager is null while trying to grant pending battle reward.",
+                this
+            );
             return;
         }
 
         if (resourceManager == null)
         {
-            Debug.LogError("[MainFlowManager] resourceManager is null while trying to grant pending battle reward.", this);
+            Debug.LogError(
+                "[MainFlowManager] resourceManager is null while trying to grant pending battle reward.",
+                this
+            );
             return;
         }
 
@@ -729,10 +791,7 @@ public sealed class MainFlowManager : MonoBehaviour
 
         if (verboseLog)
         {
-            Debug.Log(
-                $"[MainFlowManager] Pending battle reward granted on MainScene enter. PaidGold={paidGold}",
-                this
-            );
+            Debug.Log($"[MainFlowManager] Pending battle reward granted on MainScene enter. PaidGold={paidGold}", this);
         }
     }
 }

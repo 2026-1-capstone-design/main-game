@@ -4,7 +4,8 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public sealed class ResearchManager : MonoBehaviour
 {
-    [SerializeField] private bool verboseLog = true;
+    [SerializeField]
+    private bool verboseLog = true;
 
     private readonly List<PerkSO> _unlockedPerks = new List<PerkSO>();
     private bool _initialized;
