@@ -9,14 +9,14 @@ public sealed class HeartAttackSkill : IBattleSkill
 
     public IReadOnlyList<WeaponType> CompatibleWeaponTypes { get; } = new[] { WeaponType.oneHand, WeaponType.twoHand };
 
-    public bool CanActivate(BattleRuntimeUnit caster, BattleFieldView field)
+    public bool CanActivate(BattleRuntimeUnit caster)
     {
         BattleUnitCombatState target = caster.PlannedTargetEnemy;
-        return field.IsValidEnemyTarget(caster.State, target)
-            && field.IsWithinEffectiveAttackDistance(caster.State, target);
+        return BattleFieldQueryHelper.IsValidEnemyTarget(caster.State, target)
+            && BattleFieldQueryHelper.IsWithinEffectiveAttackDistance(caster.State, target);
     }
 
-    public void Apply(BattleRuntimeUnit caster, BattleFieldView field, ISkillEffectApplier applier)
+    public void Apply(BattleRuntimeUnit caster, ISkillEffectApplier applier)
     {
         BattleUnitCombatState target = caster.PlannedTargetEnemy;
         if (target == null)

@@ -8,9 +8,9 @@ public sealed class LightningSkill : IBattleSkill
     public skillType SkillCategory => skillType.attack;
     public IReadOnlyList<WeaponType> CompatibleWeaponTypes { get; } = new[] { WeaponType.staff };
 
-    public bool CanActivate(BattleRuntimeUnit caster, BattleFieldView field) => caster.PlannedTargetEnemy != null;
+    public bool CanActivate(BattleRuntimeUnit caster) => caster.PlannedTargetEnemy != null;
 
-    public void Apply(BattleRuntimeUnit caster, BattleFieldView field, ISkillEffectApplier applier)
+    public void Apply(BattleRuntimeUnit caster, ISkillEffectApplier applier)
     {
         var target = caster.PlannedTargetEnemy;
         if (target == null)

@@ -9,9 +9,9 @@ public sealed class BattlePlanningSystem
         _planners = BuildPlannerRegistry();
     }
 
-    public void Build(IReadOnlyList<BattleRuntimeUnit> units, BattleFieldView fieldView)
+    public void Build(IReadOnlyList<BattleRuntimeUnit> units, BattleFieldSnapshot snapshot)
     {
-        if (units == null || fieldView == null)
+        if (units == null || snapshot == null)
             return;
 
         for (int i = 0; i < units.Count; i++)
@@ -26,16 +26,16 @@ public sealed class BattlePlanningSystem
             BattleActionExecutionPlan plan;
             if (!_planners.TryGetValue(unit.CurrentActionType, out IBattleActionPlanner planner))
             {
-                plan = _planners[BattleActionType.EngageNearest].Build(unit, fieldView);
+                plan = _planners[BattleActionType.EngageNearest].Build(unit, snapshot);
             }
             else
             {
-                plan = planner.Build(unit, fieldView);
-                if (!planner.IsUsable(unit, plan, fieldView))
+                plan = planner.Build(unit, snapshot);
+                if (!planner.IsUsable(unit, plan))
                 {
                     IBattleActionPlanner engagePlanner = _planners[BattleActionType.EngageNearest];
-                    BattleActionExecutionPlan engagePlan = engagePlanner.Build(unit, fieldView);
-                    plan = engagePlanner.IsUsable(unit, engagePlan, fieldView) ? engagePlan : default;
+                    BattleActionExecutionPlan engagePlan = engagePlanner.Build(unit, snapshot);
+                    plan = engagePlanner.IsUsable(unit, engagePlan) ? engagePlan : default;
 
                     if (plan.Action == BattleActionType.None)
                     {

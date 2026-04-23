@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using UnityEngine;
 
 // 3. 워크라이 (두손검) : 아군 전체 공격력 증가
 public sealed class WarcrySkill : IBattleSkill
@@ -8,9 +7,9 @@ public sealed class WarcrySkill : IBattleSkill
     public skillType SkillCategory => skillType.support;
     public IReadOnlyList<WeaponType> CompatibleWeaponTypes { get; } = new[] { WeaponType.twoHand };
 
-    public bool CanActivate(BattleRuntimeUnit caster, BattleFieldView field) => true;
+    public bool CanActivate(BattleRuntimeUnit caster) => true;
 
-    public void Apply(BattleRuntimeUnit caster, BattleFieldView field, ISkillEffectApplier applier)
+    public void Apply(BattleRuntimeUnit caster, ISkillEffectApplier applier)
     {
         foreach (var unit in applier.AllUnits)
         {

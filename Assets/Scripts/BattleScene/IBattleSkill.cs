@@ -23,8 +23,8 @@ public interface IBattleSkill
     IReadOnlyList<WeaponType> CompatibleWeaponTypes { get; }
 
     // 스킬 발동 조건 확인
-    bool CanActivate(BattleRuntimeUnit caster, BattleFieldView field);
+    bool CanActivate(BattleRuntimeUnit caster);
 
     // 스킬 효과 적용 (비주얼/쿨다운 리셋은 호출자가 담당)
-    void Apply(BattleRuntimeUnit caster, BattleFieldView field, ISkillEffectApplier applier);
+    void Apply(BattleRuntimeUnit caster, ISkillEffectApplier applier);
 }

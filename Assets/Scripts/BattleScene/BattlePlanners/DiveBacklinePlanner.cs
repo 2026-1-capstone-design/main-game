@@ -2,9 +2,9 @@ public sealed class DiveBacklinePlanner : IBattleActionPlanner
 {
     public BattleActionType ActionType => BattleActionType.DiveEnemyBackline;
 
-    public BattleActionExecutionPlan Build(BattleRuntimeUnit unit, BattleFieldView field)
+    public BattleActionExecutionPlan Build(BattleRuntimeUnit unit, BattleFieldSnapshot snapshot)
     {
-        BattleUnitCombatState target = field.FindBestBacklineEnemy(unit.State);
+        BattleUnitCombatState target = snapshot.FindBestBacklineEnemy(unit.State);
         return new BattleActionExecutionPlan
         {
             Action = BattleActionType.DiveEnemyBackline,
@@ -15,6 +15,6 @@ public sealed class DiveBacklinePlanner : IBattleActionPlanner
         };
     }
 
-    public bool IsUsable(BattleRuntimeUnit unit, BattleActionExecutionPlan plan, BattleFieldView field) =>
-        field.IsValidEnemyTarget(unit.State, plan.TargetEnemy);
+    public bool IsUsable(BattleRuntimeUnit unit, BattleActionExecutionPlan plan) =>
+        BattleFieldQueryHelper.IsValidEnemyTarget(unit.State, plan.TargetEnemy);
 }

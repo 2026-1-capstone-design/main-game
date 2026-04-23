@@ -8,11 +8,11 @@ public sealed class ShieldBashSkill : IBattleSkill
     public skillType SkillCategory => skillType.attack;
     public IReadOnlyList<WeaponType> CompatibleWeaponTypes { get; } = new[] { WeaponType.shield };
 
-    public bool CanActivate(BattleRuntimeUnit caster, BattleFieldView field) =>
+    public bool CanActivate(BattleRuntimeUnit caster) =>
         caster.PlannedTargetEnemy != null
-        && field.IsWithinEffectiveAttackDistance(caster.State, caster.PlannedTargetEnemy);
+        && BattleFieldQueryHelper.IsWithinEffectiveAttackDistance(caster.State, caster.PlannedTargetEnemy);
 
-    public void Apply(BattleRuntimeUnit caster, BattleFieldView field, ISkillEffectApplier applier)
+    public void Apply(BattleRuntimeUnit caster, ISkillEffectApplier applier)
     {
         var target = caster.PlannedTargetEnemy;
         if (target == null)

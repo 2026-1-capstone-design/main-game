@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using UnityEngine;
 
 // 9. 리볼버 패닝 (권총) : 6번 연속 공격
 public sealed class RevolverFanningSkill : IBattleSkill
@@ -8,11 +7,11 @@ public sealed class RevolverFanningSkill : IBattleSkill
     public skillType SkillCategory => skillType.attack;
     public IReadOnlyList<WeaponType> CompatibleWeaponTypes { get; } = new[] { WeaponType.handGun };
 
-    public bool CanActivate(BattleRuntimeUnit caster, BattleFieldView field) =>
+    public bool CanActivate(BattleRuntimeUnit caster) =>
         caster.PlannedTargetEnemy != null
-        && field.IsWithinEffectiveAttackDistance(caster.State, caster.PlannedTargetEnemy);
+        && BattleFieldQueryHelper.IsWithinEffectiveAttackDistance(caster.State, caster.PlannedTargetEnemy);
 
-    public void Apply(BattleRuntimeUnit caster, BattleFieldView field, ISkillEffectApplier applier)
+    public void Apply(BattleRuntimeUnit caster, ISkillEffectApplier applier)
     {
         var target = caster.PlannedTargetEnemy;
         if (target == null)

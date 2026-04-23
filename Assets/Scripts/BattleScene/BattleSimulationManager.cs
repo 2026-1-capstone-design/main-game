@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -57,8 +57,6 @@ public sealed class BattleSimulationManager : MonoBehaviour
     private readonly BattleCombatSystem _combatSystem = new BattleCombatSystem(new SkillEffectApplier());
     private readonly BattleVictorySystem _victorySystem = new BattleVictorySystem();
 
-    private BattleFieldView _fieldView;
-
     private bool _initialized;
     private bool _battleFinished;
     private bool _isTemporarilyPaused;
@@ -73,6 +71,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
     public bool IsTemporarilyPaused => _isTemporarilyPaused;
     public BattleStartPayload InitialPayload => _payload;
     public int BattleTickCount => _battleTickCount;
+    public BattleFieldSnapshot CurrentSnapshot { get; private set; }
 
     public event Action<SimulationTickData> OnSimulationTicked;
     public event Action<BattleOutcome> OnBattleFinished;
@@ -148,11 +147,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
 
         _payload = payload;
 
-        _fieldView = new BattleFieldView(
-            _unitStates,
-            BattleParameterSystem.BuildRadii(aiTuning),
-            escapeTowardTeamBlend
-        );
+        CurrentSnapshot = null;
         _physicsSystem.Configure(_battlefieldCollider, desiredPositionStopDistance);
 
         _tickAccumulator = 0f;
@@ -214,15 +209,16 @@ public sealed class BattleSimulationManager : MonoBehaviour
         _battleTickCount++;
 
         BattleParameterRadii radii = BattleParameterSystem.BuildRadii(aiTuning);
+        CurrentSnapshot = BattleFieldSnapshot.Build(_runtimeUnits, radii, escapeTowardTeamBlend);
         _cooldownSystem.Tick(_runtimeUnits, tickDeltaTime);
 
         BattleParameterComputation[] parameterResults = _parameterSystem.Compute(_runtimeUnits, radii, aiTuning);
         BattleActionType[] decisions = _decisionSystem.Decide(_runtimeUnits, aiTuning, tickDeltaTime);
 
-        _planningSystem.Build(_runtimeUnits, _fieldView);
-        _physicsSystem.Execute(_runtimeUnits, _fieldView, tickDeltaTime);
+        _planningSystem.Build(_runtimeUnits, CurrentSnapshot);
+        _physicsSystem.Execute(_runtimeUnits, tickDeltaTime);
 
-        BattleCombatResult[] combatResults = _combatSystem.Execute(_runtimeUnits, _fieldView, _runtimeUnitByState);
+        BattleCombatResult[] combatResults = _combatSystem.Execute(_runtimeUnits, _runtimeUnitByState);
 
         BattleOutcome? outcome = _victorySystem.Evaluate(_runtimeUnits, _battleTickCount);
 

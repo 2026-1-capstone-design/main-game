@@ -2,9 +2,9 @@ public sealed class AssassinatePlanner : IBattleActionPlanner
 {
     public BattleActionType ActionType => BattleActionType.AssassinateIsolatedEnemy;
 
-    public BattleActionExecutionPlan Build(BattleRuntimeUnit unit, BattleFieldView field)
+    public BattleActionExecutionPlan Build(BattleRuntimeUnit unit, BattleFieldSnapshot snapshot)
     {
-        BattleUnitCombatState target = field.FindBestIsolatedEnemy(unit.State);
+        BattleUnitCombatState target = snapshot.FindBestIsolatedEnemy(unit.State);
         return new BattleActionExecutionPlan
         {
             Action = BattleActionType.AssassinateIsolatedEnemy,
@@ -15,6 +15,6 @@ public sealed class AssassinatePlanner : IBattleActionPlanner
         };
     }
 
-    public bool IsUsable(BattleRuntimeUnit unit, BattleActionExecutionPlan plan, BattleFieldView field) =>
-        field.IsValidEnemyTarget(unit.State, plan.TargetEnemy);
+    public bool IsUsable(BattleRuntimeUnit unit, BattleActionExecutionPlan plan) =>
+        BattleFieldQueryHelper.IsValidEnemyTarget(unit.State, plan.TargetEnemy);
 }

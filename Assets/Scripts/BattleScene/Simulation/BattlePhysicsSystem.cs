@@ -12,13 +12,13 @@ public sealed class BattlePhysicsSystem
         _desiredPositionStopDistance = Mathf.Max(0f, desiredPositionStopDistance);
     }
 
-    public void Execute(IReadOnlyList<BattleRuntimeUnit> units, BattleFieldView fieldView, float tickDeltaTime)
+    public void Execute(IReadOnlyList<BattleRuntimeUnit> units, float tickDeltaTime)
     {
-        if (units == null || fieldView == null)
+        if (units == null)
             return;
 
         ExecuteSpecialEffect(units, tickDeltaTime);
-        ExecuteMovementPhase(units, fieldView, tickDeltaTime);
+        ExecuteMovementPhase(units, tickDeltaTime);
         ResolveUnitSeparation(units);
     }
 
@@ -34,11 +34,7 @@ public sealed class BattlePhysicsSystem
         }
     }
 
-    private void ExecuteMovementPhase(
-        IReadOnlyList<BattleRuntimeUnit> units,
-        BattleFieldView fieldView,
-        float tickDeltaTime
-    )
+    private void ExecuteMovementPhase(IReadOnlyList<BattleRuntimeUnit> units, float tickDeltaTime)
     {
         for (int i = 0; i < units.Count; i++)
         {
@@ -70,8 +66,8 @@ public sealed class BattlePhysicsSystem
 
             BattleUnitCombatState targetEnemy = unit.PlannedTargetEnemy;
             if (
-                fieldView.IsValidEnemyTarget(unit.State, targetEnemy)
-                && fieldView.IsWithinEffectiveAttackDistance(unit.State, targetEnemy)
+                BattleFieldQueryHelper.IsValidEnemyTarget(unit.State, targetEnemy)
+                && BattleFieldQueryHelper.IsWithinEffectiveAttackDistance(unit.State, targetEnemy)
             )
             {
                 if (unit.IsMoving)
@@ -91,10 +87,10 @@ public sealed class BattlePhysicsSystem
                 continue;
             }
 
-            if (fieldView.IsValidEnemyTarget(unit.State, targetEnemy))
+            if (BattleFieldQueryHelper.IsValidEnemyTarget(unit.State, targetEnemy))
             {
                 unit.FaceTarget(unit.PlannedDesiredPosition);
-                bool moved = MoveTowardsTarget(unit, targetEnemy, fieldView, tickDeltaTime);
+                bool moved = MoveTowardsTarget(unit, targetEnemy, tickDeltaTime);
                 unit.State.SetMovementState(moved);
                 if (!moved)
                     unit.State.SetIdleState();
@@ -106,14 +102,9 @@ public sealed class BattlePhysicsSystem
         }
     }
 
-    private bool MoveTowardsTarget(
-        BattleRuntimeUnit mover,
-        BattleUnitCombatState target,
-        BattleFieldView fieldView,
-        float tickDeltaTime
-    )
+    private bool MoveTowardsTarget(BattleRuntimeUnit mover, BattleUnitCombatState target, float tickDeltaTime)
     {
-        if (mover == null || target == null || fieldView == null)
+        if (mover == null || target == null)
             return false;
 
         Vector3 currentPosition = mover.Position;
@@ -122,7 +113,7 @@ public sealed class BattlePhysicsSystem
         toTarget.y = 0f;
 
         float centerDistance = toTarget.magnitude;
-        float effectiveAttackDistance = fieldView.GetEffectiveAttackDistance(mover.State, target);
+        float effectiveAttackDistance = BattleFieldQueryHelper.GetEffectiveAttackDistance(mover.State, target);
         if (centerDistance <= effectiveAttackDistance)
             return false;
 

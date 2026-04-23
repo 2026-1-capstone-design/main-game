@@ -2,18 +2,18 @@ public sealed class RegroupPlanner : IBattleActionPlanner
 {
     public BattleActionType ActionType => BattleActionType.RegroupToAllies;
 
-    public BattleActionExecutionPlan Build(BattleRuntimeUnit unit, BattleFieldView field)
+    public BattleActionExecutionPlan Build(BattleRuntimeUnit unit, BattleFieldSnapshot snapshot)
     {
         return new BattleActionExecutionPlan
         {
             Action = BattleActionType.RegroupToAllies,
             TargetEnemy = null,
             TargetAlly = null,
-            DesiredPosition = field.ComputeTeamCenter(unit.State.IsEnemy),
+            DesiredPosition = snapshot.ComputeTeamCenter(unit.State.IsEnemy),
             HasDesiredPosition = true,
         };
     }
 
-    public bool IsUsable(BattleRuntimeUnit unit, BattleActionExecutionPlan plan, BattleFieldView field) =>
-        plan.HasDesiredPosition || field.IsValidEnemyTarget(unit.State, plan.TargetEnemy);
+    public bool IsUsable(BattleRuntimeUnit unit, BattleActionExecutionPlan plan) =>
+        plan.HasDesiredPosition || BattleFieldQueryHelper.IsValidEnemyTarget(unit.State, plan.TargetEnemy);
 }

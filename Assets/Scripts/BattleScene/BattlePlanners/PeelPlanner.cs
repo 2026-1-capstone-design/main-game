@@ -4,10 +4,10 @@ public sealed class PeelPlanner : IBattleActionPlanner
 {
     public BattleActionType ActionType => BattleActionType.PeelForWeakAlly;
 
-    public BattleActionExecutionPlan Build(BattleRuntimeUnit unit, BattleFieldView field)
+    public BattleActionExecutionPlan Build(BattleRuntimeUnit unit, BattleFieldSnapshot snapshot)
     {
-        BattleUnitCombatState ally = field.FindMostPressuredAlly(unit.State);
-        BattleUnitCombatState enemy = field.FindBestPeelEnemy(unit.State, ally);
+        BattleUnitCombatState ally = snapshot.FindMostPressuredAlly(unit.State);
+        BattleUnitCombatState enemy = snapshot.FindBestPeelEnemy(unit.State, ally);
 
         Vector3 desiredPosition = ally != null ? ally.Position : unit.Position;
         bool hasDesiredPosition = ally != null;
@@ -28,6 +28,6 @@ public sealed class PeelPlanner : IBattleActionPlanner
         };
     }
 
-    public bool IsUsable(BattleRuntimeUnit unit, BattleActionExecutionPlan plan, BattleFieldView field) =>
-        field.IsValidEnemyTarget(unit.State, plan.TargetEnemy);
+    public bool IsUsable(BattleRuntimeUnit unit, BattleActionExecutionPlan plan) =>
+        BattleFieldQueryHelper.IsValidEnemyTarget(unit.State, plan.TargetEnemy);
 }

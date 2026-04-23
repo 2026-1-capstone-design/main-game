@@ -31,22 +31,20 @@ public sealed class BattleCombatSystem
 
     public BattleCombatResult[] Execute(
         IReadOnlyList<BattleRuntimeUnit> units,
-        BattleFieldView fieldView,
         IReadOnlyDictionary<BattleUnitCombatState, BattleRuntimeUnit> runtimeUnitByState
     )
     {
-        if (units == null || fieldView == null)
+        if (units == null)
             return new BattleCombatResult[0];
 
         var results = new List<BattleCombatResult>();
-        ExecuteAttackPhase(units, fieldView, runtimeUnitByState, results);
-        ExecuteSkillPhase(units, fieldView, runtimeUnitByState, results);
+        ExecuteAttackPhase(units, runtimeUnitByState, results);
+        ExecuteSkillPhase(units, runtimeUnitByState, results);
         return results.ToArray();
     }
 
     private static void ExecuteAttackPhase(
         IReadOnlyList<BattleRuntimeUnit> units,
-        BattleFieldView fieldView,
         IReadOnlyDictionary<BattleUnitCombatState, BattleRuntimeUnit> runtimeUnitByState,
         List<BattleCombatResult> results
     )
@@ -58,9 +56,9 @@ public sealed class BattleCombatSystem
                 continue;
 
             BattleUnitCombatState target = attacker.PlannedTargetEnemy;
-            if (!fieldView.IsValidEnemyTarget(attacker.State, target))
+            if (!BattleFieldQueryHelper.IsValidEnemyTarget(attacker.State, target))
                 continue;
-            if (!fieldView.IsWithinEffectiveAttackDistance(attacker.State, target))
+            if (!BattleFieldQueryHelper.IsWithinEffectiveAttackDistance(attacker.State, target))
                 continue;
             if (attacker.AttackCooldownRemaining > 0f)
                 continue;
@@ -81,7 +79,6 @@ public sealed class BattleCombatSystem
 
     private void ExecuteSkillPhase(
         IReadOnlyList<BattleRuntimeUnit> units,
-        BattleFieldView fieldView,
         IReadOnlyDictionary<BattleUnitCombatState, BattleRuntimeUnit> runtimeUnitByState,
         List<BattleCombatResult> results
     )
@@ -97,11 +94,11 @@ public sealed class BattleCombatSystem
                 continue;
 
             IBattleSkill skill = _skillRegistry.Get(unit.State.GetSkill());
-            if (skill == null || !skill.CanActivate(unit, fieldView))
+            if (skill == null || !skill.CanActivate(unit))
                 continue;
 
             _skillEffectApplier.Configure(unit, runtimeUnitByState, results);
-            skill.Apply(unit, fieldView, _skillEffectApplier);
+            skill.Apply(unit, _skillEffectApplier);
 
             unit.SetSkillState(unit.GetSkillAnimationDuration());
             unit.State.ResetSkillCooldown();

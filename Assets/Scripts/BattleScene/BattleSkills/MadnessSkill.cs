@@ -8,9 +8,9 @@ public sealed class MadnessSkill : IBattleSkill
 
     public IReadOnlyList<WeaponType> CompatibleWeaponTypes { get; } = new WeaponType[0];
 
-    public bool CanActivate(BattleRuntimeUnit caster, BattleFieldView field) => true;
+    public bool CanActivate(BattleRuntimeUnit caster) => true;
 
-    public void Apply(BattleRuntimeUnit caster, BattleFieldView field, ISkillEffectApplier applier)
+    public void Apply(BattleRuntimeUnit caster, ISkillEffectApplier applier)
     {
         applier.ApplyBuff(caster.State, BuffType.AttackSpeed, 2, 20f);
     }

@@ -4,10 +4,10 @@ public sealed class EscapePlanner : IBattleActionPlanner
 {
     public BattleActionType ActionType => BattleActionType.EscapeFromPressure;
 
-    public BattleActionExecutionPlan Build(BattleRuntimeUnit unit, BattleFieldView field)
+    public BattleActionExecutionPlan Build(BattleRuntimeUnit unit, BattleFieldSnapshot snapshot)
     {
         Vector3 selfPos = unit.Position;
-        Vector3 pressureCenter = field.ComputeEnemyPressureCenter(unit.State);
+        Vector3 pressureCenter = snapshot.ComputeEnemyPressureCenter(unit.State);
         Vector3 away = selfPos - pressureCenter;
         away.y = 0f;
 
@@ -15,12 +15,12 @@ public sealed class EscapePlanner : IBattleActionPlanner
             away = unit.IsEnemy ? Vector3.right : Vector3.left;
         away.Normalize();
 
-        Vector3 teamCenter = field.ComputeTeamCenter(unit.State.IsEnemy);
+        Vector3 teamCenter = snapshot.ComputeTeamCenter(unit.State.IsEnemy);
         Vector3 towardTeam = (teamCenter - selfPos);
         towardTeam.y = 0f;
         towardTeam.Normalize();
 
-        float blend = field.EscapeTowardTeamBlend;
+        float blend = snapshot.EscapeTowardTeamBlend;
         Vector3 escapeDir = (away * (1f - blend) + towardTeam * blend).normalized;
         Vector3 desiredPosition = selfPos + escapeDir * Mathf.Max(80f, unit.MoveSpeed);
 
@@ -34,6 +34,6 @@ public sealed class EscapePlanner : IBattleActionPlanner
         };
     }
 
-    public bool IsUsable(BattleRuntimeUnit unit, BattleActionExecutionPlan plan, BattleFieldView field) =>
-        plan.HasDesiredPosition || field.IsValidEnemyTarget(unit.State, plan.TargetEnemy);
+    public bool IsUsable(BattleRuntimeUnit unit, BattleActionExecutionPlan plan) =>
+        plan.HasDesiredPosition || BattleFieldQueryHelper.IsValidEnemyTarget(unit.State, plan.TargetEnemy);
 }

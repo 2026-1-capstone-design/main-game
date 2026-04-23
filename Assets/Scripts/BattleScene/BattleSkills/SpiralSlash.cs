@@ -8,9 +8,9 @@ public sealed class SpiralSlashSkill : IBattleSkill
     public skillType SkillCategory => skillType.attack;
     public IReadOnlyList<WeaponType> CompatibleWeaponTypes { get; } = new[] { WeaponType.oneHand };
 
-    public bool CanActivate(BattleRuntimeUnit caster, BattleFieldView field) => true;
+    public bool CanActivate(BattleRuntimeUnit caster) => true;
 
-    public void Apply(BattleRuntimeUnit caster, BattleFieldView field, ISkillEffectApplier applier)
+    public void Apply(BattleRuntimeUnit caster, ISkillEffectApplier applier)
     {
         foreach (var unit in applier.AllUnits)
         {
