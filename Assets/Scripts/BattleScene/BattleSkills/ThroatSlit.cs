@@ -1,5 +1,5 @@
-using UnityEngine;
 using System.Collections.Generic;
+using UnityEngine;
 
 // 4. 목긋기 (단검) : 적 뒤로 이동 후 데미지
 public sealed class ThroatSlitSkill : IBattleSkill
@@ -7,12 +7,14 @@ public sealed class ThroatSlitSkill : IBattleSkill
     public WeaponSkillId SkillId => WeaponSkillId.ThroatSlit;
     public skillType SkillCategory => skillType.attack;
     public IReadOnlyList<WeaponType> CompatibleWeaponTypes { get; } = new[] { WeaponType.dagger };
+
     public bool CanActivate(BattleRuntimeUnit caster, BattleFieldView field) => caster.PlannedTargetEnemy != null;
 
     public void Apply(BattleRuntimeUnit caster, BattleFieldView field, ISkillEffectApplier applier)
     {
         BattleRuntimeUnit target = caster.PlannedTargetEnemy;
-        if (target == null) return;
+        if (target == null)
+            return;
 
         // 적의 뒤편으로 위치 계산
         Vector3 dirToTarget = (target.Position - caster.Position).normalized;

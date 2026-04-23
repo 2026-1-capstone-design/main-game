@@ -4,7 +4,8 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public sealed class EquipmentFactory : MonoBehaviour
 {
-    [SerializeField] private bool verboseLog = true;
+    [SerializeField]
+    private bool verboseLog = true;
 
     private ContentDatabaseProvider _contentDatabaseProvider;
     private RandomManager _randomManager;
@@ -79,8 +80,8 @@ public sealed class EquipmentFactory : MonoBehaviour
             WeaponType weaponType = preview.Weapon != null ? preview.Weapon.weaponType : WeaponType.None;
 
             Debug.Log(
-                $"[EquipmentFactory] Market weapon created. " +
-                $"Slot={slotIndex}, Name={preview.DisplayName}, Type={weaponType}, Level={preview.Level}, Skill={skillName}, Price={price}",
+                $"[EquipmentFactory] Market weapon created. "
+                    + $"Slot={slotIndex}, Name={preview.DisplayName}, Type={weaponType}, Level={preview.Level}, Skill={skillName}, Price={price}",
                 this
             );
         }
@@ -120,21 +121,12 @@ public sealed class EquipmentFactory : MonoBehaviour
             _balance.weaponFinalStatVarianceMaxPercent
         );
 
-        return BuildWeaponPreview(
-            weapon,
-            weaponSkill,
-            level,
-            finalAttackVariancePercent,
-            finalHealthVariancePercent
-        );
+        return BuildWeaponPreview(weapon, weaponSkill, level, finalAttackVariancePercent, finalHealthVariancePercent);
     }
 
     // 랜덤이 아니라 지정된 무기 타입/스킬/레벨로 무기 preview를 만든다.
     // 치트코드용.
-    public OwnedWeaponData CreateWeaponPreviewFromSpec(
-        WeaponType weaponType,
-        WeaponSkillId weaponSkillId,
-        int level)
+    public OwnedWeaponData CreateWeaponPreviewFromSpec(WeaponType weaponType, WeaponSkillId weaponSkillId, int level)
     {
         if (!_initialized)
         {
@@ -168,21 +160,15 @@ public sealed class EquipmentFactory : MonoBehaviour
             if (weaponSkill.weaponType != weaponType)
             {
                 Debug.LogError(
-                    $"[EquipmentFactory] Weapon type / skill mismatch. " +
-                    $"WeaponType={weaponType}, SkillId={weaponSkillId}, SkillWeaponType={weaponSkill.weaponType}",
+                    $"[EquipmentFactory] Weapon type / skill mismatch. "
+                        + $"WeaponType={weaponType}, SkillId={weaponSkillId}, SkillWeaponType={weaponSkill.weaponType}",
                     this
                 );
                 return null;
             }
         }
 
-        return BuildWeaponPreview(
-            weapon,
-            weaponSkill,
-            Mathf.Max(1, level),
-            0f,
-            0f
-        );
+        return BuildWeaponPreview(weapon, weaponSkill, Mathf.Max(1, level), 0f, 0f);
     }
 
     private int CalculateMarketLevel(int currentDay)
@@ -202,23 +188,19 @@ public sealed class EquipmentFactory : MonoBehaviour
     // OwnedWeaponData preview를 실제로 조립하는 함수
     // 무기 본체, 스킬, 레벨, 최종 분산값을 묶고 캐시 스탯까지 계산함.
     private OwnedWeaponData BuildWeaponPreview(
-    WeaponSO weapon,
-    WeaponSkillSO weaponSkill,
-    int level,
-    float finalAttackVariancePercent,
-    float finalHealthVariancePercent)
+        WeaponSO weapon,
+        WeaponSkillSO weaponSkill,
+        int level,
+        float finalAttackVariancePercent,
+        float finalHealthVariancePercent
+    )
     {
         if (weapon == null)
         {
             return null;
         }
 
-        OwnedWeaponData preview = new OwnedWeaponData(
-            0,
-            weapon.weaponName,
-            Mathf.Max(1, level),
-            weapon
-        );
+        OwnedWeaponData preview = new OwnedWeaponData(0, weapon.weaponName, Mathf.Max(1, level), weapon);
 
         preview.WeaponSkill = weaponSkill;
         preview.FinalAttackBonusVariancePercent = finalAttackVariancePercent;
@@ -263,8 +245,8 @@ public sealed class EquipmentFactory : MonoBehaviour
         if (matchCount > 1 && verboseLog)
         {
             Debug.LogWarning(
-                $"[EquipmentFactory] Multiple WeaponSO assets found for WeaponType={weaponType}. " +
-                $"CreateWeaponPreviewFromSpec will use the first match: {firstMatch.weaponName}",
+                $"[EquipmentFactory] Multiple WeaponSO assets found for WeaponType={weaponType}. "
+                    + $"CreateWeaponPreviewFromSpec will use the first match: {firstMatch.weaponName}",
                 this
             );
         }
@@ -318,8 +300,10 @@ public sealed class EquipmentFactory : MonoBehaviour
 
         float scaledAttackBonus = baseAttackBonus * (1f + (_balance.equipmentAttackBonusPerLevel * levelOffset));
         float scaledHealthBonus = baseHealthBonus * (1f + (_balance.equipmentHealthBonusPerLevel * levelOffset));
-        float scaledAttackSpeedBonus = baseAttackSpeedBonus * (1f + (_balance.equipmentAttackSpeedBonusPerLevel * levelOffset));
-        float scaledMoveSpeedBonus = baseMoveSpeedBonus * (1f + (_balance.equipmentMoveSpeedBonusPerLevel * levelOffset));
+        float scaledAttackSpeedBonus =
+            baseAttackSpeedBonus * (1f + (_balance.equipmentAttackSpeedBonusPerLevel * levelOffset));
+        float scaledMoveSpeedBonus =
+            baseMoveSpeedBonus * (1f + (_balance.equipmentMoveSpeedBonusPerLevel * levelOffset));
         float scaledAttackRangeBonus = baseAttackRangeBonus;
 
         float finalAttackMultiplier = 1f + ownedWeapon.FinalAttackBonusVariancePercent;
@@ -374,7 +358,8 @@ public sealed class EquipmentFactory : MonoBehaviour
         return candidates[pickedIndex];
     }
 
-    private T PickRandomNonNull<T>(IReadOnlyList<T> list) where T : class
+    private T PickRandomNonNull<T>(IReadOnlyList<T> list)
+        where T : class
     {
         if (list == null || list.Count == 0)
         {

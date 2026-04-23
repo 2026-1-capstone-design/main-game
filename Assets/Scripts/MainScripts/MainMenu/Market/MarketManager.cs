@@ -4,7 +4,8 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public sealed class MarketManager : SingletonBehaviour<MarketManager>
 {
-    [SerializeField] private bool verboseLog = true;
+    [SerializeField]
+    private bool verboseLog = true;
 
     // _gladiatorOffers 와 _weaponOffers 모두 날짜가 바뀌기 전까지만 유지되는 하루 단위 캐시
     private readonly List<MarketGladiatorOffer> _gladiatorOffers = new List<MarketGladiatorOffer>();
@@ -16,8 +17,9 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
     private InventoryManager _inventoryManager;
     private ResourceManager _resourceManager;
 
-    private int _initializedDay = -1;       // 현재 시장 재고가 어느 날짜 기준으로 생성됐는지 나타냄
-                                            // 같은 날 재진입 시(배틀 종료 후 등_) 재생성을 막는 기준값
+    private int _initializedDay = -1; // 현재 시장 재고가 어느 날짜 기준으로 생성됐는지 나타냄
+
+    // 같은 날 재진입 시(배틀 종료 후 등_) 재생성을 막는 기준값
     public int InitializedDay => _initializedDay;
 
     private bool _initialized;
@@ -28,11 +30,12 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
     // 시장이 참조할 factory와 실제 보유/골드 매니저를 연결
     // 마켓 매니저가 DDOL 매니저라서 메인씬 재진입 시 scene 의존성을 다시 꽂아주는 역할도 함
     public void Initialize(
-    RecruitFactory recruitFactory,
-    EquipmentFactory equipmentFactory,
-    GladiatorManager gladiatorManager,
-    InventoryManager inventoryManager,
-    ResourceManager resourceManager)
+        RecruitFactory recruitFactory,
+        EquipmentFactory equipmentFactory,
+        GladiatorManager gladiatorManager,
+        InventoryManager inventoryManager,
+        ResourceManager resourceManager
+    )
     {
         _recruitFactory = recruitFactory;
         _equipmentFactory = equipmentFactory;
@@ -148,8 +151,8 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
         if (verboseLog)
         {
             Debug.Log(
-                $"[MarketManager] InitializeDay({safeDay}) complete. " +
-                $"GladiatorOfferCount={_gladiatorOffers.Count}, WeaponOfferCount={_weaponOffers.Count}",
+                $"[MarketManager] InitializeDay({safeDay}) complete. "
+                    + $"GladiatorOfferCount={_gladiatorOffers.Count}, WeaponOfferCount={_weaponOffers.Count}",
                 this
             );
         }
@@ -271,8 +274,8 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
         if (verboseLog)
         {
             Debug.Log(
-                $"[MarketManager] Gladiator purchased. " +
-                $"Slot={slotIndex}, Name={offer.Gladiator.DisplayName}, Price={offer.Price}",
+                $"[MarketManager] Gladiator purchased. "
+                    + $"Slot={slotIndex}, Name={offer.Gladiator.DisplayName}, Price={offer.Price}",
                 this
             );
         }
@@ -342,8 +345,8 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
         if (verboseLog)
         {
             Debug.Log(
-                $"[MarketManager] Weapon purchased. " +
-                $"Slot={slotIndex}, Name={offer.Weapon.DisplayName}, Price={offer.Price}",
+                $"[MarketManager] Weapon purchased. "
+                    + $"Slot={slotIndex}, Name={offer.Weapon.DisplayName}, Price={offer.Price}",
                 this
             );
         }
@@ -386,10 +389,7 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
 
         if (verboseLog)
         {
-            Debug.Log(
-                $"[MarketManager] Gladiator sold. Name={gladiator.DisplayName}, SellPrice={sellPrice}",
-                this
-            );
+            Debug.Log($"[MarketManager] Gladiator sold. Name={gladiator.DisplayName}, SellPrice={sellPrice}", this);
         }
 
         return true;
@@ -416,9 +416,8 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
             return false;
         }
         //이중 방어
-        OwnedGladiatorData owner = _gladiatorManager != null
-            ? _gladiatorManager.FindOwnerOfEquippedWeapon(weapon)
-            : null;
+        OwnedGladiatorData owner =
+            _gladiatorManager != null ? _gladiatorManager.FindOwnerOfEquippedWeapon(weapon) : null;
 
         if (owner != null)
         {
@@ -442,10 +441,7 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
 
         if (verboseLog)
         {
-            Debug.Log(
-                $"[MarketManager] Weapon sold. Name={weapon.DisplayName}, SellPrice={sellPrice}",
-                this
-            );
+            Debug.Log($"[MarketManager] Weapon sold. Name={weapon.DisplayName}, SellPrice={sellPrice}", this);
         }
 
         return true;

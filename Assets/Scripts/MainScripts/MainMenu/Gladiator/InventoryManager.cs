@@ -4,15 +4,16 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public sealed class InventoryManager : SingletonBehaviour<InventoryManager>
 {
-    [SerializeField] private bool verboseLog = true;
+    [SerializeField]
+    private bool verboseLog = true;
 
-    private readonly List<OwnedWeaponData> _ownedWeapons = new List<OwnedWeaponData>();         // 실제로 보유 중인 무기 목록
+    private readonly List<OwnedWeaponData> _ownedWeapons = new List<OwnedWeaponData>(); // 실제로 보유 중인 무기 목록
 
     private ContentDatabaseProvider _contentDatabaseProvider;
     private RandomManager _randomManager;
 
     private bool _initialized;
-    private int _nextRuntimeId = 1;         // 장비도 고유 런타임 ID
+    private int _nextRuntimeId = 1; // 장비도 고유 런타임 ID
 
     public IReadOnlyList<OwnedWeaponData> OwnedWeapons => _ownedWeapons;
 
@@ -109,8 +110,8 @@ public sealed class InventoryManager : SingletonBehaviour<InventoryManager>
             string skillName = ownedWeapon.WeaponSkill != null ? ownedWeapon.WeaponSkill.skillName : "(None)";
 
             Debug.Log(
-                $"[InventoryManager] Owned weapon added from preview. " +
-                $"Name={ownedWeapon.DisplayName}, Level={ownedWeapon.Level}, RuntimeId={ownedWeapon.RuntimeId}, Skill={skillName}",
+                $"[InventoryManager] Owned weapon added from preview. "
+                    + $"Name={ownedWeapon.DisplayName}, Level={ownedWeapon.Level}, RuntimeId={ownedWeapon.RuntimeId}, Skill={skillName}",
                 this
             );
         }
@@ -199,7 +200,10 @@ public sealed class InventoryManager : SingletonBehaviour<InventoryManager>
         {
             if (verboseLog)
             {
-                Debug.Log("[InventoryManager] Starter weapon grant skipped because owned weapon list is already populated.", this);
+                Debug.Log(
+                    "[InventoryManager] Starter weapon grant skipped because owned weapon list is already populated.",
+                    this
+                );
             }
 
             return;
@@ -253,10 +257,10 @@ public sealed class InventoryManager : SingletonBehaviour<InventoryManager>
             string secondSkill = secondWeapon.WeaponSkill != null ? secondWeapon.WeaponSkill.skillName : "(None)";
 
             Debug.Log(
-                $"[InventoryManager] Starter weapons granted. " +
-                $"Count={_ownedWeapons.Count}, " +
-                $"Weapon1={firstWeapon.DisplayName} ({firstSkill}), " +
-                $"Weapon2={secondWeapon.DisplayName} ({secondSkill})",
+                $"[InventoryManager] Starter weapons granted. "
+                    + $"Count={_ownedWeapons.Count}, "
+                    + $"Weapon1={firstWeapon.DisplayName} ({firstSkill}), "
+                    + $"Weapon2={secondWeapon.DisplayName} ({secondSkill})",
                 this
             );
         }
@@ -269,12 +273,7 @@ public sealed class InventoryManager : SingletonBehaviour<InventoryManager>
             return null;
         }
 
-        OwnedWeaponData ownedWeapon = new OwnedWeaponData(
-            _nextRuntimeId++,
-            weapon.weaponName,
-            1,
-            weapon
-        );
+        OwnedWeaponData ownedWeapon = new OwnedWeaponData(_nextRuntimeId++, weapon.weaponName, 1, weapon);
 
         ownedWeapon.WeaponSkill = PickRandomMatchingWeaponSkill(weapon.weaponType);
         ownedWeapon.FinalAttackBonusVariancePercent = 0f;

@@ -1,11 +1,12 @@
-using UnityEngine;
 using System.Collections.Generic;
+using UnityEngine;
 
 public sealed class LongGripSkill : IBattleSkill
 {
     public WeaponSkillId SkillId => WeaponSkillId.LongGrip;
     public skillType SkillCategory => skillType.enhance;
     public IReadOnlyList<WeaponType> CompatibleWeaponTypes { get; } = new[] { WeaponType.spear };
+
     public bool CanActivate(BattleRuntimeUnit caster, BattleFieldView field) => true;
 
     public void Apply(BattleRuntimeUnit caster, BattleFieldView field, ISkillEffectApplier applier)

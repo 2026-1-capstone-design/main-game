@@ -1,5 +1,5 @@
-using UnityEngine;
 using System.Collections.Generic;
+using UnityEngine;
 
 // 13. 나선 베기 (한손검) : 자신 기준 광역 데미지 + 넉백
 public sealed class SpiralSlashSkill : IBattleSkill
@@ -7,6 +7,7 @@ public sealed class SpiralSlashSkill : IBattleSkill
     public WeaponSkillId SkillId => WeaponSkillId.SpiralSlash;
     public skillType SkillCategory => skillType.attack;
     public IReadOnlyList<WeaponType> CompatibleWeaponTypes { get; } = new[] { WeaponType.oneHand };
+
     public bool CanActivate(BattleRuntimeUnit caster, BattleFieldView field) => true;
 
     public void Apply(BattleRuntimeUnit caster, BattleFieldView field, ISkillEffectApplier applier)

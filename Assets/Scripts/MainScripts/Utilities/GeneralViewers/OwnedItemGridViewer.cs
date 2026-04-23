@@ -7,16 +7,25 @@ using UnityEngine.UI;
 public sealed class OwnedItemGridViewer : MonoBehaviour
 {
     [Header("Layout References")]
-    [SerializeField] private ScrollRect scrollRect;
-    [SerializeField] private RectTransform viewportRect;
-    [SerializeField] private RectTransform containerRect;
-    [SerializeField] private GridLayoutGroup gridLayoutGroup;
+    [SerializeField]
+    private ScrollRect scrollRect;
+
+    [SerializeField]
+    private RectTransform viewportRect;
+
+    [SerializeField]
+    private RectTransform containerRect;
+
+    [SerializeField]
+    private GridLayoutGroup gridLayoutGroup;
 
     [Header("Cell Prefab")]
-    [SerializeField] private OwnedItemGridCell cellPrefab;
+    [SerializeField]
+    private OwnedItemGridCell cellPrefab;
 
     [Header("Grid Settings")]
-    [SerializeField] private int fixedColumnCount = 6;
+    [SerializeField]
+    private int fixedColumnCount = 6;
 
     private readonly List<OwnedItemGridCell> _cellPool = new List<OwnedItemGridCell>();
     private int _activeItemCount;
@@ -119,9 +128,7 @@ public sealed class OwnedItemGridViewer : MonoBehaviour
 
         gridLayoutGroup.cellSize = new Vector2(cellSize, cellSize);
 
-        int rowCount = _activeItemCount <= 0
-            ? 0
-            : Mathf.CeilToInt((float)_activeItemCount / columnCount);
+        int rowCount = _activeItemCount <= 0 ? 0 : Mathf.CeilToInt((float)_activeItemCount / columnCount);
 
         float contentHeight = rowCount * cellSize;
 

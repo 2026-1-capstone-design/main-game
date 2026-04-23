@@ -10,14 +10,24 @@ using UnityEngine;
 public sealed class BattleOrdersManager : MonoBehaviour
 {
     [Header("Debug")]
-    [SerializeField] private bool verboseLog = true;
+    [SerializeField]
+    private bool verboseLog = true;
 
     [Header("LLM Proxy")]
-    [SerializeField] private bool sendOrdersToLlm = true;
-    [SerializeField] private string llmProxyUrl = "";
-    [SerializeField] private string appSharedToken = "";
-    [SerializeField] private BattleLlmBackend selectedLlmBackend = BattleLlmBackend.TogetherGemma3nE4B;
-    [SerializeField] private int requestTimeoutSeconds = 30;
+    [SerializeField]
+    private bool sendOrdersToLlm = true;
+
+    [SerializeField]
+    private string llmProxyUrl = "";
+
+    [SerializeField]
+    private string appSharedToken = "";
+
+    [SerializeField]
+    private BattleLlmBackend selectedLlmBackend = BattleLlmBackend.TogetherGemma3nE4B;
+
+    [SerializeField]
+    private int requestTimeoutSeconds = 30;
 
     private readonly BattleRuntimeUnit[] _allyUnits = new BattleRuntimeUnit[6];
     private readonly BattleRuntimeUnit[] _enemyUnits = new BattleRuntimeUnit[6];
@@ -84,7 +94,8 @@ public sealed class BattleOrdersManager : MonoBehaviour
         {
             Debug.Log(
                 $"[BattleOrdersManager] Initialized. AllyCount={CountUnits(_allyUnits)}, EnemyCount={CountUnits(_enemyUnits)}, HasBattlefieldCollider={_battlefieldCollider != null}",
-                this);
+                this
+            );
         }
     }
 
@@ -110,7 +121,14 @@ public sealed class BattleOrdersManager : MonoBehaviour
         sb.Append(SanitizeRawText(rawOrderText));
         sb.AppendLine("\"");
 
-        if (!TryResolveActorFromGlobalOrder(rawOrderText, out BattleRuntimeUnit resolvedActor, out int matchedCount, out string matchedSummary))
+        if (
+            !TryResolveActorFromGlobalOrder(
+                rawOrderText,
+                out BattleRuntimeUnit resolvedActor,
+                out int matchedCount,
+                out string matchedSummary
+            )
+        )
         {
             sb.Append("<color=#EF9A9A>LLM skipped.</color> Matched ally count = ");
             sb.Append(matchedCount);
@@ -227,30 +245,34 @@ public sealed class BattleOrdersManager : MonoBehaviour
             return;
         }
 
-        StartCoroutine(SendOrderToLlmCoroutine(orderType, actorUnit, sanitizedRawText, systemInstruction, userPayloadJson));
+        StartCoroutine(
+            SendOrderToLlmCoroutine(orderType, actorUnit, sanitizedRawText, systemInstruction, userPayloadJson)
+        );
     }
 
     private IEnumerator SendOrderToLlmCoroutine(
-    string orderType,
-    BattleRuntimeUnit actorUnit,
-    string sanitizedRawText,
-    string systemInstruction,
-    string userPayloadJson)
+        string orderType,
+        BattleRuntimeUnit actorUnit,
+        string sanitizedRawText,
+        string systemInstruction,
+        string userPayloadJson
+    )
     {
         int requestId = ++_requestSequence;
 
         if (verboseLog)
         {
             Debug.Log(
-                $"[BattleOrdersManager] Sending structured order to LLM.\n" +
-                $"RequestId={requestId}\n" +
-                $"Type={orderType}\n" +
-                $"Actor={BuildUnitIdentityText(actorUnit)}\n" +
-                $"ActorUnitId={BuildUnitId(actorUnit)}\n" +
-                $"Raw=\"{sanitizedRawText}\"\n" +
-                $"SystemInstruction=\n{systemInstruction}\n" +
-                $"UserPayloadJson=\n{userPayloadJson}",
-                this);
+                $"[BattleOrdersManager] Sending structured order to LLM.\n"
+                    + $"RequestId={requestId}\n"
+                    + $"Type={orderType}\n"
+                    + $"Actor={BuildUnitIdentityText(actorUnit)}\n"
+                    + $"ActorUnitId={BuildUnitId(actorUnit)}\n"
+                    + $"Raw=\"{sanitizedRawText}\"\n"
+                    + $"SystemInstruction=\n{systemInstruction}\n"
+                    + $"UserPayloadJson=\n{userPayloadJson}",
+                this
+            );
         }
 
         string responseBackendId = null;
@@ -275,37 +297,41 @@ public sealed class BattleOrdersManager : MonoBehaviour
                 responseModel = model;
                 responseText = text;
             },
-            onError: error => errorText = error);
+            onError: error => errorText = error
+        );
 
         if (!string.IsNullOrEmpty(errorText))
         {
             Debug.LogError(
                 $"[BattleOrdersManager] LLM request failed. RequestId={requestId}, Type={orderType}, ActorUnitId={BuildUnitId(actorUnit)}, Error={errorText}",
-                this);
+                this
+            );
             yield break;
         }
 
         Debug.Log(
-            $"<color=#FFD54F><b>[LLM RESPONSE RAW]</b></color>\n" +
-            $"<color=#FFF59D>RequestId:</color> {requestId}\n" +
-            $"<color=#FFF59D>Type:</color> {orderType}\n" +
-            $"<color=#FFF59D>ActorUnitId:</color> {BuildUnitId(actorUnit)}\n" +
-            $"<color=#FFF59D>Backend:</color> {responseBackendId}\n" +
-            $"<color=#FFF59D>Provider:</color> {responseProvider}\n" +
-            $"<color=#FFF59D>Model:</color> {responseModel}\n" +
-            $"<color=#FFF59D>Text:</color> {responseText}",
-            this);
+            $"<color=#FFD54F><b>[LLM RESPONSE RAW]</b></color>\n"
+                + $"<color=#FFF59D>RequestId:</color> {requestId}\n"
+                + $"<color=#FFF59D>Type:</color> {orderType}\n"
+                + $"<color=#FFF59D>ActorUnitId:</color> {BuildUnitId(actorUnit)}\n"
+                + $"<color=#FFF59D>Backend:</color> {responseBackendId}\n"
+                + $"<color=#FFF59D>Provider:</color> {responseProvider}\n"
+                + $"<color=#FFF59D>Model:</color> {responseModel}\n"
+                + $"<color=#FFF59D>Text:</color> {responseText}",
+            this
+        );
 
         if (!TryParseLlmResponse(responseText, out BattleLlmResponseDto parsedResponse, out string parseError))
         {
             Debug.LogError(
-                $"<color=#FF8A80><b>[LLM PARSE FAILED]</b></color>\n" +
-                $"<color=#FFCDD2>RequestId:</color> {requestId}\n" +
-                $"<color=#FFCDD2>Type:</color> {orderType}\n" +
-                $"<color=#FFCDD2>ActorUnitId:</color> {BuildUnitId(actorUnit)}\n" +
-                $"<color=#FFCDD2>Reason:</color> {parseError}\n" +
-                $"<color=#FFCDD2>RawText:</color> {responseText}",
-                this);
+                $"<color=#FF8A80><b>[LLM PARSE FAILED]</b></color>\n"
+                    + $"<color=#FFCDD2>RequestId:</color> {requestId}\n"
+                    + $"<color=#FFCDD2>Type:</color> {orderType}\n"
+                    + $"<color=#FFCDD2>ActorUnitId:</color> {BuildUnitId(actorUnit)}\n"
+                    + $"<color=#FFCDD2>Reason:</color> {parseError}\n"
+                    + $"<color=#FFCDD2>RawText:</color> {responseText}",
+                this
+            );
             yield break;
         }
 
@@ -314,32 +340,35 @@ public sealed class BattleOrdersManager : MonoBehaviour
         if (validationErrors.Count > 0)
         {
             Debug.LogWarning(
-                $"<color=#FFB74D><b>[LLM VALIDATION FAILED]</b></color>\n" +
-                $"<color=#FFE0B2>RequestId:</color> {requestId}\n" +
-                $"<color=#FFE0B2>Type:</color> {orderType}\n" +
-                $"<color=#FFE0B2>ActorUnitId:</color> {BuildUnitId(actorUnit)}\n" +
-                $"<color=#FFE0B2>Errors:</color>\n{BuildValidationErrorSummary(validationErrors)}\n" +
-                $"<color=#FFE0B2>ParsedResponse:</color>\n{BuildParsedResponseSummary(parsedResponse)}\n" +
-                $"<color=#FFE0B2>Fallback:</color> Ignored. No gameplay action is applied.",
-                this);
+                $"<color=#FFB74D><b>[LLM VALIDATION FAILED]</b></color>\n"
+                    + $"<color=#FFE0B2>RequestId:</color> {requestId}\n"
+                    + $"<color=#FFE0B2>Type:</color> {orderType}\n"
+                    + $"<color=#FFE0B2>ActorUnitId:</color> {BuildUnitId(actorUnit)}\n"
+                    + $"<color=#FFE0B2>Errors:</color>\n{BuildValidationErrorSummary(validationErrors)}\n"
+                    + $"<color=#FFE0B2>ParsedResponse:</color>\n{BuildParsedResponseSummary(parsedResponse)}\n"
+                    + $"<color=#FFE0B2>Fallback:</color> Ignored. No gameplay action is applied.",
+                this
+            );
             yield break;
         }
 
         Debug.Log(
-            $"<color=#81C784><b>[LLM VALIDATED SUCCESS]</b></color>\n" +
-            $"<color=#C8E6C9>RequestId:</color> {requestId}\n" +
-            $"<color=#C8E6C9>Type:</color> {orderType}\n" +
-            $"<color=#C8E6C9>ActorUnitId:</color> {BuildUnitId(actorUnit)}\n" +
-            $"<color=#C8E6C9>ParsedResponse:</color>\n{BuildParsedResponseSummary(parsedResponse)}\n" +
-            $"<color=#C8E6C9>Execution:</color> Not applied in this step. Log only.",
-            this);
+            $"<color=#81C784><b>[LLM VALIDATED SUCCESS]</b></color>\n"
+                + $"<color=#C8E6C9>RequestId:</color> {requestId}\n"
+                + $"<color=#C8E6C9>Type:</color> {orderType}\n"
+                + $"<color=#C8E6C9>ActorUnitId:</color> {BuildUnitId(actorUnit)}\n"
+                + $"<color=#C8E6C9>ParsedResponse:</color>\n{BuildParsedResponseSummary(parsedResponse)}\n"
+                + $"<color=#C8E6C9>Execution:</color> Not applied in this step. Log only.",
+            this
+        );
     }
 
     private bool TryResolveActorFromGlobalOrder(
         string rawOrderText,
         out BattleRuntimeUnit resolvedActor,
         out int matchedCount,
-        out string matchedSummary)
+        out string matchedSummary
+    )
     {
         resolvedActor = null;
         matchedCount = 0;
@@ -401,9 +430,10 @@ public sealed class BattleOrdersManager : MonoBehaviour
     }
 
     private bool TryParseLlmResponse(
-    string rawResponseText,
-    out BattleLlmResponseDto parsedResponse,
-    out string parseError)
+        string rawResponseText,
+        out BattleLlmResponseDto parsedResponse,
+        out string parseError
+    )
     {
         parsedResponse = null;
         parseError = null;
@@ -451,7 +481,13 @@ public sealed class BattleOrdersManager : MonoBehaviour
 
         for (int i = 0; i < actionObjectJsons.Count; i++)
         {
-            if (!TryParseSingleAction(actionObjectJsons[i], out BattleLlmResponseActionDto parsedAction, out string actionError))
+            if (
+                !TryParseSingleAction(
+                    actionObjectJsons[i],
+                    out BattleLlmResponseActionDto parsedAction,
+                    out string actionError
+                )
+            )
             {
                 parseError = $"Action[{i}] parse failed. {actionError}";
                 return false;
@@ -462,10 +498,7 @@ public sealed class BattleOrdersManager : MonoBehaviour
 
         outputDto.action = actions;
 
-        parsedResponse = new BattleLlmResponseDto
-        {
-            output = outputDto
-        };
+        parsedResponse = new BattleLlmResponseDto { output = outputDto };
 
         return true;
     }
@@ -473,7 +506,8 @@ public sealed class BattleOrdersManager : MonoBehaviour
     private bool TryParseSingleAction(
         string actionJson,
         out BattleLlmResponseActionDto parsedAction,
-        out string actionError)
+        out string actionError
+    )
     {
         parsedAction = new BattleLlmResponseActionDto();
         actionError = null;
@@ -490,20 +524,12 @@ public sealed class BattleOrdersManager : MonoBehaviour
 
         if (TryExtractFloatPairProperty(actionJson, "target", out float targetX, out float targetY))
         {
-            parsedAction.absoluteTarget = new BattleLlmVector2Dto
-            {
-                x = targetX,
-                y = targetY
-            };
+            parsedAction.absoluteTarget = new BattleLlmVector2Dto { x = targetX, y = targetY };
         }
 
         if (TryExtractFloatPairProperty(actionJson, "offset", out float offsetX, out float offsetY))
         {
-            parsedAction.relativeOffset = new BattleLlmVector2Dto
-            {
-                x = offsetX,
-                y = offsetY
-            };
+            parsedAction.relativeOffset = new BattleLlmVector2Dto { x = offsetX, y = offsetY };
         }
 
         return true;
@@ -609,7 +635,9 @@ public sealed class BattleOrdersManager : MonoBehaviour
 
                 if (allyIds.Contains(action.targetUnitId))
                 {
-                    errors.Add($"Action[{i}] attack target '{action.targetUnitId}' is an ally. Attack against ally is forbidden.");
+                    errors.Add(
+                        $"Action[{i}] attack target '{action.targetUnitId}' is an ally. Attack against ally is forbidden."
+                    );
                     continue;
                 }
 
@@ -648,7 +676,9 @@ public sealed class BattleOrdersManager : MonoBehaviour
                     }
                     else if (!allIds.Contains(action.relativeFromUnitId))
                     {
-                        errors.Add($"Action[{i}] move.relative from unit id '{action.relativeFromUnitId}' does not exist.");
+                        errors.Add(
+                            $"Action[{i}] move.relative from unit id '{action.relativeFromUnitId}' does not exist."
+                        );
                     }
 
                     if (action.relativeOffset == null)
@@ -672,10 +702,14 @@ public sealed class BattleOrdersManager : MonoBehaviour
         StringBuilder sb = new StringBuilder(512);
 
         sb.Append("<b>Thinking:</b> ");
-        sb.AppendLine(string.IsNullOrWhiteSpace(parsedResponse.output.thinking) ? "(empty)" : parsedResponse.output.thinking);
+        sb.AppendLine(
+            string.IsNullOrWhiteSpace(parsedResponse.output.thinking) ? "(empty)" : parsedResponse.output.thinking
+        );
 
         sb.Append("<b>Dialog:</b> ");
-        sb.AppendLine(string.IsNullOrWhiteSpace(parsedResponse.output.dialog) ? "(empty)" : parsedResponse.output.dialog);
+        sb.AppendLine(
+            string.IsNullOrWhiteSpace(parsedResponse.output.dialog) ? "(empty)" : parsedResponse.output.dialog
+        );
 
         BattleLlmResponseActionDto[] actions = parsedResponse.output.action ?? new BattleLlmResponseActionDto[0];
         sb.Append("<b>ActionCount:</b> ");
@@ -748,9 +782,7 @@ public sealed class BattleOrdersManager : MonoBehaviour
 
     private static string NormalizeToken(string value)
     {
-        return string.IsNullOrWhiteSpace(value)
-            ? string.Empty
-            : value.Trim().ToLowerInvariant();
+        return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim().ToLowerInvariant();
     }
 
     private static string ExtractLikelyJsonObjectText(string rawResponseText)
@@ -861,7 +893,8 @@ public sealed class BattleOrdersManager : MonoBehaviour
         string arrayJson = json.Substring(startIndex, endIndex - startIndex + 1);
         Match match = Regex.Match(
             arrayJson,
-            @"^\[\s*(-?\d+(?:\.\d+)?(?:[eE][+\-]?\d+)?)\s*,\s*(-?\d+(?:\.\d+)?(?:[eE][+\-]?\d+)?)\s*\]$");
+            @"^\[\s*(-?\d+(?:\.\d+)?(?:[eE][+\-]?\d+)?)\s*,\s*(-?\d+(?:\.\d+)?(?:[eE][+\-]?\d+)?)\s*\]$"
+        );
 
         if (!match.Success)
         {
@@ -999,7 +1032,12 @@ public sealed class BattleOrdersManager : MonoBehaviour
         }
 
         int primitiveEnd = valueStart;
-        while (primitiveEnd < json.Length && json[primitiveEnd] != ',' && json[primitiveEnd] != '}' && json[primitiveEnd] != ']')
+        while (
+            primitiveEnd < json.Length
+            && json[primitiveEnd] != ','
+            && json[primitiveEnd] != '}'
+            && json[primitiveEnd] != ']'
+        )
         {
             primitiveEnd++;
         }
@@ -1114,7 +1152,9 @@ public sealed class BattleOrdersManager : MonoBehaviour
         string actorUnitId = BuildUnitId(actorUnit);
 
         StringBuilder sb = new StringBuilder(1024);
-        sb.Append("You are generating one battle-order response for a single allied gladiator in a Unity battle prototype. ");
+        sb.Append(
+            "You are generating one battle-order response for a single allied gladiator in a Unity battle prototype. "
+        );
         sb.Append("The acting ally unit id is ");
         sb.Append(actorUnitId);
         sb.Append(". ");
@@ -1142,7 +1182,7 @@ public sealed class BattleOrdersManager : MonoBehaviour
             system_prompt = new BattleLlmSystemPromptDto
             {
                 personality = BuildPersonalityDescription(actorUnit),
-                tools = BuildToolDtos()
+                tools = BuildToolDtos(),
             },
             user_input = new BattleLlmUserInputDto
             {
@@ -1150,16 +1190,16 @@ public sealed class BattleOrdersManager : MonoBehaviour
                 {
                     arena = BuildArenaDto(),
                     allies = BuildTeamDtos(_allyUnits),
-                    enemies = BuildTeamDtos(_enemyUnits)
+                    enemies = BuildTeamDtos(_enemyUnits),
                 },
-                command = sanitizedRawText
+                command = sanitizedRawText,
             },
             output = new BattleLlmOutputTemplateDto
             {
                 thinking = string.Empty,
                 dialog = string.Empty,
-                action = new BattleLlmOutputActionPlaceholderDto[0]
-            }
+                action = new BattleLlmOutputActionPlaceholderDto[0],
+            },
         };
 
         return JsonUtility.ToJson(promptDto, true);
@@ -1178,8 +1218,8 @@ public sealed class BattleOrdersManager : MonoBehaviour
                 {
                     target = "[num, num] — 이동할 절대 좌표",
                     from = null,
-                    offset = null
-                }
+                    offset = null,
+                },
             },
             new BattleLlmToolDto
             {
@@ -1190,8 +1230,8 @@ public sealed class BattleOrdersManager : MonoBehaviour
                 {
                     target = null,
                     from = "unit — 기준 유닛 ID",
-                    offset = "[num, num] — 기준 유닛으로부터의 상대 좌표"
-                }
+                    offset = "[num, num] — 기준 유닛으로부터의 상대 좌표",
+                },
             },
             new BattleLlmToolDto
             {
@@ -1202,9 +1242,9 @@ public sealed class BattleOrdersManager : MonoBehaviour
                 {
                     target = "unit — 공격 대상 유닛 ID",
                     from = null,
-                    offset = null
-                }
-            }
+                    offset = null,
+                },
+            },
         };
     }
 
@@ -1216,7 +1256,7 @@ public sealed class BattleOrdersManager : MonoBehaviour
             {
                 shape = "box",
                 center = new BattleLlmVector2Dto { x = 0f, y = 0f },
-                size = new BattleLlmArenaSizeDto { width = 0f, height = 0f }
+                size = new BattleLlmArenaSizeDto { width = 0f, height = 0f },
             };
         }
 
@@ -1225,16 +1265,8 @@ public sealed class BattleOrdersManager : MonoBehaviour
         return new BattleLlmArenaDto
         {
             shape = "box",
-            center = new BattleLlmVector2Dto
-            {
-                x = bounds.center.x,
-                y = bounds.center.z
-            },
-            size = new BattleLlmArenaSizeDto
-            {
-                width = bounds.size.x,
-                height = bounds.size.z
-            }
+            center = new BattleLlmVector2Dto { x = bounds.center.x, y = bounds.center.z },
+            size = new BattleLlmArenaSizeDto { width = bounds.size.x, height = bounds.size.z },
         };
     }
 
@@ -1250,21 +1282,19 @@ public sealed class BattleOrdersManager : MonoBehaviour
                 continue;
             }
 
-            result.Add(new BattleLlmUnitStateDto
-            {
-                unitId = BuildUnitId(unit),
-                position = new BattleLlmVector2Dto
+            result.Add(
+                new BattleLlmUnitStateDto
                 {
-                    x = unit.Position.x,
-                    y = unit.Position.z
-                },
-                stats = new BattleLlmStatsDto
-                {
-                    hp = unit.CurrentHealth,
-                    atk = unit.Attack,
-                    range = unit.AttackRange
+                    unitId = BuildUnitId(unit),
+                    position = new BattleLlmVector2Dto { x = unit.Position.x, y = unit.Position.z },
+                    stats = new BattleLlmStatsDto
+                    {
+                        hp = unit.CurrentHealth,
+                        atk = unit.Attack,
+                        range = unit.AttackRange,
+                    },
                 }
-            });
+            );
         }
 
         return result.ToArray();

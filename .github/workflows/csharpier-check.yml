@@ -1,0 +1,26 @@
+name: CSharpier Format Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+jobs:
+  csharpier-check:
+    name: CSharpier format check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+
+      - name: Restore dotnet tools
+        run: dotnet tool restore
+
+      - name: Check formatting with CSharpier
+        run: dotnet csharpier check Assets/Scripts

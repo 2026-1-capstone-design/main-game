@@ -1,5 +1,5 @@
-using UnityEngine;
 using System.Collections.Generic;
+using UnityEngine;
 
 // 10. 총검술 (라이플) : 공속/공격/이속 상승 & 사거리 감소
 public sealed class BayonetChargeSkill : IBattleSkill
@@ -7,6 +7,7 @@ public sealed class BayonetChargeSkill : IBattleSkill
     public WeaponSkillId SkillId => WeaponSkillId.BayonetCharge;
     public skillType SkillCategory => skillType.enhance;
     public IReadOnlyList<WeaponType> CompatibleWeaponTypes { get; } = new[] { WeaponType.rifle };
+
     public bool CanActivate(BattleRuntimeUnit caster, BattleFieldView field) => true;
 
     public void Apply(BattleRuntimeUnit caster, BattleFieldView field, ISkillEffectApplier applier)

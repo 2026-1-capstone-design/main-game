@@ -1,6 +1,5 @@
 using UnityEngine;
 
-
 public class AnimationManager : MonoBehaviour, IAnimationProvider
 {
     public static AnimationManager Instance { get; private set; }
@@ -29,6 +28,7 @@ public class AnimationManager : MonoBehaviour, IAnimationProvider
     {
         Instance = this;
     }
+
     public AnimatorOverrideController GetControllerByWeaponType(WeaponType type)
     {
         switch (type)
@@ -61,7 +61,6 @@ public class AnimationManager : MonoBehaviour, IAnimationProvider
         }
     }
 
-
     public AnimationClip getAnimation(WeaponSkillId id)
     {
         switch (id)
@@ -73,38 +72,53 @@ public class AnimationManager : MonoBehaviour, IAnimationProvider
                 return DefaultSkill;
         }
     }
+
     public float getCooltime(WeaponSkillId id)
     {
         switch (id)
         {
             // 단일 공격기 (attack)
-            case WeaponSkillId.HeartAttack: return 10f;
-            case WeaponSkillId.ThroatSlit: return 12f;
-            case WeaponSkillId.RustyBlade: return 6f;
-            case WeaponSkillId.Fireball: return 8f;
-            case WeaponSkillId.Lightning: return 15f;
-            case WeaponSkillId.RevolverFanning: return 14f;
-            case WeaponSkillId.ShieldBash: return 10f;
-            case WeaponSkillId.HeadStrike: return 12f;
+            case WeaponSkillId.HeartAttack:
+                return 10f;
+            case WeaponSkillId.ThroatSlit:
+                return 12f;
+            case WeaponSkillId.RustyBlade:
+                return 6f;
+            case WeaponSkillId.Fireball:
+                return 8f;
+            case WeaponSkillId.Lightning:
+                return 15f;
+            case WeaponSkillId.RevolverFanning:
+                return 14f;
+            case WeaponSkillId.ShieldBash:
+                return 10f;
+            case WeaponSkillId.HeadStrike:
+                return 12f;
 
             // 자가 버프기 (enhance)
-            case WeaponSkillId.LongGrip: return 15f;
-            case WeaponSkillId.Stimpack: return 12f;
-            case WeaponSkillId.BayonetCharge: return 18f;
-            case WeaponSkillId.Madness: return 15f;
+            case WeaponSkillId.LongGrip:
+                return 15f;
+            case WeaponSkillId.Stimpack:
+                return 12f;
+            case WeaponSkillId.BayonetCharge:
+                return 18f;
+            case WeaponSkillId.Madness:
+                return 15f;
 
             // 아군 대상/광역 버프기 (support)
-            case WeaponSkillId.Warcry: return 20f;
+            case WeaponSkillId.Warcry:
+                return 20f;
 
             // 대상 없는 범위 공격 (None)
-            case WeaponSkillId.SpiralSlash: return 14f;
+            case WeaponSkillId.SpiralSlash:
+                return 14f;
 
             default:
             case WeaponSkillId.None:
                 return 5f; // DefaultCool
         }
-
     }
+
     public skillType getSkillType(WeaponSkillId id)
     {
         switch (id)

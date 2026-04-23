@@ -15,22 +15,40 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
 {
     [Header("Spawn")]
     // RectTransform 대신 3D SphereCollider로 교체된 전장 영역
-    [SerializeField] private SphereCollider battlefieldCollider;
-    [SerializeField] private GameObject runtimeUnitRootPrefab;
-    [SerializeField] private Transform runtimeUnitRoot;
-    [SerializeField] private Transform[] allyPlaceholders = new Transform[6];
-    [SerializeField] private Transform[] enemyPlaceholders = new Transform[6];
+    [SerializeField]
+    private SphereCollider battlefieldCollider;
+
+    [SerializeField]
+    private GameObject runtimeUnitRootPrefab;
+
+    [SerializeField]
+    private Transform runtimeUnitRoot;
+
+    [SerializeField]
+    private Transform[] allyPlaceholders = new Transform[6];
+
+    [SerializeField]
+    private Transform[] enemyPlaceholders = new Transform[6];
 
     [Header("Battle")]
-    [SerializeField] private BattleSimulationManager battleSimulationManager;
-    [SerializeField] private BattleStatusGridUIManager battleStatusGridUIManager;
-    [SerializeField] private BattleSceneUIManager battleSceneUIManager;
-    [SerializeField] private BattleOrdersManager battleOrdersManager;
+    [SerializeField]
+    private BattleSimulationManager battleSimulationManager;
+
+    [SerializeField]
+    private BattleStatusGridUIManager battleStatusGridUIManager;
+
+    [SerializeField]
+    private BattleSceneUIManager battleSceneUIManager;
+
+    [SerializeField]
+    private BattleOrdersManager battleOrdersManager;
 
     [Header("Debug")]
-    [SerializeField] private bool verboseLog = true;
+    [SerializeField]
+    private bool verboseLog = true;
 
     private readonly List<BattleRuntimeUnit> _runtimeUnits = new List<BattleRuntimeUnit>();
+
     // BattleScene 진입 시 payload를 clone해 보관. F7 재시작 시 이 snapshot을 다시 clone해서 사용한다.
     private BattleStartPayload _initialPayloadSnapshot;
 
@@ -160,7 +178,8 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
             battlefieldCollider,
             battleStatusGridUIManager,
             battleSceneUIManager,
-            payload);
+            payload
+        );
 
         if (battleSceneUIManager != null)
         {
@@ -202,7 +221,10 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
             return false;
         if (battlefieldCollider == null)
         {
-            Debug.LogError("[BattleSceneFlowManager] battlefieldCollider is not assigned. Please assign a BoxCollider.", this);
+            Debug.LogError(
+                "[BattleSceneFlowManager] battlefieldCollider is not assigned. Please assign a BoxCollider.",
+                this
+            );
             return false;
         }
 
@@ -225,7 +247,8 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
         IReadOnlyList<BattleUnitSnapshot> snapshots,
         Transform[] placeholders,
         bool isEnemy,
-        int unitNumberStart)
+        int unitNumberStart
+    )
     {
         if (snapshots == null)
             return false;

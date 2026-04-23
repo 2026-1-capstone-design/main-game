@@ -20,16 +20,30 @@ public sealed class BattleUnitCombatState
     public bool IsCombatDisabled { get; private set; }
 
     // ── 기본 스탯 (스냅샷에서 읽어온 원본값) ──────────────────────
-    [SerializeField] public float BaseAttack;
-    [SerializeField] public float BaseAttackSpeed;
-    [SerializeField] public float BaseMoveSpeed;
-    [SerializeField] public float BaseAttackRange;
+    [SerializeField]
+    public float BaseAttack;
+
+    [SerializeField]
+    public float BaseAttackSpeed;
+
+    [SerializeField]
+    public float BaseMoveSpeed;
+
+    [SerializeField]
+    public float BaseAttackRange;
 
     // ── 실효 스탯 (버프 반영 계산값) ──────────────────────────────
-    [SerializeField] public float Attack => Mathf.Max(0f, BaseAttack + GetBuffLevel(BuffType.AttackDamage) * 10f);
-    [SerializeField] public float AttackSpeed => Mathf.Max(0f, BaseAttackSpeed + GetBuffLevel(BuffType.AttackSpeed) * 0.2f);
-    [SerializeField] public float MoveSpeed => Mathf.Max(0f, BaseMoveSpeed + GetBuffLevel(BuffType.MoveSpeed) * 0.5f);
-    [SerializeField] public float AttackRange => Mathf.Max(0f, BaseAttackRange + GetBuffLevel(BuffType.AttackRange) * 0.5f);
+    [SerializeField]
+    public float Attack => Mathf.Max(0f, BaseAttack + GetBuffLevel(BuffType.AttackDamage) * 10f);
+
+    [SerializeField]
+    public float AttackSpeed => Mathf.Max(0f, BaseAttackSpeed + GetBuffLevel(BuffType.AttackSpeed) * 0.2f);
+
+    [SerializeField]
+    public float MoveSpeed => Mathf.Max(0f, BaseMoveSpeed + GetBuffLevel(BuffType.MoveSpeed) * 0.5f);
+
+    [SerializeField]
+    public float AttackRange => Mathf.Max(0f, BaseAttackRange + GetBuffLevel(BuffType.AttackRange) * 0.5f);
 
     // ── 바디 반경 (분리/클램프 계산용) ────────────────────────────
     public float BodyRadius { get; private set; }
@@ -40,9 +54,14 @@ public sealed class BattleUnitCombatState
     }
 
     // ── 버프 ───────────────────────────────────────────────────────
-    [SerializeField] private List<BuffType> _buffs = new List<BuffType>();
-    [SerializeField] private List<int> _buffLevel = new List<int>();
-    [SerializeField] private List<float> _buffCooldownRemaining = new List<float>();
+    [SerializeField]
+    private List<BuffType> _buffs = new List<BuffType>();
+
+    [SerializeField]
+    private List<int> _buffLevel = new List<int>();
+
+    [SerializeField]
+    private List<float> _buffCooldownRemaining = new List<float>();
 
     public bool IsStunned => GetBuffLevel(BuffType.Stun) > 0;
     public bool HasTaunt => GetBuffLevel(BuffType.Taunt) > 0;
@@ -88,11 +107,12 @@ public sealed class BattleUnitCombatState
     }
 
     public WeaponSkillId GetSkill() => HaveSkill;
+
     public skillType GetSkillType() => SkillType;
 
     // ── 체력/사망 이벤트 ──────────────────────────────────────────
     // BattleRuntimeUnit이 구독하여 HPbar 갱신, 사망 처리를 담당한다.
-    public event Action<float> OnHealthChanged;   // float = newHealth
+    public event Action<float> OnHealthChanged; // float = newHealth
     public event Action OnDied;
 
     // ── 체력/사망 메서드 ──────────────────────────────────────────
@@ -127,9 +147,9 @@ public sealed class BattleUnitCombatState
 
     // ── 이동/공격 플래그 이벤트 ──────────────────────────────────
     // BattleRuntimeUnit이 구독하여 Animator를 업데이트한다.
-    public event Action<bool> OnMovingStateChanged;   // bool = isMoving
-    public event Action OnAttackTriggered;             // 공격 애니메이션 트리거 시점
-    public event Action OnIdleStateEntered;            // 아이들 전환 시점
+    public event Action<bool> OnMovingStateChanged; // bool = isMoving
+    public event Action OnAttackTriggered; // 공격 애니메이션 트리거 시점
+    public event Action OnIdleStateEntered; // 아이들 전환 시점
 
     // ── 이동/공격 플래그 세터 ─────────────────────────────────────
     public void SetMovementState(bool isMoving)
@@ -202,9 +222,12 @@ public sealed class BattleUnitCombatState
     public float AttackCooldownRemaining { get; private set; }
 
     // ── 스킬 정보 / 스킬 쿨다운 ────────────────────────────────────
-    [SerializeField] public WeaponSkillId HaveSkill;
+    [SerializeField]
+    public WeaponSkillId HaveSkill;
     public float SkillCooltime { get; private set; }
-    [SerializeField] public skillType SkillType { get; private set; }
+
+    [SerializeField]
+    public skillType SkillType { get; private set; }
     public float SkillCooldownRemaining { get; private set; }
 
     // ── 실행 플랜 위치 / 이동-공격 플래그 ─────────────────────────
@@ -231,7 +254,7 @@ public sealed class BattleUnitCombatState
         BaseMoveSpeed = snapshot.MoveSpeed;
         BaseAttackRange = snapshot.AttackRange;
 
-        BodyRadius = 50f;   // SetBodyRadius로 SimManager가 덮어쓴다
+        BodyRadius = 50f; // SetBodyRadius로 SimManager가 덮어쓴다
 
         CurrentKnockback = Vector3.zero;
 
@@ -345,13 +368,11 @@ public sealed class BattleUnitCombatState
 
         totalBleedLevel = GetBuffLevel(BuffType.BleedDamage);
 
-        if(totalBleedLevel > 0 && !IsCombatDisabled)
+        if (totalBleedLevel > 0 && !IsCombatDisabled)
         {
             ApplyDamage(totalBleedLevel * 5);
         }
     }
-
-
 
     public int BuffNum() => _buffs.Count;
 

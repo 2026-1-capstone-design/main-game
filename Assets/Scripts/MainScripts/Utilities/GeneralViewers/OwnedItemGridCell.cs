@@ -7,11 +7,20 @@ using UnityEngine.UI;
 public sealed class OwnedItemGridCell : MonoBehaviour
 {
     [Header("UI References")]
-    [SerializeField] private Button rootButton;
-    [SerializeField] private Image backgroundImage;
-    [SerializeField] private Image iconImage;
-    [SerializeField] private TMP_Text levelText;
-    [SerializeField] private TMP_Text equippedMarkText;
+    [SerializeField]
+    private Button rootButton;
+
+    [SerializeField]
+    private Image backgroundImage;
+
+    [SerializeField]
+    private Image iconImage;
+
+    [SerializeField]
+    private TMP_Text levelText;
+
+    [SerializeField]
+    private TMP_Text equippedMarkText;
 
     private OwnedItemViewData _data;
     private Action<OwnedItemViewData> _clickCallback;

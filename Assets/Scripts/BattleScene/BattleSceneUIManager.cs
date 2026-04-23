@@ -14,55 +14,95 @@ using UnityEngine.UI;
 public sealed class BattleSceneUIManager : MonoBehaviour
 {
     [Header("Result Panel")]
-    [SerializeField] private GameObject battleEndPanelRoot;
-    [SerializeField] private TMP_Text resultTitleText;
-    [SerializeField] private TMP_Text resultRewardText;
-    [SerializeField] private Button confirmButton;
+    [SerializeField]
+    private GameObject battleEndPanelRoot;
+
+    [SerializeField]
+    private TMP_Text resultTitleText;
+
+    [SerializeField]
+    private TMP_Text resultRewardText;
+
+    [SerializeField]
+    private Button confirmButton;
 
     [Header("Speed UI")]
-    [SerializeField] private BattleSimulationManager battleSimulationManager;
-    [SerializeField] private Button speedUpButton;
-    [SerializeField] private Button speedDownButton;
-    [SerializeField] private TMP_Text currentSpeedText;
+    [SerializeField]
+    private BattleSimulationManager battleSimulationManager;
+
+    [SerializeField]
+    private Button speedUpButton;
+
+    [SerializeField]
+    private Button speedDownButton;
+
+    [SerializeField]
+    private TMP_Text currentSpeedText;
 
     [Header("Surrender UI")]
-    [SerializeField] private Button surrenderButton;
-    [SerializeField] private GameObject surrenderMaskRoot;
-    [SerializeField] private GameObject surrenderPanelRoot;
-    [SerializeField] private Button surrenderYesButton;
-    [SerializeField] private Button surrenderNoButton;
+    [SerializeField]
+    private Button surrenderButton;
+
+    [SerializeField]
+    private GameObject surrenderMaskRoot;
+
+    [SerializeField]
+    private GameObject surrenderPanelRoot;
+
+    [SerializeField]
+    private Button surrenderYesButton;
+
+    [SerializeField]
+    private Button surrenderNoButton;
 
     [Header("Orders UI")]
-    [SerializeField] private Button ordersButton;
-    [SerializeField] private GameObject ordersMaskRoot;
-    [SerializeField] private GameObject ordersPanelRoot;
-    [SerializeField] private TMP_InputField ordersInputField;
-    [SerializeField] private Button orderSendButton;
-    [SerializeField] private Button orderBackButton;
+    [SerializeField]
+    private Button ordersButton;
+
+    [SerializeField]
+    private GameObject ordersMaskRoot;
+
+    [SerializeField]
+    private GameObject ordersPanelRoot;
+
+    [SerializeField]
+    private TMP_InputField ordersInputField;
+
+    [SerializeField]
+    private Button orderSendButton;
+
+    [SerializeField]
+    private Button orderBackButton;
 
     [Header("Orders Routing")]
-    [SerializeField] private BattleOrdersManager battleOrdersManager;
+    [SerializeField]
+    private BattleOrdersManager battleOrdersManager;
 
     [Header("Command Mode")]
-    [SerializeField][Min(0.01f)] private float orderInputFixedSpeedMultiplier = 0.1f;
+    [SerializeField]
+    [Min(0.01f)]
+    private float orderInputFixedSpeedMultiplier = 0.1f;
 
     [Header("Scene Navigation")]
-    [SerializeField] private string mainSceneName = "MainScene";
+    [SerializeField]
+    private string mainSceneName = "MainScene";
 
     [Header("Debug")]
-    [SerializeField] private bool verboseLog = true;
+    [SerializeField]
+    private bool verboseLog = true;
 
     private enum ModalState
     {
         None,
         Surrender,
-        Orders
+        Orders,
     }
+
     private enum OrderTargetMode
     {
         None,
         Global,
-        SingleAlly
+        SingleAlly,
     }
 
     private SceneLoader _sceneLoader;
@@ -127,9 +167,7 @@ public sealed class BattleSceneUIManager : MonoBehaviour
 
         if (resultRewardText != null)
         {
-            resultRewardText.text = resolution.WasWin
-                ? $"Reward : {resolution.PendingReward} Gold"
-                : "Reward : 0 Gold";
+            resultRewardText.text = resolution.WasWin ? $"Reward : {resolution.PendingReward} Gold" : "Reward : 0 Gold";
         }
 
         if (confirmButton != null)
@@ -688,6 +726,4 @@ public sealed class BattleSceneUIManager : MonoBehaviour
             target.SetActive(value);
         }
     }
-
-
 }

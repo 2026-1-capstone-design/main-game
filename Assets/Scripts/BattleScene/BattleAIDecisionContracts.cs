@@ -10,28 +10,28 @@ using UnityEngine;
 public enum BattleActionType
 {
     None = 0,
-    AssassinateIsolatedEnemy = 1,   // 고립된 적 암살: 혼자 떨어진 적 추적
-    DiveEnemyBackline = 2,           // 적 후방 다이브: 후방 취약 적 추적
-    PeelForWeakAlly = 3,             // 아군 보호: 압박받는 아군 주변 적을 우선
-    EscapeFromPressure = 4,          // 도주: 압박 중심 반대 방향 + 팀 방향 혼합
-    RegroupToAllies = 5,             // 집결: 팀 중심으로 이동
-    CollapseOnCluster = 6,           // 군집 압박: 적 군집 중심으로 압박
-    EngageNearest = 7                // 최근접 교전: 가장 가까운 적 교전 (fallback)
+    AssassinateIsolatedEnemy = 1, // 고립된 적 암살: 혼자 떨어진 적 추적
+    DiveEnemyBackline = 2, // 적 후방 다이브: 후방 취약 적 추적
+    PeelForWeakAlly = 3, // 아군 보호: 압박받는 아군 주변 적을 우선
+    EscapeFromPressure = 4, // 도주: 압박 중심 반대 방향 + 팀 방향 혼합
+    RegroupToAllies = 5, // 집결: 팀 중심으로 이동
+    CollapseOnCluster = 6, // 군집 압박: 적 군집 중심으로 압박
+    EngageNearest = 7, // 최근접 교전: 가장 가까운 적 교전 (fallback)
 }
 
 // 매 tick마다 각 유닛에 대해 계산되는 RAW 파라미터 9개. 모두 마지막에 Clamp01 된다.
 [Serializable]
 public struct BattleParameterSet
 {
-    public float SelfHpLow;                 // 1 - CurrentHealth/MaxHealth. 체력이 낮을수록 큼
-    public float SelfSurroundedByEnemies;   // closeFalloff 합산 / 3. 가까운 적이 많을수록 큼
-    public float LowHealthAllyProximity;    // 저체력 아군 * 거리 falloff 합산 / 2. 저체력 아군이 가까울수록 큼
-    public float AllyUnderFocusPressure;    // 집중 공격받는 아군이 가까이 있고 체력도 낮을수록 큼 (최대값 사용)
-    public float AllyFrontlineGap;          // 아군 최근접 거리 평균 / frontlineGapRadius. 아군 진형이 퍼질수록 큼
-    public float IsolatedEnemyVulnerability;// 혼자 떨어져 있고 체력이 낮고 내가 너무 멀지 않은 적일수록 큼 (최대값 사용)
-    public float EnemyClusterDensity;       // 적 pair 간 falloff 평균. 적들이 서로 뭉쳐 있을수록 큼
-    public float DistanceToTeamCenter;      // 자기와 팀 중심 거리 / teamCenterDistanceRadius. 멀리 떨어질수록 큼
-    public float SelfCanAttackNow;          // 사거리 안에 적이 하나라도 있으면 1, 아니면 0 (이진값)
+    public float SelfHpLow; // 1 - CurrentHealth/MaxHealth. 체력이 낮을수록 큼
+    public float SelfSurroundedByEnemies; // closeFalloff 합산 / 3. 가까운 적이 많을수록 큼
+    public float LowHealthAllyProximity; // 저체력 아군 * 거리 falloff 합산 / 2. 저체력 아군이 가까울수록 큼
+    public float AllyUnderFocusPressure; // 집중 공격받는 아군이 가까이 있고 체력도 낮을수록 큼 (최대값 사용)
+    public float AllyFrontlineGap; // 아군 최근접 거리 평균 / frontlineGapRadius. 아군 진형이 퍼질수록 큼
+    public float IsolatedEnemyVulnerability; // 혼자 떨어져 있고 체력이 낮고 내가 너무 멀지 않은 적일수록 큼 (최대값 사용)
+    public float EnemyClusterDensity; // 적 pair 간 falloff 평균. 적들이 서로 뭉쳐 있을수록 큼
+    public float DistanceToTeamCenter; // 자기와 팀 중심 거리 / teamCenterDistanceRadius. 멀리 떨어질수록 큼
+    public float SelfCanAttackNow; // 사거리 안에 적이 하나라도 있으면 1, 아니면 0 (이진값)
 
     public void Clamp01All()
     {
@@ -62,28 +62,37 @@ public sealed class BattleParameterWeights
 
     public float Evaluate(BattleParameterSet parameters)
     {
-        return
-            parameters.SelfHpLow * selfHpLow +
-            parameters.SelfSurroundedByEnemies * selfSurroundedByEnemies +
-            parameters.LowHealthAllyProximity * lowHealthAllyProximity +
-            parameters.AllyUnderFocusPressure * allyUnderFocusPressure +
-            parameters.AllyFrontlineGap * allyFrontlineGap +
-            parameters.IsolatedEnemyVulnerability * isolatedEnemyVulnerability +
-            parameters.EnemyClusterDensity * enemyClusterDensity +
-            parameters.DistanceToTeamCenter * distanceToTeamCenter +
-            parameters.SelfCanAttackNow * selfCanAttackNow;
+        return parameters.SelfHpLow * selfHpLow
+            + parameters.SelfSurroundedByEnemies * selfSurroundedByEnemies
+            + parameters.LowHealthAllyProximity * lowHealthAllyProximity
+            + parameters.AllyUnderFocusPressure * allyUnderFocusPressure
+            + parameters.AllyFrontlineGap * allyFrontlineGap
+            + parameters.IsolatedEnemyVulnerability * isolatedEnemyVulnerability
+            + parameters.EnemyClusterDensity * enemyClusterDensity
+            + parameters.DistanceToTeamCenter * distanceToTeamCenter
+            + parameters.SelfCanAttackNow * selfCanAttackNow;
     }
 
     public BattleParameterSet ApplyPercentModifiers(BattleParameterSet parameters)
     {
         parameters.SelfHpLow = Mathf.Clamp01(parameters.SelfHpLow * (selfHpLow / 100f));
-        parameters.SelfSurroundedByEnemies = Mathf.Clamp01(parameters.SelfSurroundedByEnemies * (selfSurroundedByEnemies / 100f));
-        parameters.LowHealthAllyProximity = Mathf.Clamp01(parameters.LowHealthAllyProximity * (lowHealthAllyProximity / 100f));
-        parameters.AllyUnderFocusPressure = Mathf.Clamp01(parameters.AllyUnderFocusPressure * (allyUnderFocusPressure / 100f));
+        parameters.SelfSurroundedByEnemies = Mathf.Clamp01(
+            parameters.SelfSurroundedByEnemies * (selfSurroundedByEnemies / 100f)
+        );
+        parameters.LowHealthAllyProximity = Mathf.Clamp01(
+            parameters.LowHealthAllyProximity * (lowHealthAllyProximity / 100f)
+        );
+        parameters.AllyUnderFocusPressure = Mathf.Clamp01(
+            parameters.AllyUnderFocusPressure * (allyUnderFocusPressure / 100f)
+        );
         parameters.AllyFrontlineGap = Mathf.Clamp01(parameters.AllyFrontlineGap * (allyFrontlineGap / 100f));
-        parameters.IsolatedEnemyVulnerability = Mathf.Clamp01(parameters.IsolatedEnemyVulnerability * (isolatedEnemyVulnerability / 100f));
+        parameters.IsolatedEnemyVulnerability = Mathf.Clamp01(
+            parameters.IsolatedEnemyVulnerability * (isolatedEnemyVulnerability / 100f)
+        );
         parameters.EnemyClusterDensity = Mathf.Clamp01(parameters.EnemyClusterDensity * (enemyClusterDensity / 100f));
-        parameters.DistanceToTeamCenter = Mathf.Clamp01(parameters.DistanceToTeamCenter * (distanceToTeamCenter / 100f));
+        parameters.DistanceToTeamCenter = Mathf.Clamp01(
+            parameters.DistanceToTeamCenter * (distanceToTeamCenter / 100f)
+        );
         parameters.SelfCanAttackNow = Mathf.Clamp01(parameters.SelfCanAttackNow * (selfCanAttackNow / 100f));
         return parameters;
     }
@@ -100,7 +109,7 @@ public sealed class BattleParameterWeights
             isolatedEnemyVulnerability = value,
             enemyClusterDensity = value,
             distanceToTeamCenter = value,
-            selfCanAttackNow = value
+            selfCanAttackNow = value,
         };
     }
 }
@@ -116,7 +125,7 @@ public sealed class BattleActionTuning
 {
     public BattleActionType actionType = BattleActionType.EngageNearest;
     public string displayName = "EngageNearest";
-    public int baseBias = 0;    // 행동 점수의 기본 편향값
+    public int baseBias = 0; // 행동 점수의 기본 편향값
 
     [Header("Score Weights (-10 ~ +10 권장)")]
     public BattleParameterWeights scoreWeights = new BattleParameterWeights();
@@ -281,17 +290,57 @@ public struct BattleActionScoreSet
         Check(ref bestAction, ref bestScore, BattleActionType.EngageNearest, EngageNearest);
     }
 
-    public void GetBestActionExcluding(BattleActionType excludedAction, out BattleActionType bestAction, out float bestScore)
+    public void GetBestActionExcluding(
+        BattleActionType excludedAction,
+        out BattleActionType bestAction,
+        out float bestScore
+    )
     {
         bestAction = BattleActionType.None;
         bestScore = float.MinValue;
 
-        TryCheckExcluded(ref bestAction, ref bestScore, excludedAction, BattleActionType.AssassinateIsolatedEnemy, AssassinateIsolatedEnemy);
-        TryCheckExcluded(ref bestAction, ref bestScore, excludedAction, BattleActionType.DiveEnemyBackline, DiveEnemyBackline);
-        TryCheckExcluded(ref bestAction, ref bestScore, excludedAction, BattleActionType.PeelForWeakAlly, PeelForWeakAlly);
-        TryCheckExcluded(ref bestAction, ref bestScore, excludedAction, BattleActionType.EscapeFromPressure, EscapeFromPressure);
-        TryCheckExcluded(ref bestAction, ref bestScore, excludedAction, BattleActionType.RegroupToAllies, RegroupToAllies);
-        TryCheckExcluded(ref bestAction, ref bestScore, excludedAction, BattleActionType.CollapseOnCluster, CollapseOnCluster);
+        TryCheckExcluded(
+            ref bestAction,
+            ref bestScore,
+            excludedAction,
+            BattleActionType.AssassinateIsolatedEnemy,
+            AssassinateIsolatedEnemy
+        );
+        TryCheckExcluded(
+            ref bestAction,
+            ref bestScore,
+            excludedAction,
+            BattleActionType.DiveEnemyBackline,
+            DiveEnemyBackline
+        );
+        TryCheckExcluded(
+            ref bestAction,
+            ref bestScore,
+            excludedAction,
+            BattleActionType.PeelForWeakAlly,
+            PeelForWeakAlly
+        );
+        TryCheckExcluded(
+            ref bestAction,
+            ref bestScore,
+            excludedAction,
+            BattleActionType.EscapeFromPressure,
+            EscapeFromPressure
+        );
+        TryCheckExcluded(
+            ref bestAction,
+            ref bestScore,
+            excludedAction,
+            BattleActionType.RegroupToAllies,
+            RegroupToAllies
+        );
+        TryCheckExcluded(
+            ref bestAction,
+            ref bestScore,
+            excludedAction,
+            BattleActionType.CollapseOnCluster,
+            CollapseOnCluster
+        );
         TryCheckExcluded(ref bestAction, ref bestScore, excludedAction, BattleActionType.EngageNearest, EngageNearest);
 
         if (bestAction == BattleActionType.None)
@@ -301,7 +350,12 @@ public struct BattleActionScoreSet
         }
     }
 
-    private static void Check(ref BattleActionType bestAction, ref float bestScore, BattleActionType candidateAction, float candidateScore)
+    private static void Check(
+        ref BattleActionType bestAction,
+        ref float bestScore,
+        BattleActionType candidateAction,
+        float candidateScore
+    )
     {
         if (candidateScore > bestScore)
         {
@@ -315,7 +369,8 @@ public struct BattleActionScoreSet
         ref float bestScore,
         BattleActionType excludedAction,
         BattleActionType candidateAction,
-        float candidateScore)
+        float candidateScore
+    )
     {
         if (candidateAction == excludedAction)
             return;
@@ -332,14 +387,14 @@ public struct BattleActionScoreSet
 [Serializable]
 public struct BattleParameterRadii
 {
-    public float surroundRadius;            // self_surrounded_by_enemies 계산 기준 반경
-    public float helpRadius;                // low_health_ally_proximity 계산 기준 반경
-    public float peelRadius;                // ally_under_focus_pressure 거리 가중치 기준 반경
-    public float frontlineGapRadius;        // ally_frontline_gap 정규화 기준 반경
-    public float isolationRadius;           // isolated_enemy_vulnerability 고립 판정 기준 반경
-    public float assassinReachRadius;       // isolated_enemy_vulnerability 자기 도달 가능 거리 기준
-    public float clusterRadius;             // enemy_cluster_density 군집 판정 기준 반경
-    public float teamCenterDistanceRadius;  // distance_to_team_center 정규화 기준 반경
+    public float surroundRadius; // self_surrounded_by_enemies 계산 기준 반경
+    public float helpRadius; // low_health_ally_proximity 계산 기준 반경
+    public float peelRadius; // ally_under_focus_pressure 거리 가중치 기준 반경
+    public float frontlineGapRadius; // ally_frontline_gap 정규화 기준 반경
+    public float isolationRadius; // isolated_enemy_vulnerability 고립 판정 기준 반경
+    public float assassinReachRadius; // isolated_enemy_vulnerability 자기 도달 가능 거리 기준
+    public float clusterRadius; // enemy_cluster_density 군집 판정 기준 반경
+    public float teamCenterDistanceRadius; // distance_to_team_center 정규화 기준 반경
 }
 
 // 파라미터 계산을 위한 유닛의 런타임 스냅샷. MonoBehaviour 없이 순수 C# 테스트 가능.
@@ -353,12 +408,21 @@ public readonly struct BattleUnitView
     public readonly float BodyRadius;
     public readonly float AttackRange;
     public readonly bool IsCombatDisabled;
-    public readonly int PlannedEnemyTargetNumber;   // -1 if none
-    public readonly int CurrentTargetNumber;         // -1 if none
+    public readonly int PlannedEnemyTargetNumber; // -1 if none
+    public readonly int CurrentTargetNumber; // -1 if none
 
-    public BattleUnitView(int unitNumber, bool isEnemy, Vector3 position,
-        float currentHealth, float maxHealth, float bodyRadius, float attackRange,
-        bool isCombatDisabled, int plannedEnemyTargetNumber, int currentTargetNumber)
+    public BattleUnitView(
+        int unitNumber,
+        bool isEnemy,
+        Vector3 position,
+        float currentHealth,
+        float maxHealth,
+        float bodyRadius,
+        float attackRange,
+        bool isCombatDisabled,
+        int plannedEnemyTargetNumber,
+        int currentTargetNumber
+    )
     {
         UnitNumber = unitNumber;
         IsEnemy = isEnemy;
@@ -384,7 +448,8 @@ public readonly struct BattleUnitView
             u.AttackRange,
             u.IsCombatDisabled,
             u.PlannedTargetEnemy != null ? u.PlannedTargetEnemy.UnitNumber : -1,
-            u.CurrentTarget != null ? u.CurrentTarget.UnitNumber : -1);
+            u.CurrentTarget != null ? u.CurrentTarget.UnitNumber : -1
+        );
     }
 }
 
@@ -394,6 +459,7 @@ public struct BattleActionExecutionPlan
     public BattleActionType Action;
     public BattleRuntimeUnit TargetEnemy;
     public BattleRuntimeUnit TargetAlly;
+
     // 3D 평면을 위해 Vector3로 변경
     public Vector3 DesiredPosition;
     public bool HasDesiredPosition;

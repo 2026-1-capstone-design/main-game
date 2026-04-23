@@ -5,5 +5,7 @@ public sealed class PerkSO : ScriptableObject
 {
     public Sprite icon;
     public string perkName;
-    [TextArea] public string description;
+
+    [TextArea]
+    public string description;
 }

@@ -11,6 +11,7 @@ public class TextLookCam : MonoBehaviour
             Cam = Camera.main.transform;
         }
     }
+
     void Update()
     {
         if (Cam != null)

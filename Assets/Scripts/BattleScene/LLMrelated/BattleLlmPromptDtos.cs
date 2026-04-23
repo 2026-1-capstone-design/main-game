@@ -94,6 +94,4 @@ public sealed class BattleLlmOutputTemplateDto
 }
 
 [Serializable]
-public sealed class BattleLlmOutputActionPlaceholderDto
-{
-}
+public sealed class BattleLlmOutputActionPlaceholderDto { }

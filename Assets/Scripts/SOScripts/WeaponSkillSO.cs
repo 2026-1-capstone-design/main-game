@@ -18,7 +18,7 @@ public enum WeaponSkillId
     BayonetCharge = 13,
     ShieldBash = 14,
     HeadStrike = 15,
-    SpiralSlash = 16
+    SpiralSlash = 16,
 }
 
 public enum skillType
@@ -27,7 +27,7 @@ public enum skillType
     attack = 1,
     tank = 2,
     support = 3,
-    enhance = 4
+    enhance = 4,
 }
 
 [CreateAssetMenu(menuName = "Prototype/Content/Weapon Skill")]
@@ -35,7 +35,9 @@ public sealed class WeaponSkillSO : ScriptableObject
 {
     public Sprite icon;
     public string skillName = "Weapon Skill";
-    [TextArea] public string description;
+
+    [TextArea]
+    public string description;
 
     public WeaponType weaponType = WeaponType.oneHand;
     public WeaponSkillId skillId = WeaponSkillId.None;

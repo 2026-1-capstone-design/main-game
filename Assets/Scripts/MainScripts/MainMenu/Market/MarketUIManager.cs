@@ -7,63 +7,141 @@ using UnityEngine.UI;
 public sealed class MarketUIManager : MonoBehaviour
 {
     [Header("Panels")]
-    [SerializeField] private GameObject marketRootPanel;
-    [SerializeField] private GameObject buyGladiatorPanel;
-    [SerializeField] private GameObject buyEquipmentPanel;
-    [SerializeField] private GameObject sellGladiatorPanel;
-    [SerializeField] private GameObject sellEquipmentPanel;
+    [SerializeField]
+    private GameObject marketRootPanel;
+
+    [SerializeField]
+    private GameObject buyGladiatorPanel;
+
+    [SerializeField]
+    private GameObject buyEquipmentPanel;
+
+    [SerializeField]
+    private GameObject sellGladiatorPanel;
+
+    [SerializeField]
+    private GameObject sellEquipmentPanel;
 
     [Header("Root Buttons")]
-    [SerializeField] private Button marketBackButton;
-    [SerializeField] private Button buyGladiatorButton;
-    [SerializeField] private Button buyEquipmentButton;
-    [SerializeField] private Button sellGladiatorButton;
-    [SerializeField] private Button sellEquipmentButton;
+    [SerializeField]
+    private Button marketBackButton;
+
+    [SerializeField]
+    private Button buyGladiatorButton;
+
+    [SerializeField]
+    private Button buyEquipmentButton;
+
+    [SerializeField]
+    private Button sellGladiatorButton;
+
+    [SerializeField]
+    private Button sellEquipmentButton;
 
     [Header("Buy Gladiator Panel")]
-    [SerializeField] private Button buyGladiatorBackButton;
-    [SerializeField] private TMP_Text currentGoldText;
-    [SerializeField] private Button[] buyGladiatorSlotButtons;
-    [SerializeField] private GameObject[] buyGladiatorSlotRoots;
-    [SerializeField] private Image[] buyGladiatorSlotIcons;
-    [SerializeField] private TMP_Text[] buyGladiatorSlotTexts;
+    [SerializeField]
+    private Button buyGladiatorBackButton;
+
+    [SerializeField]
+    private TMP_Text currentGoldText;
+
+    [SerializeField]
+    private Button[] buyGladiatorSlotButtons;
+
+    [SerializeField]
+    private GameObject[] buyGladiatorSlotRoots;
+
+    [SerializeField]
+    private Image[] buyGladiatorSlotIcons;
+
+    [SerializeField]
+    private TMP_Text[] buyGladiatorSlotTexts;
 
     [Header("Buy Equipment Panel")]
-    [SerializeField] private Button buyEquipmentBackButton;
-    [SerializeField] private TMP_Text buyEquipmentGoldText;
-    [SerializeField] private Button[] buyEquipmentSlotButtons;
-    [SerializeField] private GameObject[] buyEquipmentSlotRoots;
-    [SerializeField] private Image[] buyEquipmentSlotIcons;
-    [SerializeField] private TMP_Text[] buyEquipmentSlotTexts;
+    [SerializeField]
+    private Button buyEquipmentBackButton;
+
+    [SerializeField]
+    private TMP_Text buyEquipmentGoldText;
+
+    [SerializeField]
+    private Button[] buyEquipmentSlotButtons;
+
+    [SerializeField]
+    private GameObject[] buyEquipmentSlotRoots;
+
+    [SerializeField]
+    private Image[] buyEquipmentSlotIcons;
+
+    [SerializeField]
+    private TMP_Text[] buyEquipmentSlotTexts;
 
     [Header("Sell Gladiator Panel")]
-    [SerializeField] private Button sellGladiatorBackButton;
-    [SerializeField] private OwnedItemGridViewer sellGladiatorViewer;
-    [SerializeField] private GameObject sellGladiatorConfirmMask;
-    [SerializeField] private GameObject sellGladiatorConfirmPanel;
-    [SerializeField] private TMP_Text sellGladiatorConfirmNameText;
-    [SerializeField] private TMP_Text sellGladiatorConfirmPriceText;
-    [SerializeField] private Button sellGladiatorConfirmYesButton;
-    [SerializeField] private Button sellGladiatorConfirmNoButton;
+    [SerializeField]
+    private Button sellGladiatorBackButton;
+
+    [SerializeField]
+    private OwnedItemGridViewer sellGladiatorViewer;
+
+    [SerializeField]
+    private GameObject sellGladiatorConfirmMask;
+
+    [SerializeField]
+    private GameObject sellGladiatorConfirmPanel;
+
+    [SerializeField]
+    private TMP_Text sellGladiatorConfirmNameText;
+
+    [SerializeField]
+    private TMP_Text sellGladiatorConfirmPriceText;
+
+    [SerializeField]
+    private Button sellGladiatorConfirmYesButton;
+
+    [SerializeField]
+    private Button sellGladiatorConfirmNoButton;
 
     [Header("Sell Equipment Panel")]
-    [SerializeField] private Button sellEquipmentBackButton;
-    [SerializeField] private OwnedItemGridViewer sellEquipmentViewer;
-    [SerializeField] private GameObject sellEquipmentConfirmMask;
-    [SerializeField] private GameObject sellEquipmentConfirmPanel;
-    [SerializeField] private TMP_Text sellEquipmentConfirmNameText;
-    [SerializeField] private TMP_Text sellEquipmentConfirmPriceText;
-    [SerializeField] private Button sellEquipmentConfirmYesButton;
-    [SerializeField] private Button sellEquipmentConfirmNoButton;
+    [SerializeField]
+    private Button sellEquipmentBackButton;
+
+    [SerializeField]
+    private OwnedItemGridViewer sellEquipmentViewer;
+
+    [SerializeField]
+    private GameObject sellEquipmentConfirmMask;
+
+    [SerializeField]
+    private GameObject sellEquipmentConfirmPanel;
+
+    [SerializeField]
+    private TMP_Text sellEquipmentConfirmNameText;
+
+    [SerializeField]
+    private TMP_Text sellEquipmentConfirmPriceText;
+
+    [SerializeField]
+    private Button sellEquipmentConfirmYesButton;
+
+    [SerializeField]
+    private Button sellEquipmentConfirmNoButton;
 
     [Header("Cannot Sell Equipped Item")]
-    [SerializeField] private GameObject cannotSellMask;
-    [SerializeField] private GameObject cannotSellPanel;
-    [SerializeField] private TMP_Text cannotSellText;
-    [SerializeField] private Button cannotSellConfirmButton;
+    [SerializeField]
+    private GameObject cannotSellMask;
+
+    [SerializeField]
+    private GameObject cannotSellPanel;
+
+    [SerializeField]
+    private TMP_Text cannotSellText;
+
+    [SerializeField]
+    private Button cannotSellConfirmButton;
 
     [Header("Debug")]
-    [SerializeField] private bool verboseLog = true;
+    [SerializeField]
+    private bool verboseLog = true;
 
     private readonly List<OwnedItemViewData> _sellGladiatorViewBuffer = new List<OwnedItemViewData>();
     private readonly List<OwnedItemViewData> _sellEquipmentViewBuffer = new List<OwnedItemViewData>();
@@ -86,7 +164,8 @@ public sealed class MarketUIManager : MonoBehaviour
         MarketManager marketManager,
         ResourceManager resourceManager,
         GladiatorManager gladiatorManager,
-        InventoryManager inventoryManager)
+        InventoryManager inventoryManager
+    )
     {
         if (_initialized)
         {
@@ -155,9 +234,7 @@ public sealed class MarketUIManager : MonoBehaviour
                 buyGladiatorSlotButtons[i].onClick.AddListener(() => OnBuyGladiatorSlotClicked(capturedIndex));
             }
 
-            if (buyGladiatorSlotIcons != null &&
-                i < buyGladiatorSlotIcons.Length &&
-                buyGladiatorSlotIcons[i] != null)
+            if (buyGladiatorSlotIcons != null && i < buyGladiatorSlotIcons.Length && buyGladiatorSlotIcons[i] != null)
             {
                 buyGladiatorSlotIcons[i].raycastTarget = false;
             }
@@ -174,9 +251,7 @@ public sealed class MarketUIManager : MonoBehaviour
                 buyEquipmentSlotButtons[i].onClick.AddListener(() => OnBuyEquipmentSlotClicked(capturedIndex));
             }
 
-            if (buyEquipmentSlotIcons != null &&
-                i < buyEquipmentSlotIcons.Length &&
-                buyEquipmentSlotIcons[i] != null)
+            if (buyEquipmentSlotIcons != null && i < buyEquipmentSlotIcons.Length && buyEquipmentSlotIcons[i] != null)
             {
                 buyEquipmentSlotIcons[i].raycastTarget = false;
             }
@@ -191,8 +266,8 @@ public sealed class MarketUIManager : MonoBehaviour
         if (verboseLog)
         {
             Debug.Log(
-                $"[MarketUIManager] Initialized. " +
-                $"BuyGladiatorSlots={gladiatorBuySlotCount}, BuyEquipmentSlots={equipmentBuySlotCount}",
+                $"[MarketUIManager] Initialized. "
+                    + $"BuyGladiatorSlots={gladiatorBuySlotCount}, BuyEquipmentSlots={equipmentBuySlotCount}",
                 this
             );
         }
@@ -372,28 +447,25 @@ public sealed class MarketUIManager : MonoBehaviour
 
             OwnedGladiatorData gladiator = offer.Gladiator;
 
-            if (buyGladiatorSlotIcons != null &&
-                i < buyGladiatorSlotIcons.Length &&
-                buyGladiatorSlotIcons[i] != null)
+            if (buyGladiatorSlotIcons != null && i < buyGladiatorSlotIcons.Length && buyGladiatorSlotIcons[i] != null)
             {
-                Sprite icon = gladiator != null && gladiator.GladiatorClass != null
-                    ? gladiator.GladiatorClass.icon
-                    : null;
+                Sprite icon =
+                    gladiator != null && gladiator.GladiatorClass != null ? gladiator.GladiatorClass.icon : null;
 
                 buyGladiatorSlotIcons[i].sprite = icon;
                 buyGladiatorSlotIcons[i].enabled = icon != null;
             }
 
-            if (buyGladiatorSlotTexts != null &&
-                i < buyGladiatorSlotTexts.Length &&
-                buyGladiatorSlotTexts[i] != null)
+            if (buyGladiatorSlotTexts != null && i < buyGladiatorSlotTexts.Length && buyGladiatorSlotTexts[i] != null)
             {
                 buyGladiatorSlotTexts[i].text = BuildBuyGladiatorText(offer);
             }
 
-            if (buyGladiatorSlotButtons != null &&
-                i < buyGladiatorSlotButtons.Length &&
-                buyGladiatorSlotButtons[i] != null)
+            if (
+                buyGladiatorSlotButtons != null
+                && i < buyGladiatorSlotButtons.Length
+                && buyGladiatorSlotButtons[i] != null
+            )
             {
                 buyGladiatorSlotButtons[i].interactable = true;
             }
@@ -419,28 +491,24 @@ public sealed class MarketUIManager : MonoBehaviour
 
             OwnedWeaponData weapon = offer.Weapon;
 
-            if (buyEquipmentSlotIcons != null &&
-                i < buyEquipmentSlotIcons.Length &&
-                buyEquipmentSlotIcons[i] != null)
+            if (buyEquipmentSlotIcons != null && i < buyEquipmentSlotIcons.Length && buyEquipmentSlotIcons[i] != null)
             {
-                Sprite icon = weapon != null && weapon.Weapon != null
-                    ? weapon.Weapon.icon
-                    : null;
+                Sprite icon = weapon != null && weapon.Weapon != null ? weapon.Weapon.icon : null;
 
                 buyEquipmentSlotIcons[i].sprite = icon;
                 buyEquipmentSlotIcons[i].enabled = icon != null;
             }
 
-            if (buyEquipmentSlotTexts != null &&
-                i < buyEquipmentSlotTexts.Length &&
-                buyEquipmentSlotTexts[i] != null)
+            if (buyEquipmentSlotTexts != null && i < buyEquipmentSlotTexts.Length && buyEquipmentSlotTexts[i] != null)
             {
                 buyEquipmentSlotTexts[i].text = BuildBuyEquipmentText(offer);
             }
 
-            if (buyEquipmentSlotButtons != null &&
-                i < buyEquipmentSlotButtons.Length &&
-                buyEquipmentSlotButtons[i] != null)
+            if (
+                buyEquipmentSlotButtons != null
+                && i < buyEquipmentSlotButtons.Length
+                && buyEquipmentSlotButtons[i] != null
+            )
             {
                 buyEquipmentSlotButtons[i].interactable = true;
             }
@@ -469,13 +537,9 @@ public sealed class MarketUIManager : MonoBehaviour
                 }
 
                 Sprite icon = gladiator.GladiatorClass != null ? gladiator.GladiatorClass.icon : null;
-                _sellGladiatorViewBuffer.Add(new OwnedItemViewData(
-                    icon,
-                    gladiator.DisplayName,
-                    $"Lv.{gladiator.Level}",
-                    string.Empty,
-                    gladiator
-                ));
+                _sellGladiatorViewBuffer.Add(
+                    new OwnedItemViewData(icon, gladiator.DisplayName, $"Lv.{gladiator.Level}", string.Empty, gladiator)
+                );
             }
         }
 
@@ -505,17 +569,18 @@ public sealed class MarketUIManager : MonoBehaviour
                 }
 
                 Sprite icon = weapon.Weapon != null ? weapon.Weapon.icon : null;
-                OwnedGladiatorData owner = _gladiatorManager != null
-                    ? _gladiatorManager.FindOwnerOfEquippedWeapon(weapon)
-                    : null;
+                OwnedGladiatorData owner =
+                    _gladiatorManager != null ? _gladiatorManager.FindOwnerOfEquippedWeapon(weapon) : null;
 
-                _sellEquipmentViewBuffer.Add(new OwnedItemViewData(
-                    icon,
-                    weapon.DisplayName,
-                    $"Lv.{weapon.Level}",
-                    owner != null ? "E" : string.Empty,
-                    weapon
-                ));
+                _sellEquipmentViewBuffer.Add(
+                    new OwnedItemViewData(
+                        icon,
+                        weapon.DisplayName,
+                        $"Lv.{weapon.Level}",
+                        owner != null ? "E" : string.Empty,
+                        weapon
+                    )
+                );
             }
         }
 
@@ -537,10 +602,10 @@ public sealed class MarketUIManager : MonoBehaviour
         if (sellGladiatorConfirmNameText != null)
         {
             sellGladiatorConfirmNameText.text =
-                $"Name: {gladiator.DisplayName}\n" +
-                $"Level: {gladiator.Level}\n" +
-                $"Health: {Mathf.FloorToInt(gladiator.CachedMaxHealth)}\n" +
-                $"Attack: {Mathf.FloorToInt(gladiator.CachedAttack)}";
+                $"Name: {gladiator.DisplayName}\n"
+                + $"Level: {gladiator.Level}\n"
+                + $"Health: {Mathf.FloorToInt(gladiator.CachedMaxHealth)}\n"
+                + $"Attack: {Mathf.FloorToInt(gladiator.CachedAttack)}";
         }
 
         if (sellGladiatorConfirmPriceText != null)
@@ -551,6 +616,7 @@ public sealed class MarketUIManager : MonoBehaviour
         SetPanelActive(sellGladiatorConfirmMask, true);
         SetPanelActive(sellGladiatorConfirmPanel, true);
     }
+
     //장착된 무기는 클릭 시 판매 금지 패널 팝업
     private void OnSellEquipmentCellClicked(OwnedItemViewData data)
     {
@@ -560,9 +626,8 @@ public sealed class MarketUIManager : MonoBehaviour
             return;
         }
 
-        OwnedGladiatorData owner = _gladiatorManager != null
-            ? _gladiatorManager.FindOwnerOfEquippedWeapon(weapon)
-            : null;
+        OwnedGladiatorData owner =
+            _gladiatorManager != null ? _gladiatorManager.FindOwnerOfEquippedWeapon(weapon) : null;
 
         if (owner != null)
         {
@@ -579,15 +644,15 @@ public sealed class MarketUIManager : MonoBehaviour
             string skillName = weapon.WeaponSkill != null ? weapon.WeaponSkill.skillName : "(None)";
 
             sellEquipmentConfirmNameText.text =
-                $"Name: {weapon.DisplayName}\n" +
-                $"Type: {weaponTypeText}\n" +
-                $"Skill: {skillName}\n" +
-                $"Level: {weapon.Level}\n" +
-                $"Attack Bonus: {Mathf.FloorToInt(weapon.CachedAttackBonus)}\n" +
-                $"Health Bonus: {Mathf.FloorToInt(weapon.CachedHealthBonus)}\n" +
-                $"Attack Speed Bonus: {weapon.CachedAttackSpeedBonus:0.##}\n" +
-                $"Move Speed Bonus: {weapon.CachedMoveSpeedBonus:0.##}\n" +
-                $"Range Bonus: {weapon.CachedAttackRangeBonus:0.##}";
+                $"Name: {weapon.DisplayName}\n"
+                + $"Type: {weaponTypeText}\n"
+                + $"Skill: {skillName}\n"
+                + $"Level: {weapon.Level}\n"
+                + $"Attack Bonus: {Mathf.FloorToInt(weapon.CachedAttackBonus)}\n"
+                + $"Health Bonus: {Mathf.FloorToInt(weapon.CachedHealthBonus)}\n"
+                + $"Attack Speed Bonus: {weapon.CachedAttackSpeedBonus:0.##}\n"
+                + $"Move Speed Bonus: {weapon.CachedMoveSpeedBonus:0.##}\n"
+                + $"Range Bonus: {weapon.CachedAttackRangeBonus:0.##}";
         }
 
         if (sellEquipmentConfirmPriceText != null)
@@ -625,6 +690,7 @@ public sealed class MarketUIManager : MonoBehaviour
         RefreshGoldText(_resourceManager != null ? _resourceManager.CurrentGold : 0);
         RefreshSellGladiatorPanel();
     }
+
     //이중 방어
     private void OnSellEquipmentConfirmYesClicked()
     {
@@ -720,17 +786,16 @@ public sealed class MarketUIManager : MonoBehaviour
 
         OwnedGladiatorData gladiator = offer.Gladiator;
 
-        return
-            $"Price: {offer.Price}\n" +
-            $"Name: {gladiator.DisplayName}\n" +
-            $"Level: {gladiator.Level}\n" +
-            $"Loyalty: {gladiator.Loyalty}\n" +
-            $"Upkeep: {gladiator.Upkeep}\n" +
-            $"Health: {Mathf.FloorToInt(gladiator.CachedMaxHealth)}\n" +
-            $"Attack: {Mathf.FloorToInt(gladiator.CachedAttack)}\n" +
-            $"Attack Speed: {gladiator.CachedAttackSpeed:0.##}\n" +
-            $"Move Speed: {gladiator.CachedMoveSpeed:0.##}\n" +
-            $"Range: {gladiator.CachedAttackRange:0.##}";
+        return $"Price: {offer.Price}\n"
+            + $"Name: {gladiator.DisplayName}\n"
+            + $"Level: {gladiator.Level}\n"
+            + $"Loyalty: {gladiator.Loyalty}\n"
+            + $"Upkeep: {gladiator.Upkeep}\n"
+            + $"Health: {Mathf.FloorToInt(gladiator.CachedMaxHealth)}\n"
+            + $"Attack: {Mathf.FloorToInt(gladiator.CachedAttack)}\n"
+            + $"Attack Speed: {gladiator.CachedAttackSpeed:0.##}\n"
+            + $"Move Speed: {gladiator.CachedMoveSpeed:0.##}\n"
+            + $"Range: {gladiator.CachedAttackRange:0.##}";
     }
 
     private string BuildBuyEquipmentText(MarketWeaponOffer offer)
@@ -744,39 +809,44 @@ public sealed class MarketUIManager : MonoBehaviour
         string weaponTypeText = weapon.Weapon != null ? weapon.Weapon.weaponType.ToString() : "(None)";
         string skillName = weapon.WeaponSkill != null ? weapon.WeaponSkill.skillName : "(None)";
 
-        return
-            $"Price: {offer.Price}\n" +
-            $"Name: {weapon.DisplayName}\n" +
-            $"Type: {weaponTypeText}\n" +
-            $"Skill: {skillName}\n" +
-            $"Level: {weapon.Level}\n" +
-            $"Attack Bonus: {Mathf.FloorToInt(weapon.CachedAttackBonus)}\n" +
-            $"Health Bonus: {Mathf.FloorToInt(weapon.CachedHealthBonus)}\n" +
-            $"Attack Speed Bonus: {weapon.CachedAttackSpeedBonus:0.##}\n" +
-            $"Move Speed Bonus: {weapon.CachedMoveSpeedBonus:0.##}\n" +
-            $"Range Bonus: {weapon.CachedAttackRangeBonus:0.##}";
+        return $"Price: {offer.Price}\n"
+            + $"Name: {weapon.DisplayName}\n"
+            + $"Type: {weaponTypeText}\n"
+            + $"Skill: {skillName}\n"
+            + $"Level: {weapon.Level}\n"
+            + $"Attack Bonus: {Mathf.FloorToInt(weapon.CachedAttackBonus)}\n"
+            + $"Health Bonus: {Mathf.FloorToInt(weapon.CachedHealthBonus)}\n"
+            + $"Attack Speed Bonus: {weapon.CachedAttackSpeedBonus:0.##}\n"
+            + $"Move Speed Bonus: {weapon.CachedMoveSpeedBonus:0.##}\n"
+            + $"Range Bonus: {weapon.CachedAttackRangeBonus:0.##}";
     }
 
     private void ClearBuyGladiatorSlot(int slotIndex)
     {
-        if (buyGladiatorSlotIcons != null &&
-            slotIndex < buyGladiatorSlotIcons.Length &&
-            buyGladiatorSlotIcons[slotIndex] != null)
+        if (
+            buyGladiatorSlotIcons != null
+            && slotIndex < buyGladiatorSlotIcons.Length
+            && buyGladiatorSlotIcons[slotIndex] != null
+        )
         {
             buyGladiatorSlotIcons[slotIndex].sprite = null;
             buyGladiatorSlotIcons[slotIndex].enabled = false;
         }
 
-        if (buyGladiatorSlotTexts != null &&
-            slotIndex < buyGladiatorSlotTexts.Length &&
-            buyGladiatorSlotTexts[slotIndex] != null)
+        if (
+            buyGladiatorSlotTexts != null
+            && slotIndex < buyGladiatorSlotTexts.Length
+            && buyGladiatorSlotTexts[slotIndex] != null
+        )
         {
             buyGladiatorSlotTexts[slotIndex].text = string.Empty;
         }
 
-        if (buyGladiatorSlotButtons != null &&
-            slotIndex < buyGladiatorSlotButtons.Length &&
-            buyGladiatorSlotButtons[slotIndex] != null)
+        if (
+            buyGladiatorSlotButtons != null
+            && slotIndex < buyGladiatorSlotButtons.Length
+            && buyGladiatorSlotButtons[slotIndex] != null
+        )
         {
             buyGladiatorSlotButtons[slotIndex].interactable = false;
         }
@@ -784,24 +854,30 @@ public sealed class MarketUIManager : MonoBehaviour
 
     private void ClearBuyEquipmentSlot(int slotIndex)
     {
-        if (buyEquipmentSlotIcons != null &&
-            slotIndex < buyEquipmentSlotIcons.Length &&
-            buyEquipmentSlotIcons[slotIndex] != null)
+        if (
+            buyEquipmentSlotIcons != null
+            && slotIndex < buyEquipmentSlotIcons.Length
+            && buyEquipmentSlotIcons[slotIndex] != null
+        )
         {
             buyEquipmentSlotIcons[slotIndex].sprite = null;
             buyEquipmentSlotIcons[slotIndex].enabled = false;
         }
 
-        if (buyEquipmentSlotTexts != null &&
-            slotIndex < buyEquipmentSlotTexts.Length &&
-            buyEquipmentSlotTexts[slotIndex] != null)
+        if (
+            buyEquipmentSlotTexts != null
+            && slotIndex < buyEquipmentSlotTexts.Length
+            && buyEquipmentSlotTexts[slotIndex] != null
+        )
         {
             buyEquipmentSlotTexts[slotIndex].text = string.Empty;
         }
 
-        if (buyEquipmentSlotButtons != null &&
-            slotIndex < buyEquipmentSlotButtons.Length &&
-            buyEquipmentSlotButtons[slotIndex] != null)
+        if (
+            buyEquipmentSlotButtons != null
+            && slotIndex < buyEquipmentSlotButtons.Length
+            && buyEquipmentSlotButtons[slotIndex] != null
+        )
         {
             buyEquipmentSlotButtons[slotIndex].interactable = false;
         }
@@ -809,18 +885,22 @@ public sealed class MarketUIManager : MonoBehaviour
 
     private void SetBuyGladiatorSlotVisible(int slotIndex, bool value)
     {
-        if (buyGladiatorSlotRoots != null &&
-            buyGladiatorSlotRoots.Length > 0 &&
-            slotIndex < buyGladiatorSlotRoots.Length &&
-            buyGladiatorSlotRoots[slotIndex] != null)
+        if (
+            buyGladiatorSlotRoots != null
+            && buyGladiatorSlotRoots.Length > 0
+            && slotIndex < buyGladiatorSlotRoots.Length
+            && buyGladiatorSlotRoots[slotIndex] != null
+        )
         {
             buyGladiatorSlotRoots[slotIndex].SetActive(value);
             return;
         }
 
-        if (buyGladiatorSlotButtons != null &&
-            slotIndex < buyGladiatorSlotButtons.Length &&
-            buyGladiatorSlotButtons[slotIndex] != null)
+        if (
+            buyGladiatorSlotButtons != null
+            && slotIndex < buyGladiatorSlotButtons.Length
+            && buyGladiatorSlotButtons[slotIndex] != null
+        )
         {
             buyGladiatorSlotButtons[slotIndex].gameObject.SetActive(value);
         }
@@ -828,18 +908,22 @@ public sealed class MarketUIManager : MonoBehaviour
 
     private void SetBuyEquipmentSlotVisible(int slotIndex, bool value)
     {
-        if (buyEquipmentSlotRoots != null &&
-            buyEquipmentSlotRoots.Length > 0 &&
-            slotIndex < buyEquipmentSlotRoots.Length &&
-            buyEquipmentSlotRoots[slotIndex] != null)
+        if (
+            buyEquipmentSlotRoots != null
+            && buyEquipmentSlotRoots.Length > 0
+            && slotIndex < buyEquipmentSlotRoots.Length
+            && buyEquipmentSlotRoots[slotIndex] != null
+        )
         {
             buyEquipmentSlotRoots[slotIndex].SetActive(value);
             return;
         }
 
-        if (buyEquipmentSlotButtons != null &&
-            slotIndex < buyEquipmentSlotButtons.Length &&
-            buyEquipmentSlotButtons[slotIndex] != null)
+        if (
+            buyEquipmentSlotButtons != null
+            && slotIndex < buyEquipmentSlotButtons.Length
+            && buyEquipmentSlotButtons[slotIndex] != null
+        )
         {
             buyEquipmentSlotButtons[slotIndex].gameObject.SetActive(value);
         }

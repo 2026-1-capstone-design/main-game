@@ -17,12 +17,7 @@ public readonly struct OwnedItemViewData
         Source = source;
     }
 
-    public OwnedItemViewData(
-        Sprite icon,
-        string displayName,
-        string levelText,
-        string equippedMarkText,
-        object source)
+    public OwnedItemViewData(Sprite icon, string displayName, string levelText, string equippedMarkText, object source)
     {
         Icon = icon;
         DisplayName = displayName;
