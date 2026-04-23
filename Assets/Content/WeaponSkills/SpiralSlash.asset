@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: SpiralSlash
   m_EditorClassIdentifier: Assembly-CSharp::WeaponSkillSO
   icon: {fileID: 21300000, guid: 30ee865651fe70342bd9f47753d1596e, type: 3}
-  skillName: Spiral
-  description: Dagger2
+  skillName: SpiralSlash
+  description: SpiralSlash
   weaponType: 1
   skillId: 16

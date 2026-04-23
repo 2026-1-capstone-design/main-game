@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Madness
   m_EditorClassIdentifier: Assembly-CSharp::WeaponSkillSO
   icon: {fileID: 21300000, guid: 8b05dfd3947944441855fafea54a310b, type: 3}
-  skillName: Sword2
-  description: Sword2
+  skillName: Madness
+  description: Madness
   weaponType: 3
   skillId: 2

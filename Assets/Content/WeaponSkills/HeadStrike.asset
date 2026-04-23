@@ -14,6 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WeaponSkillSO
   icon: {fileID: 21300000, guid: 30ee865651fe70342bd9f47753d1596e, type: 3}
   skillName: HeadStrike
-  description: Dagger2
+  description: HeadStrike
   weaponType: 4
   skillId: 15
