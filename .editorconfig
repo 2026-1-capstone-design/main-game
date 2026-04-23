@@ -102,6 +102,10 @@ dotnet_diagnostic.IDE0011.severity = none
 # IDE0008: Use explicit type (var 사용 금지 규칙 무시)
 dotnet_diagnostic.IDE0008.severity = none
 
+# 최대 연속 빈 줄 개수를 1개로 제한
+csharp_style_allow_multiple_blank_lines_experimental = false:suggestion
+dotnet_style_allow_multiple_blank_lines_experimental = false:suggestion
+
 [*.{json,yaml,yml}]
 indent_style = space
 indent_size = 2
