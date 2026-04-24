@@ -4,7 +4,7 @@ using UnityEngine;
 
 // BattleSceneFlowManager 책임:
 // - BattleSessionManager에서 payload 읽기
-// - ally/enemy snapshot 기반 runtime unit 12개 생성 (ally 1~6 / enemy 7~12 번호 부여)
+// - player/hostile team snapshot 기반 runtime unit 생성
 // - Battlefield(Shpereollider) 위 placeholder 기준 배치
 // - BattleSimulationManager 초기화
 // - BattleSceneUIManager / BattleStatusGridUIManager와 연결
@@ -235,58 +235,16 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
     private Dictionary<BattleTeamId, Vector3[]> BuildSpawnPositionsByTeam(BattleStartPayload payload)
     {
         Dictionary<BattleTeamId, Vector3[]> positionsByTeam = new Dictionary<BattleTeamId, Vector3[]>();
-        List<BattleTeamEntry> hostileTeams = new List<BattleTeamEntry>();
+        BattleTeamEntry playerTeam = payload.GetPlayerTeam();
+        BattleTeamEntry hostileTeam = payload.GetHostileTeam();
 
-        for (int i = 0; i < payload.Teams.Count; i++)
-        {
-            BattleTeamEntry team = payload.Teams[i];
-            if (team == null)
-            {
-                continue;
-            }
+        positionsByTeam[playerTeam.TeamId] =
+            TryBuildConfiguredPositions(allyPlaceholders, playerTeam.Units.Count)
+            ?? BuildLinePositions(playerTeam.Units.Count, battlefieldCollider.bounds, isPlayerTeam: true);
 
-            if (team.TeamId == payload.PlayerTeamId)
-            {
-                positionsByTeam[team.TeamId] =
-                    TryBuildConfiguredPositions(allyPlaceholders, payload.RosterLayout.GetMaxUnitCount(team.TeamId))
-                    ?? BuildLinePositions(team.Units.Count, battlefieldCollider.bounds, isPlayerTeam: true);
-            }
-            else
-            {
-                hostileTeams.Add(team);
-            }
-        }
-
-        for (int hostileIndex = 0; hostileIndex < hostileTeams.Count; hostileIndex++)
-        {
-            BattleTeamEntry hostileTeam = hostileTeams[hostileIndex];
-            int slotCount = payload.RosterLayout.GetMaxUnitCount(hostileTeam.TeamId);
-            Vector3[] positions;
-
-            if (hostileIndex == 0)
-            {
-                positions = TryBuildConfiguredPositions(enemyPlaceholders, slotCount);
-                if (positions == null)
-                {
-                    positions = BuildLinePositions(
-                        hostileTeam.Units.Count,
-                        battlefieldCollider.bounds,
-                        isPlayerTeam: false
-                    );
-                }
-            }
-            else
-            {
-                positions = BuildArcPositions(
-                    hostileTeam.Units.Count,
-                    battlefieldCollider.bounds,
-                    hostileIndex,
-                    hostileTeams.Count
-                );
-            }
-
-            positionsByTeam[hostileTeam.TeamId] = positions;
-        }
+        positionsByTeam[hostileTeam.TeamId] =
+            TryBuildConfiguredPositions(enemyPlaceholders, hostileTeam.Units.Count)
+            ?? BuildLinePositions(hostileTeam.Units.Count, battlefieldCollider.bounds, isPlayerTeam: false);
 
         return positionsByTeam;
     }
@@ -327,30 +285,6 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
         for (int i = 0; i < count; i++)
         {
             positions[i] = new Vector3(laneX, center.y, startZ + (spacing * i));
-        }
-
-        return positions;
-    }
-
-    private static Vector3[] BuildArcPositions(int count, Bounds battlefieldBounds, int hostileIndex, int hostileCount)
-    {
-        count = Mathf.Max(1, count);
-
-        Vector3 center = battlefieldBounds.center;
-        float radius = Mathf.Max(Mathf.Min(battlefieldBounds.extents.x, battlefieldBounds.extents.z) * 0.72f, 3f);
-        float hostileT = hostileCount <= 1 ? 0.5f : Mathf.Clamp01(hostileIndex / (float)(hostileCount - 1));
-        float anchorAngle = Mathf.Lerp(-45f, 45f, hostileT) * Mathf.Deg2Rad;
-        Vector3 radial = new Vector3(Mathf.Cos(anchorAngle), 0f, Mathf.Sin(anchorAngle));
-        Vector3 teamCenter = center + (radial * radius);
-
-        Vector3 tangent = Vector3.Cross(Vector3.up, radial).normalized;
-        float spacing = Mathf.Max(battlefieldBounds.extents.z * 0.18f, 1.5f);
-        float offsetStart = -spacing * (count - 1) * 0.5f;
-
-        Vector3[] positions = new Vector3[count];
-        for (int i = 0; i < count; i++)
-        {
-            positions[i] = teamCenter + tangent * (offsetStart + spacing * i);
         }
 
         return positions;
@@ -417,7 +351,6 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
         return new BattleStartPayload(
             teams,
             source.PlayerTeamId,
-            source.RosterLayout,
             source.SelectedEncounterIndex,
             source.EnemyAverageLevel,
             source.PreviewRewardGold,

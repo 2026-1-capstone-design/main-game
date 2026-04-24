@@ -39,9 +39,9 @@ public static class BattleBootstrapper
             }
 
             bool teamSpawned = SpawnTeam(
+                payload,
                 team,
                 positions,
-                payload.RosterLayout,
                 runtimeUnitRootPrefab,
                 parent,
                 context.BattlefieldCollider,
@@ -77,7 +77,7 @@ public static class BattleBootstrapper
         if (payload == null)
             throw new ArgumentNullException(nameof(payload));
 
-        BattleRosterProjection rosterProjection = new BattleRosterProjection(payload, spawned.Units);
+        BattleRosterProjection rosterProjection = new BattleRosterProjection(payload);
 
         if (context.SceneUI != null)
         {
@@ -127,20 +127,19 @@ public static class BattleBootstrapper
     }
 
     private static bool SpawnTeam(
+        BattleStartPayload payload,
         BattleTeamEntry teamEntry,
         Vector3[] positions,
-        BattleRosterLayout rosterLayout,
         GameObject runtimeUnitRootPrefab,
         Transform parent,
         SphereCollider battlefieldCollider,
         List<BattleRuntimeUnit> destination
     )
     {
-        if (teamEntry == null || teamEntry.Units == null || positions == null || rosterLayout == null)
+        if (payload == null || teamEntry == null || teamEntry.Units == null || positions == null)
             return false;
 
-        int maxUnitCount = rosterLayout.GetMaxUnitCount(teamEntry.TeamId);
-        int spawnCount = Mathf.Min(maxUnitCount, Mathf.Min(teamEntry.Units.Count, positions.Length));
+        int spawnCount = Mathf.Min(teamEntry.Units.Count, positions.Length);
 
         for (int i = 0; i < spawnCount; i++)
         {
@@ -160,7 +159,7 @@ public static class BattleBootstrapper
             runtimeUnit.SetRuntimeRootObject(runtimeRoot);
             runtimeUnit.Initialize(
                 snapshot.Clone(),
-                rosterLayout.AllocateUnitNumber(teamEntry.TeamId, i),
+                payload.AllocateUnitNumber(teamEntry.TeamId, i),
                 teamEntry.TeamId,
                 teamEntry.IsPlayerOwned
             );

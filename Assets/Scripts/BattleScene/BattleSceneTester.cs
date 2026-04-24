@@ -139,7 +139,6 @@ public sealed class BattleSceneTester : MonoBehaviour
         BattleStartPayload testPayload = new BattleStartPayload(
             teams,
             BattleTeamIds.Player,
-            BattleRosterLayout.CreateSequential(teams),
             0,
             preset.enemyAverageLevel,
             preset.previewRewardGold,

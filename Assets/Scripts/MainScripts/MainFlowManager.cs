@@ -514,7 +514,6 @@ public sealed class MainFlowManager : MonoBehaviour
         payload = new BattleStartPayload(
             teams,
             BattleTeamIds.Player,
-            BattleRosterLayout.CreateSequential(teams),
             encounter.EncounterIndex,
             encounter.AverageLevel,
             encounter.PreviewRewardGold,

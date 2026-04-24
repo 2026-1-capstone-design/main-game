@@ -256,10 +256,12 @@ public sealed class BattleEncounterPreview
 public sealed class BattleStartPayload
 {
     private readonly List<BattleTeamEntry> _teams = new List<BattleTeamEntry>();
+    private readonly Dictionary<BattleTeamId, BattleTeamEntry> _teamById =
+        new Dictionary<BattleTeamId, BattleTeamEntry>();
+    private readonly Dictionary<BattleTeamId, int> _teamStartUnitNumberById = new Dictionary<BattleTeamId, int>();
 
     public IReadOnlyList<BattleTeamEntry> Teams => _teams;
     public BattleTeamId PlayerTeamId { get; }
-    public BattleRosterLayout RosterLayout { get; }
     public int SelectedEncounterIndex { get; }
     public float EnemyAverageLevel { get; }
     public int PreviewRewardGold { get; }
@@ -267,10 +269,12 @@ public sealed class BattleStartPayload
     // 랜덤매니저에서 쓸 시드
     public int BattleSeed { get; }
 
+    private BattleTeamEntry _playerTeam;
+    private BattleTeamEntry _hostileTeam;
+
     public BattleStartPayload(
         IEnumerable<BattleTeamEntry> teams,
         BattleTeamId playerTeamId,
-        BattleRosterLayout rosterLayout,
         int selectedEncounterIndex,
         float enemyAverageLevel,
         int previewRewardGold,
@@ -293,18 +297,53 @@ public sealed class BattleStartPayload
             throw new ArgumentException("BattleStartPayload requires at least one team.", nameof(teams));
         }
 
-        bool hasPlayerTeam = false;
+        if (_teams.Count != 2)
+        {
+            throw new ArgumentException("BattleStartPayload requires exactly two teams.", nameof(teams));
+        }
+
+        int nextUnitNumber = 1;
         for (int i = 0; i < _teams.Count; i++)
         {
             BattleTeamEntry team = _teams[i];
-            if (team != null && team.TeamId == playerTeamId)
+            if (team == null)
             {
-                hasPlayerTeam = true;
-                break;
+                continue;
+            }
+
+            int unitCount = team.Units != null ? team.Units.Count : 0;
+            if (unitCount <= 0)
+            {
+                throw new ArgumentException(
+                    $"BattleStartPayload requires at least one unit for team {team.TeamId.Value}.",
+                    nameof(teams)
+                );
+            }
+
+            if (_teamById.ContainsKey(team.TeamId))
+            {
+                throw new ArgumentException($"Duplicate team id {team.TeamId.Value} detected.", nameof(teams));
+            }
+
+            _teamById[team.TeamId] = team;
+            _teamStartUnitNumberById[team.TeamId] = nextUnitNumber;
+            nextUnitNumber += unitCount;
+
+            if (team.TeamId == playerTeamId)
+            {
+                _playerTeam = team;
+            }
+            else if (_hostileTeam == null)
+            {
+                _hostileTeam = team;
+            }
+            else
+            {
+                throw new ArgumentException("BattleStartPayload supports only one hostile team.", nameof(teams));
             }
         }
 
-        if (!hasPlayerTeam)
+        if (_playerTeam == null)
         {
             throw new ArgumentException(
                 $"BattleStartPayload requires a player team entry for team id {playerTeamId.Value}.",
@@ -312,25 +351,63 @@ public sealed class BattleStartPayload
             );
         }
 
+        if (_hostileTeam == null)
+        {
+            throw new ArgumentException("BattleStartPayload requires exactly one hostile team.", nameof(teams));
+        }
+
         PlayerTeamId = playerTeamId;
-        RosterLayout = rosterLayout ?? BattleRosterLayout.CreateSequential(_teams);
         SelectedEncounterIndex = Mathf.Max(0, selectedEncounterIndex);
         EnemyAverageLevel = Mathf.Max(0f, enemyAverageLevel);
         PreviewRewardGold = Mathf.Max(0, previewRewardGold);
         BattleSeed = battleSeed;
     }
 
-    public BattleTeamEntry GetPlayerTeam()
+    public BattleTeamEntry GetPlayerTeam() => _playerTeam;
+
+    public BattleTeamEntry GetHostileTeam() => _hostileTeam;
+
+    public bool TryGetTeam(BattleTeamId teamId, out BattleTeamEntry team) => _teamById.TryGetValue(teamId, out team);
+
+    public int GetTeamUnitCount(BattleTeamId teamId) =>
+        TryGetTeam(teamId, out BattleTeamEntry team) && team.Units != null ? team.Units.Count : 0;
+
+    public int GetTeamStartUnitNumber(BattleTeamId teamId) =>
+        _teamStartUnitNumberById.TryGetValue(teamId, out int startUnitNumber) ? startUnitNumber : -1;
+
+    public int AllocateUnitNumber(BattleTeamId teamId, int localUnitIndex)
     {
-        for (int i = 0; i < _teams.Count; i++)
+        if (!TryGetTeam(teamId, out BattleTeamEntry team))
         {
-            BattleTeamEntry team = _teams[i];
-            if (team != null && team.TeamId == PlayerTeamId)
-            {
-                return team;
-            }
+            throw new ArgumentException($"Unknown team id {teamId.Value}.", nameof(teamId));
         }
 
-        return null;
+        int clampedIndex = Mathf.Clamp(localUnitIndex, 0, team.Units.Count - 1);
+        return GetTeamStartUnitNumber(teamId) + clampedIndex;
+    }
+
+    public bool TryGetTeamLocalUnitIndex(BattleTeamId teamId, int unitNumber, out int localUnitIndex)
+    {
+        localUnitIndex = -1;
+
+        if (!TryGetTeam(teamId, out BattleTeamEntry team))
+        {
+            return false;
+        }
+
+        int startUnitNumber = GetTeamStartUnitNumber(teamId);
+        if (startUnitNumber <= 0)
+        {
+            return false;
+        }
+
+        int unitIndex = unitNumber - startUnitNumber;
+        if (unitIndex < 0 || unitIndex >= team.Units.Count)
+        {
+            return false;
+        }
+
+        localUnitIndex = unitIndex;
+        return true;
     }
 }

@@ -81,21 +81,18 @@ public sealed class BattleStatusGridUIManager : MonoBehaviour
                     continue;
                 }
 
-                if (_rosterProjection != null && _rosterProjection.TryGetPlayerSlot(unit, out int playerSlotIndex))
+                if (_rosterProjection != null && _rosterProjection.TryGetPlayerIndex(unit, out int playerIndex))
                 {
-                    if (playerSlotIndex >= 0 && playerSlotIndex < _allyUnits.Length)
+                    if (playerIndex >= 0 && playerIndex < _allyUnits.Length)
                     {
-                        _allyUnits[playerSlotIndex] = unit;
+                        _allyUnits[playerIndex] = unit;
                     }
                 }
-                else if (
-                    _rosterProjection != null
-                    && _rosterProjection.TryGetHostileSlot(unit, out int hostileSlotIndex)
-                )
+                else if (_rosterProjection != null && _rosterProjection.TryGetHostileIndex(unit, out int hostileIndex))
                 {
-                    if (hostileSlotIndex >= 0 && hostileSlotIndex < _enemyUnits.Length)
+                    if (hostileIndex >= 0 && hostileIndex < _enemyUnits.Length)
                     {
-                        _enemyUnits[hostileSlotIndex] = unit;
+                        _enemyUnits[hostileIndex] = unit;
                     }
                 }
             }

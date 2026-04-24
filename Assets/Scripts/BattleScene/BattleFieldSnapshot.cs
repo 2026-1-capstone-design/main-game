@@ -437,9 +437,7 @@ public sealed class BattleFieldSnapshot
                 continue;
             }
 
-            bool matches = allies
-                ? requester.TeamId == candidate.TeamId
-                : requester.TeamId != candidate.TeamId;
+            bool matches = allies ? requester.TeamId == candidate.TeamId : requester.TeamId != candidate.TeamId;
 
             if (matches)
             {
@@ -457,9 +455,7 @@ public sealed class BattleFieldSnapshot
         for (int i = 0; i < _allLivingViews.Length; i++)
         {
             BattleUnitView candidate = _allLivingViews[i];
-            bool matches = allies
-                ? requester.TeamId == candidate.TeamId
-                : requester.TeamId != candidate.TeamId;
+            bool matches = allies ? requester.TeamId == candidate.TeamId : requester.TeamId != candidate.TeamId;
 
             if (matches)
             {
