@@ -10,18 +10,21 @@ public enum BattleTeam
 public readonly struct BattleOutcome
 {
     public BattleTeam Winner { get; }
+    public BattleTeamId? WinnerTeamId { get; }
     public int EndTick { get; }
     public IReadOnlyList<BattleRuntimeUnit> Survivors { get; }
     public BattleResolution Resolution { get; }
 
     public BattleOutcome(
         BattleTeam winner,
+        BattleTeamId? winnerTeamId,
         int endTick,
         IReadOnlyList<BattleRuntimeUnit> survivors,
         BattleResolution resolution
     )
     {
         Winner = winner;
+        WinnerTeamId = winnerTeamId;
         EndTick = endTick;
         Survivors = survivors;
         Resolution = resolution;

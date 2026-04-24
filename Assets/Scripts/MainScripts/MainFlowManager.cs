@@ -507,9 +507,14 @@ public sealed class MainFlowManager : MonoBehaviour
                 ? _randomManager.NextInt(RandomStreamType.BattleSimulation, int.MinValue, int.MaxValue)
                 : Random.Range(0, int.MaxValue);
 
+        BattleTeamEntry playerTeam = new BattleTeamEntry(BattleTeamIds.Player, isPlayerOwned: true, allySnapshots);
+        BattleTeamEntry enemyTeam = new BattleTeamEntry(BattleTeamIds.Enemy, isPlayerOwned: false, enemySnapshots);
+        BattleTeamEntry[] teams = { playerTeam, enemyTeam };
+
         payload = new BattleStartPayload(
-            allySnapshots,
-            enemySnapshots,
+            teams,
+            BattleTeamIds.Player,
+            BattleRosterLayout.CreateSequential(teams),
             encounter.EncounterIndex,
             encounter.AverageLevel,
             encounter.PreviewRewardGold,
@@ -550,7 +555,7 @@ public sealed class MainFlowManager : MonoBehaviour
                 continue;
             }
 
-            BattleUnitSnapshot snapshot = BattleUnitSnapshot.FromOwnedGladiator(source, false);
+            BattleUnitSnapshot snapshot = BattleUnitSnapshot.FromOwnedGladiator(source, BattleTeamIds.Player);
             if (snapshot != null)
             {
                 allySnapshots.Add(snapshot);
@@ -663,7 +668,7 @@ public sealed class MainFlowManager : MonoBehaviour
         {
             Debug.Log(
                 $"[MainFlowManager] Battle payload stored. "
-                    + $"Allies={payload.AllyUnits.Count}, Enemies={payload.EnemyUnits.Count}, "
+                    + $"Teams={payload.Teams.Count}, PlayerTeam={payload.PlayerTeamId.Value}, "
                     + $"EncounterIndex={payload.SelectedEncounterIndex}, BattleSeed={payload.BattleSeed}",
                 this
             );

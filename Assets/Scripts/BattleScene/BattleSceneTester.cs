@@ -119,7 +119,7 @@ public sealed class BattleSceneTester : MonoBehaviour
             var entry = preset.allyTeam[i];
             if (entry.classSO == null)
                 continue;
-            allySnapshots.Add(CreateSnapshotFromEntry(i + 1, false, entry));
+            allySnapshots.Add(CreateSnapshotFromEntry(BattleTeamIds.Player, false, entry));
         }
 
         for (int i = 0; i < Mathf.Min(6, preset.enemyTeam.Count); i++)
@@ -127,14 +127,19 @@ public sealed class BattleSceneTester : MonoBehaviour
             var entry = preset.enemyTeam[i];
             if (entry.classSO == null)
                 continue;
-            enemySnapshots.Add(CreateSnapshotFromEntry(i + 7, true, entry));
+            enemySnapshots.Add(CreateSnapshotFromEntry(BattleTeamIds.Enemy, true, entry));
         }
 
         int battleSeed = preset.battleSeed != 0 ? preset.battleSeed : Random.Range(1, 1000000);
         Debug.Log("[BattleSceneTester] Generated battle seed: " + battleSeed);
+        BattleTeamEntry playerTeam = new BattleTeamEntry(BattleTeamIds.Player, isPlayerOwned: true, allySnapshots);
+        BattleTeamEntry enemyTeam = new BattleTeamEntry(BattleTeamIds.Enemy, isPlayerOwned: false, enemySnapshots);
+        BattleTeamEntry[] teams = { playerTeam, enemyTeam };
+
         BattleStartPayload testPayload = new BattleStartPayload(
-            allySnapshots,
-            enemySnapshots,
+            teams,
+            BattleTeamIds.Player,
+            BattleRosterLayout.CreateSequential(teams),
             0,
             preset.enemyAverageLevel,
             preset.previewRewardGold,
@@ -147,7 +152,11 @@ public sealed class BattleSceneTester : MonoBehaviour
         );
     }
 
-    private BattleUnitSnapshot CreateSnapshotFromEntry(int id, bool isEnemy, BattleTestUnitConfig entry)
+    private BattleUnitSnapshot CreateSnapshotFromEntry(
+        BattleTeamId teamId,
+        bool isHostileDisplay,
+        BattleTestUnitConfig entry
+    )
     {
         var classSO = entry.classSO;
         int lv = Mathf.Max(1, entry.level);
@@ -194,9 +203,9 @@ public sealed class BattleSceneTester : MonoBehaviour
             GladiatorSkinManager.Instance != null ? GladiatorSkinManager.Instance.GenerateRandomSkinIndicates() : null;
 
         return new BattleUnitSnapshot(
-            sourceRuntimeId: id,
-            isEnemy: isEnemy,
-            displayName: (isEnemy ? "Enemy " : "Ally ") + classSO.className,
+            sourceRuntimeId: 0,
+            teamId: teamId,
+            displayName: (isHostileDisplay ? "Enemy " : "Ally ") + classSO.className,
             level: lv,
             loyalty: 100,
             maxHealth: finalHp,

@@ -225,7 +225,11 @@ public sealed class BattleSimulationManager : MonoBehaviour
 
         BattleCombatResult[] combatResults = _combatSystem.Execute(_runtimeUnits, _runtimeUnitByState);
 
-        BattleOutcome? outcome = _victorySystem.Evaluate(_runtimeUnits, _battleTickCount);
+        BattleOutcome? outcome = _victorySystem.Evaluate(
+            _runtimeUnits,
+            _battleTickCount,
+            _payload != null ? _payload.PlayerTeamId : BattleTeamIds.Player
+        );
 
         SimulationTickData tickData = BuildTickData(parameterResults, decisions, combatResults);
         OnSimulationTicked?.Invoke(tickData);

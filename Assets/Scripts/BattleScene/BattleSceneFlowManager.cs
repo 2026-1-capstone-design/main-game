@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 // BattleSceneFlowManager 책임:
@@ -163,23 +162,20 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
 
         _initialPayloadSnapshot = ClonePayload(payload);
 
-        Vector3 ExtractPosition(Transform placeholder)
-        {
-            return placeholder != null ? placeholder.position : Vector3.zero;
-        }
-
-        return BootstrapCore(
-            ClonePayload(_initialPayloadSnapshot),
-            allyPlaceholders.Select(ExtractPosition).ToArray(),
-            enemyPlaceholders.Select(ExtractPosition).ToArray()
+        Dictionary<BattleTeamId, Vector3[]> spawnPositionsByTeam = BuildSpawnPositionsByTeam(
+            ClonePayload(_initialPayloadSnapshot)
         );
+
+        return BootstrapCore(ClonePayload(_initialPayloadSnapshot), spawnPositionsByTeam);
     }
 
-    // TrainingBootstrapper에서 무작위 배치 시 사용한다.
-    public bool ResetAndBootstrap(BattleStartPayload payload, Vector3[] allyPositions, Vector3[] enemyPositions)
+    public bool ResetAndBootstrap(
+        BattleStartPayload payload,
+        IReadOnlyDictionary<BattleTeamId, Vector3[]> spawnPositionsByTeam
+    )
     {
         DestroyRuntimeUnits();
-        bool success = BootstrapCore(payload, allyPositions, enemyPositions);
+        bool success = BootstrapCore(payload, spawnPositionsByTeam);
         if (verboseLog && success)
             Debug.Log(
                 $"[BattleSceneFlowManager] ResetAndBootstrap complete. RuntimeUnitCount={_runtimeUnits.Count}",
@@ -188,17 +184,20 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
         return success;
     }
 
-    private bool BootstrapCore(BattleStartPayload payload, Vector3[] allyPositions, Vector3[] enemyPositions)
+    private bool BootstrapCore(
+        BattleStartPayload payload,
+        IReadOnlyDictionary<BattleTeamId, Vector3[]> spawnPositionsByTeam
+    )
     {
         if (payload == null)
+            return false;
+        if (spawnPositionsByTeam == null)
             return false;
 
         if (runtimeUnitRootPrefab == null || battleSimulationManager == null || battlefieldCollider == null)
             return false;
 
-        if (payload.AllyUnits == null || payload.AllyUnits.Count == 0)
-            return false;
-        if (payload.EnemyUnits == null || payload.EnemyUnits.Count == 0)
+        if (payload.Teams == null || payload.Teams.Count == 0)
             return false;
 
         try
@@ -215,8 +214,7 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
                 payload,
                 runtimeUnitRootPrefab,
                 runtimeUnitRoot,
-                allyPositions,
-                enemyPositions,
+                spawnPositionsByTeam,
                 context
             );
         }
@@ -232,6 +230,130 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
 
         OnUnitsSpawned?.Invoke();
         return true;
+    }
+
+    private Dictionary<BattleTeamId, Vector3[]> BuildSpawnPositionsByTeam(BattleStartPayload payload)
+    {
+        Dictionary<BattleTeamId, Vector3[]> positionsByTeam = new Dictionary<BattleTeamId, Vector3[]>();
+        List<BattleTeamEntry> hostileTeams = new List<BattleTeamEntry>();
+
+        for (int i = 0; i < payload.Teams.Count; i++)
+        {
+            BattleTeamEntry team = payload.Teams[i];
+            if (team == null)
+            {
+                continue;
+            }
+
+            if (team.TeamId == payload.PlayerTeamId)
+            {
+                positionsByTeam[team.TeamId] =
+                    TryBuildConfiguredPositions(allyPlaceholders, payload.RosterLayout.GetMaxUnitCount(team.TeamId))
+                    ?? BuildLinePositions(team.Units.Count, battlefieldCollider.bounds, isPlayerTeam: true);
+            }
+            else
+            {
+                hostileTeams.Add(team);
+            }
+        }
+
+        for (int hostileIndex = 0; hostileIndex < hostileTeams.Count; hostileIndex++)
+        {
+            BattleTeamEntry hostileTeam = hostileTeams[hostileIndex];
+            int slotCount = payload.RosterLayout.GetMaxUnitCount(hostileTeam.TeamId);
+            Vector3[] positions;
+
+            if (hostileIndex == 0)
+            {
+                positions = TryBuildConfiguredPositions(enemyPlaceholders, slotCount);
+                if (positions == null)
+                {
+                    positions = BuildLinePositions(
+                        hostileTeam.Units.Count,
+                        battlefieldCollider.bounds,
+                        isPlayerTeam: false
+                    );
+                }
+            }
+            else
+            {
+                positions = BuildArcPositions(
+                    hostileTeam.Units.Count,
+                    battlefieldCollider.bounds,
+                    hostileIndex,
+                    hostileTeams.Count
+                );
+            }
+
+            positionsByTeam[hostileTeam.TeamId] = positions;
+        }
+
+        return positionsByTeam;
+    }
+
+    private static Vector3[] TryBuildConfiguredPositions(Transform[] placeholders, int requiredCount)
+    {
+        if (placeholders == null || placeholders.Length == 0 || requiredCount <= 0)
+        {
+            return null;
+        }
+
+        List<Vector3> positions = new List<Vector3>(requiredCount);
+        for (int i = 0; i < placeholders.Length && positions.Count < requiredCount; i++)
+        {
+            Transform placeholder = placeholders[i];
+            if (placeholder != null)
+            {
+                positions.Add(placeholder.position);
+            }
+        }
+
+        return positions.Count >= requiredCount ? positions.ToArray() : null;
+    }
+
+    private static Vector3[] BuildLinePositions(int count, Bounds battlefieldBounds, bool isPlayerTeam)
+    {
+        count = Mathf.Max(1, count);
+
+        Vector3 center = battlefieldBounds.center;
+        float halfWidth = battlefieldBounds.extents.x;
+        float halfDepth = battlefieldBounds.extents.z;
+
+        float laneX = center.x + (isPlayerTeam ? -halfWidth * 0.55f : halfWidth * 0.55f);
+        float spacing = Mathf.Max(halfDepth * 0.28f, 1.5f);
+        float startZ = center.z - (spacing * (count - 1) * 0.5f);
+
+        Vector3[] positions = new Vector3[count];
+        for (int i = 0; i < count; i++)
+        {
+            positions[i] = new Vector3(laneX, center.y, startZ + (spacing * i));
+        }
+
+        return positions;
+    }
+
+    private static Vector3[] BuildArcPositions(int count, Bounds battlefieldBounds, int hostileIndex, int hostileCount)
+    {
+        count = Mathf.Max(1, count);
+
+        Vector3 center = battlefieldBounds.center;
+        float radius = Mathf.Max(Mathf.Min(battlefieldBounds.extents.x, battlefieldBounds.extents.z) * 0.72f, 3f);
+        float hostileT = hostileCount <= 1 ? 0.5f : Mathf.Clamp01(hostileIndex / (float)(hostileCount - 1));
+        float anchorAngle = Mathf.Lerp(-45f, 45f, hostileT) * Mathf.Deg2Rad;
+        Vector3 radial = new Vector3(Mathf.Cos(anchorAngle), 0f, Mathf.Sin(anchorAngle));
+        Vector3 teamCenter = center + (radial * radius);
+
+        Vector3 tangent = Vector3.Cross(Vector3.up, radial).normalized;
+        float spacing = Mathf.Max(battlefieldBounds.extents.z * 0.18f, 1.5f);
+        float offsetStart = -spacing * (count - 1) * 0.5f;
+
+        Vector3[] positions = new Vector3[count];
+        for (int i = 0; i < count; i++)
+        {
+            positions[i] = teamCenter + tangent * (offsetStart + spacing * i);
+        }
+
+        return positions;
     }
 
     private void DestroyRuntimeUnits()
@@ -271,14 +393,7 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
             return false;
         }
 
-        if (allyPlaceholders == null || allyPlaceholders.Length < 6)
-            return false;
-        if (enemyPlaceholders == null || enemyPlaceholders.Length < 6)
-            return false;
-
-        if (payload.AllyUnits == null || payload.AllyUnits.Count == 0)
-            return false;
-        if (payload.EnemyUnits == null || payload.EnemyUnits.Count == 0)
+        if (payload.Teams == null || payload.Teams.Count == 0)
             return false;
 
         return true;
@@ -286,12 +401,23 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
 
     private BattleStartPayload ClonePayload(BattleStartPayload source)
     {
-        List<BattleUnitSnapshot> allyUnits = CloneSnapshots(source.AllyUnits);
-        List<BattleUnitSnapshot> enemyUnits = CloneSnapshots(source.EnemyUnits);
+        List<BattleTeamEntry> teams = new List<BattleTeamEntry>(source.Teams.Count);
+
+        for (int i = 0; i < source.Teams.Count; i++)
+        {
+            BattleTeamEntry team = source.Teams[i];
+            if (team == null)
+            {
+                continue;
+            }
+
+            teams.Add(new BattleTeamEntry(team.TeamId, team.IsPlayerOwned, CloneSnapshots(team.Units)));
+        }
 
         return new BattleStartPayload(
-            allyUnits,
-            enemyUnits,
+            teams,
+            source.PlayerTeamId,
+            source.RosterLayout,
             source.SelectedEncounterIndex,
             source.EnemyAverageLevel,
             source.PreviewRewardGold,

@@ -8,8 +8,7 @@ public static class BattleBootstrapper
         BattleStartPayload payload,
         GameObject runtimeUnitRootPrefab,
         Transform runtimeUnitRoot,
-        Vector3[] allyPositions,
-        Vector3[] enemyPositions,
+        IReadOnlyDictionary<BattleTeamId, Vector3[]> spawnPositionsByTeam,
         BattleSceneContext context
     )
     {
@@ -17,42 +16,43 @@ public static class BattleBootstrapper
             throw new ArgumentNullException(nameof(payload));
         if (runtimeUnitRootPrefab == null)
             throw new ArgumentNullException(nameof(runtimeUnitRootPrefab));
-        if (allyPositions == null)
-            throw new ArgumentNullException(nameof(allyPositions));
-        if (enemyPositions == null)
-            throw new ArgumentNullException(nameof(enemyPositions));
+        if (spawnPositionsByTeam == null)
+            throw new ArgumentNullException(nameof(spawnPositionsByTeam));
         if (context == null)
             throw new ArgumentNullException(nameof(context));
 
         var spawnedUnits = new List<BattleRuntimeUnit>(12);
         Transform parent = runtimeUnitRoot != null ? runtimeUnitRoot : context.BattlefieldCollider.transform;
 
-        bool allySpawned = SpawnTeam(
-            payload.AllyUnits,
-            allyPositions,
-            isEnemy: false,
-            unitNumberStart: 1,
-            runtimeUnitRootPrefab,
-            parent,
-            context.BattlefieldCollider,
-            spawnedUnits
-        );
-
-        bool enemySpawned = SpawnTeam(
-            payload.EnemyUnits,
-            enemyPositions,
-            isEnemy: true,
-            unitNumberStart: 7,
-            runtimeUnitRootPrefab,
-            parent,
-            context.BattlefieldCollider,
-            spawnedUnits
-        );
-
-        if (!allySpawned || !enemySpawned)
+        for (int i = 0; i < payload.Teams.Count; i++)
         {
-            DestroySpawnedUnits(spawnedUnits);
-            throw new InvalidOperationException("Team spawning failed.");
+            BattleTeamEntry team = payload.Teams[i];
+            if (team == null)
+            {
+                continue;
+            }
+
+            if (!spawnPositionsByTeam.TryGetValue(team.TeamId, out Vector3[] positions) || positions == null)
+            {
+                DestroySpawnedUnits(spawnedUnits);
+                throw new InvalidOperationException($"Missing spawn positions for team {team.TeamId.Value}.");
+            }
+
+            bool teamSpawned = SpawnTeam(
+                team,
+                positions,
+                payload.RosterLayout,
+                runtimeUnitRootPrefab,
+                parent,
+                context.BattlefieldCollider,
+                spawnedUnits
+            );
+
+            if (!teamSpawned)
+            {
+                DestroySpawnedUnits(spawnedUnits);
+                throw new InvalidOperationException($"Team spawning failed. TeamId={team.TeamId.Value}");
+            }
         }
 
         return new SpawnResult(spawnedUnits);
@@ -68,12 +68,16 @@ public static class BattleBootstrapper
         context.SimulationManager.Initialize(spawned.Units, context.BattlefieldCollider, payload: payload);
     }
 
-    public static void InitializeUI(SpawnResult spawned, BattleSceneContext context)
+    public static void InitializeUI(SpawnResult spawned, BattleSceneContext context, BattleStartPayload payload)
     {
         if (spawned == null)
             throw new ArgumentNullException(nameof(spawned));
         if (context == null)
             throw new ArgumentNullException(nameof(context));
+        if (payload == null)
+            throw new ArgumentNullException(nameof(payload));
+
+        BattleRosterProjection rosterProjection = new BattleRosterProjection(payload, spawned.Units);
 
         if (context.SceneUI != null)
         {
@@ -83,14 +87,19 @@ public static class BattleBootstrapper
 
         if (context.StatusGridUI != null)
         {
-            context.StatusGridUI.Initialize(context.SimulationManager, spawned.Units, context.SceneUI);
-            context.StatusGridUI.BindUnits(spawned.Units);
+            context.StatusGridUI.Initialize(
+                context.SimulationManager,
+                spawned.Units,
+                rosterProjection,
+                context.SceneUI
+            );
+            context.StatusGridUI.BindUnits(spawned.Units, rosterProjection);
             context.StatusGridUI.Refresh();
         }
 
         if (context.OrdersManager != null)
         {
-            context.OrdersManager.Initialize(spawned.Units, context.BattlefieldCollider);
+            context.OrdersManager.Initialize(spawned.Units, rosterProjection, context.BattlefieldCollider);
         }
 
         if (context.SceneUI != null)
@@ -101,8 +110,7 @@ public static class BattleBootstrapper
         BattleStartPayload payload,
         GameObject runtimeUnitRootPrefab,
         Transform runtimeUnitRoot,
-        Vector3[] allyPositions,
-        Vector3[] enemyPositions,
+        IReadOnlyDictionary<BattleTeamId, Vector3[]> spawnPositionsByTeam,
         BattleSceneContext context
     )
     {
@@ -110,34 +118,33 @@ public static class BattleBootstrapper
             payload,
             runtimeUnitRootPrefab,
             runtimeUnitRoot,
-            allyPositions,
-            enemyPositions,
+            spawnPositionsByTeam,
             context
         );
         InitializeSimulation(spawned, context, payload);
-        InitializeUI(spawned, context);
+        InitializeUI(spawned, context, payload);
         return spawned;
     }
 
     private static bool SpawnTeam(
-        IReadOnlyList<BattleUnitSnapshot> snapshots,
+        BattleTeamEntry teamEntry,
         Vector3[] positions,
-        bool isEnemy,
-        int unitNumberStart,
+        BattleRosterLayout rosterLayout,
         GameObject runtimeUnitRootPrefab,
         Transform parent,
         SphereCollider battlefieldCollider,
         List<BattleRuntimeUnit> destination
     )
     {
-        if (snapshots == null || positions == null)
+        if (teamEntry == null || teamEntry.Units == null || positions == null || rosterLayout == null)
             return false;
 
-        int spawnCount = Mathf.Min(6, Mathf.Min(snapshots.Count, positions.Length));
+        int maxUnitCount = rosterLayout.GetMaxUnitCount(teamEntry.TeamId);
+        int spawnCount = Mathf.Min(maxUnitCount, Mathf.Min(teamEntry.Units.Count, positions.Length));
 
         for (int i = 0; i < spawnCount; i++)
         {
-            BattleUnitSnapshot snapshot = snapshots[i];
+            BattleUnitSnapshot snapshot = teamEntry.Units[i];
             if (snapshot == null)
                 continue;
 
@@ -151,7 +158,12 @@ public static class BattleBootstrapper
             }
 
             runtimeUnit.SetRuntimeRootObject(runtimeRoot);
-            runtimeUnit.Initialize(snapshot.Clone(), unitNumberStart + i, isEnemy);
+            runtimeUnit.Initialize(
+                snapshot.Clone(),
+                rosterLayout.AllocateUnitNumber(teamEntry.TeamId, i),
+                teamEntry.TeamId,
+                teamEntry.IsPlayerOwned
+            );
             runtimeUnit.PlaceAt(positions[i], battlefieldCollider.transform);
             destination.Add(runtimeUnit);
         }

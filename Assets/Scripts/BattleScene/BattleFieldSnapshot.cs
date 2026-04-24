@@ -4,46 +4,66 @@ using UnityEngine;
 // 전장 상태에 대한 다양한 쿼리를 제공한다.
 public sealed class BattleFieldSnapshot
 {
-    private static readonly List<BattleUnitCombatState> _allyStateBuffer = new(6);
-    private static readonly List<BattleUnitCombatState> _enemyStateBuffer = new(6);
-    private static readonly List<BattleUnitView> _allyViewBuffer = new(6);
-    private static readonly List<BattleUnitView> _enemyViewBuffer = new(6);
-
     private readonly BattleParameterRadii _radii;
-    private readonly IReadOnlyList<BattleUnitCombatState> _livingAllies;
-    private readonly IReadOnlyList<BattleUnitCombatState> _livingEnemies;
-    private readonly IReadOnlyList<BattleUnitView> _livingAllyViews;
-    private readonly IReadOnlyList<BattleUnitView> _livingEnemyViews;
+    private readonly BattleUnitCombatState[] _allLivingStates;
+    private readonly BattleUnitView[] _allLivingViews;
 
-    private readonly Dictionary<BattleUnitCombatState, BattleUnitCombatState> _bestIsolatedEnemyCache = new(12);
-    private readonly Dictionary<BattleUnitCombatState, BattleUnitCombatState> _bestBacklineEnemyCache = new(12);
-    private readonly Dictionary<BattleUnitCombatState, BattleUnitCombatState> _mostPressuredAllyCache = new(12);
-    private readonly Dictionary<BattleUnitCombatState, Vector3> _enemyPressureCenterCache = new(12);
+    private readonly Dictionary<BattleTeamId, BattleUnitView[]> _livingViewsByTeam;
+    private readonly Dictionary<BattleTeamId, Vector3> _teamCenterByTeam = new Dictionary<BattleTeamId, Vector3>();
+    private readonly Dictionary<BattleUnitCombatState, BattleUnitCombatState[]> _livingAlliesCache = new Dictionary<
+        BattleUnitCombatState,
+        BattleUnitCombatState[]
+    >(12);
+    private readonly Dictionary<BattleUnitCombatState, BattleUnitCombatState[]> _livingEnemiesCache = new Dictionary<
+        BattleUnitCombatState,
+        BattleUnitCombatState[]
+    >(12);
+    private readonly Dictionary<BattleUnitCombatState, BattleUnitView[]> _livingAllyViewsCache = new Dictionary<
+        BattleUnitCombatState,
+        BattleUnitView[]
+    >(12);
+    private readonly Dictionary<BattleUnitCombatState, BattleUnitView[]> _livingEnemyViewsCache = new Dictionary<
+        BattleUnitCombatState,
+        BattleUnitView[]
+    >(12);
+    private readonly Dictionary<BattleUnitCombatState, BattleUnitCombatState> _bestIsolatedEnemyCache = new Dictionary<
+        BattleUnitCombatState,
+        BattleUnitCombatState
+    >(12);
+    private readonly Dictionary<BattleUnitCombatState, BattleUnitCombatState> _bestBacklineEnemyCache = new Dictionary<
+        BattleUnitCombatState,
+        BattleUnitCombatState
+    >(12);
+    private readonly Dictionary<BattleUnitCombatState, BattleUnitCombatState> _mostPressuredAllyCache = new Dictionary<
+        BattleUnitCombatState,
+        BattleUnitCombatState
+    >(12);
+    private readonly Dictionary<BattleUnitCombatState, Vector3> _enemyPressureCenterCache = new Dictionary<
+        BattleUnitCombatState,
+        Vector3
+    >(12);
 
-    public IReadOnlyList<BattleUnitCombatState> AllLiving { get; }
-    public Vector3 AllyTeamCenter { get; }
-    public Vector3 EnemyTeamCenter { get; }
+    public IReadOnlyList<BattleUnitCombatState> AllLiving => _allLivingStates;
     public float EscapeTowardTeamBlend { get; }
 
     private BattleFieldSnapshot(
         BattleParameterRadii radii,
         float escapeTowardTeamBlend,
-        IReadOnlyList<BattleUnitCombatState> livingAllies,
-        IReadOnlyList<BattleUnitCombatState> livingEnemies,
-        IReadOnlyList<BattleUnitView> livingAllyViews,
-        IReadOnlyList<BattleUnitView> livingEnemyViews
+        BattleUnitCombatState[] allLivingStates,
+        BattleUnitView[] allLivingViews,
+        Dictionary<BattleTeamId, BattleUnitView[]> livingViewsByTeam
     )
     {
         _radii = radii;
         EscapeTowardTeamBlend = escapeTowardTeamBlend;
-        _livingAllies = livingAllies;
-        _livingEnemies = livingEnemies;
-        _livingAllyViews = livingAllyViews;
-        _livingEnemyViews = livingEnemyViews;
+        _allLivingStates = allLivingStates ?? System.Array.Empty<BattleUnitCombatState>();
+        _allLivingViews = allLivingViews ?? System.Array.Empty<BattleUnitView>();
+        _livingViewsByTeam = livingViewsByTeam ?? new Dictionary<BattleTeamId, BattleUnitView[]>();
 
-        AllyTeamCenter = BattleParameterComputer.ComputeTeamCenter(_livingAllyViews, Vector3.zero);
-        EnemyTeamCenter = BattleParameterComputer.ComputeTeamCenter(_livingEnemyViews, Vector3.zero);
-        AllLiving = MergeTeams(_livingAllies, _livingEnemies);
+        foreach (KeyValuePair<BattleTeamId, BattleUnitView[]> pair in _livingViewsByTeam)
+        {
+            _teamCenterByTeam[pair.Key] = BattleParameterComputer.ComputeTeamCenter(pair.Value, Vector3.zero);
+        }
     }
 
     public static BattleFieldSnapshot Build(
@@ -52,10 +72,10 @@ public sealed class BattleFieldSnapshot
         float escapeTowardTeamBlend
     )
     {
-        _allyStateBuffer.Clear();
-        _enemyStateBuffer.Clear();
-        _allyViewBuffer.Clear();
-        _enemyViewBuffer.Clear();
+        List<BattleUnitCombatState> livingStates = new List<BattleUnitCombatState>(12);
+        List<BattleUnitView> livingViews = new List<BattleUnitView>(12);
+        Dictionary<BattleTeamId, List<BattleUnitView>> viewsByTeam =
+            new Dictionary<BattleTeamId, List<BattleUnitView>>();
 
         if (units != null)
         {
@@ -64,32 +84,39 @@ public sealed class BattleFieldSnapshot
                 BattleRuntimeUnit unit = units[i];
                 BattleUnitCombatState state = unit != null ? unit.State : null;
                 if (!IsLiving(state))
+                {
                     continue;
+                }
 
-                if (state.IsEnemy)
+                livingStates.Add(state);
+
+                BattleUnitView view = BattleUnitView.From(state);
+                livingViews.Add(view);
+
+                if (!viewsByTeam.TryGetValue(state.TeamId, out List<BattleUnitView> teamViews))
                 {
-                    _enemyStateBuffer.Add(state);
-                    _enemyViewBuffer.Add(BattleUnitView.From(state));
+                    teamViews = new List<BattleUnitView>(6);
+                    viewsByTeam[state.TeamId] = teamViews;
                 }
-                else
-                {
-                    _allyStateBuffer.Add(state);
-                    _allyViewBuffer.Add(BattleUnitView.From(state));
-                }
+
+                teamViews.Add(view);
             }
+        }
+
+        Dictionary<BattleTeamId, BattleUnitView[]> frozenViewsByTeam = new Dictionary<BattleTeamId, BattleUnitView[]>();
+        foreach (KeyValuePair<BattleTeamId, List<BattleUnitView>> pair in viewsByTeam)
+        {
+            frozenViewsByTeam[pair.Key] = pair.Value.ToArray();
         }
 
         return new BattleFieldSnapshot(
             radii,
             escapeTowardTeamBlend,
-            _allyStateBuffer.ToArray(),
-            _enemyStateBuffer.ToArray(),
-            _allyViewBuffer.ToArray(),
-            _enemyViewBuffer.ToArray()
+            livingStates.ToArray(),
+            livingViews.ToArray(),
+            frozenViewsByTeam
         );
     }
-
-    // ── 팀 관계 단일 진입점 — static 검증 ────────────────────────────────
 
     public static bool IsValidEnemyTarget(BattleUnitCombatState requester, BattleUnitCombatState candidate)
     {
@@ -97,7 +124,18 @@ public sealed class BattleFieldSnapshot
             return false;
         if (requester == candidate)
             return false;
-        if (requester.IsEnemy == candidate.IsEnemy)
+        if (requester.TeamId == candidate.TeamId)
+            return false;
+        return !candidate.IsCombatDisabled;
+    }
+
+    public static bool IsValidSameTeamAlly(BattleUnitCombatState requester, BattleUnitCombatState candidate)
+    {
+        if (requester == null || candidate == null)
+            return false;
+        if (requester == candidate)
+            return false;
+        if (requester.TeamId != candidate.TeamId)
             return false;
         return !candidate.IsCombatDisabled;
     }
@@ -118,29 +156,68 @@ public sealed class BattleFieldSnapshot
         return delta.magnitude <= (GetEffectiveAttackDistance(attacker, target) + 0.05f);
     }
 
-    // ── 팀 관계 단일 진입점 — instance 조회 ──────────────────────────────
-
     public IReadOnlyList<BattleUnitCombatState> GetLivingAllies(BattleUnitCombatState requester)
     {
         if (requester == null)
             return System.Array.Empty<BattleUnitCombatState>();
-        return requester.IsEnemy ? _livingEnemies : _livingAllies;
+
+        if (_livingAlliesCache.TryGetValue(requester, out BattleUnitCombatState[] cached))
+        {
+            return cached;
+        }
+
+        BattleUnitCombatState[] result = FilterStates(requester, allies: true);
+        _livingAlliesCache[requester] = result;
+        return result;
     }
 
     public IReadOnlyList<BattleUnitCombatState> GetLivingEnemies(BattleUnitCombatState requester)
     {
         if (requester == null)
             return System.Array.Empty<BattleUnitCombatState>();
-        return requester.IsEnemy ? _livingAllies : _livingEnemies;
+
+        if (_livingEnemiesCache.TryGetValue(requester, out BattleUnitCombatState[] cached))
+        {
+            return cached;
+        }
+
+        BattleUnitCombatState[] result = FilterStates(requester, allies: false);
+        _livingEnemiesCache[requester] = result;
+        return result;
     }
 
-    public IReadOnlyList<BattleUnitView> GetLivingAllyViews(BattleUnitCombatState requester) =>
-        requester != null && requester.IsEnemy ? _livingEnemyViews : _livingAllyViews;
+    public IReadOnlyList<BattleUnitView> GetLivingAllyViews(BattleUnitCombatState requester)
+    {
+        if (requester == null)
+            return System.Array.Empty<BattleUnitView>();
 
-    public IReadOnlyList<BattleUnitView> GetLivingEnemyViews(BattleUnitCombatState requester) =>
-        requester != null && requester.IsEnemy ? _livingAllyViews : _livingEnemyViews;
+        if (_livingAllyViewsCache.TryGetValue(requester, out BattleUnitView[] cached))
+        {
+            return cached;
+        }
 
-    public Vector3 ComputeTeamCenter(bool isEnemyTeam) => isEnemyTeam ? EnemyTeamCenter : AllyTeamCenter;
+        BattleUnitView[] result = FilterViews(requester, allies: true);
+        _livingAllyViewsCache[requester] = result;
+        return result;
+    }
+
+    public IReadOnlyList<BattleUnitView> GetLivingEnemyViews(BattleUnitCombatState requester)
+    {
+        if (requester == null)
+            return System.Array.Empty<BattleUnitView>();
+
+        if (_livingEnemyViewsCache.TryGetValue(requester, out BattleUnitView[] cached))
+        {
+            return cached;
+        }
+
+        BattleUnitView[] result = FilterViews(requester, allies: false);
+        _livingEnemyViewsCache[requester] = result;
+        return result;
+    }
+
+    public Vector3 ComputeTeamCenter(BattleTeamId teamId) =>
+        _teamCenterByTeam.TryGetValue(teamId, out Vector3 center) ? center : Vector3.zero;
 
     public BattleUnitCombatState FindNearestLivingEnemy(BattleUnitCombatState requester) =>
         FindNearestEnemy(requester, GetLivingEnemies(requester));
@@ -190,7 +267,6 @@ public sealed class BattleFieldSnapshot
         if (_bestBacklineEnemyCache.TryGetValue(self, out BattleUnitCombatState cached))
             return cached;
 
-        Vector3 enemyCenter = ComputeTeamCenter(!self.IsEnemy);
         IReadOnlyList<BattleUnitCombatState> enemies = GetLivingEnemies(self);
         IReadOnlyList<BattleUnitView> enemyViews = GetLivingEnemyViews(self);
         BattleUnitView selfView = BattleUnitView.From(self);
@@ -200,6 +276,7 @@ public sealed class BattleFieldSnapshot
         for (int i = 0; i < enemies.Count; i++)
         {
             BattleUnitCombatState enemy = enemies[i];
+            Vector3 enemyCenter = ComputeTeamCenter(enemy.TeamId);
             float hpLow = enemy.MaxHealth > 0f ? Mathf.Clamp01(1f - (enemy.CurrentHealth / enemy.MaxHealth)) : 0f;
             float isolation = BattleParameterComputer.ComputeIsolatedEnemyTargetScore(
                 selfView,
@@ -341,24 +418,62 @@ public sealed class BattleFieldSnapshot
             weightSum += weight;
         }
 
-        Vector3 center = weightSum <= 0.0001f ? ComputeTeamCenter(!self.IsEnemy) : weightedSum / weightSum;
+        Vector3 center = weightSum <= 0.0001f ? ComputeHostileCenter(self) : weightedSum / weightSum;
         _enemyPressureCenterCache[self] = center;
         return center;
     }
 
-    // ── 내부 구현 ─────────────────────────────────────────────────────────
-
     private static bool IsLiving(BattleUnitCombatState unit) => unit != null && !unit.IsCombatDisabled;
 
-    private static bool IsValidSameTeamAlly(BattleUnitCombatState requester, BattleUnitCombatState candidate)
+    private BattleUnitCombatState[] FilterStates(BattleUnitCombatState requester, bool allies)
     {
-        if (requester == null || candidate == null)
-            return false;
-        if (requester == candidate)
-            return false;
-        if (requester.IsEnemy != candidate.IsEnemy)
-            return false;
-        return !candidate.IsCombatDisabled;
+        List<BattleUnitCombatState> result = new List<BattleUnitCombatState>(_allLivingStates.Length);
+
+        for (int i = 0; i < _allLivingStates.Length; i++)
+        {
+            BattleUnitCombatState candidate = _allLivingStates[i];
+            if (!IsLiving(candidate))
+            {
+                continue;
+            }
+
+            bool matches = allies
+                ? requester.TeamId == candidate.TeamId
+                : requester.TeamId != candidate.TeamId;
+
+            if (matches)
+            {
+                result.Add(candidate);
+            }
+        }
+
+        return result.ToArray();
+    }
+
+    private BattleUnitView[] FilterViews(BattleUnitCombatState requester, bool allies)
+    {
+        List<BattleUnitView> result = new List<BattleUnitView>(_allLivingViews.Length);
+
+        for (int i = 0; i < _allLivingViews.Length; i++)
+        {
+            BattleUnitView candidate = _allLivingViews[i];
+            bool matches = allies
+                ? requester.TeamId == candidate.TeamId
+                : requester.TeamId != candidate.TeamId;
+
+            if (matches)
+            {
+                result.Add(candidate);
+            }
+        }
+
+        return result.ToArray();
+    }
+
+    private Vector3 ComputeHostileCenter(BattleUnitCombatState requester)
+    {
+        IReadOnlyList<BattleUnitView> hostileViews = GetLivingEnemyViews(requester);
+        return BattleParameterComputer.ComputeTeamCenter(hostileViews, Vector3.zero);
     }
 
     private static BattleUnitCombatState FindNearestEnemy(
@@ -429,19 +544,5 @@ public sealed class BattleFieldSnapshot
                 count++;
         }
         return count;
-    }
-
-    private static IReadOnlyList<BattleUnitCombatState> MergeTeams(
-        IReadOnlyList<BattleUnitCombatState> allies,
-        IReadOnlyList<BattleUnitCombatState> enemies
-    )
-    {
-        var merged = new BattleUnitCombatState[allies.Count + enemies.Count];
-        int index = 0;
-        for (int i = 0; i < allies.Count; i++)
-            merged[index++] = allies[i];
-        for (int i = 0; i < enemies.Count; i++)
-            merged[index++] = enemies[i];
-        return merged;
     }
 }

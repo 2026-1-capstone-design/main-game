@@ -13,7 +13,7 @@ public sealed class WarcrySkill : IBattleSkill
     {
         foreach (var unit in applier.AllUnits)
         {
-            if (unit != null && !unit.IsCombatDisabled && unit.IsEnemy == caster.IsEnemy)
+            if (unit != null && !unit.IsCombatDisabled && unit.TeamId == caster.State.TeamId)
             {
                 applier.ApplyBuff(unit, BuffType.AttackDamage, 3, 10f); // 공격력 +30
             }

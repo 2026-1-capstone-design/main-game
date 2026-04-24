@@ -9,7 +9,7 @@ public sealed class RegroupPlanner : IBattleActionPlanner
             Action = BattleActionType.RegroupToAllies,
             TargetEnemy = null,
             TargetAlly = null,
-            DesiredPosition = snapshot.ComputeTeamCenter(unit.State.IsEnemy),
+            DesiredPosition = snapshot.ComputeTeamCenter(unit.State.TeamId),
             HasDesiredPosition = true,
         };
     }

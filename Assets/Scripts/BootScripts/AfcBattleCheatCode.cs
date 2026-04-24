@@ -449,7 +449,7 @@ public sealed class AfcBattleCheatCode : MonoBehaviour
                 continue;
             }
 
-            if (unit.IsEnemy != disableEnemies)
+            if (unit.IsPlayerOwned == disableEnemies)
             {
                 continue;
             }

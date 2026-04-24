@@ -18,7 +18,7 @@ public sealed class LightningSkill : IBattleSkill
 
         foreach (var unit in applier.AllUnits)
         {
-            if (unit.IsCombatDisabled || unit.IsEnemy == caster.IsEnemy)
+            if (unit.IsCombatDisabled || !BattleFieldSnapshot.IsValidEnemyTarget(caster.State, unit))
                 continue;
 
             if (Vector3.Distance(target.Position, unit.Position) <= 40f)

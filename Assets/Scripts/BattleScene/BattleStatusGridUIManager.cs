@@ -29,6 +29,7 @@ public sealed class BattleStatusGridUIManager : MonoBehaviour
     private BattleSimulationManager _simulationManager;
     private BattleSimulationManager _subscribedSimulationManager;
     private BattleSceneUIManager _battleSceneUIManager;
+    private IBattleRosterProjection _rosterProjection;
     private readonly BattleRuntimeUnit[] _allyUnits = new BattleRuntimeUnit[6];
     private readonly BattleRuntimeUnit[] _enemyUnits = new BattleRuntimeUnit[6];
     private bool _initialized;
@@ -36,13 +37,15 @@ public sealed class BattleStatusGridUIManager : MonoBehaviour
     public void Initialize(
         BattleSimulationManager simulationManager,
         IReadOnlyList<BattleRuntimeUnit> runtimeUnits,
+        IBattleRosterProjection rosterProjection,
         BattleSceneUIManager battleSceneUIManager = null
     )
     {
         _simulationManager = simulationManager;
         _battleSceneUIManager = battleSceneUIManager;
+        _rosterProjection = rosterProjection;
         RebindSimulationEvents();
-        BindUnits(runtimeUnits);
+        BindUnits(runtimeUnits, rosterProjection);
 
         BindAllyOrderButtons();
         UpdateAllyOrderButtonInteractableStates();
@@ -54,8 +57,10 @@ public sealed class BattleStatusGridUIManager : MonoBehaviour
         UnbindSimulationEvents();
     }
 
-    public void BindUnits(IReadOnlyList<BattleRuntimeUnit> runtimeUnits)
+    public void BindUnits(IReadOnlyList<BattleRuntimeUnit> runtimeUnits, IBattleRosterProjection rosterProjection)
     {
+        _rosterProjection = rosterProjection;
+
         for (int i = 0; i < _allyUnits.Length; i++)
         {
             _allyUnits[i] = null;
@@ -76,20 +81,21 @@ public sealed class BattleStatusGridUIManager : MonoBehaviour
                     continue;
                 }
 
-                if (!unit.IsEnemy)
+                if (_rosterProjection != null && _rosterProjection.TryGetPlayerSlot(unit, out int playerSlotIndex))
                 {
-                    int allyIndex = unit.UnitNumber - 1;
-                    if (allyIndex >= 0 && allyIndex < _allyUnits.Length)
+                    if (playerSlotIndex >= 0 && playerSlotIndex < _allyUnits.Length)
                     {
-                        _allyUnits[allyIndex] = unit;
+                        _allyUnits[playerSlotIndex] = unit;
                     }
                 }
-                else
+                else if (
+                    _rosterProjection != null
+                    && _rosterProjection.TryGetHostileSlot(unit, out int hostileSlotIndex)
+                )
                 {
-                    int enemyIndex = unit.UnitNumber - 7;
-                    if (enemyIndex >= 0 && enemyIndex < _enemyUnits.Length)
+                    if (hostileSlotIndex >= 0 && hostileSlotIndex < _enemyUnits.Length)
                     {
-                        _enemyUnits[enemyIndex] = unit;
+                        _enemyUnits[hostileSlotIndex] = unit;
                     }
                 }
             }
@@ -223,7 +229,10 @@ public sealed class BattleStatusGridUIManager : MonoBehaviour
         string targetText = unit.CurrentTarget != null ? unit.CurrentTarget.UnitNumber.ToString() : "-";
         string topActionText = unit.TopScoredAction == BattleActionType.None ? "-" : unit.TopScoredAction.ToString();
 
-        return $"#{unit.UnitNumber} {unit.DisplayName} {weaponType}\n"
+        string displayUnitId =
+            _rosterProjection != null ? _rosterProjection.GetDisplayUnitId(unit) : $"#{unit.UnitNumber}";
+
+        return $"{displayUnitId} {unit.DisplayName} {weaponType}\n"
             + $"{hpText}\n"
             + $"Action {unit.CurrentAction}\n"
             + $"Move {moveText} / Attack {attackText}  {targetText}\n"

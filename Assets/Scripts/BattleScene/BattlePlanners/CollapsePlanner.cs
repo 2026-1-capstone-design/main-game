@@ -6,7 +6,7 @@ public sealed class CollapsePlanner : IBattleActionPlanner
 
     public BattleActionExecutionPlan Build(BattleRuntimeUnit unit, BattleFieldSnapshot snapshot)
     {
-        Vector3 clusterCenter = snapshot.ComputeTeamCenter(!unit.State.IsEnemy);
+        Vector3 clusterCenter = snapshot.ComputeEnemyPressureCenter(unit.State);
         BattleUnitCombatState target = snapshot.FindEnemyClosestToPoint(unit.State, clusterCenter);
 
         return new BattleActionExecutionPlan
