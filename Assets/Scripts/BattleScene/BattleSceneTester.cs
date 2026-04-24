@@ -114,7 +114,7 @@ public sealed class BattleSceneTester : MonoBehaviour
         var allySnapshots = new List<BattleUnitSnapshot>();
         var enemySnapshots = new List<BattleUnitSnapshot>();
 
-        for (int i = 0; i < Mathf.Min(6, preset.allyTeam.Count); i++)
+        for (int i = 0; i < Mathf.Min(BattleTeamConstants.MaxUnitsPerTeam, preset.allyTeam.Count); i++)
         {
             var entry = preset.allyTeam[i];
             if (entry.classSO == null)
@@ -122,7 +122,7 @@ public sealed class BattleSceneTester : MonoBehaviour
             allySnapshots.Add(CreateSnapshotFromEntry(BattleTeamIds.Player, false, entry));
         }
 
-        for (int i = 0; i < Mathf.Min(6, preset.enemyTeam.Count); i++)
+        for (int i = 0; i < Mathf.Min(BattleTeamConstants.MaxUnitsPerTeam, preset.enemyTeam.Count); i++)
         {
             var entry = preset.enemyTeam[i];
             if (entry.classSO == null)

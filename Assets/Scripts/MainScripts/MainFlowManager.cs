@@ -523,12 +523,12 @@ public sealed class MainFlowManager : MonoBehaviour
         return true;
     }
 
-    // 현재 보유 검투사 목록의 앞 1~6명을 전투용 아군 snapshot으로 복사함.
+    // 현재 보유 검투사 목록의 앞 최대 BattleTeamConstants.MaxUnitsPerTeam명을 전투용 아군 snapshot으로 복사함.
     // 프로토타입에서 전투에 들어가는 건 실제 인스턴스가 아니라, 각 유닛의 정보를 복사한 스냅샷임. (정보의 변형이나 버그를 방지, 오버헤드 감소)
     // 즉, 실제 보유 데이터 자체를 넘기지 않고 전투 시작용 복사본을 만든다는 것
     private bool TryBuildAllySnapshotsForBattle(out List<BattleUnitSnapshot> allySnapshots)
     {
-        allySnapshots = new List<BattleUnitSnapshot>(6);
+        allySnapshots = new List<BattleUnitSnapshot>(BattleTeamConstants.MaxUnitsPerTeam);
 
         if (gladiatorManager == null)
         {
@@ -543,7 +543,7 @@ public sealed class MainFlowManager : MonoBehaviour
             return false;
         }
 
-        int count = Mathf.Min(6, ownedGladiators.Count);
+        int count = Mathf.Min(BattleTeamConstants.MaxUnitsPerTeam, ownedGladiators.Count);
 
         for (int i = 0; i < count; i++)
         {
@@ -579,7 +579,7 @@ public sealed class MainFlowManager : MonoBehaviour
         out List<BattleUnitSnapshot> enemySnapshots
     )
     {
-        enemySnapshots = new List<BattleUnitSnapshot>(6);
+        enemySnapshots = new List<BattleUnitSnapshot>(BattleTeamConstants.MaxUnitsPerTeam);
 
         if (encounter == null)
         {
@@ -594,7 +594,7 @@ public sealed class MainFlowManager : MonoBehaviour
             return false;
         }
 
-        int count = Mathf.Min(6, encounterUnits.Count);
+        int count = Mathf.Min(BattleTeamConstants.MaxUnitsPerTeam, encounterUnits.Count);
 
         for (int i = 0; i < count; i++)
         {

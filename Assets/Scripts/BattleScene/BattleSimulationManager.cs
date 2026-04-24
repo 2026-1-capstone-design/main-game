@@ -37,12 +37,16 @@ public sealed class BattleSimulationManager : MonoBehaviour
     public float desiredPositionStopDistance = 8f;
     public float escapeTowardTeamBlend = 0.35f;
 
-    private readonly List<BattleRuntimeUnit> _runtimeUnits = new List<BattleRuntimeUnit>(12);
-    private readonly List<BattleUnitCombatState> _unitStates = new List<BattleUnitCombatState>(12);
+    private readonly List<BattleRuntimeUnit> _runtimeUnits = new List<BattleRuntimeUnit>(
+        BattleTeamConstants.MaxUnitsInBattle
+    );
+    private readonly List<BattleUnitCombatState> _unitStates = new List<BattleUnitCombatState>(
+        BattleTeamConstants.MaxUnitsInBattle
+    );
     private readonly Dictionary<BattleUnitCombatState, BattleRuntimeUnit> _runtimeUnitByState = new Dictionary<
         BattleUnitCombatState,
         BattleRuntimeUnit
-    >(12);
+    >(BattleTeamConstants.MaxUnitsInBattle);
 
     // 3D 전장 클램프를 위한 SphereCollider
     private SphereCollider _battlefieldCollider;

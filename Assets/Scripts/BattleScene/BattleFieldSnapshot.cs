@@ -13,35 +13,35 @@ public sealed class BattleFieldSnapshot
     private readonly Dictionary<BattleUnitCombatState, BattleUnitCombatState[]> _livingAlliesCache = new Dictionary<
         BattleUnitCombatState,
         BattleUnitCombatState[]
-    >(12);
+    >(BattleTeamConstants.MaxUnitsInBattle);
     private readonly Dictionary<BattleUnitCombatState, BattleUnitCombatState[]> _livingEnemiesCache = new Dictionary<
         BattleUnitCombatState,
         BattleUnitCombatState[]
-    >(12);
+    >(BattleTeamConstants.MaxUnitsInBattle);
     private readonly Dictionary<BattleUnitCombatState, BattleUnitView[]> _livingAllyViewsCache = new Dictionary<
         BattleUnitCombatState,
         BattleUnitView[]
-    >(12);
+    >(BattleTeamConstants.MaxUnitsInBattle);
     private readonly Dictionary<BattleUnitCombatState, BattleUnitView[]> _livingEnemyViewsCache = new Dictionary<
         BattleUnitCombatState,
         BattleUnitView[]
-    >(12);
+    >(BattleTeamConstants.MaxUnitsInBattle);
     private readonly Dictionary<BattleUnitCombatState, BattleUnitCombatState> _bestIsolatedEnemyCache = new Dictionary<
         BattleUnitCombatState,
         BattleUnitCombatState
-    >(12);
+    >(BattleTeamConstants.MaxUnitsInBattle);
     private readonly Dictionary<BattleUnitCombatState, BattleUnitCombatState> _bestBacklineEnemyCache = new Dictionary<
         BattleUnitCombatState,
         BattleUnitCombatState
-    >(12);
+    >(BattleTeamConstants.MaxUnitsInBattle);
     private readonly Dictionary<BattleUnitCombatState, BattleUnitCombatState> _mostPressuredAllyCache = new Dictionary<
         BattleUnitCombatState,
         BattleUnitCombatState
-    >(12);
+    >(BattleTeamConstants.MaxUnitsInBattle);
     private readonly Dictionary<BattleUnitCombatState, Vector3> _enemyPressureCenterCache = new Dictionary<
         BattleUnitCombatState,
         Vector3
-    >(12);
+    >(BattleTeamConstants.MaxUnitsInBattle);
 
     public IReadOnlyList<BattleUnitCombatState> AllLiving => _allLivingStates;
     public float EscapeTowardTeamBlend { get; }
@@ -72,8 +72,10 @@ public sealed class BattleFieldSnapshot
         float escapeTowardTeamBlend
     )
     {
-        List<BattleUnitCombatState> livingStates = new List<BattleUnitCombatState>(12);
-        List<BattleUnitView> livingViews = new List<BattleUnitView>(12);
+        List<BattleUnitCombatState> livingStates = new List<BattleUnitCombatState>(
+            BattleTeamConstants.MaxUnitsInBattle
+        );
+        List<BattleUnitView> livingViews = new List<BattleUnitView>(BattleTeamConstants.MaxUnitsInBattle);
         Dictionary<BattleTeamId, List<BattleUnitView>> viewsByTeam =
             new Dictionary<BattleTeamId, List<BattleUnitView>>();
 
@@ -95,7 +97,7 @@ public sealed class BattleFieldSnapshot
 
                 if (!viewsByTeam.TryGetValue(state.TeamId, out List<BattleUnitView> teamViews))
                 {
-                    teamViews = new List<BattleUnitView>(6);
+                    teamViews = new List<BattleUnitView>(BattleTeamConstants.MaxUnitsPerTeam);
                     viewsByTeam[state.TeamId] = teamViews;
                 }
 

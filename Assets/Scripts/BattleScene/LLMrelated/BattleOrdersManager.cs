@@ -29,8 +29,8 @@ public sealed class BattleOrdersManager : MonoBehaviour
     [SerializeField]
     private int requestTimeoutSeconds = 30;
 
-    private readonly BattleRuntimeUnit[] _allyUnits = new BattleRuntimeUnit[6];
-    private readonly BattleRuntimeUnit[] _enemyUnits = new BattleRuntimeUnit[6];
+    private readonly BattleRuntimeUnit[] _allyUnits = new BattleRuntimeUnit[BattleTeamConstants.MaxUnitsPerTeam];
+    private readonly BattleRuntimeUnit[] _enemyUnits = new BattleRuntimeUnit[BattleTeamConstants.MaxUnitsPerTeam];
     private IBattleRosterProjection _rosterProjection;
 
     private SphereCollider _battlefieldCollider;

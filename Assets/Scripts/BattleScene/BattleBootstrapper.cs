@@ -21,7 +21,7 @@ public static class BattleBootstrapper
         if (context == null)
             throw new ArgumentNullException(nameof(context));
 
-        var spawnedUnits = new List<BattleRuntimeUnit>(12);
+        var spawnedUnits = new List<BattleRuntimeUnit>(BattleTeamConstants.MaxUnitsInBattle);
         Transform parent = runtimeUnitRoot != null ? runtimeUnitRoot : context.BattlefieldCollider.transform;
 
         for (int i = 0; i < payload.Teams.Count; i++)

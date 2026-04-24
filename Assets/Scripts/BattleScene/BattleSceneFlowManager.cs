@@ -25,10 +25,10 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
     private Transform runtimeUnitRoot;
 
     [SerializeField]
-    private Transform[] allyPlaceholders = new Transform[6];
+    private Transform[] allyPlaceholders = new Transform[BattleTeamConstants.MaxUnitsPerTeam];
 
     [SerializeField]
-    private Transform[] enemyPlaceholders = new Transform[6];
+    private Transform[] enemyPlaceholders = new Transform[BattleTeamConstants.MaxUnitsPerTeam];
 
     [Header("Battle")]
     [SerializeField]

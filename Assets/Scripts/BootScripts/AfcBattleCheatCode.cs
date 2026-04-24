@@ -4,8 +4,8 @@
 - F5, F6, F7: 배틀씬 전투 중에만 동작
 - F8: 어느 씬에서나 동작
 
-F1: afc 인스펙터에 적힌 수치대로 검투사 1~6의 스탯(CachedMaxHealth/CurrentHealth/CachedAttack/CachedMoveSpeed/CachedAttackSpeed)을 덮어쓴다.
-    무기도 WeaponType/WeaponSkillId/Level 기준으로 뽑아서 장착. 검투사가 6명보다 적으면 있는만큼만 적용.
+F1: afc 인스펙터에 적힌 수치대로 전투 투입 최대 인원 범위의 검투사 스탯(CachedMaxHealth/CurrentHealth/CachedAttack/CachedMoveSpeed/CachedAttackSpeed)을 덮어쓴다.
+    무기도 WeaponType/WeaponSkillId/Level 기준으로 뽑아서 장착. 검투사가 팀 최대 인원보다 적으면 있는만큼만 적용.
     단, 검투사 레벨업 시 다시 레벨에 따라 SO 에셋에 맞춰 변형된다.
 F2: 무기만 장착, 스탯은 그대로.
 F3: 적 평균레벨 변경. BattleManager에 override 값을 저장하고, 전투 Start 시점에 RecruitFactory로 새 encounter를 다시 만든다.
@@ -49,9 +49,9 @@ public sealed class AfcBattleCheatCode : MonoBehaviour
     [SerializeField]
     private string battleSceneName = "BattleScene";
 
-    [Header("F1/F2 Owned Gladiator Overrides (Slots 1~6)")]
+    [Header("F1/F2 Owned Gladiator Overrides")]
     [SerializeField]
-    private GladiatorStatOverride[] gladiatorOverrides = new GladiatorStatOverride[6];
+    private GladiatorStatOverride[] gladiatorOverrides = new GladiatorStatOverride[BattleTeamConstants.MaxUnitsPerTeam];
 
     [Header("F3 Encounter Override")]
     [SerializeField]

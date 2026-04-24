@@ -297,9 +297,12 @@ public sealed class BattleStartPayload
             throw new ArgumentException("BattleStartPayload requires at least one team.", nameof(teams));
         }
 
-        if (_teams.Count != 2)
+        if (_teams.Count != BattleTeamConstants.TeamCount)
         {
-            throw new ArgumentException("BattleStartPayload requires exactly two teams.", nameof(teams));
+            throw new ArgumentException(
+                $"BattleStartPayload requires exactly {BattleTeamConstants.TeamCount} teams.",
+                nameof(teams)
+            );
         }
 
         int nextUnitNumber = 1;
@@ -316,6 +319,14 @@ public sealed class BattleStartPayload
             {
                 throw new ArgumentException(
                     $"BattleStartPayload requires at least one unit for team {team.TeamId.Value}.",
+                    nameof(teams)
+                );
+            }
+
+            if (unitCount > BattleTeamConstants.MaxUnitsPerTeam)
+            {
+                throw new ArgumentException(
+                    $"BattleStartPayload supports up to {BattleTeamConstants.MaxUnitsPerTeam} units per team.",
                     nameof(teams)
                 );
             }

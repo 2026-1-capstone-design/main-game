@@ -15,7 +15,7 @@ public sealed class BattleUIManager : MonoBehaviour
 
     [Header("Very Low Row")]
     [SerializeField]
-    private Image[] veryLowEnemyImages = new Image[6];
+    private Image[] veryLowEnemyImages = new Image[BattleTeamConstants.MaxUnitsPerTeam];
 
     [SerializeField]
     private TMP_Text veryLowSummaryText;
@@ -28,7 +28,7 @@ public sealed class BattleUIManager : MonoBehaviour
 
     [Header("Low Row")]
     [SerializeField]
-    private Image[] lowEnemyImages = new Image[6];
+    private Image[] lowEnemyImages = new Image[BattleTeamConstants.MaxUnitsPerTeam];
 
     [SerializeField]
     private TMP_Text lowSummaryText;
@@ -41,7 +41,7 @@ public sealed class BattleUIManager : MonoBehaviour
 
     [Header("Medium Row")]
     [SerializeField]
-    private Image[] mediumEnemyImages = new Image[6];
+    private Image[] mediumEnemyImages = new Image[BattleTeamConstants.MaxUnitsPerTeam];
 
     [SerializeField]
     private TMP_Text mediumSummaryText;
@@ -54,7 +54,7 @@ public sealed class BattleUIManager : MonoBehaviour
 
     [Header("High Row")]
     [SerializeField]
-    private Image[] highEnemyImages = new Image[6];
+    private Image[] highEnemyImages = new Image[BattleTeamConstants.MaxUnitsPerTeam];
 
     [SerializeField]
     private TMP_Text highSummaryText;
