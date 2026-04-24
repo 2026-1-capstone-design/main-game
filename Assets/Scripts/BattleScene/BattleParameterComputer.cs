@@ -177,7 +177,7 @@ public static class BattleParameterComputer
         return 0f;
     }
 
-    // ── 공개 헬퍼 (BattleFieldQueryHelper에서도 사용) ───────────────────
+    // ── 공개 헬퍼 ────────────────────────────────────────────────────────
 
     // isolated enemy target score - FindBestIsolatedEnemy, FindBestBacklineEnemy에서도 사용
     public static float ComputeIsolatedEnemyTargetScore(

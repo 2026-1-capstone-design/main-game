@@ -56,9 +56,9 @@ public sealed class BattleCombatSystem
                 continue;
 
             BattleUnitCombatState target = attacker.PlannedTargetEnemy;
-            if (!BattleFieldQueryHelper.IsValidEnemyTarget(attacker.State, target))
+            if (!BattleFieldSnapshot.IsValidEnemyTarget(attacker.State, target))
                 continue;
-            if (!BattleFieldQueryHelper.IsWithinEffectiveAttackDistance(attacker.State, target))
+            if (!BattleFieldSnapshot.IsWithinEffectiveAttackDistance(attacker.State, target))
                 continue;
             if (attacker.AttackCooldownRemaining > 0f)
                 continue;

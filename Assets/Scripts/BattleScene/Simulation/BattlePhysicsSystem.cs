@@ -66,8 +66,8 @@ public sealed class BattlePhysicsSystem
 
             BattleUnitCombatState targetEnemy = unit.PlannedTargetEnemy;
             if (
-                BattleFieldQueryHelper.IsValidEnemyTarget(unit.State, targetEnemy)
-                && BattleFieldQueryHelper.IsWithinEffectiveAttackDistance(unit.State, targetEnemy)
+                BattleFieldSnapshot.IsValidEnemyTarget(unit.State, targetEnemy)
+                && BattleFieldSnapshot.IsWithinEffectiveAttackDistance(unit.State, targetEnemy)
             )
             {
                 if (unit.IsMoving)
@@ -87,7 +87,7 @@ public sealed class BattlePhysicsSystem
                 continue;
             }
 
-            if (BattleFieldQueryHelper.IsValidEnemyTarget(unit.State, targetEnemy))
+            if (BattleFieldSnapshot.IsValidEnemyTarget(unit.State, targetEnemy))
             {
                 unit.FaceTarget(unit.PlannedDesiredPosition);
                 bool moved = MoveTowardsTarget(unit, targetEnemy, tickDeltaTime);
@@ -113,7 +113,7 @@ public sealed class BattlePhysicsSystem
         toTarget.y = 0f;
 
         float centerDistance = toTarget.magnitude;
-        float effectiveAttackDistance = BattleFieldQueryHelper.GetEffectiveAttackDistance(mover.State, target);
+        float effectiveAttackDistance = BattleFieldSnapshot.GetEffectiveAttackDistance(mover.State, target);
         if (centerDistance <= effectiveAttackDistance)
             return false;
 

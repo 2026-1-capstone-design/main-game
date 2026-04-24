@@ -20,5 +20,5 @@ public sealed class CollapsePlanner : IBattleActionPlanner
     }
 
     public bool IsUsable(BattleRuntimeUnit unit, BattleActionExecutionPlan plan) =>
-        plan.HasDesiredPosition || BattleFieldQueryHelper.IsValidEnemyTarget(unit.State, plan.TargetEnemy);
+        plan.HasDesiredPosition || BattleFieldSnapshot.IsValidEnemyTarget(unit.State, plan.TargetEnemy);
 }

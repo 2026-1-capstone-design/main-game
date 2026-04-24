@@ -29,5 +29,5 @@ public sealed class PeelPlanner : IBattleActionPlanner
     }
 
     public bool IsUsable(BattleRuntimeUnit unit, BattleActionExecutionPlan plan) =>
-        BattleFieldQueryHelper.IsValidEnemyTarget(unit.State, plan.TargetEnemy);
+        BattleFieldSnapshot.IsValidEnemyTarget(unit.State, plan.TargetEnemy);
 }

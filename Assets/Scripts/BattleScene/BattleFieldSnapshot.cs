@@ -1,8 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// BattlePlanningSystem 한 틱에서 공유하는 전장 스냅샷.
-// 고비용 탐색 결과를 유닛별로 캐싱해 같은 틱 내 중복 계산을 줄인다.
+// 전장 상태에 대한 다양한 쿼리를 제공한다.
 public sealed class BattleFieldSnapshot
 {
     private static readonly List<BattleUnitCombatState> _allyStateBuffer = new(6);
@@ -64,7 +63,7 @@ public sealed class BattleFieldSnapshot
             {
                 BattleRuntimeUnit unit = units[i];
                 BattleUnitCombatState state = unit != null ? unit.State : null;
-                if (!BattleFieldQueryHelper.IsLiving(state))
+                if (!IsLiving(state))
                     continue;
 
                 if (state.IsEnemy)
@@ -90,6 +89,37 @@ public sealed class BattleFieldSnapshot
         );
     }
 
+    // ── 팀 관계 단일 진입점 — static 검증 ────────────────────────────────
+
+    public static bool IsValidEnemyTarget(BattleUnitCombatState requester, BattleUnitCombatState candidate)
+    {
+        if (requester == null || candidate == null)
+            return false;
+        if (requester == candidate)
+            return false;
+        if (requester.IsEnemy == candidate.IsEnemy)
+            return false;
+        return !candidate.IsCombatDisabled;
+    }
+
+    public static float GetEffectiveAttackDistance(BattleUnitCombatState attacker, BattleUnitCombatState target)
+    {
+        if (attacker == null || target == null)
+            return 0f;
+        return attacker.BodyRadius + target.BodyRadius + attacker.AttackRange;
+    }
+
+    public static bool IsWithinEffectiveAttackDistance(BattleUnitCombatState attacker, BattleUnitCombatState target)
+    {
+        if (attacker == null || target == null)
+            return false;
+        Vector3 delta = attacker.Position - target.Position;
+        delta.y = 0f;
+        return delta.magnitude <= (GetEffectiveAttackDistance(attacker, target) + 0.05f);
+    }
+
+    // ── 팀 관계 단일 진입점 — instance 조회 ──────────────────────────────
+
     public IReadOnlyList<BattleUnitCombatState> GetLivingAllies(BattleUnitCombatState requester)
     {
         if (requester == null)
@@ -104,10 +134,19 @@ public sealed class BattleFieldSnapshot
         return requester.IsEnemy ? _livingAllies : _livingEnemies;
     }
 
+    public IReadOnlyList<BattleUnitView> GetLivingAllyViews(BattleUnitCombatState requester) =>
+        requester != null && requester.IsEnemy ? _livingEnemyViews : _livingAllyViews;
+
+    public IReadOnlyList<BattleUnitView> GetLivingEnemyViews(BattleUnitCombatState requester) =>
+        requester != null && requester.IsEnemy ? _livingAllyViews : _livingEnemyViews;
+
     public Vector3 ComputeTeamCenter(bool isEnemyTeam) => isEnemyTeam ? EnemyTeamCenter : AllyTeamCenter;
 
     public BattleUnitCombatState FindNearestLivingEnemy(BattleUnitCombatState requester) =>
-        BattleFieldQueryHelper.FindNearestLivingEnemy(requester, GetLivingEnemies(requester));
+        FindNearestEnemy(requester, GetLivingEnemies(requester));
+
+    public BattleUnitCombatState FindNearestLivingAlly(BattleUnitCombatState requester) =>
+        FindNearestAllyInList(requester, GetLivingAllies(requester));
 
     public BattleUnitCombatState FindBestIsolatedEnemy(BattleUnitCombatState self)
     {
@@ -200,7 +239,7 @@ public sealed class BattleFieldSnapshot
         for (int i = 0; i < allies.Count; i++)
         {
             BattleUnitCombatState ally = allies[i];
-            if (!BattleFieldQueryHelper.IsValidSameTeamAlly(self, ally))
+            if (!IsValidSameTeamAlly(self, ally))
                 continue;
 
             int focusCount = CountEnemiesTargeting(ally, enemies);
@@ -239,7 +278,7 @@ public sealed class BattleFieldSnapshot
         for (int i = 0; i < enemies.Count; i++)
         {
             BattleUnitCombatState enemy = enemies[i];
-            if (!BattleFieldQueryHelper.IsValidEnemyTarget(self, enemy))
+            if (!IsValidEnemyTarget(self, enemy))
                 continue;
             if (enemy.CurrentTarget != protectedAlly && enemy.PlannedTargetEnemy != protectedAlly)
                 continue;
@@ -268,7 +307,7 @@ public sealed class BattleFieldSnapshot
         for (int i = 0; i < enemies.Count; i++)
         {
             BattleUnitCombatState enemy = enemies[i];
-            if (!BattleFieldQueryHelper.IsValidEnemyTarget(self, enemy))
+            if (!IsValidEnemyTarget(self, enemy))
                 continue;
             float distance = Vector3.Distance(enemy.Position, point);
             if (distance < bestDist)
@@ -307,8 +346,78 @@ public sealed class BattleFieldSnapshot
         return center;
     }
 
-    private IReadOnlyList<BattleUnitView> GetLivingEnemyViews(BattleUnitCombatState requester) =>
-        requester != null && requester.IsEnemy ? _livingAllyViews : _livingEnemyViews;
+    // ── 내부 구현 ─────────────────────────────────────────────────────────
+
+    private static bool IsLiving(BattleUnitCombatState unit) => unit != null && !unit.IsCombatDisabled;
+
+    private static bool IsValidSameTeamAlly(BattleUnitCombatState requester, BattleUnitCombatState candidate)
+    {
+        if (requester == null || candidate == null)
+            return false;
+        if (requester == candidate)
+            return false;
+        if (requester.IsEnemy != candidate.IsEnemy)
+            return false;
+        return !candidate.IsCombatDisabled;
+    }
+
+    private static BattleUnitCombatState FindNearestEnemy(
+        BattleUnitCombatState requester,
+        IReadOnlyList<BattleUnitCombatState> candidates
+    )
+    {
+        if (requester == null || requester.IsCombatDisabled || candidates == null)
+            return null;
+
+        BattleUnitCombatState nearest = null;
+        float bestSqr = float.MaxValue;
+        for (int i = 0; i < candidates.Count; i++)
+        {
+            BattleUnitCombatState candidate = candidates[i];
+            if (!IsValidEnemyTarget(requester, candidate))
+                continue;
+
+            Vector3 delta = candidate.Position - requester.Position;
+            delta.y = 0f;
+            float sqr = delta.sqrMagnitude;
+            if (sqr < bestSqr)
+            {
+                bestSqr = sqr;
+                nearest = candidate;
+            }
+        }
+
+        return nearest;
+    }
+
+    private static BattleUnitCombatState FindNearestAllyInList(
+        BattleUnitCombatState requester,
+        IReadOnlyList<BattleUnitCombatState> candidates
+    )
+    {
+        if (requester == null || requester.IsCombatDisabled || candidates == null)
+            return null;
+
+        BattleUnitCombatState nearest = null;
+        float bestSqr = float.MaxValue;
+        for (int i = 0; i < candidates.Count; i++)
+        {
+            BattleUnitCombatState candidate = candidates[i];
+            if (!IsValidSameTeamAlly(requester, candidate))
+                continue;
+
+            Vector3 delta = candidate.Position - requester.Position;
+            delta.y = 0f;
+            float sqr = delta.sqrMagnitude;
+            if (sqr < bestSqr)
+            {
+                bestSqr = sqr;
+                nearest = candidate;
+            }
+        }
+
+        return nearest;
+    }
 
     private static int CountEnemiesTargeting(BattleUnitCombatState ally, IReadOnlyList<BattleUnitCombatState> enemies)
     {

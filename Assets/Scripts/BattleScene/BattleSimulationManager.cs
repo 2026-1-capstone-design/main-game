@@ -212,7 +212,12 @@ public sealed class BattleSimulationManager : MonoBehaviour
         CurrentSnapshot = BattleFieldSnapshot.Build(_runtimeUnits, radii, escapeTowardTeamBlend);
         _cooldownSystem.Tick(_runtimeUnits, tickDeltaTime);
 
-        BattleParameterComputation[] parameterResults = _parameterSystem.Compute(_runtimeUnits, radii, aiTuning);
+        BattleParameterComputation[] parameterResults = _parameterSystem.Compute(
+            _runtimeUnits,
+            radii,
+            aiTuning,
+            CurrentSnapshot
+        );
         BattleActionType[] decisions = _decisionSystem.Decide(_runtimeUnits, aiTuning, tickDeltaTime);
 
         _planningSystem.Build(_runtimeUnits, CurrentSnapshot);

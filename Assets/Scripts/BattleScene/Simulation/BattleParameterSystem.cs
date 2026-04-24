@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using UnityEngine;
 
 public readonly struct BattleParameterComputation
 {
@@ -48,23 +47,14 @@ public sealed class BattleParameterSystem
     public BattleParameterComputation[] Compute(
         IReadOnlyList<BattleRuntimeUnit> units,
         BattleParameterRadii radii,
-        BattleAITuningSO aiTuning
+        BattleAITuningSO aiTuning,
+        BattleFieldSnapshot snapshot
     )
     {
         if (units == null)
             return new BattleParameterComputation[0];
 
-        var allViews = new List<BattleUnitView>(units.Count);
-        for (int i = 0; i < units.Count; i++)
-        {
-            BattleRuntimeUnit unit = units[i];
-            if (unit == null || unit.IsCombatDisabled)
-                continue;
-
-            allViews.Add(BattleUnitView.From(unit.State));
-        }
-
-        var results = new List<BattleParameterComputation>(allViews.Count);
+        var results = new List<BattleParameterComputation>(units.Count);
         for (int i = 0; i < units.Count; i++)
         {
             BattleRuntimeUnit unit = units[i];
@@ -72,22 +62,18 @@ public sealed class BattleParameterSystem
                 continue;
 
             BattleUnitView self = BattleUnitView.From(unit.State);
-            var allies = new List<BattleUnitView>();
-            var enemies = new List<BattleUnitView>();
 
-            for (int j = 0; j < allViews.Count; j++)
+            IReadOnlyList<BattleUnitView> allyViewSource = snapshot.GetLivingAllyViews(unit.State);
+            IReadOnlyList<BattleUnitView> enemyViews = snapshot.GetLivingEnemyViews(unit.State);
+
+            var allies = new List<BattleUnitView>(allyViewSource.Count);
+            for (int j = 0; j < allyViewSource.Count; j++)
             {
-                BattleUnitView view = allViews[j];
-                if (view.UnitNumber == self.UnitNumber)
-                    continue;
-
-                if (view.IsEnemy == self.IsEnemy)
-                    allies.Add(view);
-                else
-                    enemies.Add(view);
+                if (allyViewSource[j].UnitNumber != self.UnitNumber)
+                    allies.Add(allyViewSource[j]);
             }
 
-            BattleParameterSet raw = BattleParameterComputer.Compute(self, allies, enemies, radii);
+            BattleParameterSet raw = BattleParameterComputer.Compute(self, allies, enemyViews, radii);
             BattleParameterSet modified = ApplyCurrentActionParameterModifiers(
                 unit,
                 raw,

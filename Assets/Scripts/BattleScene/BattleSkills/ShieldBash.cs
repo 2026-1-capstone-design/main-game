@@ -10,7 +10,7 @@ public sealed class ShieldBashSkill : IBattleSkill
 
     public bool CanActivate(BattleRuntimeUnit caster) =>
         caster.PlannedTargetEnemy != null
-        && BattleFieldQueryHelper.IsWithinEffectiveAttackDistance(caster.State, caster.PlannedTargetEnemy);
+        && BattleFieldSnapshot.IsWithinEffectiveAttackDistance(caster.State, caster.PlannedTargetEnemy);
 
     public void Apply(BattleRuntimeUnit caster, ISkillEffectApplier applier)
     {

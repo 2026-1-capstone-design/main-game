@@ -12,8 +12,8 @@ public sealed class HeartAttackSkill : IBattleSkill
     public bool CanActivate(BattleRuntimeUnit caster)
     {
         BattleUnitCombatState target = caster.PlannedTargetEnemy;
-        return BattleFieldQueryHelper.IsValidEnemyTarget(caster.State, target)
-            && BattleFieldQueryHelper.IsWithinEffectiveAttackDistance(caster.State, target);
+        return BattleFieldSnapshot.IsValidEnemyTarget(caster.State, target)
+            && BattleFieldSnapshot.IsWithinEffectiveAttackDistance(caster.State, target);
     }
 
     public void Apply(BattleRuntimeUnit caster, ISkillEffectApplier applier)
