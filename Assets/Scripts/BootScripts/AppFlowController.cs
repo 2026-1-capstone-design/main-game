@@ -6,7 +6,7 @@ public sealed class AppFlowController : SingletonBehaviour<AppFlowController>
 {
     [Header("Boot Flow")]
     [SerializeField]
-    private string mainSceneName = "Main"; // 부팅 시퀀스가 끝난 뒤 최초로 진입할 메인 씬 이름
+    private string mainSceneName = "TitleScene"; // 부팅 시퀀스가 끝난 뒤 최초로 진입할 타이틀 씬 이름
 
     [SerializeField]
     private bool autoBootOnStart = true; // 플레이 시작과 동시에 전체 부팅 절차를 자동으로 실행할지 결정.
