@@ -5,16 +5,22 @@ using UnityEngine.UI;
 public sealed class TitleSceneUIManager : MonoBehaviour
 {
     [Header("Title Scene")]
-    [SerializeField] private string mainSceneName = "MainScene"; // New Game 버튼에서 이동할 메인 씬 이름
+    [SerializeField]
+    private string mainSceneName = "MainScene"; // New Game 버튼에서 이동할 메인 씬 이름
 
     [Header("Buttons")]
-    [SerializeField] private Button newGameButton;
-    [SerializeField] private Button loadGameButton;
-    [SerializeField] private Button settingsButton;
-    [SerializeField] private Button quitButton;
+    [SerializeField]
+    private Button newGameButton;
+    [SerializeField]
+    private Button loadGameButton;
+    [SerializeField]
+    private Button settingsButton;
+    [SerializeField]
+    private Button quitButton;
 
     [Header("Debug")]
-    [SerializeField] private bool verboseLog = true;
+    [SerializeField]
+    private bool verboseLog = true;
 
     private SceneLoader _sceneLoader;
     private bool _initialized; // 버튼 이벤트 중복 바인딩 방지
@@ -57,11 +63,6 @@ public sealed class TitleSceneUIManager : MonoBehaviour
 
         if (_sceneLoader == null)
         {
-            _sceneLoader = SceneLoader.Instance;
-        }
-
-        if (_sceneLoader == null)
-        {
             Debug.LogError("[TitleSceneUIManager] SceneLoader.Instance is null.", this);
             return;
         }
@@ -91,18 +92,33 @@ public sealed class TitleSceneUIManager : MonoBehaviour
     // 로드 게임 버튼: 저장 데이터 연동 시 구현 예정
     private void OnLoadGameClicked()
     {
-        Debug.Log("[TitleSceneUIManager] Load game button clicked. 구현은 아직 연결하지 않았다.", this);
+        if (_isNavigating)
+        {
+            return;
+        }
+
+        Debug.Log("[TitleSceneUIManager] Load game button clicked. Not implemented yet.", this);
     }
 
     // 설정 버튼: 옵션 UI 연동 시 구현 예정
     private void OnSettingsClicked()
     {
-        Debug.Log("[TitleSceneUIManager] Settings button clicked. 구현은 아직 연결하지 않았다.", this);
+        if (_isNavigating)
+        {
+            return;
+        }
+
+        Debug.Log("[TitleSceneUIManager] Settings button clicked. Not implemented yet.", this);
     }
 
     // 종료 버튼: 에디터에서는 플레이 모드 종료, 빌드에서는 앱 종료
     private void OnQuitClicked()
     {
+        if (_isNavigating)
+        {
+            return;
+        }
+
         if (verboseLog)
         {
             Debug.Log("[TitleSceneUIManager] Quit button clicked.", this);
@@ -122,7 +138,6 @@ public sealed class TitleSceneUIManager : MonoBehaviour
             return;
         }
 
-        button.onClick.RemoveListener(action);
         button.onClick.AddListener(action);
     }
 }
