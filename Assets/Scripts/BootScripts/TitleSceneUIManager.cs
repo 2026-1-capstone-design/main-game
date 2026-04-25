@@ -11,10 +11,13 @@ public sealed class TitleSceneUIManager : MonoBehaviour
     [Header("Buttons")]
     [SerializeField]
     private Button newGameButton;
+
     [SerializeField]
     private Button loadGameButton;
+
     [SerializeField]
     private Button settingsButton;
+
     [SerializeField]
     private Button quitButton;
 
