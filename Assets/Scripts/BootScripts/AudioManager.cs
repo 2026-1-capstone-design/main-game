@@ -40,13 +40,21 @@ public sealed class AudioManager : SingletonBehaviour<AudioManager>
             return;
 
         EnsureAudioSources();
-        ApplyVolume();
+        ApplyFromGlobalSettings();
     }
 
     public void InitializeTemplate()
     {
         EnsureAudioSources();
-        ApplyVolume();
+        ApplyFromGlobalSettings();
+    }
+
+    // 전역 설정값을 읽어서 현재 오디오 소스에 다시 적용한다.
+    public void ApplyFromGlobalSettings()
+    {
+        GameSettings.Load();
+        SetBgmVolume(GameSettings.BgmVolume);
+        SetSfxVolume(GameSettings.SfxVolume);
     }
 
     public void PlayBgm(AudioClip clip, bool loop = true)
