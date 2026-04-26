@@ -40,6 +40,13 @@ public sealed class TitleSceneUIManager : MonoBehaviour
     [SerializeField]
     private Slider brightnessSlider;
 
+    [Header("Load Game Modal")]
+    [SerializeField]
+    private GameObject loadGameModalRoot;
+
+    [SerializeField]
+    private Button loadGameCloseButton;
+
     [Header("Debug")]
     [SerializeField]
     private bool verboseLog = true;
@@ -48,6 +55,8 @@ public sealed class TitleSceneUIManager : MonoBehaviour
     private bool _initialized; // 버튼 이벤트 중복 바인딩 방지
     private bool _isNavigating; // 씬 이동 중 중복 클릭 방지
     private Button _settingsBackdropButton;
+    private Button _loadGameBackdropButton;
+    private Text[] _loadGameSlotTexts;
 
     private void Start()
     {
@@ -68,10 +77,18 @@ public sealed class TitleSceneUIManager : MonoBehaviour
         BindButton(settingsButton, OnSettingsClicked);
         BindButton(settingsCloseButton, OnCloseSettingsClicked);
         BindButton(quitButton, OnQuitClicked);
+        BindButton(loadGameCloseButton, OnCloseLoadGameClicked);
 
         CacheSettingsControls();
         BindSettingsControls();
         SyncSettingsControlsFromGlobalValues();
+
+        CacheLoadGameControls();
+
+        if (loadGameModalRoot != null)
+        {
+            loadGameModalRoot.SetActive(false);
+        }
 
         if (settingsModalRoot != null)
         {
@@ -122,7 +139,7 @@ public sealed class TitleSceneUIManager : MonoBehaviour
         }
     }
 
-    // 로드 게임 버튼: 저장 데이터 연동 시 구현 예정
+    // 로드 게임 버튼: 저장 슬롯 미리보기 모달을 열고 나중에 로직을 연결할 준비를 한다.
     private void OnLoadGameClicked()
     {
         if (_isNavigating)
@@ -130,7 +147,21 @@ public sealed class TitleSceneUIManager : MonoBehaviour
             return;
         }
 
-        Debug.Log("[TitleSceneUIManager] Load game button clicked. Not implemented yet.", this);
+        EnsureLoadGameModal();
+
+        if (loadGameModalRoot == null)
+        {
+            Debug.LogError("[TitleSceneUIManager] loadGameModalRoot is null.", this);
+            return;
+        }
+
+        RefreshLoadGameSlotPreviewTexts();
+        loadGameModalRoot.SetActive(true);
+
+        if (verboseLog)
+        {
+            Debug.Log("[TitleSceneUIManager] Load game modal opened.", this);
+        }
     }
 
     // 설정 버튼: 옵션 UI 연동 시 구현 예정
@@ -170,6 +201,22 @@ public sealed class TitleSceneUIManager : MonoBehaviour
         if (verboseLog)
         {
             Debug.Log("[TitleSceneUIManager] Settings modal closed.", this);
+        }
+    }
+
+    // 로드 게임 모달 닫기 버튼 및 배경 클릭에서 공통으로 호출되는 닫기 흐름이다.
+    private void OnCloseLoadGameClicked()
+    {
+        if (loadGameModalRoot == null)
+        {
+            return;
+        }
+
+        loadGameModalRoot.SetActive(false);
+
+        if (verboseLog)
+        {
+            Debug.Log("[TitleSceneUIManager] Load game modal closed.", this);
         }
     }
 
@@ -275,6 +322,41 @@ public sealed class TitleSceneUIManager : MonoBehaviour
         }
     }
 
+    // 씬에 이미 배치된 로드 모달 참조를 캐싱하고, 배경 클릭 닫기 버튼을 준비한다.
+    private void CacheLoadGameControls()
+    {
+        if (loadGameModalRoot == null)
+        {
+            return;
+        }
+
+        Transform modalRootTransform = loadGameModalRoot.transform;
+
+        if (loadGameCloseButton == null)
+        {
+            loadGameCloseButton = FindChildComponent<Button>(modalRootTransform, "CloseButton");
+        }
+
+        Transform backdropTransform = FindChildTransform(modalRootTransform, "DimBackground");
+        if (backdropTransform != null)
+        {
+            Image backdropImage = backdropTransform.GetComponent<Image>();
+            _loadGameBackdropButton = backdropTransform.GetComponent<Button>();
+
+            if (_loadGameBackdropButton == null)
+            {
+                _loadGameBackdropButton = backdropTransform.gameObject.AddComponent<Button>();
+            }
+
+            _loadGameBackdropButton.transition = Selectable.Transition.None;
+            _loadGameBackdropButton.targetGraphic = backdropImage;
+            _loadGameBackdropButton.onClick.RemoveListener(OnCloseLoadGameClicked);
+            _loadGameBackdropButton.onClick.AddListener(OnCloseLoadGameClicked);
+        }
+
+        CacheLoadGameSlotTextReferences(modalRootTransform);
+    }
+
     // 모달 안의 실제 UI 컴포넌트를 씬 계층 이름으로 찾아 둔다.
     private void BindSettingsControls()
     {
@@ -331,6 +413,200 @@ public sealed class TitleSceneUIManager : MonoBehaviour
         {
             brightnessSlider.SetValueWithoutNotify(GameSettings.Brightness);
         }
+    }
+
+    // 슬롯 텍스트들을 캐싱해 두면 이후 실제 세이브 데이터 연결 시 갱신만 하면 된다.
+    private void CacheLoadGameSlotTextReferences(Transform modalRootTransform)
+    {
+        _loadGameSlotTexts = new Text[5];
+
+        for (int slotIndex = 0; slotIndex < _loadGameSlotTexts.Length; slotIndex++)
+        {
+            string slotTextName = $"Slot{slotIndex + 1}Text";
+            _loadGameSlotTexts[slotIndex] = FindChildComponent<Text>(modalRootTransform, slotTextName);
+        }
+    }
+
+    // 현재는 플레이스홀더 프리뷰만 그리고, 실제 저장 데이터 연결은 이후 단계에서 붙인다.
+    private void RefreshLoadGameSlotPreviewTexts()
+    {
+        if (_loadGameSlotTexts == null)
+        {
+            return;
+        }
+
+        for (int slotIndex = 0; slotIndex < _loadGameSlotTexts.Length; slotIndex++)
+        {
+            Text slotText = _loadGameSlotTexts[slotIndex];
+            if (slotText == null)
+            {
+                continue;
+            }
+
+            slotText.text = BuildLoadSlotPreviewText(slotIndex + 1);
+        }
+    }
+
+    private static string BuildLoadSlotPreviewText(int slotNumber)
+    {
+        return $"SLOT {slotNumber}  |  DAY: -  |  GOLD: -  |  SAVED: -";
+    }
+
+    // 씬에 모달이 없으면 런타임에 기본형 UI를 자동 생성해 즉시 테스트 가능하게 만든다.
+    private void EnsureLoadGameModal()
+    {
+        if (loadGameModalRoot != null)
+        {
+            return;
+        }
+
+        Transform canvasTransform = ResolveCanvasTransform();
+        if (canvasTransform == null)
+        {
+            Debug.LogError("[TitleSceneUIManager] Canvas not found. Cannot create load game modal.", this);
+            return;
+        }
+
+        Font defaultFont = Resources.GetBuiltinResource<Font>("Arial.ttf");
+
+        loadGameModalRoot = CreateUiObject("LoadGameModalRoot", canvasTransform);
+        RectTransform modalRootRect = loadGameModalRoot.GetComponent<RectTransform>();
+        StretchToParent(modalRootRect);
+
+        GameObject dimBackgroundObject = CreateUiObject("DimBackground", modalRootRect);
+        RectTransform dimRect = dimBackgroundObject.GetComponent<RectTransform>();
+        StretchToParent(dimRect);
+
+        Image dimImage = dimBackgroundObject.AddComponent<Image>();
+        dimImage.color = new Color(0f, 0f, 0f, 0.75f);
+
+        _loadGameBackdropButton = dimBackgroundObject.AddComponent<Button>();
+        _loadGameBackdropButton.transition = Selectable.Transition.None;
+        _loadGameBackdropButton.targetGraphic = dimImage;
+        _loadGameBackdropButton.onClick.RemoveListener(OnCloseLoadGameClicked);
+        _loadGameBackdropButton.onClick.AddListener(OnCloseLoadGameClicked);
+
+        GameObject panelObject = CreateUiObject("LoadGamePanel", modalRootRect);
+        RectTransform panelRect = panelObject.GetComponent<RectTransform>();
+        panelRect.anchorMin = new Vector2(0.5f, 0.5f);
+        panelRect.anchorMax = new Vector2(0.5f, 0.5f);
+        panelRect.pivot = new Vector2(0.5f, 0.5f);
+        panelRect.anchoredPosition = Vector2.zero;
+        panelRect.sizeDelta = new Vector2(920f, 620f);
+
+        Image panelImage = panelObject.AddComponent<Image>();
+        panelImage.color = new Color(0.09f, 0.1f, 0.12f, 0.96f);
+
+        GameObject titleObject = CreateUiObject("TitleText", panelRect);
+        RectTransform titleRect = titleObject.GetComponent<RectTransform>();
+        titleRect.anchorMin = new Vector2(0f, 1f);
+        titleRect.anchorMax = new Vector2(1f, 1f);
+        titleRect.pivot = new Vector2(0.5f, 1f);
+        titleRect.anchoredPosition = new Vector2(0f, -30f);
+        titleRect.sizeDelta = new Vector2(-120f, 48f);
+
+        Text titleText = titleObject.AddComponent<Text>();
+        titleText.font = defaultFont;
+        titleText.alignment = TextAnchor.MiddleLeft;
+        titleText.fontSize = 28;
+        titleText.color = Color.white;
+        titleText.text = "LOAD GAME";
+
+        GameObject closeButtonObject = CreateUiObject("CloseButton", panelRect);
+        RectTransform closeRect = closeButtonObject.GetComponent<RectTransform>();
+        closeRect.anchorMin = new Vector2(1f, 1f);
+        closeRect.anchorMax = new Vector2(1f, 1f);
+        closeRect.pivot = new Vector2(1f, 1f);
+        closeRect.anchoredPosition = new Vector2(-24f, -24f);
+        closeRect.sizeDelta = new Vector2(42f, 42f);
+
+        Image closeImage = closeButtonObject.AddComponent<Image>();
+        closeImage.color = new Color(0.22f, 0.23f, 0.27f, 1f);
+
+        loadGameCloseButton = closeButtonObject.AddComponent<Button>();
+        loadGameCloseButton.targetGraphic = closeImage;
+        loadGameCloseButton.onClick.RemoveListener(OnCloseLoadGameClicked);
+        loadGameCloseButton.onClick.AddListener(OnCloseLoadGameClicked);
+
+        GameObject closeTextObject = CreateUiObject("CloseText", closeRect);
+        RectTransform closeTextRect = closeTextObject.GetComponent<RectTransform>();
+        StretchToParent(closeTextRect);
+
+        Text closeText = closeTextObject.AddComponent<Text>();
+        closeText.font = defaultFont;
+        closeText.alignment = TextAnchor.MiddleCenter;
+        closeText.fontSize = 24;
+        closeText.color = Color.white;
+        closeText.text = "X";
+
+        _loadGameSlotTexts = new Text[5];
+
+        for (int slotIndex = 0; slotIndex < _loadGameSlotTexts.Length; slotIndex++)
+        {
+            float topOffset = 110f + (slotIndex * 92f);
+
+            GameObject slotObject = CreateUiObject($"Slot{slotIndex + 1}", panelRect);
+            RectTransform slotRect = slotObject.GetComponent<RectTransform>();
+            slotRect.anchorMin = new Vector2(0f, 1f);
+            slotRect.anchorMax = new Vector2(1f, 1f);
+            slotRect.pivot = new Vector2(0.5f, 1f);
+            slotRect.anchoredPosition = new Vector2(0f, -topOffset);
+            slotRect.sizeDelta = new Vector2(-52f, 74f);
+
+            Image slotImage = slotObject.AddComponent<Image>();
+            slotImage.color = new Color(0.14f, 0.15f, 0.18f, 1f);
+
+            GameObject slotTextObject = CreateUiObject($"Slot{slotIndex + 1}Text", slotRect);
+            RectTransform slotTextRect = slotTextObject.GetComponent<RectTransform>();
+            slotTextRect.anchorMin = new Vector2(0f, 0f);
+            slotTextRect.anchorMax = new Vector2(1f, 1f);
+            slotTextRect.pivot = new Vector2(0.5f, 0.5f);
+            slotTextRect.anchoredPosition = Vector2.zero;
+            slotTextRect.sizeDelta = new Vector2(-36f, -18f);
+
+            Text slotText = slotTextObject.AddComponent<Text>();
+            slotText.font = defaultFont;
+            slotText.alignment = TextAnchor.MiddleLeft;
+            slotText.fontSize = 20;
+            slotText.color = new Color(0.93f, 0.95f, 0.98f, 1f);
+            slotText.text = BuildLoadSlotPreviewText(slotIndex + 1);
+
+            _loadGameSlotTexts[slotIndex] = slotText;
+        }
+
+        loadGameModalRoot.SetActive(false);
+    }
+
+    private Transform ResolveCanvasTransform()
+    {
+        if (settingsModalRoot != null && settingsModalRoot.transform.parent != null)
+        {
+            return settingsModalRoot.transform.parent;
+        }
+
+        Canvas[] canvases = FindObjectsByType<Canvas>(FindObjectsSortMode.None);
+        if (canvases.Length <= 0)
+        {
+            return null;
+        }
+
+        return canvases[0].transform;
+    }
+
+    private static GameObject CreateUiObject(string objectName, Transform parent)
+    {
+        GameObject uiObject = new GameObject(objectName, typeof(RectTransform));
+        uiObject.transform.SetParent(parent, false);
+        return uiObject;
+    }
+
+    private static void StretchToParent(RectTransform rectTransform)
+    {
+        rectTransform.anchorMin = Vector2.zero;
+        rectTransform.anchorMax = Vector2.one;
+        rectTransform.pivot = new Vector2(0.5f, 0.5f);
+        rectTransform.anchoredPosition = Vector2.zero;
+        rectTransform.sizeDelta = Vector2.zero;
     }
 
     // 자식 계층을 이름으로 재귀 탐색한다.
