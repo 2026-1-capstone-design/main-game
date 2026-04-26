@@ -25,13 +25,13 @@ public sealed class SkillEffectApplier : ISkillEffectApplier
         if (target == null)
             return;
 
-        target.ApplyDamage(amount);
+        float actualDamage = target.ApplyDamage(amount);
         BattleRuntimeUnit targetRuntime = ResolveRuntimeUnit(target);
 
         if (_combatResults != null)
         {
             _combatResults.Add(
-                new BattleCombatResult(_caster, targetRuntime, amount, target.IsCombatDisabled, wasSkill: true)
+                new BattleCombatResult(_caster, targetRuntime, actualDamage, target.IsCombatDisabled, wasSkill: true)
             );
         }
     }

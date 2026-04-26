@@ -27,6 +27,28 @@ public class TrainingBootstrapper : MonoBehaviour
     [SerializeField]
     private BattleTestPresetSO preset;
 
+    [Header("Curriculum")]
+    [SerializeField]
+    private bool useCurriculumTeamSize = true;
+
+    [SerializeField]
+    private string teamSizeEnvironmentParameter = "team_size";
+
+    [SerializeField]
+    private int defaultTeamSize = 1;
+
+    [SerializeField]
+    private GladiatorClassSO[] randomClassPool;
+
+    [SerializeField]
+    private WeaponSO[] randomWeaponPool;
+
+    [SerializeField]
+    private int defaultUnitLevel = 1;
+
+    [SerializeField]
+    private float defaultStatMultiplier = 1f;
+
     [SerializeField]
     private GladiatorAgent[] allyAgents;
 
@@ -48,6 +70,9 @@ public class TrainingBootstrapper : MonoBehaviour
     private void OnValidate()
     {
         battleTicksPerEnvironmentStep = Mathf.Max(1, battleTicksPerEnvironmentStep);
+        defaultTeamSize = Mathf.Clamp(defaultTeamSize, 1, BattleTeamConstants.MaxUnitsPerTeam);
+        defaultUnitLevel = Mathf.Max(1, defaultUnitLevel);
+        defaultStatMultiplier = Mathf.Max(0f, defaultStatMultiplier);
     }
 
     private void OnEnable()
@@ -78,6 +103,9 @@ public class TrainingBootstrapper : MonoBehaviour
         }
 
         BattleStartPayload payload = CreatePayload();
+        if (payload == null)
+            return;
+
         IReadOnlyDictionary<BattleTeamId, Vector3[]> spawnPositionsByTeam = GenerateRandomPlacements(payload);
         battleSceneFlowManager.ResetAndBootstrap(payload, spawnPositionsByTeam);
 
@@ -171,11 +199,18 @@ public class TrainingBootstrapper : MonoBehaviour
         _episodeEnding = true;
         _episodeResetRequested = false;
         bool isTimeout = reason == TrainingEpisodeEndReason.Timeout;
-        BattleTeamId? winnerTeamId = reason == TrainingEpisodeEndReason.BattleFinished ? _lastOutcome?.WinnerTeamId : null;
+        BattleTeamId? winnerTeamId =
+            reason == TrainingEpisodeEndReason.BattleFinished ? _lastOutcome?.WinnerTeamId : null;
         ForEachAgent(agent => agent.GiveEndReward(winnerTeamId, isTimeout));
         ForEachAgent(agent => agent.EndEpisode());
 
         BattleStartPayload payload = CreatePayload();
+        if (payload == null)
+        {
+            _episodeEnding = false;
+            return;
+        }
+
         IReadOnlyDictionary<BattleTeamId, Vector3[]> spawnPositionsByTeam = GenerateRandomPlacements(payload);
         bool resetOk = battleSceneFlowManager.ResetAndBootstrap(payload, spawnPositionsByTeam);
         if (!resetOk)
@@ -420,27 +455,30 @@ public class TrainingBootstrapper : MonoBehaviour
     {
         var allySnapshots = new List<BattleUnitSnapshot>();
         var enemySnapshots = new List<BattleUnitSnapshot>();
+        int teamSize = ResolveTeamSize();
 
-        for (int i = 0; i < Mathf.Min(BattleTeamConstants.MaxUnitsPerTeam, preset.allyTeam.Count); i++)
+        for (int i = 0; i < teamSize; i++)
         {
-            BattleTestUnitConfig entry = preset.allyTeam[i];
-            if (entry.classSO == null)
+            if (!TryGetTrainingUnitConfig(preset?.allyTeam, i, out BattleTestUnitConfig entry))
             {
                 continue;
             }
 
-            allySnapshots.Add(CreateSnapshot(i + 1, BattleTeamIds.Player, "Ally", entry));
+            allySnapshots.Add(
+                CreateSnapshot(i + 1, BattleTeamIds.Player, "Ally", entry, PickRandomClass(entry.classSO))
+            );
         }
 
-        for (int i = 0; i < Mathf.Min(BattleTeamConstants.MaxUnitsPerTeam, preset.enemyTeam.Count); i++)
+        for (int i = 0; i < teamSize; i++)
         {
-            BattleTestUnitConfig entry = preset.enemyTeam[i];
-            if (entry.classSO == null)
+            if (!TryGetTrainingUnitConfig(preset?.enemyTeam, i, out BattleTestUnitConfig entry))
             {
                 continue;
             }
 
-            enemySnapshots.Add(CreateSnapshot(i + 1, BattleTeamIds.Enemy, "Enemy", entry));
+            enemySnapshots.Add(
+                CreateSnapshot(i + 1, BattleTeamIds.Enemy, "Enemy", entry, PickRandomClass(entry.classSO))
+            );
         }
 
         BattleTeamEntry playerTeam = new BattleTeamEntry(BattleTeamIds.Player, isPlayerOwned: true, allySnapshots);
@@ -450,20 +488,141 @@ public class TrainingBootstrapper : MonoBehaviour
             new[] { playerTeam, hostileTeam },
             BattleTeamIds.Player,
             selectedEncounterIndex: 0,
-            enemyAverageLevel: preset.enemyAverageLevel,
-            previewRewardGold: preset.previewRewardGold,
+            enemyAverageLevel: preset != null ? preset.enemyAverageLevel : defaultUnitLevel,
+            previewRewardGold: preset != null ? preset.previewRewardGold : 0,
             battleSeed: Random.Range(1, 1000000)
         );
+    }
+
+    private int ResolveTeamSize()
+    {
+        float requestedTeamSize = defaultTeamSize;
+        if (useCurriculumTeamSize && !string.IsNullOrWhiteSpace(teamSizeEnvironmentParameter))
+        {
+            requestedTeamSize = Academy.Instance.EnvironmentParameters.GetWithDefault(
+                teamSizeEnvironmentParameter,
+                defaultTeamSize
+            );
+        }
+
+        return Mathf.Clamp(Mathf.RoundToInt(requestedTeamSize), 1, BattleTeamConstants.MaxUnitsPerTeam);
+    }
+
+    private bool TryGetTrainingUnitConfig(
+        IReadOnlyList<BattleTestUnitConfig> teamConfig,
+        int unitIndex,
+        out BattleTestUnitConfig entry
+    )
+    {
+        entry = default;
+        if (teamConfig == null || teamConfig.Count == 0)
+        {
+            entry = CreateDefaultTrainingUnitConfig();
+            if (!HasRandomClassPool())
+            {
+                Debug.LogError(
+                    "[TrainingBootstrapper] Random class pool is required when no training preset team config exists.",
+                    this
+                );
+                return false;
+            }
+
+            return true;
+        }
+
+        entry = teamConfig[unitIndex % teamConfig.Count];
+        if (entry.classSO == null && !HasRandomClassPool())
+        {
+            Debug.LogError(
+                "[TrainingBootstrapper] Training unit requires either a preset class or random class pool entry.",
+                this
+            );
+            return false;
+        }
+
+        if (entry.level <= 0)
+            entry.level = defaultUnitLevel;
+
+        if (entry.statMultiplier <= 0f)
+            entry.statMultiplier = defaultStatMultiplier;
+
+        if (entry.weaponData == null)
+            entry.weaponData = PickRandomWeapon(null);
+
+        return true;
+    }
+
+    private BattleTestUnitConfig CreateDefaultTrainingUnitConfig()
+    {
+        return new BattleTestUnitConfig
+        {
+            level = defaultUnitLevel,
+            weaponData = PickRandomWeapon(null),
+            statMultiplier = defaultStatMultiplier,
+        };
+    }
+
+    private GladiatorClassSO PickRandomClass(GladiatorClassSO fallback)
+    {
+        if (!HasRandomClassPool())
+            return fallback;
+
+        int startIndex = Random.Range(0, randomClassPool.Length);
+        for (int offset = 0; offset < randomClassPool.Length; offset++)
+        {
+            GladiatorClassSO classSO = randomClassPool[(startIndex + offset) % randomClassPool.Length];
+            if (classSO != null)
+                return classSO;
+        }
+
+        return fallback;
+    }
+
+    private bool HasRandomClassPool()
+    {
+        if (randomClassPool == null)
+            return false;
+
+        for (int i = 0; i < randomClassPool.Length; i++)
+        {
+            if (randomClassPool[i] != null)
+                return true;
+        }
+
+        return false;
+    }
+
+    private WeaponSO PickRandomWeapon(WeaponSO fallback)
+    {
+        if (randomWeaponPool == null || randomWeaponPool.Length == 0)
+            return fallback;
+
+        int startIndex = Random.Range(0, randomWeaponPool.Length);
+        for (int offset = 0; offset < randomWeaponPool.Length; offset++)
+        {
+            WeaponSO weaponSO = randomWeaponPool[(startIndex + offset) % randomWeaponPool.Length];
+            if (weaponSO != null)
+                return weaponSO;
+        }
+
+        return fallback;
     }
 
     private static BattleUnitSnapshot CreateSnapshot(
         int sourceRuntimeId,
         BattleTeamId teamId,
         string displayPrefix,
-        BattleTestUnitConfig entry
+        BattleTestUnitConfig entry,
+        GladiatorClassSO classOverride
     )
     {
-        GladiatorClassSO classSO = entry.classSO;
+        GladiatorClassSO classSO = classOverride != null ? classOverride : entry.classSO;
+        if (classSO == null)
+        {
+            Debug.LogError("[TrainingBootstrapper] Cannot create snapshot without a gladiator class.");
+            return null;
+        }
+
         int lv = Mathf.Max(1, entry.level);
         float mult = entry.statMultiplier <= 0 ? 1f : entry.statMultiplier;
 

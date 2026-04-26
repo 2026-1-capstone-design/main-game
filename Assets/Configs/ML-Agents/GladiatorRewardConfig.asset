@@ -12,10 +12,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 80c998aa54db4e1897d08acca359afc5, type: 3}
   m_Name: GladiatorRewardConfig
   m_EditorClassIdentifier: 
-  damageTaken: -0.1
-  death: -5
-  attackLanded: 10
-  kill: 100
-  boundary: -1
-  distanceShapingScale: 0.005
-  invalidAction: -10
+  step: -0.001
+  approach: 0.0005
+  retreatDistance: 0.0005
+  chaseTarget: 0.0005
+  disengaged: -0.01
+  goodRetreat: 0.001
+  badRetreat: -0.02
+  inRangeNoAttack: -0.01
+  damageTaken: -0.01
+  death: -2
+  damageDealt: 0.01
+  attackLanded: 0.05
+  kill: 10
+  win: 20
+  loss: -20
+  timeout: -20
+  boundary: -0.2
+  invalidAction: -1

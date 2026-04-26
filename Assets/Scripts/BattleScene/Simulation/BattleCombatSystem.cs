@@ -66,13 +66,13 @@ public sealed class BattleCombatSystem
             attacker.State.SetAttackState(true);
 
             float damage = attacker.Attack;
-            target.ApplyDamage(damage);
+            float actualDamage = target.ApplyDamage(damage);
             BattleRuntimeUnit targetRuntime = ResolveRuntimeUnit(runtimeUnitByState, target);
-            attacker.RaiseAttackLanded(targetRuntime, target.IsCombatDisabled);
+            attacker.RaiseAttackLanded(targetRuntime, actualDamage, target.IsCombatDisabled);
             attacker.State.ResetAttackCooldown();
 
             results.Add(
-                new BattleCombatResult(attacker, targetRuntime, damage, target.IsCombatDisabled, wasSkill: false)
+                new BattleCombatResult(attacker, targetRuntime, actualDamage, target.IsCombatDisabled, wasSkill: false)
             );
         }
     }

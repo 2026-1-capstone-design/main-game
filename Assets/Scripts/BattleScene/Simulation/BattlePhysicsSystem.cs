@@ -56,6 +56,13 @@ public sealed class BattlePhysicsSystem
                     unit.ClampInsideBattlefield(_battlefieldCollider);
                     unit.State.SetMovementState(true);
                 }
+                else if (BattleFieldSnapshot.IsValidEnemyTarget(unit.State, unit.PlannedTargetEnemy))
+                {
+                    bool moved = MoveTowardsTarget(unit, unit.PlannedTargetEnemy, tickDeltaTime);
+                    unit.State.SetMovementState(moved);
+                    if (!moved)
+                        unit.State.SetIdleState();
+                }
                 else
                 {
                     unit.State.SetIdleState();

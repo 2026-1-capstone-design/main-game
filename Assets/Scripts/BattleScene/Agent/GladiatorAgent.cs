@@ -8,7 +8,7 @@ using UnityEngine.InputSystem;
 // BehaviorParameters 설정 (Inspector):
 //   Space Size        = GladiatorObservationSchema.TotalSize (= 85)
 //   Discrete Branches = 2
-//     Branch 0 Size = GladiatorActionSchema.MoveAttackBranchSize (= 8)
+//     Branch 0 Size = GladiatorActionSchema.MoveAttackBranchSize (= 9)
 //     Branch 1 Size = GladiatorActionSchema.RotationBranchSize (= 3)
 //
 // Observation (85 floats):
@@ -17,7 +17,7 @@ using UnityEngine.InputSystem;
 //   상대팀    (6 × 7): payload team-local index 오름차순 고정 슬롯
 //
 // Action:
-//   Branch 0 (이동/공격): 0=멈춤  1=앞으로  2~7=상대팀 고정 슬롯 0~5 공격
+//   Branch 0 (이동/공격): 0=멈춤  1=앞으로  2=가장 가까운 적 반대 방향 후퇴  3~8=상대팀 고정 슬롯 0~5 공격
 //   Branch 1 (회전):      0=없음  1=왼쪽    2=오른쪽
 public class GladiatorAgent : Agent
 {
@@ -82,9 +82,10 @@ public class GladiatorAgent : Agent
         AddReward(rewardConfig.death);
     }
 
-    private void HandleAttackLanded(BattleRuntimeUnit target, bool wasKill)
+    private void HandleAttackLanded(BattleRuntimeUnit target, float actualDamage, bool wasKill)
     {
         AddReward(rewardConfig.attackLanded);
+        AddReward(actualDamage * rewardConfig.damageDealt);
         if (wasKill)
         {
             AddReward(rewardConfig.kill);
@@ -103,11 +104,10 @@ public class GladiatorAgent : Agent
             return;
         }
 
-        bool attackBlocked = _selfUnit.AttackCooldownRemaining > 0f || _selfUnit.IsAttacking;
         for (int i = 0; i < GladiatorObservationSchema.OpponentSlots; i++)
         {
             BattleRuntimeUnit target = ResolveOpponentSlot(i);
-            bool invalid = target == null || target.IsCombatDisabled || attackBlocked || IsOutOfAttackRange(target);
+            bool invalid = target == null || target.IsCombatDisabled;
             if (invalid)
             {
                 actionMask.SetActionEnabled(0, i + GladiatorActionSchema.AttackStart, false);
@@ -144,12 +144,16 @@ public class GladiatorAgent : Agent
         }
 
         float nearestDist = GetDistToNearestOpponent();
+        bool shouldRetreat = ShouldRetreat(nearestDist);
         if (_prevDistToNearestEnemy < float.MaxValue && nearestDist < float.MaxValue)
         {
             float approachDelta = _prevDistToNearestEnemy - nearestDist;
-            if (approachDelta > 0f)
+            if (Mathf.Abs(approachDelta) > 0.0001f)
             {
-                AddReward(approachDelta * rewardConfig.approach);
+                if (approachDelta < 0f && shouldRetreat)
+                    AddReward(-approachDelta * rewardConfig.retreatDistance);
+                else
+                    AddReward(approachDelta * rewardConfig.approach);
             }
         }
 
@@ -161,9 +165,15 @@ public class GladiatorAgent : Agent
         };
 
         bool attackBlocked = _selfUnit.AttackCooldownRemaining > 0f || _selfUnit.IsAttacking;
-        if (!attackBlocked && mainAction < GladiatorActionSchema.AttackStart && HasAttackableOpponent())
+        bool isRetreatAction = mainAction == GladiatorActionSchema.Retreat;
+        if (!attackBlocked && !isRetreatAction && mainAction < GladiatorActionSchema.AttackStart && HasAttackableOpponent())
         {
             AddReward(rewardConfig.inRangeNoAttack);
+        }
+
+        if (!attackBlocked && !isRetreatAction && mainAction < GladiatorActionSchema.AttackStart && HasLivingOpponent())
+        {
+            AddReward(rewardConfig.disengaged);
         }
 
         _prevDistToNearestEnemy = nearestDist;
@@ -175,16 +185,34 @@ public class GladiatorAgent : Agent
             return;
         }
 
-        if (mainAction >= GladiatorActionSchema.AttackStart)
+        if (mainAction == GladiatorActionSchema.Retreat)
         {
-            BattleRuntimeUnit target = ResolveOpponentSlot(mainAction - GladiatorActionSchema.AttackStart);
-            if (_selfUnit.AttackCooldownRemaining > 0f || _selfUnit.IsAttacking)
+            BattleRuntimeUnit nearestOpponent = ResolveNearestOpponent();
+            if (nearestOpponent == null)
             {
                 AddReward(rewardConfig.invalidAction);
+                _selfUnit.SetExternalMovement(Vector3.zero, rotDelta);
+                _selfUnit.SetExternalAttackTarget(null);
                 return;
             }
 
-            if (target == null || target.IsCombatDisabled || IsOutOfAttackRange(target))
+            Vector3 away = _selfUnit.Position - nearestOpponent.Position;
+            away.y = 0f;
+            if (away.sqrMagnitude <= 0.0001f)
+            {
+                away = -_selfUnit.transform.forward;
+            }
+
+            AddReward(shouldRetreat ? rewardConfig.goodRetreat : rewardConfig.badRetreat);
+            _selfUnit.SetExternalMovement(away.normalized, rotDelta);
+            _selfUnit.SetExternalAttackTarget(null);
+            return;
+        }
+
+        if (mainAction >= GladiatorActionSchema.AttackStart)
+        {
+            BattleRuntimeUnit target = ResolveOpponentSlot(mainAction - GladiatorActionSchema.AttackStart);
+            if (target == null || target.IsCombatDisabled)
             {
                 AddReward(rewardConfig.invalidAction);
                 return;
@@ -192,6 +220,11 @@ public class GladiatorAgent : Agent
 
             _selfUnit.SetExternalMovement(Vector3.zero, rotDelta);
             _selfUnit.SetExternalAttackTarget(target);
+            if (IsOutOfAttackRange(target))
+            {
+                AddReward(rewardConfig.chaseTarget);
+            }
+
             return;
         }
 
@@ -233,6 +266,8 @@ public class GladiatorAgent : Agent
 
         if (kb.wKey.isPressed)
             discrete[0] = GladiatorActionSchema.Forward;
+        else if (kb.sKey.isPressed)
+            discrete[0] = GladiatorActionSchema.Retreat;
         else if (kb.jKey.isPressed)
             discrete[0] = GladiatorActionSchema.AttackStart;
         else if (kb.kKey.isPressed)
@@ -287,6 +322,59 @@ public class GladiatorAgent : Agent
         }
 
         return false;
+    }
+
+    private bool HasLivingOpponent()
+    {
+        for (int i = 0; i < GladiatorObservationSchema.OpponentSlots; i++)
+        {
+            BattleRuntimeUnit target = ResolveOpponentSlot(i);
+            if (target != null && !target.IsCombatDisabled)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private BattleRuntimeUnit ResolveNearestOpponent()
+    {
+        BattleRuntimeUnit nearest = null;
+        float nearestSqrDistance = float.MaxValue;
+        for (int i = 0; i < GladiatorObservationSchema.OpponentSlots; i++)
+        {
+            BattleRuntimeUnit target = ResolveOpponentSlot(i);
+            if (target == null || target.IsCombatDisabled)
+            {
+                continue;
+            }
+
+            Vector3 delta = target.Position - _selfUnit.Position;
+            delta.y = 0f;
+            float sqrDistance = delta.sqrMagnitude;
+            if (sqrDistance < nearestSqrDistance)
+            {
+                nearestSqrDistance = sqrDistance;
+                nearest = target;
+            }
+        }
+
+        return nearest;
+    }
+
+    private bool ShouldRetreat(float nearestDist)
+    {
+        if (_selfUnit == null || nearestDist >= float.MaxValue)
+            return false;
+
+        float healthRatio = _selfUnit.MaxHealth > 0f ? _selfUnit.CurrentHealth / _selfUnit.MaxHealth : 1f;
+        float bodyAdjustedAttackRange = _selfUnit.BodyRadius + _selfUnit.AttackRange;
+        bool lowHealthAndThreatened = healthRatio <= 0.35f && nearestDist <= bodyAdjustedAttackRange * 1.5f;
+        bool cooldownSpacing = _selfUnit.AttackCooldownRemaining > 0f && nearestDist <= bodyAdjustedAttackRange * 0.8f;
+        bool rangedTooClose = _selfUnit.AttackRange >= 3f && nearestDist <= bodyAdjustedAttackRange * 0.45f;
+
+        return lowHealthAndThreatened || cooldownSpacing || rangedTooClose;
     }
 
     private void OnDestroy()

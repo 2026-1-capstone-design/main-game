@@ -211,8 +211,8 @@ MonoBehaviour:
     NumStackedVectorObservations: 1
     m_ActionSpec:
       m_NumContinuousActions: 0
-      BranchSizes: 0800000003000000
-    VectorActionSize: 0800000003000000
+      BranchSizes: 0900000003000000
+    VectorActionSize: 0900000003000000
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
     hasUpgradedBrainParametersWithActionSpec: 1
@@ -316,16 +316,40 @@ MonoBehaviour:
   battleSceneFlowManager: {fileID: 2294310619055349884}
   battleSimulationManager: {fileID: 8950524180265300232}
   preset: {fileID: 11400000, guid: 0ee19b80213f78a42b9dd2a69a3168b7, type: 2}
+  useCurriculumTeamSize: 1
+  teamSizeEnvironmentParameter: team_size
+  defaultTeamSize: 1
+  randomClassPool:
+  - {fileID: 11400000, guid: 9c5a947b78105224cbc9b38d27daa7fa, type: 2}
+  - {fileID: 11400000, guid: d1920f5a5213a2a4794d273884a924e4, type: 2}
+  - {fileID: 11400000, guid: 6846407ed22928941b371aab2d355ecf, type: 2}
+  - {fileID: 11400000, guid: c396e2b3c4b9eb44a9757c589726c481, type: 2}
+  - {fileID: 11400000, guid: 9b166f98acf232240b7db9c0d858014f, type: 2}
+  randomWeaponPool:
+  - {fileID: 11400000, guid: 1125cefdf7e96c04cb5c836ceef728b5, type: 2}
+  - {fileID: 11400000, guid: 8f15a2a951e32fa44914883dd11d291f, type: 2}
+  - {fileID: 11400000, guid: 3f69dd2a1b6d04140a0d6b09f9c06b82, type: 2}
+  - {fileID: 11400000, guid: 57a45c0a1bc261f4486e00585a46083b, type: 2}
+  - {fileID: 11400000, guid: 72083519813a3ab4098ce19d38d566cd, type: 2}
+  - {fileID: 11400000, guid: ab1629e5d89986f4595fdae5ee52b07e, type: 2}
+  - {fileID: 11400000, guid: dbdb181f9c76fca4d932bbbdbf2ded9b, type: 2}
+  - {fileID: 11400000, guid: 3da7b72ba791cd940915b68cc3d6a124, type: 2}
+  defaultUnitLevel: 1
+  defaultStatMultiplier: 1
   allyAgents:
   - {fileID: 7369524932478691754}
   - {fileID: 6005745504054656703}
   - {fileID: 4702826181089295155}
   - {fileID: 2859665270561526611}
+  - {fileID: 6829081033480993247}
+  - {fileID: 383301773655515921}
   enemyAgents:
   - {fileID: 5970356323823004508}
   - {fileID: 4937576380953105501}
   - {fileID: 119830096111051766}
   - {fileID: 7565552461153430634}
+  - {fileID: 440912077407973630}
+  - {fileID: 5048773537209845197}
   battleTicksPerEnvironmentStep: 1
   manuallyStepAcademy: 1
 --- !u!1 &1050729436075428511
@@ -379,8 +403,8 @@ MonoBehaviour:
     NumStackedVectorObservations: 1
     m_ActionSpec:
       m_NumContinuousActions: 0
-      BranchSizes: 0800000003000000
-    VectorActionSize: 0800000003000000
+      BranchSizes: 0900000003000000
+    VectorActionSize: 0900000003000000
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
     hasUpgradedBrainParametersWithActionSpec: 1
@@ -529,8 +553,8 @@ MonoBehaviour:
     NumStackedVectorObservations: 1
     m_ActionSpec:
       m_NumContinuousActions: 0
-      BranchSizes: 0800000003000000
-    VectorActionSize: 0800000003000000
+      BranchSizes: 0900000003000000
+    VectorActionSize: 0900000003000000
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
     hasUpgradedBrainParametersWithActionSpec: 1
@@ -662,8 +686,8 @@ MonoBehaviour:
     NumStackedVectorObservations: 1
     m_ActionSpec:
       m_NumContinuousActions: 0
-      BranchSizes: 0800000003000000
-    VectorActionSize: 0800000003000000
+      BranchSizes: 0900000003000000
+    VectorActionSize: 0900000003000000
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
     hasUpgradedBrainParametersWithActionSpec: 1
@@ -790,8 +814,8 @@ MonoBehaviour:
     NumStackedVectorObservations: 1
     m_ActionSpec:
       m_NumContinuousActions: 0
-      BranchSizes: 0800000003000000
-    VectorActionSize: 0800000003000000
+      BranchSizes: 0900000003000000
+    VectorActionSize: 0900000003000000
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
     hasUpgradedBrainParametersWithActionSpec: 1
@@ -1056,8 +1080,8 @@ MonoBehaviour:
     NumStackedVectorObservations: 1
     m_ActionSpec:
       m_NumContinuousActions: 0
-      BranchSizes: 0800000003000000
-    VectorActionSize: 0800000003000000
+      BranchSizes: 0900000003000000
+    VectorActionSize: 0900000003000000
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
     hasUpgradedBrainParametersWithActionSpec: 1
@@ -1246,8 +1270,8 @@ MonoBehaviour:
     NumStackedVectorObservations: 1
     m_ActionSpec:
       m_NumContinuousActions: 0
-      BranchSizes: 0800000003000000
-    VectorActionSize: 0800000003000000
+      BranchSizes: 0900000003000000
+    VectorActionSize: 0900000003000000
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
     hasUpgradedBrainParametersWithActionSpec: 1
@@ -1374,8 +1398,8 @@ MonoBehaviour:
     NumStackedVectorObservations: 1
     m_ActionSpec:
       m_NumContinuousActions: 0
-      BranchSizes: 0800000003000000
-    VectorActionSize: 0800000003000000
+      BranchSizes: 0900000003000000
+    VectorActionSize: 0900000003000000
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
     hasUpgradedBrainParametersWithActionSpec: 1
@@ -1502,8 +1526,8 @@ MonoBehaviour:
     NumStackedVectorObservations: 1
     m_ActionSpec:
       m_NumContinuousActions: 0
-      BranchSizes: 0800000003000000
-    VectorActionSize: 0800000003000000
+      BranchSizes: 0900000003000000
+    VectorActionSize: 0900000003000000
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
     hasUpgradedBrainParametersWithActionSpec: 1
@@ -1731,8 +1755,8 @@ MonoBehaviour:
     NumStackedVectorObservations: 1
     m_ActionSpec:
       m_NumContinuousActions: 0
-      BranchSizes: 0800000003000000
-    VectorActionSize: 0800000003000000
+      BranchSizes: 0900000003000000
+    VectorActionSize: 0900000003000000
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
     hasUpgradedBrainParametersWithActionSpec: 1
@@ -1828,8 +1852,8 @@ MonoBehaviour:
     NumStackedVectorObservations: 1
     m_ActionSpec:
       m_NumContinuousActions: 0
-      BranchSizes: 0800000003000000
-    VectorActionSize: 0800000003000000
+      BranchSizes: 0900000003000000
+    VectorActionSize: 0900000003000000
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
     hasUpgradedBrainParametersWithActionSpec: 1
@@ -2065,8 +2089,8 @@ MonoBehaviour:
     NumStackedVectorObservations: 1
     m_ActionSpec:
       m_NumContinuousActions: 0
-      BranchSizes: 0800000003000000
-    VectorActionSize: 0800000003000000
+      BranchSizes: 0900000003000000
+    VectorActionSize: 0900000003000000
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
     hasUpgradedBrainParametersWithActionSpec: 1
