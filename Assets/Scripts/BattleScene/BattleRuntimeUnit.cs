@@ -425,7 +425,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
                     AnimationClip clip = clips[i];
                     if (clip == null)
                         continue;
-                    if (clip.name.IndexOf("attack", StringComparison.OrdinalIgnoreCase) >= 0)
+                    if (clip.name.Equals("attack1", StringComparison.OrdinalIgnoreCase))
                     {
                         _attackAnimationClipLength = clip.length;
                         break;
