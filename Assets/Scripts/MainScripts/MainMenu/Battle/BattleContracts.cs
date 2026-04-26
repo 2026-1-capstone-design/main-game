@@ -393,8 +393,9 @@ public sealed class BattleStartPayload
             throw new ArgumentException($"Unknown team id {teamId.Value}.", nameof(teamId));
         }
 
-        int clampedIndex = Mathf.Clamp(localUnitIndex, 0, team.Units.Count - 1);
-        return GetTeamStartUnitNumber(teamId) + clampedIndex;
+        if (localUnitIndex < 0 || localUnitIndex >= team.Units.Count)
+            throw new ArgumentOutOfRangeException(nameof(localUnitIndex));
+        return GetTeamStartUnitNumber(teamId) + localUnitIndex;
     }
 
     public bool TryGetTeamLocalUnitIndex(BattleTeamId teamId, int unitNumber, out int localUnitIndex)
