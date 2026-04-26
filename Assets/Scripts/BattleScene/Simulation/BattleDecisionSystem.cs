@@ -30,7 +30,7 @@ public sealed class BattleDecisionSystem
             BattleActionScoreSet scores = EvaluateScores(unit, aiTuning);
             unit.State.SetCurrentScores(scores);
 
-            if (unit.IsExternallyControlled)
+            if (unit.UsesExternalAgentControl)
             {
                 decisions[i] = unit.CurrentActionType;
                 continue;

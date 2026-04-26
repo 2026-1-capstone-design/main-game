@@ -135,7 +135,7 @@ public sealed class BattleCombatSystem
                 continue;
             if (_channelSystem != null && _channelSystem.IsChanneling(unit))
                 continue;
-            if (unit.IsExternallyControlled)
+            if (unit.UsesExternalAgentControl)
                 continue;
             if (
                 unit.State.IsSkillDisabled

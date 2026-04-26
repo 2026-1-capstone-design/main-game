@@ -237,6 +237,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2d4656c56d7142c40bcbce02e16d4d17, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  rewardConfig: {fileID: 11400000, guid: 262fb219011f41b090ee980ee74cf86e, type: 2}
   agentParameters:
     maxStep: 0
   hasUpgradedFromAgentParameters: 1
@@ -404,6 +405,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2d4656c56d7142c40bcbce02e16d4d17, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  rewardConfig: {fileID: 11400000, guid: 262fb219011f41b090ee980ee74cf86e, type: 2}
   agentParameters:
     maxStep: 0
   hasUpgradedFromAgentParameters: 1
@@ -553,6 +555,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2d4656c56d7142c40bcbce02e16d4d17, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  rewardConfig: {fileID: 11400000, guid: 262fb219011f41b090ee980ee74cf86e, type: 2}
   agentParameters:
     maxStep: 0
   hasUpgradedFromAgentParameters: 1
@@ -685,6 +688,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2d4656c56d7142c40bcbce02e16d4d17, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  rewardConfig: {fileID: 11400000, guid: 262fb219011f41b090ee980ee74cf86e, type: 2}
   agentParameters:
     maxStep: 0
   hasUpgradedFromAgentParameters: 1
@@ -812,6 +816,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2d4656c56d7142c40bcbce02e16d4d17, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  rewardConfig: {fileID: 11400000, guid: 262fb219011f41b090ee980ee74cf86e, type: 2}
   agentParameters:
     maxStep: 0
   hasUpgradedFromAgentParameters: 1
@@ -1077,6 +1082,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2d4656c56d7142c40bcbce02e16d4d17, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  rewardConfig: {fileID: 11400000, guid: 262fb219011f41b090ee980ee74cf86e, type: 2}
   agentParameters:
     maxStep: 0
   hasUpgradedFromAgentParameters: 1
@@ -1266,6 +1272,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2d4656c56d7142c40bcbce02e16d4d17, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  rewardConfig: {fileID: 11400000, guid: 262fb219011f41b090ee980ee74cf86e, type: 2}
   agentParameters:
     maxStep: 0
   hasUpgradedFromAgentParameters: 1
@@ -1393,6 +1400,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2d4656c56d7142c40bcbce02e16d4d17, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  rewardConfig: {fileID: 11400000, guid: 262fb219011f41b090ee980ee74cf86e, type: 2}
   agentParameters:
     maxStep: 0
   hasUpgradedFromAgentParameters: 1
@@ -1520,6 +1528,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2d4656c56d7142c40bcbce02e16d4d17, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  rewardConfig: {fileID: 11400000, guid: 262fb219011f41b090ee980ee74cf86e, type: 2}
   agentParameters:
     maxStep: 0
   hasUpgradedFromAgentParameters: 1
@@ -1748,6 +1757,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2d4656c56d7142c40bcbce02e16d4d17, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  rewardConfig: {fileID: 11400000, guid: 262fb219011f41b090ee980ee74cf86e, type: 2}
   agentParameters:
     maxStep: 0
   hasUpgradedFromAgentParameters: 1
@@ -1844,6 +1854,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2d4656c56d7142c40bcbce02e16d4d17, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  rewardConfig: {fileID: 11400000, guid: 262fb219011f41b090ee980ee74cf86e, type: 2}
   agentParameters:
     maxStep: 0
   hasUpgradedFromAgentParameters: 1
@@ -2080,6 +2091,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2d4656c56d7142c40bcbce02e16d4d17, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  rewardConfig: {fileID: 11400000, guid: 262fb219011f41b090ee980ee74cf86e, type: 2}
   agentParameters:
     maxStep: 0
   hasUpgradedFromAgentParameters: 1

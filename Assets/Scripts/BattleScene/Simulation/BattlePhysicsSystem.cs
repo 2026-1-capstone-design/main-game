@@ -64,7 +64,7 @@ public sealed class BattlePhysicsSystem
                 continue;
             }
 
-            if (unit.IsExternallyControlled)
+            if (unit.UsesExternalAgentControl)
             {
                 if (unit.ExternalRotationDelta != 0f)
                     unit.Rotate(unit.ExternalRotationDelta * tickDeltaTime);
