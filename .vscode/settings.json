@@ -7,5 +7,5 @@
     "editor.insertSpaces": true,
     "editor.defaultFormatter": "csharpier.csharpier-vscode"
   },
-  "cSpell.words": ["Mathf"]
+  "cSpell.words": ["Bootstrapper", "Mathf"]
 }

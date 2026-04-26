@@ -53,7 +53,7 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
 
     private readonly List<BattleRuntimeUnit> _runtimeUnits = new List<BattleRuntimeUnit>(12);
 
-    // 3D 전장 클램프를 위한 BoxCollider
+    // 3D 전장 클램프를 위한 SphereCollider
     private SphereCollider _battlefieldCollider;
     private BattleStatusGridUIManager _statusGridUIManager;
     private BattleSceneUIManager _battleSceneUIManager;
@@ -68,6 +68,7 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
     private bool _isTemporarilyPaused;
     private float _tickAccumulator;
     private float _tickInterval;
+    private int _battleTickCount;
 
     public IReadOnlyList<BattleRuntimeUnit> RuntimeUnits => _runtimeUnits;
     public float SimulationSpeedMultiplier => simulationSpeedMultiplier;
@@ -75,6 +76,23 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
     public bool IsBattleFinished => _battleFinished;
     public bool IsTemporarilyPaused => _isTemporarilyPaused;
     public BattleStartPayload InitialPayload => _payload;
+    public int BattleTickCount => _battleTickCount;
+
+    // TrainingBootstrapper 등 외부에서 전투를 강제 종료할 때 사용한다.
+    public void ForceFinishBattle()
+    {
+        if (_battleFinished)
+            return;
+        _battleFinished = true;
+        for (int i = 0; i < _runtimeUnits.Count; i++)
+        {
+            BattleRuntimeUnit unit = _runtimeUnits[i];
+            if (unit != null && !unit.IsCombatDisabled)
+                unit.SetIdleState();
+        }
+        if (_statusGridUIManager != null)
+            _statusGridUIManager.Refresh();
+    }
 
     private void Reset()
     {
@@ -97,7 +115,6 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
             aiTuning.EnsureDefaultActionTunings();
     }
 
-    // BoxCollider로 파라미터 변경
     public void Initialize(
         IReadOnlyList<BattleRuntimeUnit> runtimeUnits,
         SphereCollider battlefieldCollider,
@@ -163,19 +180,8 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
         _tickInterval = 1f / Mathf.Max(1f, simulationTickRate);
         _battleFinished = false;
         _isTemporarilyPaused = false;
+        _battleTickCount = 0;
         _initialized = true;
-
-        if (_statusGridUIManager != null)
-        {
-            _statusGridUIManager.Initialize(this, _runtimeUnits, _battleSceneUIManager);
-            _statusGridUIManager.Refresh();
-        }
-
-        if (_battleSceneUIManager != null)
-        {
-            _battleSceneUIManager.Initialize();
-            _battleSceneUIManager.HideAll();
-        }
     }
 
     private void Update()
@@ -183,7 +189,9 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
         if (!_initialized || _battleFinished || _isTemporarilyPaused)
             return;
 
-        float scaledDeltaTime = Time.unscaledDeltaTime * Mathf.Max(0f, simulationSpeedMultiplier);
+        // Time.deltaTime respects Time.timeScale set by ML-Agents, enabling fast training.
+        // In normal gameplay Time.timeScale == 1, so behaviour is identical to before.
+        float scaledDeltaTime = Time.deltaTime * Mathf.Max(0f, simulationSpeedMultiplier);
         _tickAccumulator += scaledDeltaTime;
 
         while (_tickAccumulator >= _tickInterval)
@@ -231,6 +239,7 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
     // 9. 공격 → 10. 스킬 → 11. 승패 판정
     private void StepSimulation(float tickDeltaTime)
     {
+        _battleTickCount++;
         TickAllCooldowns(tickDeltaTime);
         ComputeAllParameters();
         EvaluateAllActionScores();
@@ -257,6 +266,9 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
                 unit.State.TickAttackCooldown(tickDeltaTime);
                 unit.State.TickSkillCooldown(tickDeltaTime);
                 unit.State.TickBufflCooldown(tickDeltaTime);
+
+                if (unit.IsAttacking && !unit.IsAttackAnimationPlaying())
+                    unit.State.SetAttackState(false);
             }
         }
     }
@@ -383,6 +395,9 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
                 out BattleActionType bestAction,
                 out float bestScore
             );
+
+            if (unit.IsExternallyControlled)
+                continue;
 
             if (currentAction == BattleActionType.None)
             {
@@ -594,6 +609,9 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
             if (unit == null || unit.IsCombatDisabled)
                 continue;
 
+            if (unit.IsExternallyControlled)
+                continue;
+
             BattleActionExecutionPlan plan;
             if (!_planners.TryGetValue(unit.CurrentActionType, out IBattleActionPlanner planner))
             {
@@ -625,6 +643,27 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
             BattleRuntimeUnit unit = _runtimeUnits[i];
             if (unit == null || unit.IsCombatDisabled || unit.State.IsStunned)
                 continue;
+
+            if (unit.IsAttacking)
+                continue;
+
+            if (unit.IsExternallyControlled)
+            {
+                if (unit.ExternalRotationDelta != 0f)
+                    unit.Rotate(unit.ExternalRotationDelta * tickDeltaTime);
+
+                if (unit.ExternalMoveDirection.sqrMagnitude > 0.0001f)
+                {
+                    unit.SetPosition(unit.Position + unit.ExternalMoveDirection * unit.MoveSpeed * tickDeltaTime);
+                    unit.ClampInsideBattlefield(_battlefieldCollider);
+                    unit.State.SetMovementState(true);
+                }
+                else
+                {
+                    unit.State.SetIdleState();
+                }
+                continue;
+            }
 
             BattleRuntimeUnit targetEnemy = unit.PlannedTargetEnemy;
 
@@ -684,10 +723,10 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
             attacker.State.SetAttackState(true); //실질적으로 때리는 타이밍
 
             target.State.ApplyDamage(attacker.Attack); //데미지 적용
+            attacker.RaiseAttackLanded(target, target.IsCombatDisabled);
 
             attacker.State.ResetAttackCooldown(); //공격 쿨 돌리고
-
-            attacker.State.SetAttackState(false); //때리는 것 끝
+            // SetAttackState(false)는 TickAllCooldowns에서 애니메이션 종료 후 호출
         }
     }
 
@@ -696,6 +735,8 @@ public sealed class BattleSimulationManager : MonoBehaviour, ISkillEffectApplier
         foreach (BattleRuntimeUnit unit in _runtimeUnits)
         {
             if (unit == null || unit.IsCombatDisabled || unit.State.IsStunned)
+                continue;
+            if (unit.IsExternallyControlled) // TODO: 스킬이 추가되면 해제
                 continue;
             if (unit.SkillCooldownRemaining > 0f)
                 continue;

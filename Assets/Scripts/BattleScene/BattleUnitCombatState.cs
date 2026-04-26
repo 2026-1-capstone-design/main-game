@@ -113,6 +113,7 @@ public sealed class BattleUnitCombatState
     // ── 체력/사망 이벤트 ──────────────────────────────────────────
     // BattleRuntimeUnit이 구독하여 HPbar 갱신, 사망 처리를 담당한다.
     public event Action<float> OnHealthChanged; // float = newHealth
+    public event Action<float> OnDamageTaken; // float = damage amount (ML-Agents 보상용)
     public event Action OnDied;
 
     // ── 체력/사망 메서드 ──────────────────────────────────────────
@@ -121,7 +122,10 @@ public sealed class BattleUnitCombatState
         if (IsCombatDisabled)
             return;
 
-        CurrentHealth = Mathf.Max(0f, CurrentHealth - Mathf.Max(0f, damage));
+        float actualDamage = Mathf.Max(0f, damage);
+        CurrentHealth = Mathf.Max(0f, CurrentHealth - actualDamage);
+        if (actualDamage > 0f)
+            OnDamageTaken?.Invoke(actualDamage);
         OnHealthChanged?.Invoke(CurrentHealth);
 
         if (CurrentHealth <= 0f)
