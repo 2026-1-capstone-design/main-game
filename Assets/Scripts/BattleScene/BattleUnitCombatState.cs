@@ -135,12 +135,12 @@ public sealed class BattleUnitCombatState
     public event Action OnRevived;
 
     // ── 체력/사망 메서드 ──────────────────────────────────────────
-    public void ApplyDamage(float damage)
+    public float ApplyDamage(float damage)
     {
         if (IsCombatDisabled)
-            return;
+            return 0f;
 
-        float actualDamage = Mathf.Max(0f, damage);
+        float actualDamage = Mathf.Min(CurrentHealth, Mathf.Max(0f, damage));
         CurrentHealth = Mathf.Max(0f, CurrentHealth - actualDamage);
         if (actualDamage > 0f)
             OnDamageTaken?.Invoke(actualDamage);
@@ -158,6 +158,8 @@ public sealed class BattleUnitCombatState
             SetIdleState();
             OnDied?.Invoke();
         }
+
+        return actualDamage;
     }
 
     public void ApplyHeal(float heal)

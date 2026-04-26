@@ -100,6 +100,8 @@ public sealed class BattleCombatSystem
 
             attacker.State.SetAttackState(true);
 
+            float healthBeforeDamage = target.CurrentHealth;
+            bool wasDisabledBeforeDamage = target.IsCombatDisabled;
             BattleRuntimeUnit targetRuntime = ResolveRuntimeUnit(runtimeUnitByState, target);
             effects.DealDamage(
                 new BattleDamageRequest
@@ -115,7 +117,9 @@ public sealed class BattleCombatSystem
                 }
             );
 
-            attacker.RaiseAttackLanded(targetRuntime, target.IsCombatDisabled);
+            float actualDamage = UnityEngine.Mathf.Max(0f, healthBeforeDamage - target.CurrentHealth);
+            bool wasKill = !wasDisabledBeforeDamage && target.IsCombatDisabled;
+            attacker.RaiseAttackLanded(targetRuntime, actualDamage, wasKill);
             attacker.State.ResetAttackCooldown();
         }
     }

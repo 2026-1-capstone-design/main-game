@@ -104,10 +104,11 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     [Obsolete("Use UsesExternalAgentControl instead.")]
     public bool IsExternallyControlled => UsesExternalAgentControl;
 
-    // 공격이 실제로 적에게 적중했을 때 발화한다. (target, wasKillingBlow)
-    public event Action<BattleRuntimeUnit, bool> OnAttackLanded;
+    // 공격이 실제로 적에게 적중했을 때 발화한다. (target, actualDamage, wasKillingBlow)
+    public event Action<BattleRuntimeUnit, float, bool> OnAttackLanded;
 
-    public void RaiseAttackLanded(BattleRuntimeUnit target, bool wasKill) => OnAttackLanded?.Invoke(target, wasKill);
+    public void RaiseAttackLanded(BattleRuntimeUnit target, float actualDamage, bool wasKill) =>
+        OnAttackLanded?.Invoke(target, actualDamage, wasKill);
 
     private int _lastAttackTriggerFrame = -1;
 
@@ -562,7 +563,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     }
 
     // ── 체력 위임 ─────────────────────────────────────────────────
-    public void ApplyDamage(float damage) => State.ApplyDamage(damage);
+    public float ApplyDamage(float damage) => State.ApplyDamage(damage);
 
     public void ApplyHeal(float heal) => State.ApplyHeal(heal);
 
