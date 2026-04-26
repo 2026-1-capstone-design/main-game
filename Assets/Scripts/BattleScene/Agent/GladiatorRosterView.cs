@@ -7,8 +7,11 @@ public sealed class GladiatorRosterView
     private readonly BattleStartPayload _payload;
     private readonly IBattleRosterProjection _projection;
     private readonly IReadOnlyList<BattleRuntimeUnit> _runtimeUnits;
+    private readonly List<BattleRuntimeUnit> _cachedTeammates;
+    private readonly List<BattleRuntimeUnit> _cachedHostiles;
 
     public GladiatorRosterView(
+        BattleRuntimeUnit self,
         BattleStartPayload payload,
         IBattleRosterProjection projection,
         IReadOnlyList<BattleRuntimeUnit> runtimeUnits
@@ -17,13 +20,13 @@ public sealed class GladiatorRosterView
         _payload = payload;
         _projection = projection;
         _runtimeUnits = runtimeUnits ?? Array.Empty<BattleRuntimeUnit>();
+        _cachedTeammates = GetSortedUnits(self, includeAllies: true, excludeSelf: true);
+        _cachedHostiles = GetSortedUnits(self, includeAllies: false, excludeSelf: false);
     }
 
-    public List<BattleRuntimeUnit> GetSortedTeammates(BattleRuntimeUnit self) =>
-        GetSortedUnits(self, includeAllies: true, excludeSelf: true);
+    public IReadOnlyList<BattleRuntimeUnit> GetSortedTeammates(BattleRuntimeUnit self) => _cachedTeammates;
 
-    public List<BattleRuntimeUnit> GetSortedHostiles(BattleRuntimeUnit self) =>
-        GetSortedUnits(self, includeAllies: false, excludeSelf: false);
+    public IReadOnlyList<BattleRuntimeUnit> GetSortedHostiles(BattleRuntimeUnit self) => _cachedHostiles;
 
     public BattleRuntimeUnit ResolveHostileSlot(BattleRuntimeUnit self, int slotIndex)
     {
@@ -32,7 +35,7 @@ public sealed class GladiatorRosterView
             return null;
         }
 
-        List<BattleRuntimeUnit> hostiles = GetSortedHostiles(self);
+        IReadOnlyList<BattleRuntimeUnit> hostiles = GetSortedHostiles(self);
         return slotIndex < hostiles.Count ? hostiles[slotIndex] : null;
     }
 
@@ -58,7 +61,7 @@ public sealed class GladiatorRosterView
 
         float totalDistance = 0f;
         int count = 0;
-        List<BattleRuntimeUnit> hostiles = GetSortedHostiles(self);
+        IReadOnlyList<BattleRuntimeUnit> hostiles = GetSortedHostiles(self);
         for (int i = 0; i < hostiles.Count; i++)
         {
             BattleRuntimeUnit hostile = hostiles[i];
@@ -85,7 +88,7 @@ public sealed class GladiatorRosterView
 
         BattleRuntimeUnit nearest = null;
         float minSqrDistance = float.MaxValue;
-        List<BattleRuntimeUnit> hostiles = GetSortedHostiles(self);
+        IReadOnlyList<BattleRuntimeUnit> hostiles = GetSortedHostiles(self);
         for (int i = 0; i < hostiles.Count; i++)
         {
             BattleRuntimeUnit hostile = hostiles[i];

@@ -22,18 +22,25 @@ using UnityEngine.InputSystem;
 public class GladiatorAgent : Agent
 {
     private const float RotationSpeedDegPerSec = 240f;
+    private const float HardBoundaryRadiusMultiplier = 1.25f;
 
     [SerializeField]
     private GladiatorRewardConfig rewardConfig;
 
     private BattleRuntimeUnit _selfUnit;
     private BattleSceneFlowManager _flowManager;
+    private TrainingBootstrapper _trainingBootstrapper;
     private Vector3 _arenaCenter;
     private float _arenaExtentsMin;
     private GladiatorRosterView _rosterView;
     private float _prevDistToNearestEnemy;
+    private bool _boundaryResetRequested;
 
-    public void Initialize(BattleRuntimeUnit unit, BattleSceneFlowManager flowManager)
+    public void Initialize(
+        BattleRuntimeUnit unit,
+        BattleSceneFlowManager flowManager,
+        TrainingBootstrapper trainingBootstrapper
+    )
     {
         if (rewardConfig == null)
         {
@@ -42,15 +49,12 @@ public class GladiatorAgent : Agent
             return;
         }
 
-        if (_selfUnit != null)
-        {
-            _selfUnit.State.OnDamageTaken -= HandleDamageTaken;
-            _selfUnit.State.OnDied -= HandleSelfDied;
-            _selfUnit.OnAttackLanded -= HandleAttackLanded;
-        }
+        CleanupSubscriptions();
 
         _selfUnit = unit;
         _flowManager = flowManager;
+        _trainingBootstrapper = trainingBootstrapper;
+        _boundaryResetRequested = false;
 
         SphereCollider col = flowManager?.battlefieldCollider;
         _arenaCenter = col != null ? col.bounds.center : Vector3.zero;
@@ -76,7 +80,6 @@ public class GladiatorAgent : Agent
     private void HandleSelfDied()
     {
         AddReward(rewardConfig.death);
-        EndEpisode();
     }
 
     private void HandleAttackLanded(BattleRuntimeUnit target, bool wasKill)
@@ -85,7 +88,6 @@ public class GladiatorAgent : Agent
         if (wasKill)
         {
             AddReward(rewardConfig.kill);
-            EndEpisode();
         }
     }
 
@@ -126,9 +128,17 @@ public class GladiatorAgent : Agent
         float playableRadius = _arenaExtentsMin - _selfUnit.BodyRadius;
         Vector3 flatPos = new Vector3(_selfUnit.Position.x, 0f, _selfUnit.Position.z);
         Vector3 flatCenter = new Vector3(_arenaCenter.x, 0f, _arenaCenter.z);
-        if (Vector3.Distance(flatPos, flatCenter) >= playableRadius)
+        float distanceFromCenter = Vector3.Distance(flatPos, flatCenter);
+        if (distanceFromCenter >= playableRadius)
         {
             AddReward(rewardConfig.boundary);
+            if (distanceFromCenter >= playableRadius * HardBoundaryRadiusMultiplier)
+            {
+                RequestBoundaryReset();
+                _selfUnit.SetExternalMovement(Vector3.zero, 0f);
+                _selfUnit.SetExternalAttackTarget(null);
+                return;
+            }
         }
 
         float avgDist = GetAverageDistToOpponents();
@@ -177,6 +187,7 @@ public class GladiatorAgent : Agent
 
     public override void OnEpisodeBegin()
     {
+        _boundaryResetRequested = false;
         _prevDistToNearestEnemy = GetDistToNearestOpponent();
     }
 
@@ -238,11 +249,43 @@ public class GladiatorAgent : Agent
     private BattleRuntimeUnit ResolveOpponentSlot(int slotIndex) =>
         _rosterView != null ? _rosterView.ResolveHostileSlot(_selfUnit, slotIndex) : null;
 
+    private void OnDestroy()
+    {
+        CleanupSubscriptions();
+    }
+
+    private void CleanupSubscriptions()
+    {
+        if (_selfUnit == null)
+        {
+            return;
+        }
+
+        if (_selfUnit.State != null)
+        {
+            _selfUnit.State.OnDamageTaken -= HandleDamageTaken;
+            _selfUnit.State.OnDied -= HandleSelfDied;
+        }
+
+        _selfUnit.OnAttackLanded -= HandleAttackLanded;
+    }
+
+    private void RequestBoundaryReset()
+    {
+        if (_boundaryResetRequested)
+        {
+            return;
+        }
+
+        _boundaryResetRequested = true;
+        _trainingBootstrapper?.RequestEpisodeReset();
+    }
+
     private GladiatorRosterView CreateRosterView()
     {
         BattleStartPayload payload = _flowManager != null ? _flowManager.CurrentPayload : null;
         IBattleRosterProjection projection = payload != null ? new BattleRosterProjection(payload) : null;
         IReadOnlyList<BattleRuntimeUnit> runtimeUnits = _flowManager != null ? _flowManager.RuntimeUnits : null;
-        return new GladiatorRosterView(payload, projection, runtimeUnits);
+        return new GladiatorRosterView(_selfUnit, payload, projection, runtimeUnits);
     }
 }

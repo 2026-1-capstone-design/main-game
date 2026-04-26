@@ -35,6 +35,7 @@ public class TrainingBootstrapper : MonoBehaviour
 
     private const int BattleTimeoutTicks = 1 * 60 * 60;
     private bool _episodeEnding;
+    private bool _episodeResetRequested;
 
     private void OnValidate()
     {
@@ -99,6 +100,12 @@ public class TrainingBootstrapper : MonoBehaviour
         if (_episodeEnding || battleSimulationManager == null)
             return;
 
+        if (_episodeResetRequested)
+        {
+            ResetEpisode(isTimeout: false);
+            return;
+        }
+
         if (battleSimulationManager.IsBattleFinished)
         {
             ResetEpisode(isTimeout: false);
@@ -147,6 +154,7 @@ public class TrainingBootstrapper : MonoBehaviour
     private void ResetEpisode(bool isTimeout)
     {
         _episodeEnding = true;
+        _episodeResetRequested = false;
         ForEachAgent(agent => agent.EndEpisode());
 
         BattleStartPayload payload = CreatePayload();
@@ -162,6 +170,14 @@ public class TrainingBootstrapper : MonoBehaviour
         RefreshAllUnitAnimations();
         LinkAgentsToUnits();
         _episodeEnding = false;
+    }
+
+    public void RequestEpisodeReset()
+    {
+        if (!_episodeEnding)
+        {
+            _episodeResetRequested = true;
+        }
     }
 
     private void ClaimAcademyStepDriver()
@@ -265,7 +281,7 @@ public class TrainingBootstrapper : MonoBehaviour
             }
 
             BattleRuntimeUnit unit = i < playerUnits.Count ? playerUnits[i] : null;
-            allyAgents[i].Initialize(unit, battleSceneFlowManager);
+            allyAgents[i].Initialize(unit, battleSceneFlowManager, this);
         }
 
         for (int i = 0; i < enemyAgents.Length; i++)
@@ -276,7 +292,7 @@ public class TrainingBootstrapper : MonoBehaviour
             }
 
             BattleRuntimeUnit unit = i < hostileUnits.Count ? hostileUnits[i] : null;
-            enemyAgents[i].Initialize(unit, battleSceneFlowManager);
+            enemyAgents[i].Initialize(unit, battleSceneFlowManager, this);
         }
     }
 
