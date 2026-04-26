@@ -1,9 +1,19 @@
 using System.Collections.Generic;
 using BattleTest;
+using Unity.MLAgents;
 using UnityEngine;
 
 public class TrainingBootstrapper : MonoBehaviour
 {
+    // 한 TrainingScene에 여러 전투 환경이 있어도 Academy step은 전역으로 한 번만 진행한다.
+    private static readonly List<TrainingBootstrapper> ActiveBootstrappers = new List<TrainingBootstrapper>();
+
+    // 현재 FixedUpdate에서 Academy.EnvironmentStep() 호출을 소유한 bootstrapper.
+    private static TrainingBootstrapper _academyStepDriver;
+
+    // 학습 씬이 비활성화될 때 ML-Agents 자동 stepping 설정을 원래 상태로 되돌리기 위한 값.
+    private static bool _academySteppingWasAutomatic;
+
     public BattleSceneFlowManager battleSceneFlowManager;
     public BattleSimulationManager battleSimulationManager;
 
@@ -16,11 +26,41 @@ public class TrainingBootstrapper : MonoBehaviour
     [SerializeField]
     private GladiatorAgent[] enemyAgents;
 
+    [SerializeField]
+    private int battleTicksPerEnvironmentStep = 1;
+
+    // true이면 ML-Agents 자동 FixedUpdate stepper를 끄고 이 bootstrapper가 직접 Academy step을 진행한다.
+    [SerializeField]
+    private bool manuallyStepAcademy = true;
+
     private const int BattleTimeoutTicks = 1 * 60 * 60;
     private bool _episodeEnding;
 
+    private void OnValidate()
+    {
+        battleTicksPerEnvironmentStep = Mathf.Max(1, battleTicksPerEnvironmentStep);
+    }
+
+    private void OnEnable()
+    {
+        if (!ActiveBootstrappers.Contains(this))
+            ActiveBootstrappers.Add(this);
+
+        if (manuallyStepAcademy && _academyStepDriver == null)
+            ClaimAcademyStepDriver();
+    }
+
+    private void OnDisable()
+    {
+        ActiveBootstrappers.Remove(this);
+        ReleaseAcademyStepDriver();
+    }
+
     private void Start()
     {
+        if (battleSimulationManager != null)
+            battleSimulationManager.SetAutoStepInUpdate(false);
+
         BattleStartPayload payload = CreatePayload();
         IReadOnlyDictionary<BattleTeamId, Vector3[]> spawnPositionsByTeam = GenerateRandomPlacements(payload);
         battleSceneFlowManager.ResetAndBootstrap(payload, spawnPositionsByTeam);
@@ -30,16 +70,77 @@ public class TrainingBootstrapper : MonoBehaviour
         LinkAgentsToUnits();
     }
 
-    private void Update()
+    private void FixedUpdate()
     {
         if (_episodeEnding)
         {
             return;
         }
 
+        if (manuallyStepAcademy)
+        {
+            if (_academyStepDriver == null)
+                ClaimAcademyStepDriver();
+
+            if (_academyStepDriver != this)
+                return;
+
+            StepAllTrainingEnvironments();
+            return;
+        }
+
+        StepTrainingEnvironment();
+        TryResetFinishedOrTimedOutEpisode();
+    }
+
+    // 전투 종료와 timeout은 battle tick이 진행된 뒤 같은 step 경계에서 정산한다.
+    private void TryResetFinishedOrTimedOutEpisode()
+    {
+        if (_episodeEnding || battleSimulationManager == null)
+            return;
+
         if (battleSimulationManager.IsBattleFinished)
         {
             ResetEpisode(isTimeout: false);
+            return;
+        }
+
+        if (battleSimulationManager.BattleTickCount >= BattleTimeoutTicks)
+        {
+            ResetEpisode(isTimeout: true);
+        }
+    }
+
+    // 이 전투 환경 하나에 대해 고정된 battle tick 수만큼 논리 시뮬레이션을 진행한다.
+    private void StepTrainingEnvironment()
+    {
+        if (battleSimulationManager == null)
+            return;
+
+        battleSimulationManager.StepSimulationTicks(battleTicksPerEnvironmentStep);
+    }
+
+    // Academy step을 먼저 진행해 agent action을 갱신한 뒤, 모든 전투 환경을 동일한 step 경계에서 진행한다.
+    private static void StepAllTrainingEnvironments()
+    {
+        Academy.Instance.EnvironmentStep();
+
+        for (int i = 0; i < ActiveBootstrappers.Count; i++)
+        {
+            TrainingBootstrapper bootstrapper = ActiveBootstrappers[i];
+            if (bootstrapper == null || !bootstrapper.isActiveAndEnabled || bootstrapper._episodeEnding)
+                continue;
+
+            bootstrapper.StepTrainingEnvironment();
+        }
+
+        for (int i = 0; i < ActiveBootstrappers.Count; i++)
+        {
+            TrainingBootstrapper bootstrapper = ActiveBootstrappers[i];
+            if (bootstrapper == null || !bootstrapper.isActiveAndEnabled)
+                continue;
+
+            bootstrapper.TryResetFinishedOrTimedOutEpisode();
         }
     }
 
@@ -61,6 +162,26 @@ public class TrainingBootstrapper : MonoBehaviour
         RefreshAllUnitAnimations();
         LinkAgentsToUnits();
         _episodeEnding = false;
+    }
+
+    private void ClaimAcademyStepDriver()
+    {
+        _academyStepDriver = this;
+
+        // ML-Agents 4.0.2에서는 DisableAutomaticStepping() 대신 이 공개 프로퍼티로 제어한다.
+        _academySteppingWasAutomatic = Academy.Instance.AutomaticSteppingEnabled;
+        Academy.Instance.AutomaticSteppingEnabled = false;
+    }
+
+    // 이 bootstrapper가 소유한 수동 stepping 권한을 반납하고 Academy 설정을 복구한다.
+    private void ReleaseAcademyStepDriver()
+    {
+        if (_academyStepDriver != this)
+            return;
+
+        Academy.Instance.AutomaticSteppingEnabled = _academySteppingWasAutomatic;
+
+        _academyStepDriver = null;
     }
 
     private void ForEachAgent(System.Action<GladiatorAgent> action)
