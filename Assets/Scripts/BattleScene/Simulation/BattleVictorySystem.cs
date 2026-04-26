@@ -3,13 +3,18 @@ using UnityEngine;
 
 public sealed class BattleVictorySystem
 {
+    private readonly List<BattleRuntimeUnit> _survivorBuffer = new List<BattleRuntimeUnit>(
+        BattleTeamConstants.MaxUnitsInBattle
+    );
+    private readonly HashSet<BattleTeamId> _livingTeams = new HashSet<BattleTeamId>();
+
     public BattleOutcome? Evaluate(IReadOnlyList<BattleRuntimeUnit> units, int currentTick, BattleTeamId playerTeamId)
     {
         if (units == null)
             return null;
 
-        var survivors = new List<BattleRuntimeUnit>(units.Count);
-        HashSet<BattleTeamId> livingTeams = new HashSet<BattleTeamId>();
+        _survivorBuffer.Clear();
+        _livingTeams.Clear();
 
         for (int i = 0; i < units.Count; i++)
         {
@@ -17,15 +22,15 @@ public sealed class BattleVictorySystem
             if (unit == null || unit.IsCombatDisabled)
                 continue;
 
-            survivors.Add(unit);
-            livingTeams.Add(unit.TeamId);
+            _survivorBuffer.Add(unit);
+            _livingTeams.Add(unit.TeamId);
         }
 
-        if (livingTeams.Count > 1)
+        if (_livingTeams.Count > 1)
             return null;
 
         BattleTeamId? winnerTeamId = null;
-        foreach (BattleTeamId teamId in livingTeams)
+        foreach (BattleTeamId teamId in _livingTeams)
         {
             winnerTeamId = teamId;
             break;
@@ -41,7 +46,7 @@ public sealed class BattleVictorySystem
         BattleResolution resolution = BattleResolution.Create(wasWin, pendingReward, currentDay);
         BattleTeam winner = !winnerTeamId.HasValue ? BattleTeam.None : (wasWin ? BattleTeam.Ally : BattleTeam.Enemy);
 
-        return new BattleOutcome(winner, winnerTeamId, currentTick, survivors, resolution);
+        return new BattleOutcome(winner, winnerTeamId, currentTick, _survivorBuffer, resolution);
     }
 
     private static int CalculateVictoryReward(int currentDay)

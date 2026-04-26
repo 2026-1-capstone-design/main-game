@@ -29,24 +29,24 @@ public sealed class BattleCombatSystem
         );
     }
 
-    public BattleCombatResult[] Execute(
+    public void Execute(
         IReadOnlyList<BattleRuntimeUnit> units,
-        IReadOnlyDictionary<BattleUnitCombatState, BattleRuntimeUnit> runtimeUnitByState
+        IReadOnlyDictionary<BattleUnitCombatState, BattleRuntimeUnit> runtimeUnitByState,
+        BattleCombatResultBuffer results
     )
     {
-        if (units == null)
-            return new BattleCombatResult[0];
+        if (units == null || results == null)
+            return;
 
-        var results = new List<BattleCombatResult>();
+        results.Clear();
         ExecuteAttackPhase(units, runtimeUnitByState, results);
         ExecuteSkillPhase(units, runtimeUnitByState, results);
-        return results.ToArray();
     }
 
     private static void ExecuteAttackPhase(
         IReadOnlyList<BattleRuntimeUnit> units,
         IReadOnlyDictionary<BattleUnitCombatState, BattleRuntimeUnit> runtimeUnitByState,
-        List<BattleCombatResult> results
+        BattleCombatResultBuffer results
     )
     {
         for (int i = 0; i < units.Count; i++)
@@ -80,7 +80,7 @@ public sealed class BattleCombatSystem
     private void ExecuteSkillPhase(
         IReadOnlyList<BattleRuntimeUnit> units,
         IReadOnlyDictionary<BattleUnitCombatState, BattleRuntimeUnit> runtimeUnitByState,
-        List<BattleCombatResult> results
+        BattleCombatResultBuffer results
     )
     {
         for (int i = 0; i < units.Count; i++)

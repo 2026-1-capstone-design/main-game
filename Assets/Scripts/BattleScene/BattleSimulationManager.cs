@@ -60,6 +60,20 @@ public sealed class BattleSimulationManager : MonoBehaviour
     private readonly BattlePhysicsSystem _physicsSystem = new BattlePhysicsSystem();
     private readonly BattleCombatSystem _combatSystem = new BattleCombatSystem(new SkillEffectApplier());
     private readonly BattleVictorySystem _victorySystem = new BattleVictorySystem();
+    private readonly int[] _tickUnitNumbersBuffer = new int[BattleTeamConstants.MaxUnitsInBattle];
+    private readonly BattleParameterSet[] _tickRawParametersBuffer = new BattleParameterSet[
+        BattleTeamConstants.MaxUnitsInBattle
+    ];
+    private readonly BattleParameterSet[] _tickModifiedParametersBuffer = new BattleParameterSet[
+        BattleTeamConstants.MaxUnitsInBattle
+    ];
+    private readonly bool[] _tickModifierOverflowFlagsBuffer = new bool[BattleTeamConstants.MaxUnitsInBattle];
+    private readonly BattleActionType[] _tickDecisionBuffer = new BattleActionType[
+        BattleTeamConstants.MaxUnitsInBattle
+    ];
+    private readonly BattleCombatResultBuffer _tickCombatResultBuffer = new BattleCombatResultBuffer(
+        BattleTeamConstants.MaxUnitsInBattle
+    );
 
     private bool _initialized;
     private bool _battleFinished;
@@ -67,6 +81,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
     private float _tickAccumulator;
     private float _tickInterval;
     private int _battleTickCount;
+    private SimulationTickData _tickData;
 
     public IReadOnlyList<BattleRuntimeUnit> RuntimeUnits => _runtimeUnits;
     public float SimulationSpeedMultiplier => simulationSpeedMultiplier;
@@ -159,6 +174,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
         _battleFinished = false;
         _isTemporarilyPaused = false;
         _battleTickCount = 0;
+        EnsureTickData();
         _initialized = true;
     }
 
@@ -216,18 +232,12 @@ public sealed class BattleSimulationManager : MonoBehaviour
         CurrentSnapshot = BattleFieldSnapshot.Build(_runtimeUnits, radii, escapeTowardTeamBlend, CurrentSnapshot);
         _cooldownSystem.Tick(_runtimeUnits, tickDeltaTime);
 
-        BattleParameterComputation[] parameterResults = _parameterSystem.Compute(
-            _runtimeUnits,
-            radii,
-            aiTuning,
-            CurrentSnapshot
-        );
-        BattleActionType[] decisions = _decisionSystem.Decide(_runtimeUnits, aiTuning, tickDeltaTime);
+        _parameterSystem.Compute(_runtimeUnits, radii, aiTuning, CurrentSnapshot, _tickModifierOverflowFlagsBuffer);
+        _decisionSystem.Decide(_runtimeUnits, aiTuning, tickDeltaTime, _tickDecisionBuffer);
 
         _planningSystem.Build(_runtimeUnits, CurrentSnapshot);
         _physicsSystem.Execute(_runtimeUnits, tickDeltaTime);
-
-        BattleCombatResult[] combatResults = _combatSystem.Execute(_runtimeUnits, _runtimeUnitByState);
+        _combatSystem.Execute(_runtimeUnits, _runtimeUnitByState, _tickCombatResultBuffer);
 
         BattleOutcome? outcome = _victorySystem.Evaluate(
             _runtimeUnits,
@@ -235,7 +245,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
             _payload != null ? _payload.PlayerTeamId : BattleTeamIds.Player
         );
 
-        SimulationTickData tickData = BuildTickData(parameterResults, decisions, combatResults);
+        SimulationTickData tickData = BuildTickData();
         OnSimulationTicked?.Invoke(tickData);
 
         if (outcome.HasValue)
@@ -266,62 +276,50 @@ public sealed class BattleSimulationManager : MonoBehaviour
         OnBattleFinished?.Invoke(outcome);
     }
 
-    private SimulationTickData BuildTickData(
-        BattleParameterComputation[] parameterResults,
-        BattleActionType[] decisions,
-        BattleCombatResult[] combatResults
-    )
+    private SimulationTickData BuildTickData()
     {
-        int unitCount = _runtimeUnits.Count;
-        int[] unitNumbers = new int[unitCount];
-        var rawParameters = new BattleParameterSet[unitCount];
-        var modifiedParameters = new BattleParameterSet[unitCount];
-        var modifierOverflowFlags = new bool[unitCount];
-        var decisionResults = new BattleActionType[unitCount];
+        EnsureTickData();
 
+        int unitCount = _runtimeUnits.Count;
         for (int i = 0; i < unitCount; i++)
         {
             BattleRuntimeUnit unit = _runtimeUnits[i];
             if (unit == null)
             {
-                unitNumbers[i] = -1;
-                decisionResults[i] = BattleActionType.None;
+                _tickUnitNumbersBuffer[i] = -1;
+                _tickRawParametersBuffer[i] = default;
+                _tickModifiedParametersBuffer[i] = default;
+                _tickModifierOverflowFlagsBuffer[i] = false;
+                _tickDecisionBuffer[i] = BattleActionType.None;
                 continue;
             }
 
-            unitNumbers[i] = unit.UnitNumber;
-            rawParameters[i] = unit.CurrentRawParameters;
-            modifiedParameters[i] = unit.CurrentModifiedParameters;
-
-            if (decisions != null && i < decisions.Length)
-                decisionResults[i] = decisions[i];
-            else
-                decisionResults[i] = unit.CurrentActionType;
+            _tickUnitNumbersBuffer[i] = unit.UnitNumber;
+            _tickRawParametersBuffer[i] = unit.CurrentRawParameters;
+            _tickModifiedParametersBuffer[i] = unit.CurrentModifiedParameters;
         }
 
-        if (parameterResults != null)
+        _tickData.Update(_battleTickCount, unitCount, _tickCombatResultBuffer.Count);
+        return _tickData;
+    }
+
+    private void EnsureTickData()
+    {
+        if (_tickData == null)
         {
-            for (int i = 0; i < parameterResults.Length; i++)
-            {
-                BattleParameterComputation result = parameterResults[i];
-                if (result.UnitIndex < 0 || result.UnitIndex >= unitCount)
-                    continue;
-
-                rawParameters[result.UnitIndex] = result.Raw;
-                modifiedParameters[result.UnitIndex] = result.Modified;
-                modifierOverflowFlags[result.UnitIndex] = result.ModifierOverflowed;
-            }
+            _tickData = new SimulationTickData(
+                _tickUnitNumbersBuffer,
+                _tickRawParametersBuffer,
+                _tickModifiedParametersBuffer,
+                _tickModifierOverflowFlagsBuffer,
+                _tickDecisionBuffer,
+                _tickCombatResultBuffer.Items
+            );
+            return;
         }
 
-        return new SimulationTickData(
-            _battleTickCount,
-            unitNumbers,
-            rawParameters,
-            modifiedParameters,
-            modifierOverflowFlags,
-            decisionResults,
-            combatResults ?? new BattleCombatResult[0]
-        );
+        if (!ReferenceEquals(_tickData.CombatResults, _tickCombatResultBuffer.Items))
+            _tickData.UpdateCombatResultsBuffer(_tickCombatResultBuffer.Items);
     }
 
     private void ReleaseSnapshot()
