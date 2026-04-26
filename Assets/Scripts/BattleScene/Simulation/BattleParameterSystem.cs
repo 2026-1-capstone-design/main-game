@@ -55,6 +55,8 @@ public sealed class BattleParameterSystem
             return new BattleParameterComputation[0];
 
         var results = new List<BattleParameterComputation>(units.Count);
+        var allyViews = new List<BattleUnitView>(BattleTeamConstants.MaxUnitsPerTeam);
+        var enemyViews = new List<BattleUnitView>(BattleTeamConstants.MaxUnitsPerTeam);
         for (int i = 0; i < units.Count; i++)
         {
             BattleRuntimeUnit unit = units[i];
@@ -63,17 +65,16 @@ public sealed class BattleParameterSystem
 
             BattleUnitView self = BattleUnitView.From(unit.State);
 
-            IReadOnlyList<BattleUnitView> allyViewSource = snapshot.GetLivingAllyViews(unit.State);
-            IReadOnlyList<BattleUnitView> enemyViews = snapshot.GetLivingEnemyViews(unit.State);
+            snapshot.GetLivingAllyViews(unit.State, allyViews);
+            snapshot.GetLivingEnemyViews(unit.State, enemyViews);
 
-            var allies = new List<BattleUnitView>(allyViewSource.Count);
-            for (int j = 0; j < allyViewSource.Count; j++)
+            for (int j = allyViews.Count - 1; j >= 0; j--)
             {
-                if (allyViewSource[j].UnitNumber != self.UnitNumber)
-                    allies.Add(allyViewSource[j]);
+                if (allyViews[j].UnitNumber == self.UnitNumber)
+                    allyViews.RemoveAt(j);
             }
 
-            BattleParameterSet raw = BattleParameterComputer.Compute(self, allies, enemyViews, radii);
+            BattleParameterSet raw = BattleParameterComputer.Compute(self, allyViews, enemyViews, radii);
             BattleParameterSet modified = ApplyCurrentActionParameterModifiers(
                 unit,
                 raw,

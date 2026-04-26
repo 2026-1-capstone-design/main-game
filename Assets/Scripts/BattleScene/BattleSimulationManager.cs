@@ -151,7 +151,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
 
         _payload = payload;
 
-        CurrentSnapshot = null;
+        ReleaseSnapshot();
         _physicsSystem.Configure(_battlefieldCollider, desiredPositionStopDistance);
 
         _tickAccumulator = 0f;
@@ -213,7 +213,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
         _battleTickCount++;
 
         BattleParameterRadii radii = BattleParameterSystem.BuildRadii(aiTuning);
-        CurrentSnapshot = BattleFieldSnapshot.Build(_runtimeUnits, radii, escapeTowardTeamBlend);
+        CurrentSnapshot = BattleFieldSnapshot.Build(_runtimeUnits, radii, escapeTowardTeamBlend, CurrentSnapshot);
         _cooldownSystem.Tick(_runtimeUnits, tickDeltaTime);
 
         BattleParameterComputation[] parameterResults = _parameterSystem.Compute(
@@ -240,6 +240,11 @@ public sealed class BattleSimulationManager : MonoBehaviour
 
         if (outcome.HasValue)
             HandleBattleFinished(outcome.Value);
+    }
+
+    private void OnDestroy()
+    {
+        ReleaseSnapshot();
     }
 
     private void HandleBattleFinished(BattleOutcome outcome)
@@ -317,5 +322,14 @@ public sealed class BattleSimulationManager : MonoBehaviour
             decisionResults,
             combatResults ?? new BattleCombatResult[0]
         );
+    }
+
+    private void ReleaseSnapshot()
+    {
+        if (CurrentSnapshot == null)
+            return;
+
+        CurrentSnapshot.Reset();
+        CurrentSnapshot = null;
     }
 }
