@@ -45,7 +45,7 @@ public sealed class BattlePhysicsSystem
             if (unit.IsAttacking)
                 continue;
 
-            if (unit.IsExternallyControlled)
+            if (unit.UsesExternalAgentControl)
             {
                 if (unit.ExternalRotationDelta != 0f)
                     unit.Rotate(unit.ExternalRotationDelta * tickDeltaTime);

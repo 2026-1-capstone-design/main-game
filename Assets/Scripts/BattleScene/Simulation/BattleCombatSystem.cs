@@ -88,7 +88,7 @@ public sealed class BattleCombatSystem
             BattleRuntimeUnit unit = units[i];
             if (unit == null || unit.IsCombatDisabled || unit.State.IsStunned)
                 continue;
-            if (unit.IsExternallyControlled)
+            if (unit.UsesExternalAgentControl)
                 continue;
             if (unit.SkillCooldownRemaining > 0f)
                 continue;

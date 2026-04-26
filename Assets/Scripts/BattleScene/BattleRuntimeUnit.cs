@@ -96,8 +96,11 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     public Vector3 Position => State != null ? State.Position : transform.position;
 
     // ── ML-Agents 외부 제어 ───────────────────────────────────────
-    // true면 BattleSimulationManager의 AI 파이프라인(CommitOrSwitch, BuildPlan)을 스킵한다.
-    public bool IsExternallyControlled { get; private set; }
+    public BattleUnitControlMode ControlMode { get; private set; } = BattleUnitControlMode.BuiltInAI;
+    public bool UsesExternalAgentControl => ControlMode == BattleUnitControlMode.ExternalAgent;
+
+    [Obsolete("Use UsesExternalAgentControl instead.")]
+    public bool IsExternallyControlled => UsesExternalAgentControl;
 
     // 공격이 실제로 적에게 적중했을 때 발화한다. (target, wasKillingBlow)
     public event Action<BattleRuntimeUnit, bool> OnAttackLanded;
@@ -109,7 +112,25 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     public Vector3 ExternalMoveDirection { get; private set; }
     public float ExternalRotationDelta { get; private set; }
 
-    public void SetExternallyControlled(bool value) => IsExternallyControlled = value;
+    public void SetControlMode(BattleUnitControlMode mode)
+    {
+        ControlMode = mode;
+        if (mode != BattleUnitControlMode.ExternalAgent)
+        {
+            ClearExternalControlInput();
+        }
+    }
+
+    public void ClearExternalControlInput()
+    {
+        ExternalMoveDirection = Vector3.zero;
+        ExternalRotationDelta = 0f;
+        SetExternalAttackTarget(null);
+    }
+
+    [Obsolete("Use SetControlMode instead.")]
+    public void SetExternallyControlled(bool value) =>
+        SetControlMode(value ? BattleUnitControlMode.ExternalAgent : BattleUnitControlMode.BuiltInAI);
 
     public void SetExternalMovement(Vector3 worldDirection, float rotationDeltaDegPerSec)
     {
@@ -119,7 +140,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
 
     public void SetExternalAttackTarget(BattleRuntimeUnit target)
     {
-        State.SetPlannedTargets(target != null ? target.State : null, null);
+        State?.SetPlannedTargets(target != null ? target.State : null, null);
     }
 
     public void Rotate(float deltaAngleDeg)

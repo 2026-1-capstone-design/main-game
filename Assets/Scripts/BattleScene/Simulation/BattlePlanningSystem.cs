@@ -20,7 +20,7 @@ public sealed class BattlePlanningSystem
             if (unit == null || unit.IsCombatDisabled)
                 continue;
 
-            if (unit.IsExternallyControlled)
+            if (unit.UsesExternalAgentControl)
                 continue;
 
             BattleActionExecutionPlan plan;

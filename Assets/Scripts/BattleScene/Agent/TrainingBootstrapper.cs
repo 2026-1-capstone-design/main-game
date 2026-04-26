@@ -497,7 +497,7 @@ public class TrainingBootstrapper : MonoBehaviour
                 continue;
             }
 
-            unit.SetExternallyControlled(true);
+            unit.SetControlMode(BattleUnitControlMode.ExternalAgent);
             sorted.Add((ResolveSortIndex(unit, projection), unit.UnitNumber, unit));
         }
 
