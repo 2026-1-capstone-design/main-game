@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Unity.MLAgents.Sensors;
 using UnityEngine;
@@ -54,7 +55,7 @@ public static class BattleObservationBuilder
     private static void AddUnitSlotObservations(
         VectorSensor sensor,
         BattleRuntimeUnit self,
-        List<BattleRuntimeUnit> units,
+        IReadOnlyList<BattleRuntimeUnit> units,
         int slots
     )
     {
@@ -93,9 +94,13 @@ public static class BattleObservationBuilder
         return new Vector2(x, z);
     }
 
-    private static List<BattleRuntimeUnit> GetTeammatesSorted(GladiatorRosterView rosterView, BattleRuntimeUnit self) =>
-        rosterView != null ? rosterView.GetSortedTeammates(self) : new List<BattleRuntimeUnit>();
+    private static IReadOnlyList<BattleRuntimeUnit> GetTeammatesSorted(
+        GladiatorRosterView rosterView,
+        BattleRuntimeUnit self
+    ) => rosterView != null ? rosterView.GetSortedTeammates(self) : Array.Empty<BattleRuntimeUnit>();
 
-    private static List<BattleRuntimeUnit> GetOpponentsSorted(GladiatorRosterView rosterView, BattleRuntimeUnit self) =>
-        rosterView != null ? rosterView.GetSortedHostiles(self) : new List<BattleRuntimeUnit>();
+    private static IReadOnlyList<BattleRuntimeUnit> GetOpponentsSorted(
+        GladiatorRosterView rosterView,
+        BattleRuntimeUnit self
+    ) => rosterView != null ? rosterView.GetSortedHostiles(self) : Array.Empty<BattleRuntimeUnit>();
 }
