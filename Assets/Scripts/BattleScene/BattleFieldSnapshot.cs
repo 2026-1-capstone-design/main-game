@@ -92,7 +92,8 @@ public sealed class BattleFieldSnapshot
             return false;
         Vector3 delta = attacker.Position - target.Position;
         delta.y = 0f;
-        return delta.magnitude <= (GetEffectiveAttackDistance(attacker, target) + 0.05f);
+        float range = GetEffectiveAttackDistance(attacker, target) + 0.05f;
+        return delta.sqrMagnitude <= range * range;
     }
 
     public void GetLivingAllies(BattleUnitCombatState requester, List<BattleUnitCombatState> result)
