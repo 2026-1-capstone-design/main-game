@@ -125,6 +125,8 @@ public class GladiatorAgent : Agent
         int mainAction = actions.DiscreteActions[0];
         int rotateAction = actions.DiscreteActions[1];
 
+        AddReward(rewardConfig.step);
+
         float playableRadius = _arenaExtentsMin - _selfUnit.BodyRadius;
         Vector3 flatPos = new Vector3(_selfUnit.Position.x, 0f, _selfUnit.Position.z);
         Vector3 flatCenter = new Vector3(_arenaCenter.x, 0f, _arenaCenter.z);
@@ -141,10 +143,14 @@ public class GladiatorAgent : Agent
             }
         }
 
-        float avgDist = GetAverageDistToOpponents();
-        if (avgDist < float.MaxValue)
+        float nearestDist = GetDistToNearestOpponent();
+        if (_prevDistToNearestEnemy < float.MaxValue && nearestDist < float.MaxValue)
         {
-            AddReward((1f / (1f + avgDist)) * rewardConfig.distanceShapingScale);
+            float approachDelta = _prevDistToNearestEnemy - nearestDist;
+            if (approachDelta > 0f)
+            {
+                AddReward(approachDelta * rewardConfig.approach);
+            }
         }
 
         float rotDelta = rotateAction switch
@@ -153,6 +159,14 @@ public class GladiatorAgent : Agent
             2 => RotationSpeedDegPerSec,
             _ => 0f,
         };
+
+        bool attackBlocked = _selfUnit.AttackCooldownRemaining > 0f || _selfUnit.IsAttacking;
+        if (!attackBlocked && mainAction < GladiatorActionSchema.AttackStart && HasAttackableOpponent())
+        {
+            AddReward(rewardConfig.inRangeNoAttack);
+        }
+
+        _prevDistToNearestEnemy = nearestDist;
 
         if (mainAction == GladiatorActionSchema.Forward)
         {
@@ -191,7 +205,22 @@ public class GladiatorAgent : Agent
         _prevDistToNearestEnemy = GetDistToNearestOpponent();
     }
 
-    public void GiveEndReward(bool allyWon) { }
+    public void GiveEndReward(BattleTeamId? winnerTeamId, bool isTimeout)
+    {
+        if (isTimeout)
+        {
+            AddReward(rewardConfig.timeout);
+            return;
+        }
+
+        if (_selfUnit == null || !winnerTeamId.HasValue)
+        {
+            AddReward(rewardConfig.loss);
+            return;
+        }
+
+        AddReward(winnerTeamId.Value == _selfUnit.TeamId ? rewardConfig.win : rewardConfig.loss);
+    }
 
     public override void Heuristic(in ActionBuffers actionsOut)
     {
@@ -243,11 +272,22 @@ public class GladiatorAgent : Agent
     private float GetDistToNearestOpponent() =>
         _rosterView != null ? _rosterView.GetDistanceToNearestHostile(_selfUnit) : float.MaxValue;
 
-    private float GetAverageDistToOpponents() =>
-        _rosterView != null ? _rosterView.GetAverageDistanceToHostiles(_selfUnit) : float.MaxValue;
-
     private BattleRuntimeUnit ResolveOpponentSlot(int slotIndex) =>
         _rosterView != null ? _rosterView.ResolveHostileSlot(_selfUnit, slotIndex) : null;
+
+    private bool HasAttackableOpponent()
+    {
+        for (int i = 0; i < GladiatorObservationSchema.OpponentSlots; i++)
+        {
+            BattleRuntimeUnit target = ResolveOpponentSlot(i);
+            if (target != null && !target.IsCombatDisabled && !IsOutOfAttackRange(target))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     private void OnDestroy()
     {

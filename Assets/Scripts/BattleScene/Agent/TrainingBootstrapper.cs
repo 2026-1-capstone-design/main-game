@@ -5,6 +5,13 @@ using UnityEngine;
 
 public class TrainingBootstrapper : MonoBehaviour
 {
+    private enum TrainingEpisodeEndReason
+    {
+        BattleFinished,
+        Timeout,
+        Requested,
+    }
+
     // 한 TrainingScene에 여러 전투 환경이 있어도 Academy step은 전역으로 한 번만 진행한다.
     private static readonly List<TrainingBootstrapper> ActiveBootstrappers = new List<TrainingBootstrapper>();
 
@@ -36,6 +43,7 @@ public class TrainingBootstrapper : MonoBehaviour
     private const int BattleTimeoutTicks = 1 * 60 * 60;
     private bool _episodeEnding;
     private bool _episodeResetRequested;
+    private BattleOutcome? _lastOutcome;
 
     private void OnValidate()
     {
@@ -53,6 +61,9 @@ public class TrainingBootstrapper : MonoBehaviour
 
     private void OnDisable()
     {
+        if (battleSimulationManager != null)
+            battleSimulationManager.OnBattleFinished -= HandleBattleFinished;
+
         ActiveBootstrappers.Remove(this);
         ReleaseAcademyStepDriver();
     }
@@ -60,7 +71,11 @@ public class TrainingBootstrapper : MonoBehaviour
     private void Start()
     {
         if (battleSimulationManager != null)
+        {
             battleSimulationManager.SetAutoStepInUpdate(false);
+            battleSimulationManager.OnBattleFinished -= HandleBattleFinished;
+            battleSimulationManager.OnBattleFinished += HandleBattleFinished;
+        }
 
         BattleStartPayload payload = CreatePayload();
         IReadOnlyDictionary<BattleTeamId, Vector3[]> spawnPositionsByTeam = GenerateRandomPlacements(payload);
@@ -102,19 +117,19 @@ public class TrainingBootstrapper : MonoBehaviour
 
         if (_episodeResetRequested)
         {
-            ResetEpisode(isTimeout: false);
+            ResetEpisode(TrainingEpisodeEndReason.Requested);
             return;
         }
 
         if (battleSimulationManager.IsBattleFinished)
         {
-            ResetEpisode(isTimeout: false);
+            ResetEpisode(TrainingEpisodeEndReason.BattleFinished);
             return;
         }
 
         if (battleSimulationManager.BattleTickCount >= BattleTimeoutTicks)
         {
-            ResetEpisode(isTimeout: true);
+            ResetEpisode(TrainingEpisodeEndReason.Timeout);
         }
     }
 
@@ -151,10 +166,13 @@ public class TrainingBootstrapper : MonoBehaviour
         }
     }
 
-    private void ResetEpisode(bool isTimeout)
+    private void ResetEpisode(TrainingEpisodeEndReason reason)
     {
         _episodeEnding = true;
         _episodeResetRequested = false;
+        bool isTimeout = reason == TrainingEpisodeEndReason.Timeout;
+        BattleTeamId? winnerTeamId = reason == TrainingEpisodeEndReason.BattleFinished ? _lastOutcome?.WinnerTeamId : null;
+        ForEachAgent(agent => agent.GiveEndReward(winnerTeamId, isTimeout));
         ForEachAgent(agent => agent.EndEpisode());
 
         BattleStartPayload payload = CreatePayload();
@@ -169,6 +187,7 @@ public class TrainingBootstrapper : MonoBehaviour
 
         RefreshAllUnitAnimations();
         LinkAgentsToUnits();
+        _lastOutcome = null;
         _episodeEnding = false;
     }
 
@@ -178,6 +197,11 @@ public class TrainingBootstrapper : MonoBehaviour
         {
             _episodeResetRequested = true;
         }
+    }
+
+    private void HandleBattleFinished(BattleOutcome outcome)
+    {
+        _lastOutcome = outcome;
     }
 
     private void ClaimAcademyStepDriver()
