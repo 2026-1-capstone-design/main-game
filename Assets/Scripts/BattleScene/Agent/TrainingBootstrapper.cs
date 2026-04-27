@@ -58,6 +58,22 @@ public class TrainingBootstrapper : MonoBehaviour
     [SerializeField]
     private int battleTicksPerEnvironmentStep = 1;
 
+    [Header("POCA Group Rewards")]
+    [SerializeField]
+    private bool usePocaGroupRewards = true;
+
+    [SerializeField]
+    private float groupWinReward = 1f;
+
+    [SerializeField]
+    private float groupLossReward = -1f;
+
+    [SerializeField]
+    private float groupTimeoutReward = -0.25f;
+
+    [SerializeField]
+    private float groupInterruptedReward = -0.1f;
+
     // true이면 ML-Agents 자동 FixedUpdate stepper를 끄고 이 bootstrapper가 직접 Academy step을 진행한다.
     [SerializeField]
     private bool manuallyStepAcademy = true;
@@ -66,6 +82,8 @@ public class TrainingBootstrapper : MonoBehaviour
     private bool _episodeEnding;
     private bool _episodeResetRequested;
     private BattleOutcome? _lastOutcome;
+    private SimpleMultiAgentGroup _allyGroup;
+    private SimpleMultiAgentGroup _enemyGroup;
 
     private void OnValidate()
     {
@@ -89,6 +107,7 @@ public class TrainingBootstrapper : MonoBehaviour
         if (battleSimulationManager != null)
             battleSimulationManager.OnBattleFinished -= HandleBattleFinished;
 
+        DisposeTrainingGroups();
         ActiveBootstrappers.Remove(this);
         ReleaseAcademyStepDriver();
     }
@@ -201,8 +220,7 @@ public class TrainingBootstrapper : MonoBehaviour
         bool isTimeout = reason == TrainingEpisodeEndReason.Timeout;
         BattleTeamId? winnerTeamId =
             reason == TrainingEpisodeEndReason.BattleFinished ? _lastOutcome?.WinnerTeamId : null;
-        ForEachAgent(agent => agent.GiveEndReward(winnerTeamId, isTimeout));
-        ForEachAgent(agent => agent.EndEpisode());
+        EndTrainingGroups(reason, winnerTeamId, isTimeout);
 
         BattleStartPayload payload = CreatePayload();
         if (payload == null)
@@ -332,6 +350,8 @@ public class TrainingBootstrapper : MonoBehaviour
             $"[TrainingBootstrapper] Linking agents: {playerUnits.Count} player units / {allyAgents.Length} ally agents, {hostileUnits.Count} hostile units / {enemyAgents.Length} enemy agents."
         );
 
+        ResetTrainingGroups();
+
         for (int i = 0; i < allyAgents.Length; i++)
         {
             if (allyAgents[i] == null)
@@ -341,6 +361,10 @@ public class TrainingBootstrapper : MonoBehaviour
 
             BattleRuntimeUnit unit = i < playerUnits.Count ? playerUnits[i] : null;
             allyAgents[i].Initialize(unit, battleSceneFlowManager, this);
+            if (unit != null)
+            {
+                _allyGroup.RegisterAgent(allyAgents[i]);
+            }
         }
 
         for (int i = 0; i < enemyAgents.Length; i++)
@@ -352,7 +376,69 @@ public class TrainingBootstrapper : MonoBehaviour
 
             BattleRuntimeUnit unit = i < hostileUnits.Count ? hostileUnits[i] : null;
             enemyAgents[i].Initialize(unit, battleSceneFlowManager, this);
+            if (unit != null)
+            {
+                _enemyGroup.RegisterAgent(enemyAgents[i]);
+            }
         }
+    }
+
+    private void ResetTrainingGroups()
+    {
+        DisposeTrainingGroups();
+        _allyGroup = new SimpleMultiAgentGroup();
+        _enemyGroup = new SimpleMultiAgentGroup();
+    }
+
+    private void DisposeTrainingGroups()
+    {
+        _allyGroup?.Dispose();
+        _enemyGroup?.Dispose();
+        _allyGroup = null;
+        _enemyGroup = null;
+    }
+
+    private void EndTrainingGroups(TrainingEpisodeEndReason reason, BattleTeamId? winnerTeamId, bool isTimeout)
+    {
+        if (!usePocaGroupRewards || _allyGroup == null || _enemyGroup == null)
+        {
+            ForEachAgent(agent => agent.GiveEndReward(winnerTeamId, isTimeout));
+            ForEachAgent(agent => agent.EndEpisode());
+            return;
+        }
+
+        if (reason == TrainingEpisodeEndReason.BattleFinished && winnerTeamId.HasValue)
+        {
+            bool allyWon = winnerTeamId.Value == BattleTeamIds.Player;
+            _allyGroup.AddGroupReward(allyWon ? groupWinReward : groupLossReward);
+            _enemyGroup.AddGroupReward(allyWon ? groupLossReward : groupWinReward);
+            _allyGroup.EndGroupEpisode();
+            _enemyGroup.EndGroupEpisode();
+            EndInactiveAgentEpisodes(interrupted: false);
+            return;
+        }
+
+        float interruptionReward =
+            reason == TrainingEpisodeEndReason.Timeout ? groupTimeoutReward : groupInterruptedReward;
+        _allyGroup.AddGroupReward(interruptionReward);
+        _enemyGroup.AddGroupReward(interruptionReward);
+        _allyGroup.GroupEpisodeInterrupted();
+        _enemyGroup.GroupEpisodeInterrupted();
+        EndInactiveAgentEpisodes(interrupted: true);
+    }
+
+    private void EndInactiveAgentEpisodes(bool interrupted)
+    {
+        ForEachAgent(agent =>
+        {
+            if (agent.HasControlledUnit)
+                return;
+
+            if (interrupted)
+                agent.EpisodeInterrupted();
+            else
+                agent.EndEpisode();
+        });
     }
 
     private IReadOnlyDictionary<BattleTeamId, Vector3[]> GenerateRandomPlacements(BattleStartPayload payload)

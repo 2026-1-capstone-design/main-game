@@ -20,7 +20,9 @@ MonoBehaviour:
   goodRetreat: 0.001
   badRetreat: -0.02
   inRangeNoAttack: -0.01
+  dangerousAttack: -0.03
   damageTaken: -0.01
+  damageTakenPerPoint: -0.002
   death: -2
   damageDealt: 0.01
   attackLanded: 0.05

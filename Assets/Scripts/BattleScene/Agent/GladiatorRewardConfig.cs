@@ -11,7 +11,9 @@ public sealed class GladiatorRewardConfig : ScriptableObject
     public float goodRetreat = 0.001f;
     public float badRetreat = -0.02f;
     public float inRangeNoAttack = -0.01f;
+    public float dangerousAttack = -0.03f;
     public float damageTaken = -0.01f;
+    public float damageTakenPerPoint = -0.002f;
     public float death = -2f;
     public float damageDealt = 0.01f;
     public float attackLanded = 0.05f;
