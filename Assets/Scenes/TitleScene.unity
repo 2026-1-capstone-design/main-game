@@ -1450,7 +1450,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
+  m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
@@ -2551,11 +2551,23 @@ MonoBehaviour:
   settingsModalRoot: {fileID: 1828440476}
   settingsCloseButton: {fileID: 2046869030}
   languageDropdown: {fileID: 0}
-  bgmVolumeSlider: {fileID: 0}
-  sfxVolumeSlider: {fileID: 0}
-  brightnessSlider: {fileID: 0}
+  bgmVolumeSlider: {fileID: 1486574278}
+  sfxVolumeSlider: {fileID: 660602679}
+  brightnessSlider: {fileID: 873071311}
   loadGameModalRoot: {fileID: 1466439085}
   loadGameCloseButton: {fileID: 1454532745}
+  loadGameSlotButtons:
+  - {fileID: 973697460}
+  - {fileID: 779186283}
+  - {fileID: 1473568941}
+  - {fileID: 1486417256}
+  - {fileID: 1719995797}
+  loadGameSlotTexts:
+  - {fileID: 769031487}
+  - {fileID: 1326534805}
+  - {fileID: 322864172}
+  - {fileID: 847239043}
+  - {fileID: 1308703416}
   verboseLog: 1
 --- !u!4 &640897155
 Transform:
@@ -3238,7 +3250,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
+  m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
@@ -3817,7 +3829,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
+  m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
@@ -5801,7 +5813,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
+  m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
@@ -6023,7 +6035,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
+  m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:

@@ -99,6 +99,17 @@ public sealed class ResourceManager : SingletonBehaviour<ResourceManager>
         }
     }
 
+    public void SetCurrentGoldForLoad(int gold)
+    {
+        _currentGold = Mathf.Max(0, gold);
+        GoldChanged?.Invoke(_currentGold);
+
+        if (verboseLog)
+        {
+            Debug.Log($"[ResourceManager] Gold restored from save. CurrentGold={_currentGold}", this);
+        }
+    }
+
     // SessionManager에 저장돼 있던 펜딩 전투 보상을 소비해서 실제 골드로 지급
     // 즉, 보상을 임시로 저장은 SessionManager,
     // 실제 지급은 이 함수가 함
