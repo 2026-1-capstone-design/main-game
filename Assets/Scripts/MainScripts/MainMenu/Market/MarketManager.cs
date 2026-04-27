@@ -27,6 +27,42 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
     public IReadOnlyList<MarketGladiatorOffer> GladiatorOffers => _gladiatorOffers;
     public IReadOnlyList<MarketWeaponOffer> WeaponOffers => _weaponOffers;
 
+    public void RestoreOffersForLoad(
+        int initializedDay,
+        List<MarketGladiatorOffer> gladiatorOffers,
+        List<MarketWeaponOffer> weaponOffers
+    )
+    {
+        if (!_initialized)
+        {
+            Debug.LogError("[MarketManager] RestoreOffersForLoad called before Initialize.", this);
+            return;
+        }
+
+        _gladiatorOffers.Clear();
+        _weaponOffers.Clear();
+
+        if (gladiatorOffers != null)
+        {
+            _gladiatorOffers.AddRange(gladiatorOffers);
+        }
+
+        if (weaponOffers != null)
+        {
+            _weaponOffers.AddRange(weaponOffers);
+        }
+
+        _initializedDay = Mathf.Max(1, initializedDay);
+
+        if (verboseLog)
+        {
+            Debug.Log(
+                $"[MarketManager] Offers restored from save. Day={_initializedDay}, GladiatorOffers={_gladiatorOffers.Count}, WeaponOffers={_weaponOffers.Count}",
+                this
+            );
+        }
+    }
+
     // 시장이 참조할 factory와 실제 보유/골드 매니저를 연결
     // 마켓 매니저가 DDOL 매니저라서 메인씬 재진입 시 scene 의존성을 다시 꽂아주는 역할도 함
     public void Initialize(
