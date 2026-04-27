@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using UnityEngine;
 
 // 12. 머리치기 (창) : 적 기절
 public sealed class HeadStrikeSkill : IBattleSkill
@@ -8,12 +7,13 @@ public sealed class HeadStrikeSkill : IBattleSkill
     public skillType SkillCategory => skillType.attack;
     public IReadOnlyList<WeaponType> CompatibleWeaponTypes { get; } = new[] { WeaponType.spear };
 
-    public bool CanActivate(BattleRuntimeUnit caster, BattleFieldView field) =>
-        caster.PlannedTargetEnemy != null && field.IsWithinEffectiveAttackDistance(caster, caster.PlannedTargetEnemy);
+    public bool CanActivate(BattleRuntimeUnit caster) =>
+        caster.PlannedTargetEnemy != null
+        && BattleFieldSnapshot.IsWithinEffectiveAttackDistance(caster.State, caster.PlannedTargetEnemy);
 
-    public void Apply(BattleRuntimeUnit caster, BattleFieldView field, ISkillEffectApplier applier)
+    public void Apply(BattleRuntimeUnit caster, ISkillEffectApplier applier)
     {
-        applier.ApplyDamage(caster.PlannedTargetEnemy.State, caster.Attack * 1.5f);
-        applier.ApplyBuff(caster.PlannedTargetEnemy.State, BuffType.Stun, 1, 3f);
+        applier.ApplyDamage(caster.PlannedTargetEnemy, caster.Attack * 1.5f);
+        applier.ApplyBuff(caster.PlannedTargetEnemy, BuffType.Stun, 1, 3f);
     }
 }

@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using UnityEngine;
 
 // 6. 파이어볼 (스태프) : 화염구 (단일 강한 데미지로 임시 구현)
 public sealed class FireballSkill : IBattleSkill
@@ -8,11 +7,12 @@ public sealed class FireballSkill : IBattleSkill
     public skillType SkillCategory => skillType.attack;
     public IReadOnlyList<WeaponType> CompatibleWeaponTypes { get; } = new[] { WeaponType.staff };
 
-    public bool CanActivate(BattleRuntimeUnit caster, BattleFieldView field) =>
-        caster.PlannedTargetEnemy != null && field.IsWithinEffectiveAttackDistance(caster, caster.PlannedTargetEnemy);
+    public bool CanActivate(BattleRuntimeUnit caster) =>
+        caster.PlannedTargetEnemy != null
+        && BattleFieldSnapshot.IsWithinEffectiveAttackDistance(caster.State, caster.PlannedTargetEnemy);
 
-    public void Apply(BattleRuntimeUnit caster, BattleFieldView field, ISkillEffectApplier applier)
+    public void Apply(BattleRuntimeUnit caster, ISkillEffectApplier applier)
     {
-        applier.ApplyDamage(caster.PlannedTargetEnemy.State, caster.Attack * 2.5f);
+        applier.ApplyDamage(caster.PlannedTargetEnemy, caster.Attack * 2.5f);
     }
 }

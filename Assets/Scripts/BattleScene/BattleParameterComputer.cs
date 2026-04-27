@@ -100,18 +100,22 @@ public static class BattleParameterComputer
             {
                 if (i == j)
                     continue;
+
                 float d = Vector3.Distance(allies[i].Position, allies[j].Position);
                 if (d < nearest)
                     nearest = d;
             }
+
             if (nearest < float.MaxValue)
             {
                 sumNearest += nearest;
                 count++;
             }
         }
+
         if (count == 0)
             return 0f;
+
         return Mathf.Clamp01((sumNearest / count) / frontlineGapRadius);
     }
 
@@ -135,6 +139,7 @@ public static class BattleParameterComputer
     {
         if (enemies.Count <= 1)
             return 0f;
+
         float sum = 0f;
         int pairCount = 0;
         for (int i = 0; i < enemies.Count; i++)
@@ -145,8 +150,10 @@ public static class BattleParameterComputer
                 pairCount++;
             }
         }
+
         if (pairCount == 0)
             return 0f;
+
         return Mathf.Clamp01(sum / pairCount);
     }
 
@@ -170,7 +177,7 @@ public static class BattleParameterComputer
         return 0f;
     }
 
-    // ── 공개 헬퍼 (BattleFieldView에서도 사용) ──────────────────────────
+    // ── 공개 헬퍼 ────────────────────────────────────────────────────────
 
     // isolated enemy target score - FindBestIsolatedEnemy, FindBestBacklineEnemy에서도 사용
     public static float ComputeIsolatedEnemyTargetScore(
@@ -186,10 +193,12 @@ public static class BattleParameterComputer
             BattleUnitView other = allEnemies[i];
             if (other.UnitNumber == enemy.UnitNumber || other.IsCombatDisabled)
                 continue;
+
             float d = Vector3.Distance(enemy.Position, other.Position);
             if (d < nearestSupportDistance)
                 nearestSupportDistance = d;
         }
+
         if (nearestSupportDistance == float.MaxValue)
             nearestSupportDistance = radii.isolationRadius;
 

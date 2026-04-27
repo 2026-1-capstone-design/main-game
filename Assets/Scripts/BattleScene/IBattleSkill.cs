@@ -2,9 +2,10 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // 스킬 효과를 실제로 적용하는 실행자 인터페이스.
-// BattleSimulationManager가 구현하며, 테스트 시에는 Test-double로 대체 가능.
+// SkillEffectApplier가 구현하며, 테스트 시에는 Test-double로 대체 가능.
 public interface ISkillEffectApplier
 {
+    IEnumerable<BattleUnitCombatState> AllUnits { get; }
     void ApplyDamage(BattleUnitCombatState target, float amount);
     void AddKnockback(BattleUnitCombatState target, Vector3 direction, float force);
     void ApplyHeal(BattleUnitCombatState caster, float amount);
@@ -22,8 +23,8 @@ public interface IBattleSkill
     IReadOnlyList<WeaponType> CompatibleWeaponTypes { get; }
 
     // 스킬 발동 조건 확인
-    bool CanActivate(BattleRuntimeUnit caster, BattleFieldView field);
+    bool CanActivate(BattleRuntimeUnit caster);
 
     // 스킬 효과 적용 (비주얼/쿨다운 리셋은 호출자가 담당)
-    void Apply(BattleRuntimeUnit caster, BattleFieldView field, ISkillEffectApplier applier);
+    void Apply(BattleRuntimeUnit caster, ISkillEffectApplier applier);
 }

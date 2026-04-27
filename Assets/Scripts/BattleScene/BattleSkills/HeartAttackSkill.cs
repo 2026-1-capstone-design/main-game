@@ -9,19 +9,20 @@ public sealed class HeartAttackSkill : IBattleSkill
 
     public IReadOnlyList<WeaponType> CompatibleWeaponTypes { get; } = new[] { WeaponType.oneHand, WeaponType.twoHand };
 
-    public bool CanActivate(BattleRuntimeUnit caster, BattleFieldView field)
+    public bool CanActivate(BattleRuntimeUnit caster)
     {
-        BattleRuntimeUnit target = caster.PlannedTargetEnemy;
-        return field.IsValidEnemyTarget(caster, target) && field.IsWithinEffectiveAttackDistance(caster, target);
+        BattleUnitCombatState target = caster.PlannedTargetEnemy;
+        return BattleFieldSnapshot.IsValidEnemyTarget(caster.State, target)
+            && BattleFieldSnapshot.IsWithinEffectiveAttackDistance(caster.State, target);
     }
 
-    public void Apply(BattleRuntimeUnit caster, BattleFieldView field, ISkillEffectApplier applier)
+    public void Apply(BattleRuntimeUnit caster, ISkillEffectApplier applier)
     {
-        BattleRuntimeUnit target = caster.PlannedTargetEnemy;
+        BattleUnitCombatState target = caster.PlannedTargetEnemy;
         if (target == null)
             return;
         Vector3 pushDir = target.Position - caster.Position;
-        applier.ApplyDamage(target.State, 20f);
-        applier.AddKnockback(target.State, pushDir, 50f);
+        applier.ApplyDamage(target, 20f);
+        applier.AddKnockback(target, pushDir, 50f);
     }
 }

@@ -4,10 +4,10 @@ public sealed class CollapsePlanner : IBattleActionPlanner
 {
     public BattleActionType ActionType => BattleActionType.CollapseOnCluster;
 
-    public BattleActionExecutionPlan Build(BattleRuntimeUnit unit, BattleFieldView field)
+    public BattleActionExecutionPlan Build(BattleRuntimeUnit unit, BattleFieldSnapshot snapshot)
     {
-        Vector3 clusterCenter = field.ComputeTeamCenter(!unit.IsEnemy);
-        BattleRuntimeUnit target = field.FindEnemyClosestToPoint(unit, clusterCenter);
+        Vector3 clusterCenter = snapshot.ComputeTeamCenter(!unit.State.IsEnemy);
+        BattleUnitCombatState target = snapshot.FindEnemyClosestToPoint(unit.State, clusterCenter);
 
         return new BattleActionExecutionPlan
         {
@@ -19,6 +19,6 @@ public sealed class CollapsePlanner : IBattleActionPlanner
         };
     }
 
-    public bool IsUsable(BattleRuntimeUnit unit, BattleActionExecutionPlan plan, BattleFieldView field) =>
-        plan.HasDesiredPosition || field.IsValidEnemyTarget(unit, plan.TargetEnemy);
+    public bool IsUsable(BattleRuntimeUnit unit, BattleActionExecutionPlan plan) =>
+        plan.HasDesiredPosition || BattleFieldSnapshot.IsValidEnemyTarget(unit.State, plan.TargetEnemy);
 }

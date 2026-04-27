@@ -4,9 +4,9 @@ public interface IBattleActionPlanner
 {
     BattleActionType ActionType { get; }
 
-    // unit이 field 상황에서 수행할 실행 플랜을 구성한다.
-    BattleActionExecutionPlan Build(BattleRuntimeUnit unit, BattleFieldView field);
+    // unit이 tick snapshot 상황에서 수행할 실행 플랜을 구성한다.
+    BattleActionExecutionPlan Build(BattleRuntimeUnit unit, BattleFieldSnapshot snapshot);
 
     // 빌드된 플랜이 실제로 실행 가능한 상태인지 검사한다.
-    bool IsUsable(BattleRuntimeUnit unit, BattleActionExecutionPlan plan, BattleFieldView field);
+    bool IsUsable(BattleRuntimeUnit unit, BattleActionExecutionPlan plan);
 }

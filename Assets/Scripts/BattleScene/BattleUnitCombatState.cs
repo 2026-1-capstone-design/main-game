@@ -47,10 +47,16 @@ public sealed class BattleUnitCombatState
 
     // ── 바디 반경 (분리/클램프 계산용) ────────────────────────────
     public float BodyRadius { get; private set; }
+    public Vector3 Position { get; private set; }
 
     public void SetBodyRadius(float bodyRadius)
     {
         BodyRadius = Mathf.Max(0f, bodyRadius);
+    }
+
+    public void SyncPosition(Vector3 worldPosition)
+    {
+        Position = worldPosition;
     }
 
     // ── 버프 ───────────────────────────────────────────────────────
@@ -133,8 +139,10 @@ public sealed class BattleUnitCombatState
             IsCombatDisabled = true;
             CurrentHealth = 0f;
             AttackCooldownRemaining = 0f;
+            SkillCooldownRemaining = 0f;
             CurrentAction = "Disabled";
             CurrentActionType = BattleActionType.None;
+            ClearTargets();
             SetIdleState();
             OnDied?.Invoke();
         }
@@ -160,7 +168,9 @@ public sealed class BattleUnitCombatState
     {
         IsMoving = isMoving;
         if (isMoving)
+        {
             IsAttacking = false;
+        }
         OnMovingStateChanged?.Invoke(IsMoving);
     }
 
@@ -239,6 +249,9 @@ public sealed class BattleUnitCombatState
     public bool HasPlannedDesiredPosition { get; private set; }
     public bool IsMoving { get; private set; }
     public bool IsAttacking { get; private set; }
+    public BattleUnitCombatState CurrentTarget { get; private set; }
+    public BattleUnitCombatState PlannedTargetEnemy { get; private set; }
+    public BattleUnitCombatState PlannedTargetAlly { get; private set; }
 
     // ── 생성자 ─────────────────────────────────────────────────────
     public BattleUnitCombatState(BattleUnitSnapshot snapshot, int unitNumber, bool isEnemy)
@@ -284,6 +297,10 @@ public sealed class BattleUnitCombatState
         HasPlannedDesiredPosition = false;
         IsMoving = false;
         IsAttacking = false;
+        Position = Vector3.zero;
+        CurrentTarget = null;
+        PlannedTargetEnemy = null;
+        PlannedTargetAlly = null;
     }
 
     // ── 공격 쿨다운 ────────────────────────────────────────────────
@@ -389,5 +406,24 @@ public sealed class BattleUnitCombatState
                 count += _buffLevel[i];
         }
         return count;
+    }
+
+    public void SetCurrentTarget(BattleUnitCombatState target)
+    {
+        CurrentTarget = target;
+    }
+
+    public void SetPlannedTargets(BattleUnitCombatState enemy, BattleUnitCombatState ally)
+    {
+        PlannedTargetEnemy = enemy;
+        PlannedTargetAlly = ally;
+        CurrentTarget = enemy;
+    }
+
+    public void ClearTargets()
+    {
+        CurrentTarget = null;
+        PlannedTargetEnemy = null;
+        PlannedTargetAlly = null;
     }
 }
