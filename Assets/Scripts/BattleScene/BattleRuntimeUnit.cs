@@ -102,6 +102,8 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
 
     public void RaiseAttackLanded(BattleRuntimeUnit target, bool wasKill) => OnAttackLanded?.Invoke(target, wasKill);
 
+    private int _lastAttackTriggerFrame = -1;
+
     public Vector3 ExternalMoveDirection { get; private set; }
     public float ExternalRotationDelta { get; private set; }
 
@@ -394,6 +396,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     private void HandleAttackTriggered()
     {
         _myAnimation?.SetTrigger("attack");
+        _lastAttackTriggerFrame = Time.frameCount;
         State.SetAttackState(true);
         State.SetMovementState(false);
 
@@ -414,6 +417,12 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     {
         if (_myAnimation == null)
             return false;
+
+        // SetTrigger("attack")는 Animator가 Update 이후 평가한다.
+        // 한 Unity frame 안에서 시뮬레이션 tick이 여러 번 돌 수 있으므로,
+        // 다음 tick이 Animator의 attack1 진입보다 먼저 실행될 수 있다.
+        if (_lastAttackTriggerFrame == Time.frameCount)
+            return true;
 
         var info = _myAnimation.GetCurrentAnimatorStateInfo(0);
         if (info.IsName("attack1") && info.normalizedTime < 1f)
