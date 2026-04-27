@@ -52,6 +52,44 @@ public sealed class BattleManager : MonoBehaviour
     public int SelectedEncounterIndex => _selectedEncounterIndex;
     public int EncounterGeneratedDay => _encounterGeneratedDay;
 
+    public void RestoreEncountersForLoad(
+        int encounterGeneratedDay,
+        int selectedEncounterIndex,
+        List<BattleEncounterPreview> encounters
+    )
+    {
+        if (!_initialized)
+        {
+            Debug.LogError("[BattleManager] RestoreEncountersForLoad called before Initialize.", this);
+            return;
+        }
+
+        _dailyEncounters.Clear();
+
+        if (encounters != null)
+        {
+            _dailyEncounters.AddRange(encounters);
+        }
+
+        _encounterGeneratedDay = Mathf.Max(1, encounterGeneratedDay);
+        _selectedEncounterIndex =
+            (selectedEncounterIndex >= 0 && selectedEncounterIndex < _dailyEncounters.Count)
+                ? selectedEncounterIndex
+                : -1;
+
+        _battlePanelOpen = false;
+        _resultOpen = false;
+        _lastResolution = default;
+
+        if (verboseLog)
+        {
+            Debug.Log(
+                $"[BattleManager] Encounters restored from save. Day={_encounterGeneratedDay}, Count={_dailyEncounters.Count}, Selected={_selectedEncounterIndex}",
+                this
+            );
+        }
+    }
+
     // 전투 후보 생성과 선택을 관리하기 위한 참조들을 연결,
     // 하루 캐시와 선택 상태를 초기화
     public void Initialize(SessionManager sessionManager, BalanceSO balance, RecruitFactory recruitFactory)

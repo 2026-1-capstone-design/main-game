@@ -1,3 +1,5 @@
+using System;
+using System.Globalization;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -24,13 +26,34 @@ public sealed class MainUIManager : MonoBehaviour
     [SerializeField]
     private Button eodButton;
 
+    [SerializeField]
+    private Button saveButton;
+
+    [Header("Save Modal")]
+    [SerializeField]
+    private GameObject savePanelRoot;
+
+    [SerializeField]
+    private Button saveCloseButton;
+
+    [SerializeField]
+    private Button[] saveSlotButtons = new Button[5];
+
+    [SerializeField]
+    private TMP_Text[] saveSlotTexts = new TMP_Text[5];
+
     [Header("Optional Labels")]
     [SerializeField]
     private TMP_Text currentDayText;
 
+    [Header("Debug")]
+    [SerializeField]
+    private bool verboseLog = true;
+
     private MainFlowManager _flow; // 메인 메뉴 버튼 입력을 실제 게임 흐름 처리 함수로 넘김
     private SessionManager _sessionManager;
     private bool _initialized;
+    private Button _saveBackdropButton;
 
     // 메인 버튼들을 모두 MainFlowManager 핸들러에 연결하고,
     // !!DayChanged 이벤트를 구독해!! 날짜 UI를 동기화
@@ -44,17 +67,56 @@ public sealed class MainUIManager : MonoBehaviour
         _flow = flow;
         _sessionManager = sessionManager;
 
+        if (saveButton == null)
+        {
+            saveButton = ResolveSaveButtonFromScene();
+        }
+
         BindButton(gladiatorButton, OnGladiatorClicked);
         BindButton(battleButton, OnBattleClicked);
         BindButton(researchButton, OnResearchClicked);
         BindButton(missionButton, OnMissionClicked);
         BindButton(marketButton, OnMarketClicked);
         BindButton(eodButton, OnEodClicked);
+        BindButton(saveButton, OnSaveClicked);
+
+        CacheSaveModalControls();
+        BindSaveModalControls();
+        RefreshSaveSlotPreviews();
+
+        if (savePanelRoot != null)
+        {
+            savePanelRoot.SetActive(false);
+        }
 
         if (_sessionManager != null)
         {
             _sessionManager.DayChanged += OnDayChanged;
             RefreshDayText(_sessionManager.CurrentDay);
+        }
+
+        if (verboseLog)
+        {
+            Debug.Log(
+                "[MainUIManager] Save UI init: "
+                    + $"saveButton={(saveButton != null ? saveButton.name : "null")}, "
+                    + $"savePanelRoot={(savePanelRoot != null ? savePanelRoot.name : "null")}, "
+                    + $"saveCloseButton={(saveCloseButton != null ? saveCloseButton.name : "null")}",
+                this
+            );
+
+            for (int i = 0; i < saveSlotButtons.Length; i++)
+            {
+                Button slotButton = saveSlotButtons[i];
+                TMP_Text slotText = saveSlotTexts[i];
+                Debug.Log(
+                    "[MainUIManager] Save slot bind: "
+                        + $"index={i + 1}, "
+                        + $"button={(slotButton != null ? slotButton.name : "null")}, "
+                        + $"text={(slotText != null ? slotText.name : "null")}",
+                    this
+                );
+            }
         }
 
         _initialized = true;
@@ -76,6 +138,7 @@ public sealed class MainUIManager : MonoBehaviour
         SetButtonInteractable(missionButton, value);
         SetButtonInteractable(marketButton, value);
         SetButtonInteractable(eodButton, value);
+        SetButtonInteractable(saveButton, value);
     }
 
     public void SetBattleButtonInteractable(bool value)
@@ -151,6 +214,281 @@ public sealed class MainUIManager : MonoBehaviour
             Debug.Log("EOd clicked");
             _flow.HandleEodRequested();
         }
+    }
+
+    private void OnSaveClicked()
+    {
+        // 저장 버튼 클릭 시 최신 슬롯 프리뷰를 다시 그린 뒤 모달을 연다.
+        if (savePanelRoot == null)
+        {
+            return;
+        }
+
+        RefreshSaveSlotPreviews();
+        savePanelRoot.SetActive(true);
+    }
+
+    private void OnCloseSaveClicked()
+    {
+        // 닫기 버튼/배경 클릭 공통: 저장 모달만 닫는다.
+        if (savePanelRoot == null)
+        {
+            return;
+        }
+
+        savePanelRoot.SetActive(false);
+    }
+
+    private void OnSaveSlotClicked(int slotIndex)
+    {
+        // 슬롯 클릭 시 해당 번호로 저장을 요청하고, 저장 직후 프리뷰를 즉시 갱신한다.
+        Debug.Log($"[MainUIManager] Slot{slotIndex} clicked.", this);
+
+        if (_flow == null)
+        {
+            return;
+        }
+
+        _flow.HandleSaveToSlotRequested(slotIndex);
+        RefreshSaveSlotPreviews();
+    }
+
+    public void RefreshSaveSlotPreviews()
+    {
+        // 슬롯 1~5를 순회하며 저장 유무/날짜/골드 표시 텍스트를 동기화한다.
+        if (saveSlotTexts == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < saveSlotTexts.Length; i++)
+        {
+            TMP_Text slotText = saveSlotTexts[i];
+            if (slotText == null)
+            {
+                continue;
+            }
+
+            int slotIndex = i + 1;
+            slotText.text = BuildSlotPreviewText(slotIndex);
+        }
+    }
+
+    private void CacheSaveModalControls()
+    {
+        // 인스펙터 미할당 상황을 대비해 모달/닫기/슬롯 참조를 씬에서 캐싱한다.
+        if (savePanelRoot == null)
+        {
+            savePanelRoot = ResolveSavePanelRootFromScene();
+        }
+
+        if (savePanelRoot == null)
+        {
+            return;
+        }
+
+        Transform modalRootTransform = savePanelRoot.transform;
+
+        if (saveCloseButton == null)
+        {
+            saveCloseButton = FindChildComponent<Button>(modalRootTransform, "CloseButton");
+        }
+
+        Transform backdropTransform = FindChildTransform(modalRootTransform, "DimBackground");
+        if (backdropTransform != null)
+        {
+            Image backdropImage = backdropTransform.GetComponent<Image>();
+            _saveBackdropButton = backdropTransform.GetComponent<Button>();
+
+            if (_saveBackdropButton == null)
+            {
+                _saveBackdropButton = backdropTransform.gameObject.AddComponent<Button>();
+            }
+
+            _saveBackdropButton.transition = Selectable.Transition.None;
+            _saveBackdropButton.targetGraphic = backdropImage;
+        }
+
+        if (saveSlotButtons == null || saveSlotButtons.Length != 5)
+        {
+            saveSlotButtons = new Button[5];
+        }
+
+        if (saveSlotTexts == null || saveSlotTexts.Length != 5)
+        {
+            saveSlotTexts = new TMP_Text[5];
+        }
+
+        for (int i = 0; i < 5; i++)
+        {
+            int slotIndex = i + 1;
+
+            if (saveSlotButtons[i] == null)
+            {
+                saveSlotButtons[i] = FindSlotButton(modalRootTransform, slotIndex);
+            }
+
+            if (saveSlotTexts[i] == null)
+            {
+                saveSlotTexts[i] = FindChildComponent<TMP_Text>(modalRootTransform, $"Slot{slotIndex}Text");
+            }
+        }
+    }
+
+    private void BindSaveModalControls()
+    {
+        // 모달 내부 버튼 이벤트를 단일 진입점으로 재바인딩한다.
+        BindButton(saveCloseButton, OnCloseSaveClicked);
+
+        if (_saveBackdropButton != null)
+        {
+            _saveBackdropButton.onClick.RemoveListener(OnCloseSaveClicked);
+            _saveBackdropButton.onClick.AddListener(OnCloseSaveClicked);
+        }
+
+        if (saveSlotButtons == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < saveSlotButtons.Length; i++)
+        {
+            Button slotButton = saveSlotButtons[i];
+            if (slotButton == null)
+            {
+                continue;
+            }
+
+            int slotNumber = i + 1;
+            slotButton.onClick.RemoveAllListeners();
+            slotButton.onClick.AddListener(() => OnSaveSlotClicked(slotNumber));
+
+            if (verboseLog)
+            {
+                Debug.Log($"[MainUIManager] Bound save slot button: Slot{slotNumber} -> {slotButton.name}", this);
+            }
+        }
+    }
+
+    private static string BuildSlotPreviewText(int slotIndex)
+    {
+        // 세이브 데이터가 없으면 Empty Slot, 있으면 핵심 프리뷰 문자열을 구성한다.
+        SaveGameService.SaveSlotPreview preview = SaveGameService.GetSlotPreview(slotIndex);
+        if (!preview.hasData)
+        {
+            return "Empty Slot";
+        }
+
+        string savedTimeText = "-";
+        if (
+            DateTime.TryParse(
+                preview.savedAtUtc,
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.RoundtripKind,
+                out DateTime savedAtUtc
+            )
+        )
+        {
+            savedTimeText = savedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
+        }
+
+        return $"SLOT {slotIndex}  |  DAY: {preview.day}  |  GOLD: {preview.gold}  |  SAVED: {savedTimeText}";
+    }
+
+    private static Button FindSlotButton(Transform modalRootTransform, int slotIndex)
+    {
+        string slotButtonName = $"Slot{slotIndex}Button";
+        Button button = FindChildComponent<Button>(modalRootTransform, slotButtonName);
+        if (button != null)
+        {
+            return button;
+        }
+
+        return FindChildComponent<Button>(modalRootTransform, $"Slot{slotIndex}");
+    }
+
+    private Button ResolveSaveButtonFromScene()
+    {
+        GameObject saveButtonObject = FindByNameInScene("SaveButton");
+        if (saveButtonObject == null)
+        {
+            return null;
+        }
+
+        return saveButtonObject.GetComponent<Button>();
+    }
+
+    private GameObject ResolveSavePanelRootFromScene()
+    {
+        GameObject resolved = FindByNameInScene("SavePanel");
+        if (resolved != null)
+        {
+            return resolved;
+        }
+
+        return FindByNameInScene("SaveModalRoot");
+    }
+
+    private GameObject FindByNameInScene(string objectName)
+    {
+        if (string.IsNullOrWhiteSpace(objectName))
+        {
+            return null;
+        }
+
+        GameObject[] rootObjects = gameObject.scene.GetRootGameObjects();
+        for (int i = 0; i < rootObjects.Length; i++)
+        {
+            GameObject rootObject = rootObjects[i];
+            if (rootObject == null)
+            {
+                continue;
+            }
+
+            Transform found = FindChildTransform(rootObject.transform, objectName);
+            if (found != null)
+            {
+                return found.gameObject;
+            }
+        }
+
+        return null;
+    }
+
+    private static Transform FindChildTransform(Transform parent, string childName)
+    {
+        if (parent == null || string.IsNullOrWhiteSpace(childName))
+        {
+            return null;
+        }
+
+        foreach (Transform child in parent)
+        {
+            if (child.name == childName)
+            {
+                return child;
+            }
+
+            Transform nestedChild = FindChildTransform(child, childName);
+            if (nestedChild != null)
+            {
+                return nestedChild;
+            }
+        }
+
+        return null;
+    }
+
+    private static T FindChildComponent<T>(Transform parent, string childName)
+        where T : Component
+    {
+        Transform child = FindChildTransform(parent, childName);
+        if (child == null)
+        {
+            return null;
+        }
+
+        return child.GetComponent<T>();
     }
 
     private static void BindButton(Button button, UnityEngine.Events.UnityAction action)

@@ -125,6 +125,8 @@ public sealed class MainFlowManager : MonoBehaviour
         battleManager.Initialize(_sessionManager, balance, recruitFactory);
         battleManager.InitializeDay(_sessionManager.CurrentDay);
 
+        TryApplyPendingLoadedData();
+
         resourceUIManager.Initialize(resourceManager);
         researchUIManager.Initialize(this, researchManager);
         gladiatorUIManager.Initialize(this, gladiatorManager, inventoryManager);
@@ -142,6 +144,22 @@ public sealed class MainFlowManager : MonoBehaviour
         if (verboseLog)
         {
             Debug.Log("[MainFlowManager] Main scene initialized.", this);
+        }
+    }
+
+    public void HandleSaveToSlotRequested(int slotIndex)
+    {
+        if (_uiOwner != UiOwner.Main)
+        {
+            return;
+        }
+
+        SaveGameService.SaveToSlot(slotIndex);
+        mainUIManager.RefreshSaveSlotPreviews();
+
+        if (verboseLog)
+        {
+            Debug.Log($"[MainFlowManager] Save requested. Slot={slotIndex}", this);
         }
     }
 
@@ -792,6 +810,24 @@ public sealed class MainFlowManager : MonoBehaviour
         if (verboseLog)
         {
             Debug.Log($"[MainFlowManager] Pending battle reward granted on MainScene enter. PaidGold={paidGold}", this);
+        }
+    }
+
+    private void TryApplyPendingLoadedData()
+    {
+        if (!SaveGameService.TryConsumePendingLoadedData(out SaveSlotData data) || data == null)
+        {
+            return;
+        }
+
+        SaveGameService.ApplyLoadedDataToRuntime(data);
+
+        if (verboseLog)
+        {
+            Debug.Log(
+                $"[MainFlowManager] Loaded save applied. Slot={data.slotIndex}, Day={data.day}, Gold={data.gold}",
+                this
+            );
         }
     }
 }
