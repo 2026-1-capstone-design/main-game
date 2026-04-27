@@ -1,3 +1,6 @@
+using System;
+using System.Globalization;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -47,6 +50,12 @@ public sealed class TitleSceneUIManager : MonoBehaviour
     [SerializeField]
     private Button loadGameCloseButton;
 
+    [SerializeField]
+    private Button[] loadGameSlotButtons = new Button[5];
+
+    [SerializeField]
+    private TMP_Text[] loadGameSlotTexts = new TMP_Text[5];
+
     [Header("Debug")]
     [SerializeField]
     private bool verboseLog = true;
@@ -56,7 +65,8 @@ public sealed class TitleSceneUIManager : MonoBehaviour
     private bool _isNavigating; // 씬 이동 중 중복 클릭 방지
     private Button _settingsBackdropButton;
     private Button _loadGameBackdropButton;
-    private Text[] _loadGameSlotTexts;
+    private Button[] _loadGameSlotButtons;
+    private TMP_Text[] _loadGameSlotTexts;
 
     private void Start()
     {
@@ -111,16 +121,23 @@ public sealed class TitleSceneUIManager : MonoBehaviour
             return;
         }
 
+        SaveGameService.SetPendingLoadedData(null);
+
+        TryStartMainSceneLoad();
+    }
+
+    private bool TryStartMainSceneLoad()
+    {
         if (_sceneLoader == null)
         {
             Debug.LogError("[TitleSceneUIManager] SceneLoader.Instance is null.", this);
-            return;
+            return false;
         }
 
         if (string.IsNullOrWhiteSpace(mainSceneName))
         {
             Debug.LogError("[TitleSceneUIManager] mainSceneName is empty.", this);
-            return;
+            return false;
         }
 
         _isNavigating = true;
@@ -130,13 +147,15 @@ public sealed class TitleSceneUIManager : MonoBehaviour
         {
             _isNavigating = false;
             Debug.LogWarning("[TitleSceneUIManager] Failed to start MainScene load.", this);
-            return;
+            return false;
         }
 
         if (verboseLog)
         {
-            Debug.Log($"[TitleSceneUIManager] New game clicked. Loading scene: {mainSceneName}", this);
+            Debug.Log($"[TitleSceneUIManager] Loading main scene: {mainSceneName}", this);
         }
+
+        return true;
     }
 
     // 로드 게임 버튼: 저장 슬롯 미리보기 모달을 열고 나중에 로직을 연결할 준비를 한다.
@@ -418,16 +437,86 @@ public sealed class TitleSceneUIManager : MonoBehaviour
     // 슬롯 텍스트들을 캐싱해 두면 이후 실제 세이브 데이터 연결 시 갱신만 하면 된다.
     private void CacheLoadGameSlotTextReferences(Transform modalRootTransform)
     {
-        _loadGameSlotTexts = new Text[5];
+        _loadGameSlotButtons = new Button[5];
+        _loadGameSlotTexts = new TMP_Text[5];
+
+        if (loadGameSlotButtons == null || loadGameSlotButtons.Length != 5)
+        {
+            loadGameSlotButtons = new Button[5];
+        }
+
+        if (loadGameSlotTexts == null || loadGameSlotTexts.Length != 5)
+        {
+            loadGameSlotTexts = new TMP_Text[5];
+        }
 
         for (int slotIndex = 0; slotIndex < _loadGameSlotTexts.Length; slotIndex++)
         {
+            int slotNumber = slotIndex + 1;
+            Button slotButton = loadGameSlotButtons[slotIndex];
+            if (slotButton == null)
+            {
+                slotButton = FindLoadSlotButton(modalRootTransform, slotNumber);
+            }
+
+            _loadGameSlotButtons[slotIndex] = slotButton;
+            loadGameSlotButtons[slotIndex] = slotButton;
+
             string slotTextName = $"Slot{slotIndex + 1}Text";
-            _loadGameSlotTexts[slotIndex] = FindChildComponent<Text>(modalRootTransform, slotTextName);
+            TMP_Text slotText = loadGameSlotTexts[slotIndex];
+            if (slotText == null)
+            {
+                slotText = FindChildComponent<TMP_Text>(modalRootTransform, slotTextName);
+            }
+
+            _loadGameSlotTexts[slotIndex] = slotText;
+            loadGameSlotTexts[slotIndex] = slotText;
+
+            if (_loadGameSlotTexts[slotIndex] is TextMeshProUGUI tmpText)
+            {
+                tmpText.raycastTarget = false;
+            }
+
+            slotButton = _loadGameSlotButtons[slotIndex];
+            if (slotButton != null)
+            {
+                int capturedSlotNumber = slotNumber;
+                slotButton.onClick.RemoveAllListeners();
+                slotButton.onClick.AddListener(() => OnLoadGameSlotClicked(capturedSlotNumber));
+
+                if (verboseLog)
+                {
+                    Debug.Log(
+                        $"[TitleSceneUIManager] Bound load slot button: Slot{capturedSlotNumber} -> {slotButton.name}",
+                        this
+                    );
+                }
+            }
+
+            if (verboseLog)
+            {
+                string textName = _loadGameSlotTexts[slotIndex] != null ? _loadGameSlotTexts[slotIndex].name : "null";
+                string buttonName = slotButton != null ? slotButton.name : "null";
+                Debug.Log(
+                    $"[TitleSceneUIManager] Load slot bind: index={slotNumber}, button={buttonName}, text={textName}",
+                    this
+                );
+            }
         }
     }
 
-    // 현재는 플레이스홀더 프리뷰만 그리고, 실제 저장 데이터 연결은 이후 단계에서 붙인다.
+    private static Button FindLoadSlotButton(Transform modalRootTransform, int slotNumber)
+    {
+        Button button = FindChildComponent<Button>(modalRootTransform, $"Slot{slotNumber}Button");
+        if (button != null)
+        {
+            return button;
+        }
+
+        return FindChildComponent<Button>(modalRootTransform, $"Slot{slotNumber}");
+    }
+
+    // 저장 데이터 프리뷰를 기반으로 슬롯 텍스트를 갱신한다.
     private void RefreshLoadGameSlotPreviewTexts()
     {
         if (_loadGameSlotTexts == null)
@@ -437,7 +526,7 @@ public sealed class TitleSceneUIManager : MonoBehaviour
 
         for (int slotIndex = 0; slotIndex < _loadGameSlotTexts.Length; slotIndex++)
         {
-            Text slotText = _loadGameSlotTexts[slotIndex];
+            TMP_Text slotText = _loadGameSlotTexts[slotIndex];
             if (slotText == null)
             {
                 continue;
@@ -449,7 +538,58 @@ public sealed class TitleSceneUIManager : MonoBehaviour
 
     private static string BuildLoadSlotPreviewText(int slotNumber)
     {
-        return $"SLOT {slotNumber}  |  DAY: -  |  GOLD: -  |  SAVED: -";
+        SaveGameService.SaveSlotPreview preview = SaveGameService.GetSlotPreview(slotNumber);
+        if (!preview.hasData)
+        {
+            return "Empty Slot";
+        }
+
+        string savedTimeText = "-";
+        if (
+            DateTime.TryParse(
+                preview.savedAtUtc,
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.RoundtripKind,
+                out DateTime savedAtUtc
+            )
+        )
+        {
+            savedTimeText = savedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
+        }
+
+        return $"SLOT {slotNumber}  |  DAY: {preview.day}  |  GOLD: {preview.gold}  |  SAVED: {savedTimeText}";
+    }
+
+    private void OnLoadGameSlotClicked(int slotNumber)
+    {
+        if (_isNavigating)
+        {
+            return;
+        }
+
+        if (!SaveGameService.TryLoadSlot(slotNumber, out SaveSlotData data) || data == null)
+        {
+            if (verboseLog)
+            {
+                Debug.Log($"[TitleSceneUIManager] Load requested for empty slot: {slotNumber}", this);
+            }
+
+            return;
+        }
+
+        SaveGameService.SetPendingLoadedData(data);
+        bool started = TryStartMainSceneLoad();
+
+        if (!started)
+        {
+            SaveGameService.SetPendingLoadedData(null);
+            return;
+        }
+
+        if (verboseLog)
+        {
+            Debug.Log($"[TitleSceneUIManager] Load game clicked. Slot={slotNumber}", this);
+        }
     }
 
     // 씬에 모달이 없으면 런타임에 기본형 UI를 자동 생성해 즉시 테스트 가능하게 만든다.
@@ -539,7 +679,18 @@ public sealed class TitleSceneUIManager : MonoBehaviour
         closeText.color = Color.white;
         closeText.text = "X";
 
-        _loadGameSlotTexts = new Text[5];
+        _loadGameSlotButtons = new Button[5];
+        _loadGameSlotTexts = new TMP_Text[5];
+
+        if (loadGameSlotButtons == null || loadGameSlotButtons.Length != 5)
+        {
+            loadGameSlotButtons = new Button[5];
+        }
+
+        if (loadGameSlotTexts == null || loadGameSlotTexts.Length != 5)
+        {
+            loadGameSlotTexts = new TMP_Text[5];
+        }
 
         for (int slotIndex = 0; slotIndex < _loadGameSlotTexts.Length; slotIndex++)
         {
@@ -556,6 +707,15 @@ public sealed class TitleSceneUIManager : MonoBehaviour
             Image slotImage = slotObject.AddComponent<Image>();
             slotImage.color = new Color(0.14f, 0.15f, 0.18f, 1f);
 
+            Button slotButton = slotObject.AddComponent<Button>();
+            slotButton.targetGraphic = slotImage;
+            int slotNumber = slotIndex + 1;
+            slotButton.onClick.RemoveAllListeners();
+            slotButton.onClick.AddListener(() => OnLoadGameSlotClicked(slotNumber));
+
+            _loadGameSlotButtons[slotIndex] = slotButton;
+            loadGameSlotButtons[slotIndex] = slotButton;
+
             GameObject slotTextObject = CreateUiObject($"Slot{slotIndex + 1}Text", slotRect);
             RectTransform slotTextRect = slotTextObject.GetComponent<RectTransform>();
             slotTextRect.anchorMin = new Vector2(0f, 0f);
@@ -564,14 +724,17 @@ public sealed class TitleSceneUIManager : MonoBehaviour
             slotTextRect.anchoredPosition = Vector2.zero;
             slotTextRect.sizeDelta = new Vector2(-36f, -18f);
 
-            Text slotText = slotTextObject.AddComponent<Text>();
-            slotText.font = defaultFont;
-            slotText.alignment = TextAnchor.MiddleLeft;
+            TextMeshProUGUI slotText = slotTextObject.AddComponent<TextMeshProUGUI>();
+            slotText.font = Resources.Load<TMP_FontAsset>("LiberationSans SDF TMP_Font");
+            slotText.alignment = TextAlignmentOptions.Left;
             slotText.fontSize = 20;
             slotText.color = new Color(0.93f, 0.95f, 0.98f, 1f);
             slotText.text = BuildLoadSlotPreviewText(slotIndex + 1);
 
+            slotText.raycastTarget = false;
+
             _loadGameSlotTexts[slotIndex] = slotText;
+            loadGameSlotTexts[slotIndex] = slotText;
         }
 
         loadGameModalRoot.SetActive(false);

@@ -74,4 +74,26 @@ public sealed class ResearchManager : MonoBehaviour
             );
         }
     }
+
+    public void RestoreUnlockedPerksForLoad(List<PerkSO> unlockedPerks)
+    {
+        _unlockedPerks.Clear();
+
+        if (unlockedPerks != null)
+        {
+            for (int i = 0; i < unlockedPerks.Count; i++)
+            {
+                PerkSO perk = unlockedPerks[i];
+                if (perk != null)
+                {
+                    _unlockedPerks.Add(perk);
+                }
+            }
+        }
+
+        if (verboseLog)
+        {
+            Debug.Log($"[ResearchManager] Unlocked perks restored from save. Count={_unlockedPerks.Count}", this);
+        }
+    }
 }

@@ -16,7 +16,7 @@ public sealed class SaveSlotData
     public SaveOwnedWeaponData[] ownedWeapons;
     public SaveOwnedGladiatorData[] ownedGladiators;
 
-    public string[] unlockedArtifactNames;
+    public string[] unlockedPerkNames;
 
     public int marketInitializedDay;
     public SaveMarketWeaponOfferData[] marketWeaponOffers;
@@ -25,6 +25,8 @@ public sealed class SaveSlotData
     public int battleEncounterGeneratedDay;
     public int selectedEncounterIndex;
     public SaveBattleEncounterData[] battleEncounters;
+
+    public bool hasPendingBattle;
 }
 
 [Serializable]
@@ -68,7 +70,7 @@ public sealed class SaveOwnedGladiatorData
     public string gladiatorClassName;
     public string traitName;
     public string personalityName;
-    public string equippedArtifactName;
+    public string equippedPerkName;
     public int equippedWeaponRuntimeId;
 
     public float cachedMaxHealth;
@@ -120,7 +122,7 @@ public sealed class SaveBattleEncounterUnitData
     public string gladiatorClassName;
     public string traitName;
     public string personalityName;
-    public string equippedArtifactName;
+    public string equippedPerkName;
 
     public int weaponType;
     public int weaponSkillId;

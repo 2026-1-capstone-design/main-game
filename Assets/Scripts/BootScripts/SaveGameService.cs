@@ -165,7 +165,7 @@ public static class SaveGameService
 
         SaveOwnedWeaponData[] ownedWeapons = BuildOwnedWeaponsSnapshot(inventoryManager);
         SaveOwnedGladiatorData[] ownedGladiators = BuildOwnedGladiatorsSnapshot(gladiatorManager);
-        string[] unlockedArtifactNames = BuildUnlockedArtifactNamesSnapshot(researchManager);
+        string[] unlockedPerkNames = BuildUnlockedPerkNamesSnapshot(researchManager);
 
         SaveMarketWeaponOfferData[] marketWeaponOffers = BuildMarketWeaponOffersSnapshot(marketManager);
         SaveMarketGladiatorOfferData[] marketGladiatorOffers = BuildMarketGladiatorOffersSnapshot(marketManager);
@@ -187,13 +187,14 @@ public static class SaveGameService
                     : Array.Empty<SaveClassCounterEntry>(),
             ownedWeapons = ownedWeapons,
             ownedGladiators = ownedGladiators,
-            unlockedArtifactNames = unlockedArtifactNames,
+            unlockedPerkNames = unlockedPerkNames,
             marketInitializedDay = marketManager != null ? marketManager.InitializedDay : 1,
             marketWeaponOffers = marketWeaponOffers,
             marketGladiatorOffers = marketGladiatorOffers,
             battleEncounterGeneratedDay = battleManager != null ? battleManager.EncounterGeneratedDay : 1,
             selectedEncounterIndex = battleManager != null ? battleManager.SelectedEncounterIndex : -1,
             battleEncounters = battleEncounters,
+            hasPendingBattle = sessionManager != null && sessionManager.HasPendingBattleReward,
         };
 
         return data;
@@ -255,7 +256,7 @@ public static class SaveGameService
             sessionManager.SetClassCounterEntriesForLoad(data.classCounters);
         }
 
-        if (randomManager != null)
+        if (randomManager != null && data.sessionSeed != 0)
         {
             randomManager.InitializeForNewSession(data.sessionSeed);
         }
@@ -296,11 +297,11 @@ public static class SaveGameService
 
             if (researchManager != null)
             {
-                List<ArtifactSO> unlockedArtifacts = BuildUnlockedArtifactsFromSave(
-                    data.unlockedArtifactNames,
+                List<PerkSO> unlockedPerks = BuildUnlockedPerksFromSave(
+                    data.unlockedPerkNames,
                     contentDatabaseProvider
                 );
-                researchManager.RestoreUnlockedArtifactsForLoad(unlockedArtifacts);
+                researchManager.RestoreUnlockedPerksForLoad(unlockedPerks);
             }
 
             if (marketManager != null)
@@ -407,27 +408,27 @@ public static class SaveGameService
         return result;
     }
 
-    private static string[] BuildUnlockedArtifactNamesSnapshot(ResearchManager researchManager)
+    private static string[] BuildUnlockedPerkNamesSnapshot(ResearchManager researchManager)
     {
         if (
             researchManager == null
-            || researchManager.UnlockedArtifacts == null
-            || researchManager.UnlockedArtifacts.Count == 0
+            || researchManager.UnlockedPerks == null
+            || researchManager.UnlockedPerks.Count == 0
         )
         {
             return Array.Empty<string>();
         }
 
-        List<string> names = new List<string>(researchManager.UnlockedArtifacts.Count);
-        for (int i = 0; i < researchManager.UnlockedArtifacts.Count; i++)
+        List<string> names = new List<string>(researchManager.UnlockedPerks.Count);
+        for (int i = 0; i < researchManager.UnlockedPerks.Count; i++)
         {
-            ArtifactSO artifact = researchManager.UnlockedArtifacts[i];
-            if (artifact == null || string.IsNullOrWhiteSpace(artifact.artifactName))
+            PerkSO perk = researchManager.UnlockedPerks[i];
+            if (perk == null || string.IsNullOrWhiteSpace(perk.perkName))
             {
                 continue;
             }
 
-            names.Add(artifact.artifactName);
+            names.Add(perk.perkName);
         }
 
         return names.ToArray();
@@ -535,8 +536,7 @@ public static class SaveGameService
                         gladiatorClassName = unit.GladiatorClass != null ? unit.GladiatorClass.className : string.Empty,
                         traitName = unit.Trait != null ? unit.Trait.traitName : string.Empty,
                         personalityName = unit.Personality != null ? unit.Personality.personalityName : string.Empty,
-                        equippedArtifactName =
-                            unit.EquippedArtifact != null ? unit.EquippedArtifact.artifactName : string.Empty,
+                        equippedPerkName = unit.EquippedPerk != null ? unit.EquippedPerk.perkName : string.Empty,
                         weaponType = (int)unit.WeaponType,
                         weaponSkillId = (int)unit.WeaponSkillId,
                         customizeIndicates = CloneIntArray(unit.CustomizeIndicates),
@@ -592,8 +592,7 @@ public static class SaveGameService
             gladiatorClassName = gladiator.GladiatorClass != null ? gladiator.GladiatorClass.className : string.Empty,
             traitName = gladiator.Trait != null ? gladiator.Trait.traitName : string.Empty,
             personalityName = gladiator.Personality != null ? gladiator.Personality.personalityName : string.Empty,
-            equippedArtifactName =
-                gladiator.EquippedArtifact != null ? gladiator.EquippedArtifact.artifactName : string.Empty,
+            equippedPerkName = gladiator.EquippedPerk != null ? gladiator.EquippedPerk.perkName : string.Empty,
             equippedWeaponRuntimeId = gladiator.EquippedWeapon != null ? gladiator.EquippedWeapon.RuntimeId : 0,
             cachedMaxHealth = gladiator.CachedMaxHealth,
             currentHealth = gladiator.CurrentHealth,
@@ -746,7 +745,7 @@ public static class SaveGameService
 
         TraitSO trait = FindTraitByName(contentDatabaseProvider, savedGladiator.traitName);
         PersonalitySO personality = FindPersonalityByName(contentDatabaseProvider, savedGladiator.personalityName);
-        ArtifactSO artifact = FindArtifactByName(contentDatabaseProvider, savedGladiator.equippedArtifactName);
+        PerkSO perk = FindPerkByName(contentDatabaseProvider, savedGladiator.equippedPerkName);
 
         OwnedWeaponData equippedWeapon = null;
         if (savedGladiator.equippedWeaponRuntimeId > 0)
@@ -764,7 +763,7 @@ public static class SaveGameService
             gladiatorClass,
             trait,
             personality,
-            artifact,
+            perk,
             equippedWeapon,
             CloneIntArray(savedGladiator.customizeIndicates)
         );
@@ -781,24 +780,24 @@ public static class SaveGameService
         return gladiator;
     }
 
-    private static List<ArtifactSO> BuildUnlockedArtifactsFromSave(
-        string[] unlockedArtifactNames,
+    private static List<PerkSO> BuildUnlockedPerksFromSave(
+        string[] unlockedPerkNames,
         ContentDatabaseProvider contentDatabaseProvider
     )
     {
-        List<ArtifactSO> result = new List<ArtifactSO>();
+        List<PerkSO> result = new List<PerkSO>();
 
-        if (unlockedArtifactNames == null || unlockedArtifactNames.Length == 0)
+        if (unlockedPerkNames == null || unlockedPerkNames.Length == 0)
         {
             return result;
         }
 
-        for (int i = 0; i < unlockedArtifactNames.Length; i++)
+        for (int i = 0; i < unlockedPerkNames.Length; i++)
         {
-            ArtifactSO artifact = FindArtifactByName(contentDatabaseProvider, unlockedArtifactNames[i]);
-            if (artifact != null)
+            PerkSO perk = FindPerkByName(contentDatabaseProvider, unlockedPerkNames[i]);
+            if (perk != null)
             {
-                result.Add(artifact);
+                result.Add(perk);
             }
         }
 
@@ -942,7 +941,7 @@ public static class SaveGameService
         );
         TraitSO trait = FindTraitByName(contentDatabaseProvider, savedUnit.traitName);
         PersonalitySO personality = FindPersonalityByName(contentDatabaseProvider, savedUnit.personalityName);
-        ArtifactSO artifact = FindArtifactByName(contentDatabaseProvider, savedUnit.equippedArtifactName);
+        PerkSO perk = FindPerkByName(contentDatabaseProvider, savedUnit.equippedPerkName);
 
         WeaponType weaponType = Enum.IsDefined(typeof(WeaponType), savedUnit.weaponType)
             ? (WeaponType)savedUnit.weaponType
@@ -960,7 +959,7 @@ public static class SaveGameService
 
         return new BattleUnitSnapshot(
             savedUnit.sourceRuntimeId,
-            BattleTeamIds.Enemy,
+            true,
             savedUnit.displayName,
             savedUnit.level,
             savedUnit.loyalty,
@@ -973,7 +972,7 @@ public static class SaveGameService
             gladiatorClass,
             trait,
             personality,
-            artifact,
+            perk,
             weaponType,
             leftPrefab,
             rightPrefab,
@@ -1051,18 +1050,18 @@ public static class SaveGameService
         return null;
     }
 
-    private static ArtifactSO FindArtifactByName(ContentDatabaseProvider contentDatabaseProvider, string artifactName)
+    private static PerkSO FindPerkByName(ContentDatabaseProvider contentDatabaseProvider, string perkName)
     {
-        if (contentDatabaseProvider == null || string.IsNullOrWhiteSpace(artifactName))
+        if (contentDatabaseProvider == null || string.IsNullOrWhiteSpace(perkName))
         {
             return null;
         }
 
-        IReadOnlyList<ArtifactSO> artifacts = contentDatabaseProvider.Artifacts;
-        for (int i = 0; i < artifacts.Count; i++)
+        IReadOnlyList<PerkSO> perks = contentDatabaseProvider.Perks;
+        for (int i = 0; i < perks.Count; i++)
         {
-            ArtifactSO value = artifacts[i];
-            if (value != null && string.Equals(value.artifactName, artifactName, StringComparison.Ordinal))
+            PerkSO value = perks[i];
+            if (value != null && string.Equals(value.perkName, perkName, StringComparison.Ordinal))
             {
                 return value;
             }
