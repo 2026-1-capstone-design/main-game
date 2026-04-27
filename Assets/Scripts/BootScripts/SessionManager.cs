@@ -84,6 +84,64 @@ public sealed class SessionManager : SingletonBehaviour<SessionManager>
         PendingBattleRewardChanged?.Invoke(PendingBattleRewardAmount);
     }
 
+    public void SetCurrentDayForLoad(int day)
+    {
+        CurrentDay = Mathf.Max(1, day);
+        HasUsedBattleToday = false;
+
+        DayChanged?.Invoke(CurrentDay);
+        BattleUsageChanged?.Invoke(HasUsedBattleToday);
+    }
+
+    public void SetBattleStateForLoad(bool hasUsedBattleToday, int pendingBattleRewardAmount)
+    {
+        HasUsedBattleToday = hasUsedBattleToday;
+        PendingBattleRewardAmount = Mathf.Max(0, pendingBattleRewardAmount);
+
+        BattleUsageChanged?.Invoke(HasUsedBattleToday);
+        PendingBattleRewardChanged?.Invoke(PendingBattleRewardAmount);
+    }
+
+    public SaveClassCounterEntry[] GetClassCounterEntriesForSave()
+    {
+        if (_classNameCounters.Count == 0)
+        {
+            return Array.Empty<SaveClassCounterEntry>();
+        }
+
+        SaveClassCounterEntry[] entries = new SaveClassCounterEntry[_classNameCounters.Count];
+        int index = 0;
+
+        foreach (KeyValuePair<string, int> kv in _classNameCounters)
+        {
+            entries[index] = new SaveClassCounterEntry { classPrefix = kv.Key, currentNumber = kv.Value };
+            index++;
+        }
+
+        return entries;
+    }
+
+    public void SetClassCounterEntriesForLoad(SaveClassCounterEntry[] entries)
+    {
+        _classNameCounters.Clear();
+
+        if (entries == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < entries.Length; i++)
+        {
+            SaveClassCounterEntry entry = entries[i];
+            if (entry == null || string.IsNullOrWhiteSpace(entry.classPrefix))
+            {
+                continue;
+            }
+
+            _classNameCounters[entry.classPrefix] = Mathf.Max(0, entry.currentNumber);
+        }
+    }
+
     public int ConsumeNextClassNumber(string classPrefix)
     {
         if (string.IsNullOrWhiteSpace(classPrefix))
