@@ -394,7 +394,8 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     private void HandleAttackTriggered()
     {
         _myAnimation?.SetTrigger("attack");
-        State.StartAttackLock(GetAttackAnimationDuration());
+        State.SetAttackState(true);
+        State.SetMovementState(false);
 
         if (PlannedTargetEnemy != null)
             FaceTarget(PlannedTargetEnemy.Position);
@@ -409,33 +410,24 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
             _myAnimation.speed = speedMultiplier;
     }
 
-    private float GetAttackAnimationDuration()
+    public bool IsAttackAnimationPlaying()
     {
         if (_myAnimation == null)
-            return 0.5f;
+            return false;
 
-        if (_attackAnimationClipLength <= 0f)
+        var info = _myAnimation.GetCurrentAnimatorStateInfo(0);
+        if (info.IsName("attack1") && info.normalizedTime < 1f)
+            return true;
+
+        // idle → attack1 트랜지션 중에는 현재 상태가 아직 attack1이 아니므로 목적지도 확인
+        if (_myAnimation.IsInTransition(0))
         {
-            RuntimeAnimatorController controller = _myAnimation.runtimeAnimatorController;
-            AnimationClip[] clips = controller != null ? controller.animationClips : null;
-            if (clips != null)
-            {
-                for (int i = 0; i < clips.Length; i++)
-                {
-                    AnimationClip clip = clips[i];
-                    if (clip == null)
-                        continue;
-                    if (clip.name.Equals("attack1", StringComparison.OrdinalIgnoreCase))
-                    {
-                        _attackAnimationClipLength = clip.length;
-                        break;
-                    }
-                }
-            }
+            var nextInfo = _myAnimation.GetNextAnimatorStateInfo(0);
+            if (nextInfo.IsName("attack1"))
+                return true;
         }
 
-        float baseLength = _attackAnimationClipLength > 0f ? _attackAnimationClipLength : 0.5f;
-        return baseLength / Mathf.Max(0.01f, _myAnimation.speed);
+        return false;
     }
 
     public float GetSkillAnimationDuration()
@@ -449,7 +441,6 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     public void SetSkillState(float animationDuration)
     {
         _myAnimation?.SetTrigger("skill");
-        State.StartSkillLock(animationDuration);
         if (PlannedTargetEnemy != null)
             FaceTarget(PlannedTargetEnemy.Position);
         else if (CurrentTarget != null)
