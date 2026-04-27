@@ -562,6 +562,7 @@ public sealed class TitleSceneUIManager : MonoBehaviour
 
     private void OnLoadGameSlotClicked(int slotNumber)
     {
+        // 슬롯에 저장 데이터가 있으면 pending으로 넘기고 메인 씬 로드를 시작한다.
         if (_isNavigating)
         {
             return;
@@ -595,6 +596,7 @@ public sealed class TitleSceneUIManager : MonoBehaviour
     // 씬에 모달이 없으면 런타임에 기본형 UI를 자동 생성해 즉시 테스트 가능하게 만든다.
     private void EnsureLoadGameModal()
     {
+        // 씬에 로드 모달이 없을 때만 테스트 가능한 기본 UI를 동적으로 생성한다.
         if (loadGameModalRoot != null)
         {
             return;
@@ -742,6 +744,7 @@ public sealed class TitleSceneUIManager : MonoBehaviour
 
     private Transform ResolveCanvasTransform()
     {
+        // 설정 모달의 부모 캔버스를 우선 사용하고, 없으면 씬의 첫 Canvas를 fallback으로 쓴다.
         if (settingsModalRoot != null && settingsModalRoot.transform.parent != null)
         {
             return settingsModalRoot.transform.parent;

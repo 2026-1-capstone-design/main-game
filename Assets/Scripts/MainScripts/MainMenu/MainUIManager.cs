@@ -218,6 +218,7 @@ public sealed class MainUIManager : MonoBehaviour
 
     private void OnSaveClicked()
     {
+        // 저장 버튼 클릭 시 최신 슬롯 프리뷰를 다시 그린 뒤 모달을 연다.
         if (savePanelRoot == null)
         {
             return;
@@ -229,6 +230,7 @@ public sealed class MainUIManager : MonoBehaviour
 
     private void OnCloseSaveClicked()
     {
+        // 닫기 버튼/배경 클릭 공통: 저장 모달만 닫는다.
         if (savePanelRoot == null)
         {
             return;
@@ -239,6 +241,7 @@ public sealed class MainUIManager : MonoBehaviour
 
     private void OnSaveSlotClicked(int slotIndex)
     {
+        // 슬롯 클릭 시 해당 번호로 저장을 요청하고, 저장 직후 프리뷰를 즉시 갱신한다.
         Debug.Log($"[MainUIManager] Slot{slotIndex} clicked.", this);
 
         if (_flow == null)
@@ -252,6 +255,7 @@ public sealed class MainUIManager : MonoBehaviour
 
     public void RefreshSaveSlotPreviews()
     {
+        // 슬롯 1~5를 순회하며 저장 유무/날짜/골드 표시 텍스트를 동기화한다.
         if (saveSlotTexts == null)
         {
             return;
@@ -272,6 +276,7 @@ public sealed class MainUIManager : MonoBehaviour
 
     private void CacheSaveModalControls()
     {
+        // 인스펙터 미할당 상황을 대비해 모달/닫기/슬롯 참조를 씬에서 캐싱한다.
         if (savePanelRoot == null)
         {
             savePanelRoot = ResolveSavePanelRootFromScene();
@@ -332,6 +337,7 @@ public sealed class MainUIManager : MonoBehaviour
 
     private void BindSaveModalControls()
     {
+        // 모달 내부 버튼 이벤트를 단일 진입점으로 재바인딩한다.
         BindButton(saveCloseButton, OnCloseSaveClicked);
 
         if (_saveBackdropButton != null)
@@ -366,6 +372,7 @@ public sealed class MainUIManager : MonoBehaviour
 
     private static string BuildSlotPreviewText(int slotIndex)
     {
+        // 세이브 데이터가 없으면 Empty Slot, 있으면 핵심 프리뷰 문자열을 구성한다.
         SaveGameService.SaveSlotPreview preview = SaveGameService.GetSlotPreview(slotIndex);
         if (!preview.hasData)
         {
