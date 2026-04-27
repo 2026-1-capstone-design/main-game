@@ -1,6 +1,6 @@
 behaviors:
   Gladiator:
-    trainer_type: ppo
+    trainer_type: poca
     self_play:
       save_steps: 50000
       team_change: 200000
