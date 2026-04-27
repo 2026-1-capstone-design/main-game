@@ -52,7 +52,9 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
 
     // ── 정체성 프로퍼티 (State 위임) ──────────────────────────────
     public int UnitNumber => State.UnitNumber;
-    public bool IsEnemy => State.IsEnemy;
+    public BattleTeamId TeamId => State.TeamId;
+    public bool IsPlayerOwned { get; private set; }
+    public bool IsEnemy => !IsPlayerOwned;
     public BattleUnitSnapshot Snapshot { get; private set; }
 
     public string DisplayName => State.DisplayName;
@@ -211,7 +213,8 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     public void Initialize(
         BattleUnitSnapshot snapshot,
         int unitNumber,
-        bool isEnemy,
+        BattleTeamId teamId,
+        bool isPlayerOwned,
         IAnimationProvider animationProvider = null
     )
     {
@@ -222,9 +225,10 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         }
 
         Snapshot = snapshot;
+        IsPlayerOwned = isPlayerOwned;
 
         // ── State 생성 및 이벤트 구독 ────────────────────────────
-        state = new BattleUnitCombatState(snapshot, unitNumber, isEnemy);
+        state = new BattleUnitCombatState(snapshot, unitNumber, teamId);
         State.OnHealthChanged += _ => RefreshHPbar();
         State.OnDied += HandleUnitDied;
         State.OnActionTypeChanged += (_, _) => RefreshStatusText();
@@ -243,14 +247,14 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
 
         EquipSkinFromSnapshot();
 
-        if (isEnemy)
+        if (!isPlayerOwned)
             HPbar.sprite = EnemybarSprite;
         else
             HPbar.sprite = AllybarSprite;
 
         RefreshHPbar();
 
-        string runtimeName = $"{(isEnemy ? "Enemy" : "Ally")}_{UnitNumber}_{DisplayName}";
+        string runtimeName = $"{(isPlayerOwned ? "Player" : "Hostile")}_{UnitNumber}_{DisplayName}";
         if (RuntimeRootObject != null)
             RuntimeRootObject.name = runtimeName;
 
@@ -260,7 +264,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         {
             Debug.Log(
                 $"[BattleRuntimeUnit] Initialized. UnitNumber={UnitNumber}, Name={DisplayName}, "
-                    + $"Team={(isEnemy ? "Enemy" : "Ally")}, HP={CurrentHealth:0.##}/{MaxHealth:0.##}",
+                    + $"TeamId={TeamId.Value}, IsPlayerOwned={IsPlayerOwned}, HP={CurrentHealth:0.##}/{MaxHealth:0.##}",
                 this
             );
         }

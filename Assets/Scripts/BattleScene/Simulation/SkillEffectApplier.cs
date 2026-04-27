@@ -5,14 +5,14 @@ public sealed class SkillEffectApplier : ISkillEffectApplier
 {
     private BattleRuntimeUnit _caster;
     private IReadOnlyDictionary<BattleUnitCombatState, BattleRuntimeUnit> _runtimeUnitByState;
-    private List<BattleCombatResult> _combatResults;
+    private BattleCombatResultBuffer _combatResults;
 
     public IEnumerable<BattleUnitCombatState> AllUnits => _runtimeUnitByState.Keys;
 
     public void Configure(
         BattleRuntimeUnit caster,
         IReadOnlyDictionary<BattleUnitCombatState, BattleRuntimeUnit> runtimeUnitByState,
-        List<BattleCombatResult> combatResults
+        BattleCombatResultBuffer combatResults
     )
     {
         _caster = caster;

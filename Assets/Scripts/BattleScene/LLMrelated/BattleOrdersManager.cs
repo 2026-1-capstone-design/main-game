@@ -29,8 +29,9 @@ public sealed class BattleOrdersManager : MonoBehaviour
     [SerializeField]
     private int requestTimeoutSeconds = 30;
 
-    private readonly BattleRuntimeUnit[] _allyUnits = new BattleRuntimeUnit[6];
-    private readonly BattleRuntimeUnit[] _enemyUnits = new BattleRuntimeUnit[6];
+    private readonly BattleRuntimeUnit[] _allyUnits = new BattleRuntimeUnit[BattleTeamConstants.MaxUnitsPerTeam];
+    private readonly BattleRuntimeUnit[] _enemyUnits = new BattleRuntimeUnit[BattleTeamConstants.MaxUnitsPerTeam];
+    private IBattleRosterProjection _rosterProjection;
 
     private SphereCollider _battlefieldCollider;
     private bool _initialized;
@@ -38,10 +39,14 @@ public sealed class BattleOrdersManager : MonoBehaviour
 
     public void Initialize(IReadOnlyList<BattleRuntimeUnit> runtimeUnits)
     {
-        Initialize(runtimeUnits, null);
+        Initialize(runtimeUnits, null, null);
     }
 
-    public void Initialize(IReadOnlyList<BattleRuntimeUnit> runtimeUnits, SphereCollider battlefieldCollider)
+    public void Initialize(
+        IReadOnlyList<BattleRuntimeUnit> runtimeUnits,
+        IBattleRosterProjection rosterProjection,
+        SphereCollider battlefieldCollider
+    )
     {
         for (int i = 0; i < _allyUnits.Length; i++)
         {
@@ -53,6 +58,7 @@ public sealed class BattleOrdersManager : MonoBehaviour
             _enemyUnits[i] = null;
         }
 
+        _rosterProjection = rosterProjection;
         _battlefieldCollider = battlefieldCollider;
 
         if (runtimeUnits != null)
@@ -65,25 +71,23 @@ public sealed class BattleOrdersManager : MonoBehaviour
                     continue;
                 }
 
-                if (unit.IsEnemy)
+                if (_rosterProjection != null && _rosterProjection.TryGetHostileIndex(unit, out int hostileIndex))
                 {
-                    int enemyIndex = unit.UnitNumber - 7;
-                    if (enemyIndex < 0 || enemyIndex >= _enemyUnits.Length)
+                    if (hostileIndex < 0 || hostileIndex >= _enemyUnits.Length)
                     {
                         continue;
                     }
 
-                    _enemyUnits[enemyIndex] = unit;
+                    _enemyUnits[hostileIndex] = unit;
                 }
-                else
+                else if (_rosterProjection != null && _rosterProjection.TryGetPlayerIndex(unit, out int playerIndex))
                 {
-                    int allyIndex = unit.UnitNumber - 1;
-                    if (allyIndex < 0 || allyIndex >= _allyUnits.Length)
+                    if (playerIndex < 0 || playerIndex >= _allyUnits.Length)
                     {
                         continue;
                     }
 
-                    _allyUnits[allyIndex] = unit;
+                    _allyUnits[playerIndex] = unit;
                 }
             }
         }
@@ -163,7 +167,7 @@ public sealed class BattleOrdersManager : MonoBehaviour
             return;
         }
 
-        if (targetAlly.IsEnemy)
+        if (_rosterProjection != null && !_rosterProjection.IsPlayerUnit(targetAlly))
         {
             Debug.LogWarning("[BattleOrdersManager] SubmitSingleOrder ignored. Target is an enemy unit.", this);
             return;
@@ -205,7 +209,7 @@ public sealed class BattleOrdersManager : MonoBehaviour
             return;
         }
 
-        if (actorUnit.IsEnemy)
+        if (_rosterProjection != null && !_rosterProjection.IsPlayerUnit(actorUnit))
         {
             Debug.LogWarning("[BattleOrdersManager] LLM send skipped. Actor unit is an enemy.", this);
             return;
@@ -545,7 +549,7 @@ public sealed class BattleOrdersManager : MonoBehaviour
             return errors;
         }
 
-        if (actorUnit.IsEnemy)
+        if (_rosterProjection != null && !_rosterProjection.IsPlayerUnit(actorUnit))
         {
             errors.Add("Actor unit must be an ally, but actor is enemy.");
             return errors;
@@ -1311,21 +1315,19 @@ public sealed class BattleOrdersManager : MonoBehaviour
         return string.IsNullOrWhiteSpace(description) ? string.Empty : description.Trim();
     }
 
-    private static string BuildUnitId(BattleRuntimeUnit unit)
+    private string BuildUnitId(BattleRuntimeUnit unit)
     {
         if (unit == null)
         {
             return "UNKNOWN";
         }
 
-        if (!unit.IsEnemy)
+        if (_rosterProjection != null)
         {
-            int allyIndex = Mathf.Clamp(unit.UnitNumber, 1, 99);
-            return $"A_{allyIndex:00}";
+            return _rosterProjection.GetDisplayUnitId(unit);
         }
 
-        int enemyIndex = Mathf.Clamp(unit.UnitNumber - 6, 1, 99);
-        return $"E_{enemyIndex:00}";
+        return $"U_{Mathf.Clamp(unit.UnitNumber, 0, 99):00}";
     }
 
     private static int CountUnits(BattleRuntimeUnit[] units)

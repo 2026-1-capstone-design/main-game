@@ -5,16 +5,16 @@ public sealed class BattleDecisionSystem
 {
     private const float CommitmentEnterMultiplier = 1.2f;
 
-    public BattleActionType[] Decide(
+    public void Decide(
         IReadOnlyList<BattleRuntimeUnit> units,
         BattleAITuningSO aiTuning,
-        float tickDeltaTime
+        float tickDeltaTime,
+        BattleActionType[] decisions
     )
     {
-        if (units == null)
-            return new BattleActionType[0];
+        if (units == null || decisions == null)
+            return;
 
-        var decisions = new BattleActionType[units.Count];
         float decay = aiTuning != null ? aiTuning.commitmentDecayPerSecond : 0.5f;
 
         for (int i = 0; i < units.Count; i++)
@@ -76,8 +76,6 @@ public sealed class BattleDecisionSystem
 
             decisions[i] = unit.CurrentActionType;
         }
-
-        return decisions;
     }
 
     private static BattleActionScoreSet EvaluateScores(BattleRuntimeUnit unit, BattleAITuningSO aiTuning)

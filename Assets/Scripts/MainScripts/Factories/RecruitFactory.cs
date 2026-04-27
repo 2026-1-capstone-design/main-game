@@ -227,7 +227,7 @@ public sealed class RecruitFactory : MonoBehaviour
 
             preview.DisplayName = BuildBattleEnemyDisplayName(encounterIndex, unitIndex);
 
-            BattleUnitSnapshot snapshot = BattleUnitSnapshot.FromOwnedGladiator(preview, true);
+            BattleUnitSnapshot snapshot = BattleUnitSnapshot.FromOwnedGladiator(preview, BattleTeamIds.Enemy);
             if (snapshot == null)
             {
                 Debug.LogError(
