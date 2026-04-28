@@ -6,27 +6,28 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 
 // BehaviorParameters 설정 (Inspector):
-//   Space Size        = GladiatorObservationSchema.TotalSize (= 93)
-//   Discrete Branches = 4
-//     Branch 0 Size = GladiatorActionSchema.IntentBranchSize (= 3)
-//     Branch 1 Size = GladiatorActionSchema.MoveBranchSize (= 6)
-//     Branch 2 Size = GladiatorActionSchema.TargetBranchSize (= 6)
-//     Branch 3 Size = GladiatorActionSchema.RotationBranchSize (= 3)
+//   Space Size         = GladiatorObservationSchema.TotalSize (= 101)
+//   Continuous Actions = GladiatorActionSchema.ContinuousSize (= 3)
+//     0=local strafe, 1=local advance, 2=turn
+//   Discrete Branches  = 3
+//     Branch 0 Size = GladiatorActionSchema.CommandBranchSize (= 3)
+//     Branch 1 Size = GladiatorActionSchema.TargetBranchSize (= 6)
+//     Branch 2 Size = GladiatorActionSchema.StanceBranchSize (= 3)
 //
-// Observation (93 floats):
-//   자신      (16):     경기장 중심 상대좌표(x,z), 체력, 최대 체력, 공격력, 사거리, 이동속도, 공격 쿨타임,
-//                       체력비, 낮은 체력비, 최근접 적 거리, 공격 가능 여부, 피격 위험 여부, 근처 적/아군 비율, 경계 압박
+// Observation (101 floats):
+//   자신      (24):     경기장 중심 상대좌표(x,z), 체력, 최대 체력, 공격력, 사거리, 이동속도, 공격 쿨타임,
+//                       체력비, 낮은 체력비, 최근접 적 거리, 공격 가능 여부, 피격 위험 여부, 근처 적/아군 비율, 경계 압박,
+//                       현재/직전 외부 입력, 스킬 가능 여부, 대상 선택 여부
 //   내 팀 동료 (5 × 7): payload team-local index 오름차순 고정 슬롯
 //   상대팀    (6 × 7): payload team-local index 오름차순 고정 슬롯
 //
 // Action:
-//   Branch 0 (의도):      0=이동  1=공격  2=유지
-//   Branch 1 (이동):      0=없음  1=전진  2=후퇴  3=좌측  4=우측  5=거리유지
-//   Branch 2 (대상):      0~5=상대팀 고정 슬롯
-//   Branch 3 (회전):      0=없음  1=왼쪽  2=오른쪽
+//   Continuous 0/1/2:   local strafe / local advance / turn
+//   Branch 0 (명령):     0=없음  1=기본공격  2=스킬
+//   Branch 1 (대상):     0~5=상대팀 고정 슬롯
+//   Branch 2 (태세):     0=중립  1=압박  2=거리유지
 public class GladiatorAgent : Agent
 {
-    private const float RotationSpeedDegPerSec = 240f;
     private const float HardBoundaryRadiusMultiplier = 1.25f;
 
     [SerializeField]
@@ -40,6 +41,9 @@ public class GladiatorAgent : Agent
     private GladiatorRosterView _rosterView;
     private float _prevDistToNearestEnemy;
     private bool _boundaryResetRequested;
+    private Vector2 _previousRawMove;
+    private float _previousRawTurn;
+    private bool _hasPreviousRawAction;
 
     public bool HasControlledUnit => _selfUnit != null;
 
@@ -74,6 +78,8 @@ public class GladiatorAgent : Agent
             _selfUnit.State.OnDamageTaken += HandleDamageTaken;
             _selfUnit.State.OnDied += HandleSelfDied;
             _selfUnit.OnAttackLanded += HandleAttackLanded;
+            _selfUnit.OnSkillActivated += HandleSkillActivated;
+            _selfUnit.OnSkillFailed += HandleSkillFailed;
         }
 
         _prevDistToNearestEnemy = GetDistToNearestOpponent();
@@ -100,6 +106,16 @@ public class GladiatorAgent : Agent
         }
     }
 
+    private void HandleSkillActivated()
+    {
+        AddReward(rewardConfig.skillActivated);
+    }
+
+    private void HandleSkillFailed()
+    {
+        AddReward(rewardConfig.invalidSkill);
+    }
+
     public override void CollectObservations(VectorSensor sensor)
     {
         float arenaRadius = _selfUnit != null ? _arenaExtentsMin - _selfUnit.BodyRadius : float.MaxValue;
@@ -120,13 +136,18 @@ public class GladiatorAgent : Agent
         if (!hasValidTarget)
             return;
 
+        if (!CanRequestSkill())
+        {
+            actionMask.SetActionEnabled(GladiatorActionSchema.CommandBranch, GladiatorActionSchema.CommandSkill, false);
+        }
+
         for (int i = 0; i < GladiatorObservationSchema.OpponentSlots; i++)
         {
             BattleRuntimeUnit target = ResolveOpponentSlot(i);
             bool invalid = target == null || target.IsCombatDisabled;
             if (invalid)
             {
-                actionMask.SetActionEnabled(2, i, false);
+                actionMask.SetActionEnabled(GladiatorActionSchema.TargetBranch, i, false);
             }
         }
     }
@@ -138,12 +159,39 @@ public class GladiatorAgent : Agent
             return;
         }
 
-        int intent = actions.DiscreteActions[0];
-        int moveMode = actions.DiscreteActions[1];
-        int targetSlot = actions.DiscreteActions[2];
-        int rotateAction = actions.DiscreteActions[3];
+        Vector2 localMove = Vector2.zero;
+        if (actions.ContinuousActions.Length >= GladiatorActionSchema.ContinuousSize)
+        {
+            localMove = new Vector2(
+                Mathf.Clamp(actions.ContinuousActions[GladiatorActionSchema.ContinuousMoveX], -1f, 1f),
+                Mathf.Clamp(actions.ContinuousActions[GladiatorActionSchema.ContinuousMoveZ], -1f, 1f)
+            );
+            if (localMove.sqrMagnitude > 1f)
+            {
+                localMove.Normalize();
+            }
+        }
+
+        float turn =
+            actions.ContinuousActions.Length > GladiatorActionSchema.ContinuousTurn
+                ? Mathf.Clamp(actions.ContinuousActions[GladiatorActionSchema.ContinuousTurn], -1f, 1f)
+                : 0f;
+
+        int command =
+            actions.DiscreteActions.Length > GladiatorActionSchema.CommandBranch
+                ? actions.DiscreteActions[GladiatorActionSchema.CommandBranch]
+                : GladiatorActionSchema.CommandNone;
+        int targetSlot =
+            actions.DiscreteActions.Length > GladiatorActionSchema.TargetBranch
+                ? actions.DiscreteActions[GladiatorActionSchema.TargetBranch]
+                : 0;
+        int stance =
+            actions.DiscreteActions.Length > GladiatorActionSchema.StanceBranch
+                ? actions.DiscreteActions[GladiatorActionSchema.StanceBranch]
+                : GladiatorActionSchema.StanceNeutral;
 
         AddReward(rewardConfig.step);
+        ApplyActionSmoothnessReward(localMove, turn);
 
         float playableRadius = _arenaExtentsMin - _selfUnit.BodyRadius;
         Vector3 flatPos = new Vector3(_selfUnit.Position.x, 0f, _selfUnit.Position.z);
@@ -155,8 +203,7 @@ public class GladiatorAgent : Agent
             if (distanceFromCenter >= playableRadius * HardBoundaryRadiusMultiplier)
             {
                 RequestBoundaryReset();
-                _selfUnit.SetExternalMovement(Vector3.zero, 0f);
-                _selfUnit.SetExternalAttackTarget(null);
+                _selfUnit.ClearExternalControlInput();
                 return;
             }
         }
@@ -175,75 +222,77 @@ public class GladiatorAgent : Agent
             }
         }
 
-        float rotDelta = rotateAction switch
-        {
-            1 => -RotationSpeedDegPerSec,
-            2 => RotationSpeedDegPerSec,
-            _ => 0f,
-        };
-
         bool attackBlocked = _selfUnit.AttackCooldownRemaining > 0f || _selfUnit.IsAttacking;
-        bool isSpacingMove =
-            intent == GladiatorActionSchema.IntentMove
-            && (moveMode == GladiatorActionSchema.MoveBackward || moveMode == GladiatorActionSchema.MoveKeepRange);
-        if (!attackBlocked && !isSpacingMove && intent != GladiatorActionSchema.IntentAttack && HasAttackableOpponent())
+        bool isSpacingMove = localMove.y < -0.2f || stance == GladiatorActionSchema.StanceKeepRange;
+        bool wantsBasicAttack = command == GladiatorActionSchema.CommandBasicAttack;
+        if (!attackBlocked && !isSpacingMove && !wantsBasicAttack && HasAttackableOpponent())
         {
             AddReward(rewardConfig.inRangeNoAttack);
         }
 
-        if (!attackBlocked && intent == GladiatorActionSchema.IntentHold && HasLivingOpponent())
+        if (
+            !attackBlocked
+            && localMove.sqrMagnitude <= 0.0001f
+            && command == GladiatorActionSchema.CommandNone
+            && HasLivingOpponent()
+        )
         {
             AddReward(rewardConfig.disengaged);
         }
 
         _prevDistToNearestEnemy = nearestDist;
 
-        if (intent == GladiatorActionSchema.IntentMove)
-        {
-            BattleRuntimeUnit target = ResolveOpponentSlot(targetSlot);
-            Vector3 movement = ResolveMovementDirection(moveMode, target);
-            if (isSpacingMove)
-            {
-                AddReward(shouldRetreat ? rewardConfig.goodRetreat : rewardConfig.badRetreat);
-            }
+        BattleRuntimeUnit target = ResolveOpponentSlot(targetSlot);
+        bool hasValidTarget = target != null && !target.IsCombatDisabled;
+        int effectiveCommand = command;
+        BattleRuntimeUnit effectiveTarget = hasValidTarget ? target : null;
 
-            _selfUnit.SetExternalMovement(movement, rotDelta);
-            _selfUnit.SetExternalAttackTarget(null);
-            return;
+        if (command != GladiatorActionSchema.CommandNone && !hasValidTarget)
+        {
+            AddReward(rewardConfig.invalidAction);
+            effectiveCommand = GladiatorActionSchema.CommandNone;
         }
 
-        if (intent == GladiatorActionSchema.IntentAttack)
+        if (isSpacingMove)
         {
-            BattleRuntimeUnit target = ResolveOpponentSlot(targetSlot);
-            if (target == null || target.IsCombatDisabled)
-            {
-                AddReward(rewardConfig.invalidAction);
-                return;
-            }
+            AddReward(shouldRetreat ? rewardConfig.goodRetreat : rewardConfig.badRetreat);
+        }
 
+        if (effectiveCommand == GladiatorActionSchema.CommandBasicAttack)
+        {
             if (shouldRetreat)
             {
                 AddReward(rewardConfig.dangerousAttack);
             }
 
-            _selfUnit.SetExternalMovement(Vector3.zero, rotDelta);
-            _selfUnit.SetExternalAttackTarget(target);
             if (IsOutOfAttackRange(target))
             {
                 AddReward(rewardConfig.chaseTarget);
             }
 
-            return;
+            if (attackBlocked)
+            {
+                AddReward(rewardConfig.invalidSkill * 0.25f);
+            }
         }
 
-        _selfUnit.SetExternalMovement(Vector3.zero, rotDelta);
-        _selfUnit.SetExternalAttackTarget(null);
+        if (effectiveCommand == GladiatorActionSchema.CommandSkill && !CanRequestSkill())
+        {
+            AddReward(rewardConfig.invalidSkill);
+            effectiveCommand = GladiatorActionSchema.CommandNone;
+        }
+
+        _selfUnit.SetExternalControlInput(localMove, turn, effectiveCommand, stance, effectiveTarget);
     }
 
     public override void OnEpisodeBegin()
     {
         _boundaryResetRequested = false;
         _prevDistToNearestEnemy = GetDistToNearestOpponent();
+        _previousRawMove = Vector2.zero;
+        _previousRawTurn = 0f;
+        _hasPreviousRawAction = false;
+        _selfUnit?.ClearExternalControlInput();
     }
 
     public void GiveEndReward(BattleTeamId? winnerTeamId, bool isTimeout)
@@ -266,51 +315,56 @@ public class GladiatorAgent : Agent
     public override void Heuristic(in ActionBuffers actionsOut)
     {
         var kb = Keyboard.current;
+        var continuous = actionsOut.ContinuousActions;
         var discrete = actionsOut.DiscreteActions;
         if (kb == null)
         {
             return;
         }
 
-        if (kb.jKey.isPressed)
-            discrete[0] = GladiatorActionSchema.IntentAttack;
-        else if (kb.wKey.isPressed || kb.sKey.isPressed || kb.aKey.isPressed || kb.dKey.isPressed)
-            discrete[0] = GladiatorActionSchema.IntentMove;
-        else
-            discrete[0] = GladiatorActionSchema.IntentHold;
+        if (continuous.Length >= GladiatorActionSchema.ContinuousSize)
+        {
+            continuous[GladiatorActionSchema.ContinuousMoveX] =
+                (kb.dKey.isPressed ? 1f : 0f) + (kb.aKey.isPressed ? -1f : 0f);
+            continuous[GladiatorActionSchema.ContinuousMoveZ] =
+                (kb.wKey.isPressed ? 1f : 0f) + (kb.sKey.isPressed ? -1f : 0f);
+            continuous[GladiatorActionSchema.ContinuousTurn] =
+                (kb.eKey.isPressed ? 1f : 0f) + (kb.qKey.isPressed ? -1f : 0f);
+        }
 
-        if (kb.qKey.isPressed)
-            discrete[3] = GladiatorActionSchema.RotateLeft;
-        else if (kb.eKey.isPressed)
-            discrete[3] = GladiatorActionSchema.RotateRight;
-        else
-            discrete[3] = GladiatorActionSchema.RotateNone;
+        if (discrete.Length < GladiatorActionSchema.DiscreteBranchCount)
+        {
+            return;
+        }
 
-        if (kb.wKey.isPressed)
-            discrete[1] = GladiatorActionSchema.MoveForward;
+        if (kb.kKey.isPressed)
+            discrete[GladiatorActionSchema.CommandBranch] = GladiatorActionSchema.CommandSkill;
+        else if (kb.jKey.isPressed)
+            discrete[GladiatorActionSchema.CommandBranch] = GladiatorActionSchema.CommandBasicAttack;
+        else
+            discrete[GladiatorActionSchema.CommandBranch] = GladiatorActionSchema.CommandNone;
+
+        if (kb.digit1Key.isPressed)
+            discrete[GladiatorActionSchema.TargetBranch] = 0;
+        else if (kb.digit2Key.isPressed)
+            discrete[GladiatorActionSchema.TargetBranch] = 1;
+        else if (kb.digit3Key.isPressed)
+            discrete[GladiatorActionSchema.TargetBranch] = 2;
+        else if (kb.digit4Key.isPressed)
+            discrete[GladiatorActionSchema.TargetBranch] = 3;
+        else if (kb.digit5Key.isPressed)
+            discrete[GladiatorActionSchema.TargetBranch] = 4;
+        else if (kb.digit6Key.isPressed)
+            discrete[GladiatorActionSchema.TargetBranch] = 5;
+        else
+            discrete[GladiatorActionSchema.TargetBranch] = 0;
+
+        if (kb.leftShiftKey.isPressed || kb.rightShiftKey.isPressed)
+            discrete[GladiatorActionSchema.StanceBranch] = GladiatorActionSchema.StancePressure;
         else if (kb.sKey.isPressed)
-            discrete[1] = GladiatorActionSchema.MoveBackward;
-        else if (kb.aKey.isPressed)
-            discrete[1] = GladiatorActionSchema.MoveStrafeLeft;
-        else if (kb.dKey.isPressed)
-            discrete[1] = GladiatorActionSchema.MoveStrafeRight;
+            discrete[GladiatorActionSchema.StanceBranch] = GladiatorActionSchema.StanceKeepRange;
         else
-            discrete[1] = GladiatorActionSchema.MoveNone;
-
-        if (kb.jKey.isPressed)
-            discrete[2] = 0;
-        else if (kb.kKey.isPressed)
-            discrete[2] = 1;
-        else if (kb.lKey.isPressed)
-            discrete[2] = 2;
-        else if (kb.uKey.isPressed)
-            discrete[2] = 3;
-        else if (kb.iKey.isPressed)
-            discrete[2] = 4;
-        else if (kb.oKey.isPressed)
-            discrete[2] = 5;
-        else
-            discrete[2] = 0;
+            discrete[GladiatorActionSchema.StanceBranch] = GladiatorActionSchema.StanceNeutral;
     }
 
     private bool IsOutOfAttackRange(BattleRuntimeUnit target)
@@ -360,17 +414,29 @@ public class GladiatorAgent : Agent
         return false;
     }
 
-    private Vector3 ResolveMovementDirection(int moveMode, BattleRuntimeUnit target)
+    private void ApplyActionSmoothnessReward(Vector2 localMove, float turn)
     {
-        return moveMode switch
+        if (_hasPreviousRawAction)
         {
-            GladiatorActionSchema.MoveForward => _selfUnit.transform.forward,
-            GladiatorActionSchema.MoveBackward => -_selfUnit.transform.forward,
-            GladiatorActionSchema.MoveStrafeLeft => -_selfUnit.transform.right,
-            GladiatorActionSchema.MoveStrafeRight => _selfUnit.transform.right,
-            GladiatorActionSchema.MoveKeepRange => ResolveKeepRangeDirection(target),
-            _ => Vector3.zero,
-        };
+            float moveDelta = Vector2.Distance(_previousRawMove, localMove);
+            float turnDelta = Mathf.Abs(_previousRawTurn - turn);
+            AddReward(moveDelta * rewardConfig.actionDelta);
+            AddReward(turnDelta * rewardConfig.turnDelta);
+
+            if (localMove.sqrMagnitude <= 0.0001f && Mathf.Abs(turn) > 0.1f)
+            {
+                AddReward(Mathf.Abs(turn) * rewardConfig.idleJitter);
+            }
+        }
+
+        _previousRawMove = localMove;
+        _previousRawTurn = turn;
+        _hasPreviousRawAction = true;
+    }
+
+    private bool CanRequestSkill()
+    {
+        return _selfUnit != null && _selfUnit.HasReadySkill();
     }
 
     private Vector3 ResolveKeepRangeDirection(BattleRuntimeUnit target)
@@ -539,6 +605,8 @@ public class GladiatorAgent : Agent
         }
 
         _selfUnit.OnAttackLanded -= HandleAttackLanded;
+        _selfUnit.OnSkillActivated -= HandleSkillActivated;
+        _selfUnit.OnSkillFailed -= HandleSkillFailed;
     }
 
     private void RequestBoundaryReset()

@@ -1,22 +1,26 @@
 public static class GladiatorActionSchema
 {
-    public const int IntentMove = 0;
-    public const int IntentAttack = 1;
-    public const int IntentHold = 2;
-    public const int IntentBranchSize = 3;
+    public const int ContractVersion = 2;
 
-    public const int MoveNone = 0;
-    public const int MoveForward = 1;
-    public const int MoveBackward = 2;
-    public const int MoveStrafeLeft = 3;
-    public const int MoveStrafeRight = 4;
-    public const int MoveKeepRange = 5;
-    public const int MoveBranchSize = 6;
+    public const int ContinuousMoveX = 0;
+    public const int ContinuousMoveZ = 1;
+    public const int ContinuousTurn = 2;
+    public const int ContinuousSize = 3;
+
+    public const int CommandBranch = 0;
+    public const int TargetBranch = 1;
+    public const int StanceBranch = 2;
+    public const int DiscreteBranchCount = 3;
+
+    public const int CommandNone = 0;
+    public const int CommandBasicAttack = 1;
+    public const int CommandSkill = 2;
+    public const int CommandBranchSize = 3;
 
     public const int TargetBranchSize = BattleTeamConstants.MaxUnitsPerTeam;
 
-    public const int RotateNone = 0;
-    public const int RotateLeft = 1;
-    public const int RotateRight = 2;
-    public const int RotationBranchSize = 3;
+    public const int StanceNeutral = 0;
+    public const int StancePressure = 1;
+    public const int StanceKeepRange = 2;
+    public const int StanceBranchSize = 3;
 }

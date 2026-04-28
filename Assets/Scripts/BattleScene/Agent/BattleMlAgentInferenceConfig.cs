@@ -6,7 +6,10 @@ using UnityEngine;
 public sealed class BattleMlAgentInferenceConfig : ScriptableObject
 {
     public ModelAsset model;
-    public string behaviorName = "Gladiator";
+    public string behaviorName = "GladiatorSmooth";
+    public int contractVersion = GladiatorActionSchema.ContractVersion;
+    public int expectedContinuousActions = GladiatorActionSchema.ContinuousSize;
+    public int expectedObservationSize = GladiatorObservationSchema.TotalSize;
     public BattleMlControlledSide controlledSide = BattleMlControlledSide.HostileTeam;
     public int decisionPeriod = 1;
     public bool takeActionsBetweenDecisions = true;
@@ -20,7 +23,11 @@ public sealed class BattleMlAgentInferenceConfig : ScriptableObject
         maxAgentCount = Mathf.Clamp(maxAgentCount, 0, BattleTeamConstants.MaxUnitsPerTeam * 2);
         if (string.IsNullOrWhiteSpace(behaviorName))
         {
-            behaviorName = "Gladiator";
+            behaviorName = "GladiatorSmooth";
         }
+
+        contractVersion = GladiatorActionSchema.ContractVersion;
+        expectedContinuousActions = GladiatorActionSchema.ContinuousSize;
+        expectedObservationSize = GladiatorObservationSchema.TotalSize;
     }
 }

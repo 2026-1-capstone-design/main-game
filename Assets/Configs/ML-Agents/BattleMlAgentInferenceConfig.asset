@@ -12,9 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: addc00fdbb60494c8dc179b4992bf194, type: 3}
   m_Name: BattleMlAgentInferenceConfig
   m_EditorClassIdentifier: 
-  model: {fileID: 5022602860645237092, guid: b4ec46ea39946304f87cabc9d2b988c5, type: 3}
-  behaviorName: Gladiator
-  controlledSide: 2
+  model: {fileID: 5022602860645237092, guid: 1397b8669f3911443a90494a0d60bf52, type: 3}
+  behaviorName: GladiatorSmooth
+  contractVersion: 2
+  expectedContinuousActions: 3
+  expectedObservationSize: 101
+  controlledSide: 1
   decisionPeriod: 1
   takeActionsBetweenDecisions: 1
   inferenceDevice: 0

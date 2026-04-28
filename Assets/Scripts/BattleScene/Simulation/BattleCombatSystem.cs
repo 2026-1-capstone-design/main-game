@@ -74,6 +74,8 @@ public sealed class BattleCombatSystem
                 continue;
             if (channelSystem != null && channelSystem.IsBasicAttackBlocked(attacker))
                 continue;
+            if (attacker.UsesExternalAgentControl && !attacker.HasExternalAttackCommand)
+                continue;
 
             BattleUnitCombatState target = attacker.PlannedTargetEnemy;
             if (
@@ -121,6 +123,7 @@ public sealed class BattleCombatSystem
             bool wasKill = !wasDisabledBeforeDamage && target.IsCombatDisabled;
             attacker.RaiseAttackLanded(targetRuntime, actualDamage, wasKill);
             attacker.State.ResetAttackCooldown();
+            attacker.ClearExternalAttackCommand();
         }
     }
 
@@ -139,7 +142,8 @@ public sealed class BattleCombatSystem
                 continue;
             if (_channelSystem != null && _channelSystem.IsChanneling(unit))
                 continue;
-            if (unit.UsesExternalAgentControl)
+            bool externalSkillCommand = unit.UsesExternalAgentControl && unit.HasExternalSkillCommand;
+            if (unit.UsesExternalAgentControl && !externalSkillCommand)
                 continue;
             if (
                 unit.State.IsSkillDisabled
@@ -147,9 +151,16 @@ public sealed class BattleCombatSystem
             )
                 continue;
             if (unit.SkillCooldownRemaining > 0f)
-                continue;
+            {
+                if (externalSkillCommand)
+                {
+                    unit.RaiseSkillFailed();
+                    unit.ClearExternalSkillCommand();
+                }
 
-            IBattleSkill skill = _skillRegistry.Get(unit.State.GetSkill());
+                continue;
+            }
+
             BattleRuntimeUnit primaryTarget = ResolveRuntimeUnit(runtimeUnitByState, unit.PlannedTargetEnemy);
             BattleEffectContext context = new BattleEffectContext(
                 unit,
@@ -160,8 +171,17 @@ public sealed class BattleCombatSystem
                 battleTick
             );
 
+            IBattleSkill skill = _skillRegistry.Get(unit.State.GetSkill());
             if (skill == null || !skill.CanActivate(context))
+            {
+                if (externalSkillCommand)
+                {
+                    unit.RaiseSkillFailed();
+                    unit.ClearExternalSkillCommand();
+                }
+
                 continue;
+            }
 
             if (skill is IChanneledBattleSkill channeledSkill)
             {
@@ -178,6 +198,8 @@ public sealed class BattleCombatSystem
 
             unit.SetSkillState(unit.GetSkillAnimationDuration());
             unit.State.ResetSkillCooldown();
+            unit.RaiseSkillActivated();
+            unit.ClearExternalSkillCommand();
         }
     }
 

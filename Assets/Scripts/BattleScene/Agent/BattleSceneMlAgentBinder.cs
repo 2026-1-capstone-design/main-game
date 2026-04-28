@@ -9,10 +9,9 @@ public sealed class BattleSceneMlAgentBinder : MonoBehaviour
 {
     private static readonly int[] ExpectedDiscreteBranches =
     {
-        GladiatorActionSchema.IntentBranchSize,
-        GladiatorActionSchema.MoveBranchSize,
+        GladiatorActionSchema.CommandBranchSize,
         GladiatorActionSchema.TargetBranchSize,
-        GladiatorActionSchema.RotationBranchSize,
+        GladiatorActionSchema.StanceBranchSize,
     };
 
     [SerializeField]
@@ -148,7 +147,10 @@ public sealed class BattleSceneMlAgentBinder : MonoBehaviour
         behaviorParameters.UseChildSensors = false;
         behaviorParameters.UseChildActuators = true;
         behaviorParameters.BrainParameters.VectorObservationSize = GladiatorObservationSchema.TotalSize;
-        behaviorParameters.BrainParameters.ActionSpec = new ActionSpec(0, (int[])ExpectedDiscreteBranches.Clone());
+        behaviorParameters.BrainParameters.ActionSpec = new ActionSpec(
+            GladiatorActionSchema.ContinuousSize,
+            (int[])ExpectedDiscreteBranches.Clone()
+        );
 
         decisionRequester.DecisionPeriod = Mathf.Max(1, config.decisionPeriod);
         decisionRequester.DecisionStep = agentIndex % decisionRequester.DecisionPeriod;
@@ -204,6 +206,24 @@ public sealed class BattleSceneMlAgentBinder : MonoBehaviour
             return false;
         }
 
+        if (config.contractVersion != GladiatorActionSchema.ContractVersion)
+        {
+            Debug.LogError(
+                $"[BattleSceneMlAgentBinder] Contract version mismatch. Expected {GladiatorActionSchema.ContractVersion}, actual {config.contractVersion}.",
+                config
+            );
+            return false;
+        }
+
+        if (
+            config.expectedContinuousActions != GladiatorActionSchema.ContinuousSize
+            || config.expectedObservationSize != GladiatorObservationSchema.TotalSize
+        )
+        {
+            Debug.LogError("[BattleSceneMlAgentBinder] Inference config action/observation counts are stale.", config);
+            return false;
+        }
+
         return true;
     }
 
@@ -229,9 +249,12 @@ public sealed class BattleSceneMlAgentBinder : MonoBehaviour
         }
 
         ActionSpec actionSpec = behaviorParameters.BrainParameters.ActionSpec;
-        if (actionSpec.NumContinuousActions != 0)
+        if (actionSpec.NumContinuousActions != GladiatorActionSchema.ContinuousSize)
         {
-            Debug.LogError("[BattleSceneMlAgentBinder] Continuous actions must be 0.", agent);
+            Debug.LogError(
+                $"[BattleSceneMlAgentBinder] Continuous action count mismatch. Expected {GladiatorActionSchema.ContinuousSize}, actual {actionSpec.NumContinuousActions}.",
+                agent
+            );
             return false;
         }
 
@@ -363,8 +386,7 @@ public sealed class BattleSceneMlAgentBinder : MonoBehaviour
             BattleRuntimeUnit unit = _boundUnits[i];
             if (unit != null)
             {
-                unit.SetExternalMovement(Vector3.zero, 0f);
-                unit.SetExternalAttackTarget(null);
+                unit.ClearExternalControlInput();
                 unit.SetControlMode(BattleUnitControlMode.BuiltInAI);
             }
         }

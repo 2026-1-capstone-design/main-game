@@ -32,3 +32,8 @@ MonoBehaviour:
   timeout: -20
   boundary: -0.2
   invalidAction: -1
+  actionDelta: -0.001
+  turnDelta: -0.0005
+  idleJitter: -0.001
+  invalidSkill: -0.02
+  skillActivated: 0.02
