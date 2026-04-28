@@ -47,16 +47,23 @@ public sealed class BattlePhysicsSystem
 
             if (unit.UsesExternalAgentControl)
             {
-                if (unit.ExternalRotationDelta != 0f)
-                    unit.Rotate(unit.ExternalRotationDelta * tickDeltaTime);
+                unit.TickExternalControlInput(tickDeltaTime);
 
-                if (unit.ExternalMoveDirection.sqrMagnitude > 0.0001f)
+                float rotationDelta = unit.ExternalSmoothedTurn * BattleRuntimeUnit.ExternalTurnSpeedDegPerSec;
+                if (rotationDelta != 0f)
+                    unit.Rotate(rotationDelta * tickDeltaTime);
+
+                Vector3 externalMoveDirection = unit.GetSmoothedExternalWorldMoveDirection();
+                if (externalMoveDirection.sqrMagnitude > 0.0001f)
                 {
-                    unit.SetPosition(unit.Position + unit.ExternalMoveDirection * unit.MoveSpeed * tickDeltaTime);
+                    unit.SetPosition(unit.Position + externalMoveDirection * unit.MoveSpeed * tickDeltaTime);
                     unit.ClampInsideBattlefield(_battlefieldCollider);
                     unit.State.SetMovementState(true);
                 }
-                else if (BattleFieldSnapshot.IsValidEnemyTarget(unit.State, unit.PlannedTargetEnemy))
+                else if (
+                    (unit.HasExternalAttackCommand || unit.ExternalStance == GladiatorActionSchema.StancePressure)
+                    && BattleFieldSnapshot.IsValidEnemyTarget(unit.State, unit.PlannedTargetEnemy)
+                )
                 {
                     bool moved = MoveTowardsTarget(unit, unit.PlannedTargetEnemy, tickDeltaTime);
                     unit.State.SetMovementState(moved);

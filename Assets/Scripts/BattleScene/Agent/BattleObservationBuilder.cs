@@ -73,6 +73,16 @@ public static class BattleObservationBuilder
             CountLivingWithin(self, teammates, threatRadius) / (float)GladiatorObservationSchema.TeammateSlots
         );
         sensor.AddObservation(boundaryPressure);
+        sensor.AddObservation(self.ExternalSmoothedLocalMove.x);
+        sensor.AddObservation(self.ExternalSmoothedLocalMove.y);
+        sensor.AddObservation(self.ExternalSmoothedTurn);
+        sensor.AddObservation(self.ExternalPreviousRawLocalMove.x);
+        sensor.AddObservation(self.ExternalPreviousRawLocalMove.y);
+        sensor.AddObservation(self.ExternalPreviousRawTurn);
+        sensor.AddObservation(self.HasReadySkill() ? 1f : 0f);
+        sensor.AddObservation(
+            self.ExternalControlTarget != null && !self.ExternalControlTarget.IsCombatDisabled ? 1f : 0f
+        );
 
         AddUnitSlotObservations(sensor, self, teammates, GladiatorObservationSchema.TeammateSlots);
         AddUnitSlotObservations(sensor, self, opponents, GladiatorObservationSchema.OpponentSlots);

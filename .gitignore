@@ -89,4 +89,4 @@ Thumbs.db
 results/
 
 # Unity ML-Agents timer
-Assets/ML-Agents/Timers/*
+Assets/ML-Agents/Timers/

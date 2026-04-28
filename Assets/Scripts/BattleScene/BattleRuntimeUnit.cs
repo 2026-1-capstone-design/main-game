@@ -4,6 +4,19 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
+public struct BattleExternalControlInput
+{
+    public Vector2 RawLocalMove;
+    public Vector2 SmoothedLocalMove;
+    public float RawTurn;
+    public float SmoothedTurn;
+    public int Command;
+    public int Stance;
+    public BattleRuntimeUnit Target;
+    public bool WantsBasicAttack;
+    public bool WantsSkill;
+}
+
 // BattleRuntimeUnit은 전투 중 비주얼 렌더러다.
 // 전투 상태(HP, 쿨다운, 행동 타입 등)는 State(BattleUnitCombatState)가 담당한다.
 // prefab 구조: Root -> BattleRuntimeUnit -> Dot_ally / Dot_enemy / Dot_dead / StatusText
@@ -13,6 +26,8 @@ using UnityEngine.UI;
 [DisallowMultipleComponent]
 public sealed class BattleRuntimeUnit : MonoBehaviour
 {
+    public const float ExternalTurnSpeedDegPerSec = 240f;
+
     [Header("Debug")]
     [SerializeField]
     private bool verboseLog = false;
@@ -110,8 +125,31 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
 
     private int _lastAttackTriggerFrame = -1;
 
-    public Vector3 ExternalMoveDirection { get; private set; }
-    public float ExternalRotationDelta { get; private set; }
+    private const float ExternalMoveInputChangePerSecond = 8f;
+    private const float ExternalTurnInputChangePerSecond = 8f;
+
+    private BattleExternalControlInput _externalControlInput;
+    private Vector2 _previousRawExternalLocalMove;
+    private float _previousRawExternalTurn;
+
+    public BattleExternalControlInput ExternalControlInput => _externalControlInput;
+    public Vector2 ExternalRawLocalMove => _externalControlInput.RawLocalMove;
+    public Vector2 ExternalSmoothedLocalMove => _externalControlInput.SmoothedLocalMove;
+    public Vector2 ExternalPreviousRawLocalMove => _previousRawExternalLocalMove;
+    public float ExternalRawTurn => _externalControlInput.RawTurn;
+    public float ExternalSmoothedTurn => _externalControlInput.SmoothedTurn;
+    public float ExternalPreviousRawTurn => _previousRawExternalTurn;
+    public int ExternalCommand => _externalControlInput.Command;
+    public int ExternalStance => _externalControlInput.Stance;
+    public BattleRuntimeUnit ExternalControlTarget => _externalControlInput.Target;
+    public bool HasExternalAttackCommand => _externalControlInput.WantsBasicAttack;
+    public bool HasExternalSkillCommand => _externalControlInput.WantsSkill;
+
+    [Obsolete("Use ExternalSmoothedLocalMove or GetSmoothedExternalWorldMoveDirection instead.")]
+    public Vector3 ExternalMoveDirection => GetSmoothedExternalWorldMoveDirection();
+
+    [Obsolete("Use ExternalSmoothedTurn instead.")]
+    public float ExternalRotationDelta => ExternalSmoothedTurn * ExternalTurnSpeedDegPerSec;
 
     public void SetControlMode(BattleUnitControlMode mode)
     {
@@ -124,8 +162,9 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
 
     public void ClearExternalControlInput()
     {
-        ExternalMoveDirection = Vector3.zero;
-        ExternalRotationDelta = 0f;
+        _externalControlInput = default;
+        _previousRawExternalLocalMove = Vector2.zero;
+        _previousRawExternalTurn = 0f;
         SetExternalAttackTarget(null);
     }
 
@@ -135,8 +174,117 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
 
     public void SetExternalMovement(Vector3 worldDirection, float rotationDeltaDegPerSec)
     {
-        ExternalMoveDirection = worldDirection;
-        ExternalRotationDelta = rotationDeltaDegPerSec;
+        Vector3 flat = worldDirection;
+        flat.y = 0f;
+        if (flat.sqrMagnitude > 1f)
+        {
+            flat.Normalize();
+        }
+
+        Vector2 localMove = new Vector2(Vector3.Dot(flat, transform.right), Vector3.Dot(flat, transform.forward));
+        float turn = Mathf.Clamp(rotationDeltaDegPerSec / Mathf.Max(0.0001f, ExternalTurnSpeedDegPerSec), -1f, 1f);
+        SetExternalControlInput(
+            localMove,
+            turn,
+            GladiatorActionSchema.CommandNone,
+            GladiatorActionSchema.StanceNeutral,
+            null
+        );
+    }
+
+    public void SetExternalControlInput(
+        Vector2 rawLocalMove,
+        float rawTurn,
+        int command,
+        int stance,
+        BattleRuntimeUnit target
+    )
+    {
+        _previousRawExternalLocalMove = _externalControlInput.RawLocalMove;
+        _previousRawExternalTurn = _externalControlInput.RawTurn;
+
+        if (rawLocalMove.sqrMagnitude > 1f)
+        {
+            rawLocalMove.Normalize();
+        }
+
+        bool hasValidTarget = target != null && !target.IsCombatDisabled;
+        bool wantsBasicAttack = command == GladiatorActionSchema.CommandBasicAttack && hasValidTarget;
+        bool wantsSkill = command == GladiatorActionSchema.CommandSkill && hasValidTarget;
+
+        _externalControlInput.RawLocalMove = rawLocalMove;
+        _externalControlInput.RawTurn = Mathf.Clamp(rawTurn, -1f, 1f);
+        _externalControlInput.Command = command;
+        _externalControlInput.Stance = stance;
+        _externalControlInput.Target = hasValidTarget ? target : null;
+        _externalControlInput.WantsBasicAttack = wantsBasicAttack;
+        _externalControlInput.WantsSkill = wantsSkill;
+
+        State?.SetPlannedTargets(hasValidTarget ? target.State : null, null);
+    }
+
+    public void TickExternalControlInput(float tickDeltaTime)
+    {
+        float moveStep = ExternalMoveInputChangePerSecond * Mathf.Max(0f, tickDeltaTime);
+        float turnStep = ExternalTurnInputChangePerSecond * Mathf.Max(0f, tickDeltaTime);
+
+        Vector2 smoothed = _externalControlInput.SmoothedLocalMove;
+        smoothed.x = Mathf.MoveTowards(smoothed.x, _externalControlInput.RawLocalMove.x, moveStep);
+        smoothed.y = Mathf.MoveTowards(smoothed.y, _externalControlInput.RawLocalMove.y, moveStep);
+        if (smoothed.sqrMagnitude > 1f)
+        {
+            smoothed.Normalize();
+        }
+
+        _externalControlInput.SmoothedLocalMove = smoothed;
+        _externalControlInput.SmoothedTurn = Mathf.MoveTowards(
+            _externalControlInput.SmoothedTurn,
+            _externalControlInput.RawTurn,
+            turnStep
+        );
+    }
+
+    public Vector3 GetSmoothedExternalWorldMoveDirection()
+    {
+        Vector3 direction =
+            transform.right * _externalControlInput.SmoothedLocalMove.x
+            + transform.forward * _externalControlInput.SmoothedLocalMove.y;
+        direction.y = 0f;
+        if (direction.sqrMagnitude > 1f)
+        {
+            direction.Normalize();
+        }
+
+        return direction;
+    }
+
+    public bool HasReadySkill() =>
+        State != null && State.GetSkill() != WeaponSkillId.None && SkillCooldownRemaining <= 0f;
+
+    public void RaiseSkillActivated() => OnSkillActivated?.Invoke();
+
+    public event Action OnSkillActivated;
+
+    public void RaiseSkillFailed() => OnSkillFailed?.Invoke();
+
+    public event Action OnSkillFailed;
+
+    public void ClearExternalAttackCommand()
+    {
+        _externalControlInput.WantsBasicAttack = false;
+        if (_externalControlInput.Command == GladiatorActionSchema.CommandBasicAttack)
+        {
+            _externalControlInput.Command = GladiatorActionSchema.CommandNone;
+        }
+    }
+
+    public void ClearExternalSkillCommand()
+    {
+        _externalControlInput.WantsSkill = false;
+        if (_externalControlInput.Command == GladiatorActionSchema.CommandSkill)
+        {
+            _externalControlInput.Command = GladiatorActionSchema.CommandNone;
+        }
     }
 
     public void SetExternalAttackTarget(BattleRuntimeUnit target)

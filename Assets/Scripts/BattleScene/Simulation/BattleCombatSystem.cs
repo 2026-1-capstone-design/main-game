@@ -54,6 +54,8 @@ public sealed class BattleCombatSystem
             BattleRuntimeUnit attacker = units[i];
             if (attacker == null || attacker.IsCombatDisabled || attacker.State.IsStunned)
                 continue;
+            if (attacker.UsesExternalAgentControl && !attacker.HasExternalAttackCommand)
+                continue;
 
             BattleUnitCombatState target = attacker.PlannedTargetEnemy;
             if (!BattleFieldSnapshot.IsValidEnemyTarget(attacker.State, target))
@@ -70,6 +72,7 @@ public sealed class BattleCombatSystem
             BattleRuntimeUnit targetRuntime = ResolveRuntimeUnit(runtimeUnitByState, target);
             attacker.RaiseAttackLanded(targetRuntime, actualDamage, target.IsCombatDisabled);
             attacker.State.ResetAttackCooldown();
+            attacker.ClearExternalAttackCommand();
 
             results.Add(
                 new BattleCombatResult(attacker, targetRuntime, actualDamage, target.IsCombatDisabled, wasSkill: false)
@@ -88,20 +91,39 @@ public sealed class BattleCombatSystem
             BattleRuntimeUnit unit = units[i];
             if (unit == null || unit.IsCombatDisabled || unit.State.IsStunned)
                 continue;
-            if (unit.UsesExternalAgentControl)
+            bool externalSkillCommand = unit.UsesExternalAgentControl && unit.HasExternalSkillCommand;
+            if (unit.UsesExternalAgentControl && !externalSkillCommand)
                 continue;
             if (unit.SkillCooldownRemaining > 0f)
+            {
+                if (externalSkillCommand)
+                {
+                    unit.RaiseSkillFailed();
+                    unit.ClearExternalSkillCommand();
+                }
+
                 continue;
+            }
 
             IBattleSkill skill = _skillRegistry.Get(unit.State.GetSkill());
             if (skill == null || !skill.CanActivate(unit))
+            {
+                if (externalSkillCommand)
+                {
+                    unit.RaiseSkillFailed();
+                    unit.ClearExternalSkillCommand();
+                }
+
                 continue;
+            }
 
             _skillEffectApplier.Configure(unit, runtimeUnitByState, results);
             skill.Apply(unit, _skillEffectApplier);
 
             unit.SetSkillState(unit.GetSkillAnimationDuration());
             unit.State.ResetSkillCooldown();
+            unit.RaiseSkillActivated();
+            unit.ClearExternalSkillCommand();
         }
     }
 

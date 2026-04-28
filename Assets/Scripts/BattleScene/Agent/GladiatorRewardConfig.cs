@@ -23,4 +23,9 @@ public sealed class GladiatorRewardConfig : ScriptableObject
     public float timeout = -20f;
     public float boundary = -0.2f;
     public float invalidAction = -1f;
+    public float actionDelta = -0.001f;
+    public float turnDelta = -0.0005f;
+    public float idleJitter = -0.001f;
+    public float invalidSkill = -0.02f;
+    public float skillActivated = 0.02f;
 }
