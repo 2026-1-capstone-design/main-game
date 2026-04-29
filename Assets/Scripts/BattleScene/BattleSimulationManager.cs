@@ -58,7 +58,6 @@ public sealed class BattleSimulationManager : MonoBehaviour
     private BattleStartPayload _payload;
     private readonly BattleCooldownSystem _cooldownSystem = new BattleCooldownSystem();
     private readonly BattleParameterSystem _parameterSystem = new BattleParameterSystem();
-    private readonly BattleDecisionSystem _decisionSystem = new BattleDecisionSystem();
     private readonly BattlePlanningSystem _planningSystem = new BattlePlanningSystem();
     private readonly BattlePhysicsSystem _physicsSystem = new BattlePhysicsSystem();
     private readonly BattleArtifactSystem _artifactSystem = new BattleArtifactSystem();
@@ -70,6 +69,10 @@ public sealed class BattleSimulationManager : MonoBehaviour
     private BattleEffectSystem _effectSystem;
     private BattleCombatSystem _combatSystem;
     private readonly BattleVictorySystem _victorySystem = new BattleVictorySystem();
+    private readonly BattleAgentControlBuffer _agentControlBuffer = new BattleAgentControlBuffer();
+    private readonly BattleControlSourceRegistry _controlSourceRegistry = new BattleControlSourceRegistry();
+    private readonly BuiltInAiControlSource _builtInAiControlSource = new BuiltInAiControlSource();
+    private MlAgentControlSource _mlAgentControlSource;
     private readonly int[] _tickUnitNumbersBuffer = new int[BattleTeamConstants.MaxUnitsInBattle];
     private readonly BattleParameterSet[] _tickRawParametersBuffer = new BattleParameterSet[
         BattleTeamConstants.MaxUnitsInBattle
@@ -79,6 +82,9 @@ public sealed class BattleSimulationManager : MonoBehaviour
     ];
     private readonly bool[] _tickModifierOverflowFlagsBuffer = new bool[BattleTeamConstants.MaxUnitsInBattle];
     private readonly BattleActionType[] _tickDecisionBuffer = new BattleActionType[
+        BattleTeamConstants.MaxUnitsInBattle
+    ];
+    private readonly BattleControlPlan[] _tickControlPlanBuffer = new BattleControlPlan[
         BattleTeamConstants.MaxUnitsInBattle
     ];
     private readonly BattleCombatResultBuffer _tickCombatResultBuffer = new BattleCombatResultBuffer(
@@ -103,6 +109,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
     public int BattleTickCount => _battleTickCount;
     public float TickInterval => _tickInterval;
     public BattleFieldSnapshot CurrentSnapshot { get; private set; }
+    public BattleAgentControlBuffer AgentControlBuffer => _agentControlBuffer;
 
     public event Action<SimulationTickData> OnSimulationTicked;
     public event Action<BattleOutcome> OnBattleFinished;
@@ -162,7 +169,11 @@ public sealed class BattleSimulationManager : MonoBehaviour
         _positionHistory.Clear();
         _damageLifecycle.Clear();
         _rosterMutationSystem.Clear();
+        _controlSourceRegistry.Clear();
+        _agentControlBuffer.ClearAll();
         _battlefieldCollider = battlefieldCollider;
+        if (_mlAgentControlSource == null)
+            _mlAgentControlSource = new MlAgentControlSource(_agentControlBuffer);
 
         for (int i = 0; i < runtimeUnits.Count; i++)
         {
@@ -179,6 +190,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
             _runtimeUnits.Add(unit);
             _unitStates.Add(unit.State);
             _runtimeUnitByState[unit.State] = unit;
+            RegisterControlSource(unit);
         }
 
         _payload = payload;
@@ -319,17 +331,24 @@ public sealed class BattleSimulationManager : MonoBehaviour
         _cooldownSystem.Tick(_runtimeUnits, tickDeltaTime);
 
         _parameterSystem.Compute(_runtimeUnits, radii, aiTuning, CurrentSnapshot, _tickModifierOverflowFlagsBuffer);
-        _decisionSystem.Decide(
+        _builtInAiControlSource.Configure(_runtimeUnits, aiTuning, _channelSystem, _rosterMutationSystem);
+        RefreshControlSources();
+
+        _planningSystem.Build(
             _runtimeUnits,
-            aiTuning,
+            CurrentSnapshot,
+            _controlSourceRegistry,
             tickDeltaTime,
-            _tickDecisionBuffer,
-            _channelSystem,
+            _tickControlPlanBuffer,
             _rosterMutationSystem
         );
-
-        _planningSystem.Build(_runtimeUnits, CurrentSnapshot, _rosterMutationSystem);
-        _physicsSystem.Execute(_runtimeUnits, tickDeltaTime, _artifactSystem.MovementPolicy, _channelSystem);
+        _physicsSystem.Execute(
+            _runtimeUnits,
+            tickDeltaTime,
+            _tickControlPlanBuffer,
+            _artifactSystem.MovementPolicy,
+            _channelSystem
+        );
         _positionHistory.RecordAll(_runtimeUnits, battleTime);
         _artifactSystem.TickPositionHistoryArtifacts(_positionHistory, tickContext, _effectSystem);
         _combatSystem.Execute(
@@ -338,7 +357,9 @@ public sealed class BattleSimulationManager : MonoBehaviour
             _tickCombatResultBuffer,
             CurrentSnapshot,
             battleTime,
-            _battleTickCount
+            _battleTickCount,
+            _tickControlPlanBuffer,
+            _controlSourceRegistry
         );
 
         BattleOutcome? outcome = _victorySystem.Evaluate(
@@ -399,6 +420,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
             _tickUnitNumbersBuffer[i] = unit.UnitNumber;
             _tickRawParametersBuffer[i] = unit.CurrentRawParameters;
             _tickModifiedParametersBuffer[i] = unit.CurrentModifiedParameters;
+            _tickDecisionBuffer[i] = unit.CurrentActionType;
         }
 
         _tickData.Update(_battleTickCount, unitCount, _tickCombatResultBuffer.Count);
@@ -445,5 +467,23 @@ public sealed class BattleSimulationManager : MonoBehaviour
 
         CurrentSnapshot.Reset();
         CurrentSnapshot = null;
+    }
+
+    private void RegisterControlSource(BattleRuntimeUnit unit)
+    {
+        if (unit == null || unit.State == null)
+            return;
+
+        IBattleUnitControlSource source =
+            unit.ControlMode == BattleUnitControlMode.ExternalAgent ? _mlAgentControlSource : _builtInAiControlSource;
+        _controlSourceRegistry.Set(unit.State, source);
+    }
+
+    private void RefreshControlSources()
+    {
+        for (int i = 0; i < _runtimeUnits.Count; i++)
+        {
+            RegisterControlSource(_runtimeUnits[i]);
+        }
     }
 }

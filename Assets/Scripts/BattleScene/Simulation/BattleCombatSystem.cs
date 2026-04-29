@@ -46,7 +46,9 @@ public sealed class BattleCombatSystem
         BattleCombatResultBuffer results,
         BattleFieldSnapshot snapshot,
         float battleTime,
-        int battleTick
+        int battleTick,
+        BattleControlPlan[] controlPlans = null,
+        BattleControlSourceRegistry controlSources = null
     )
     {
         if (units == null || results == null || _effects == null)
@@ -54,8 +56,8 @@ public sealed class BattleCombatSystem
 
         results.Clear();
         _effects.Configure(results, runtimeUnitByState);
-        ExecuteAttackPhase(units, runtimeUnitByState, snapshot, _effects, _channelSystem, _artifactSystem);
-        ExecuteSkillPhase(units, runtimeUnitByState, snapshot, battleTime, battleTick);
+        ExecuteAttackPhase(units, runtimeUnitByState, snapshot, _effects, _channelSystem, _artifactSystem, controlPlans, controlSources);
+        ExecuteSkillPhase(units, runtimeUnitByState, snapshot, battleTime, battleTick, controlPlans, controlSources);
     }
 
     private static void ExecuteAttackPhase(
@@ -64,7 +66,9 @@ public sealed class BattleCombatSystem
         BattleFieldSnapshot snapshot,
         IBattleEffectSink effects,
         BattleSkillChannelSystem channelSystem,
-        BattleArtifactSystem artifactSystem
+        BattleArtifactSystem artifactSystem,
+        BattleControlPlan[] controlPlans,
+        BattleControlSourceRegistry controlSources
     )
     {
         for (int i = 0; i < units.Count; i++)
@@ -74,10 +78,12 @@ public sealed class BattleCombatSystem
                 continue;
             if (channelSystem != null && channelSystem.IsBasicAttackBlocked(attacker))
                 continue;
-            if (attacker.UsesExternalAgentControl && !attacker.HasExternalAttackCommand)
+
+            BattleControlPlan plan = GetPlan(controlPlans, i);
+            if (plan.UsesExplicitCombatCommands && plan.Command != BattleCombatCommand.BasicAttack)
                 continue;
 
-            BattleUnitCombatState target = attacker.PlannedTargetEnemy;
+            BattleUnitCombatState target = plan.TargetEnemy ?? attacker.PlannedTargetEnemy;
             if (
                 artifactSystem != null
                 && artifactSystem.TryOverrideBasicAttackTarget(attacker, snapshot, out BattleRuntimeUnit overrideTarget)
@@ -123,7 +129,7 @@ public sealed class BattleCombatSystem
             bool wasKill = !wasDisabledBeforeDamage && target.IsCombatDisabled;
             attacker.RaiseAttackLanded(targetRuntime, actualDamage, wasKill);
             attacker.State.ResetAttackCooldown();
-            attacker.ClearExternalAttackCommand();
+            ConsumeCommand(controlSources, attacker.State, BattleCombatCommand.BasicAttack);
         }
     }
 
@@ -132,7 +138,9 @@ public sealed class BattleCombatSystem
         IReadOnlyDictionary<BattleUnitCombatState, BattleRuntimeUnit> runtimeUnitByState,
         BattleFieldSnapshot snapshot,
         float battleTime,
-        int battleTick
+        int battleTick,
+        BattleControlPlan[] controlPlans,
+        BattleControlSourceRegistry controlSources
     )
     {
         for (int i = 0; i < units.Count; i++)
@@ -142,26 +150,32 @@ public sealed class BattleCombatSystem
                 continue;
             if (_channelSystem != null && _channelSystem.IsChanneling(unit))
                 continue;
-            bool externalSkillCommand = unit.UsesExternalAgentControl && unit.HasExternalSkillCommand;
-            if (unit.UsesExternalAgentControl && !externalSkillCommand)
+
+            BattleControlPlan plan = GetPlan(controlPlans, i);
+            bool explicitSkillCommand = plan.UsesExplicitCombatCommands && plan.Command == BattleCombatCommand.Skill;
+            if (plan.UsesExplicitCombatCommands && !explicitSkillCommand)
                 continue;
             if (
                 unit.State.IsSkillDisabled
                 || (_rosterMutationSystem != null && _rosterMutationSystem.IsSkillDisabled(unit))
             )
+            {
+                if (explicitSkillCommand)
+                    ConsumeCommand(controlSources, unit.State, BattleCombatCommand.Skill);
                 continue;
+            }
             if (unit.SkillCooldownRemaining > 0f)
             {
-                if (externalSkillCommand)
+                if (explicitSkillCommand)
                 {
                     unit.RaiseSkillFailed();
-                    unit.ClearExternalSkillCommand();
+                    ConsumeCommand(controlSources, unit.State, BattleCombatCommand.Skill);
                 }
 
                 continue;
             }
 
-            BattleRuntimeUnit primaryTarget = ResolveRuntimeUnit(runtimeUnitByState, unit.PlannedTargetEnemy);
+            BattleRuntimeUnit primaryTarget = ResolveRuntimeUnit(runtimeUnitByState, plan.TargetEnemy ?? unit.PlannedTargetEnemy);
             BattleEffectContext context = new BattleEffectContext(
                 unit,
                 primaryTarget,
@@ -174,10 +188,10 @@ public sealed class BattleCombatSystem
             IBattleSkill skill = _skillRegistry.Get(unit.State.GetSkill());
             if (skill == null || !skill.CanActivate(context))
             {
-                if (externalSkillCommand)
+                if (explicitSkillCommand)
                 {
                     unit.RaiseSkillFailed();
-                    unit.ClearExternalSkillCommand();
+                    ConsumeCommand(controlSources, unit.State, BattleCombatCommand.Skill);
                 }
 
                 continue;
@@ -199,8 +213,23 @@ public sealed class BattleCombatSystem
             unit.SetSkillState(unit.GetSkillAnimationDuration());
             unit.State.ResetSkillCooldown();
             unit.RaiseSkillActivated();
-            unit.ClearExternalSkillCommand();
+            ConsumeCommand(controlSources, unit.State, BattleCombatCommand.Skill);
         }
+    }
+
+    private static BattleControlPlan GetPlan(BattleControlPlan[] controlPlans, int index)
+    {
+        return controlPlans != null && index >= 0 && index < controlPlans.Length ? controlPlans[index] : default;
+    }
+
+    private static void ConsumeCommand(
+        BattleControlSourceRegistry controlSources,
+        BattleUnitCombatState state,
+        BattleCombatCommand command
+    )
+    {
+        if (controlSources != null && controlSources.TryGet(state, out IBattleUnitControlSource source))
+            source.ConsumeCommand(state, command);
     }
 
     private static BattleRuntimeUnit ResolveRuntimeUnit(
