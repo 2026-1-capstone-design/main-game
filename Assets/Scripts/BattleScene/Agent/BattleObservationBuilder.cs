@@ -318,5 +318,4 @@ public static class BattleObservationBuilder
     {
         return value > Epsilon && value < float.MaxValue;
     }
-
 }

@@ -148,9 +148,10 @@ public sealed class GladiatorRewardEvaluator
             float approachDelta = context.PreviousNearestOpponentDistance - context.NearestOpponentDistance;
             if (Mathf.Abs(approachDelta) > 0.0001f)
             {
-                reward += approachDelta < 0f && context.ShouldRetreat
-                    ? -approachDelta * _config.retreatDistance
-                    : approachDelta * _config.approach;
+                reward +=
+                    approachDelta < 0f && context.ShouldRetreat
+                        ? -approachDelta * _config.retreatDistance
+                        : approachDelta * _config.approach;
             }
         }
 
