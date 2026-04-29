@@ -84,3 +84,9 @@ crashlytics-build.properties
 ehthumbs.db
 Thumbs.db
 .temp
+
+# Unity ML-Agents model output
+results/
+
+# Unity ML-Agents timer
+Assets/ML-Agents/Timers/
