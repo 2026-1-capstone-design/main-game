@@ -39,6 +39,28 @@ public sealed class GladiatorRosterView
         return slotIndex < hostiles.Count ? hostiles[slotIndex] : null;
     }
 
+    public BattleUnitCombatState ResolveHostileSlotState(BattleRuntimeUnit self, int slotIndex) =>
+        ResolveHostileSlot(self, slotIndex)?.State;
+
+    public BattleRuntimeUnit ResolveRuntimeUnit(BattleUnitCombatState state)
+    {
+        if (state == null)
+        {
+            return null;
+        }
+
+        for (int i = 0; i < _runtimeUnits.Count; i++)
+        {
+            BattleRuntimeUnit unit = _runtimeUnits[i];
+            if (unit != null && unit.State == state)
+            {
+                return unit;
+            }
+        }
+
+        return null;
+    }
+
     public float GetDistanceToNearestHostile(BattleRuntimeUnit self)
     {
         BattleRuntimeUnit nearest = GetNearestHostile(self);
