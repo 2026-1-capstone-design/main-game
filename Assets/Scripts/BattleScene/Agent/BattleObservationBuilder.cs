@@ -5,14 +5,11 @@ using UnityEngine;
 
 public readonly struct GladiatorObservationContext
 {
-    private const float Epsilon = 1e-6f;
-
     public readonly BattleUnitCombatState Self;
     public readonly IReadOnlyList<BattleUnitCombatState> Teammates;
     public readonly IReadOnlyList<BattleUnitCombatState> Opponents;
     public readonly GladiatorObservationStats Stats;
-    public readonly Vector3 SelfRight;
-    public readonly Vector3 SelfForward;
+    public readonly BattleUnitPose Pose;
     public readonly Vector3 ArenaCenter;
     public readonly float ArenaRadius;
     public readonly float BattleTimeoutRemainingRatio;
@@ -26,8 +23,7 @@ public readonly struct GladiatorObservationContext
         IReadOnlyList<BattleUnitCombatState> teammates,
         IReadOnlyList<BattleUnitCombatState> opponents,
         GladiatorObservationStats stats,
-        Vector3 selfRight,
-        Vector3 selfForward,
+        BattleUnitPose pose,
         Vector3 arenaCenter,
         float arenaRadius,
         float battleTimeoutRemainingRatio,
@@ -41,8 +37,7 @@ public readonly struct GladiatorObservationContext
         Teammates = teammates ?? Array.Empty<BattleUnitCombatState>();
         Opponents = opponents ?? Array.Empty<BattleUnitCombatState>();
         Stats = stats;
-        SelfRight = selfRight.sqrMagnitude > Epsilon ? selfRight.normalized : Vector3.right;
-        SelfForward = selfForward.sqrMagnitude > Epsilon ? selfForward.normalized : Vector3.forward;
+        Pose = pose;
         ArenaCenter = arenaCenter;
         ArenaRadius = arenaRadius;
         BattleTimeoutRemainingRatio = Mathf.Clamp01(battleTimeoutRemainingRatio);
@@ -174,8 +169,8 @@ public static class BattleObservationBuilder
 
     private static Vector2 WorldToLocal(GladiatorObservationContext context, Vector3 worldDelta)
     {
-        float x = Vector3.Dot(worldDelta, context.SelfRight);
-        float z = Vector3.Dot(worldDelta, context.SelfForward);
+        float x = Vector3.Dot(worldDelta, context.Pose.Right);
+        float z = Vector3.Dot(worldDelta, context.Pose.Forward);
         return new Vector2(x, z);
     }
 
