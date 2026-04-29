@@ -7,12 +7,12 @@ public interface IGladiatorAgentActionSink
 public sealed class RuntimeUnitAgentActionSink : IGladiatorAgentActionSink
 {
     private readonly BattleRuntimeUnit _unit;
-    private readonly GladiatorRosterView _rosterView;
+    private readonly IBattleRuntimeUnitResolver _runtimeResolver;
 
-    public RuntimeUnitAgentActionSink(BattleRuntimeUnit unit, GladiatorRosterView rosterView)
+    public RuntimeUnitAgentActionSink(BattleRuntimeUnit unit, IBattleRuntimeUnitResolver runtimeResolver)
     {
         _unit = unit;
-        _rosterView = rosterView;
+        _runtimeResolver = runtimeResolver;
     }
 
     public void Apply(GladiatorAgentAction action, BattleUnitCombatState target)
@@ -22,7 +22,7 @@ public sealed class RuntimeUnitAgentActionSink : IGladiatorAgentActionSink
             return;
         }
 
-        BattleRuntimeUnit targetRuntime = _rosterView != null ? _rosterView.ResolveRuntimeUnit(target) : null;
+        BattleRuntimeUnit targetRuntime = _runtimeResolver != null ? _runtimeResolver.Resolve(target) : null;
         _unit.SetExternalControlInput(action.LocalMove, action.Turn, action.Command, action.Stance, targetRuntime);
     }
 
