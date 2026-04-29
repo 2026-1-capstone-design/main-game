@@ -32,21 +32,25 @@ public sealed class BattleCombatSystem
     public void Execute(
         IReadOnlyList<BattleRuntimeUnit> units,
         IReadOnlyDictionary<BattleUnitCombatState, BattleRuntimeUnit> runtimeUnitByState,
-        BattleCombatResultBuffer results
+        BattleCombatResultBuffer results,
+        BattleControlPlan[] controlPlans,
+        BattleControlSourceRegistry controlSources
     )
     {
         if (units == null || results == null)
             return;
 
         results.Clear();
-        ExecuteAttackPhase(units, runtimeUnitByState, results);
-        ExecuteSkillPhase(units, runtimeUnitByState, results);
+        ExecuteAttackPhase(units, runtimeUnitByState, results, controlPlans, controlSources);
+        ExecuteSkillPhase(units, runtimeUnitByState, results, controlPlans, controlSources);
     }
 
     private static void ExecuteAttackPhase(
         IReadOnlyList<BattleRuntimeUnit> units,
         IReadOnlyDictionary<BattleUnitCombatState, BattleRuntimeUnit> runtimeUnitByState,
-        BattleCombatResultBuffer results
+        BattleCombatResultBuffer results,
+        BattleControlPlan[] controlPlans,
+        BattleControlSourceRegistry controlSources
     )
     {
         for (int i = 0; i < units.Count; i++)
@@ -54,10 +58,12 @@ public sealed class BattleCombatSystem
             BattleRuntimeUnit attacker = units[i];
             if (attacker == null || attacker.IsCombatDisabled || attacker.State.IsStunned)
                 continue;
-            if (attacker.UsesExternalAgentControl && !attacker.HasExternalAttackCommand)
+
+            BattleControlPlan plan = controlPlans != null && i < controlPlans.Length ? controlPlans[i] : default;
+            if (plan.UsesExplicitCombatCommands && plan.Command != BattleCombatCommand.BasicAttack)
                 continue;
 
-            BattleUnitCombatState target = attacker.PlannedTargetEnemy;
+            BattleUnitCombatState target = plan.TargetEnemy != null ? plan.TargetEnemy : attacker.PlannedTargetEnemy;
             if (!BattleFieldSnapshot.IsValidEnemyTarget(attacker.State, target))
                 continue;
             if (!BattleFieldSnapshot.IsWithinEffectiveAttackDistance(attacker.State, target))
@@ -72,7 +78,7 @@ public sealed class BattleCombatSystem
             BattleRuntimeUnit targetRuntime = ResolveRuntimeUnit(runtimeUnitByState, target);
             attacker.RaiseAttackLanded(targetRuntime, actualDamage, target.IsCombatDisabled);
             attacker.State.ResetAttackCooldown();
-            attacker.ClearExternalAttackCommand();
+            ConsumeCommand(controlSources, attacker.State, BattleCombatCommand.BasicAttack);
 
             results.Add(
                 new BattleCombatResult(attacker, targetRuntime, actualDamage, target.IsCombatDisabled, wasSkill: false)
@@ -83,7 +89,9 @@ public sealed class BattleCombatSystem
     private void ExecuteSkillPhase(
         IReadOnlyList<BattleRuntimeUnit> units,
         IReadOnlyDictionary<BattleUnitCombatState, BattleRuntimeUnit> runtimeUnitByState,
-        BattleCombatResultBuffer results
+        BattleCombatResultBuffer results,
+        BattleControlPlan[] controlPlans,
+        BattleControlSourceRegistry controlSources
     )
     {
         for (int i = 0; i < units.Count; i++)
@@ -91,15 +99,17 @@ public sealed class BattleCombatSystem
             BattleRuntimeUnit unit = units[i];
             if (unit == null || unit.IsCombatDisabled || unit.State.IsStunned)
                 continue;
-            bool externalSkillCommand = unit.UsesExternalAgentControl && unit.HasExternalSkillCommand;
-            if (unit.UsesExternalAgentControl && !externalSkillCommand)
+
+            BattleControlPlan plan = controlPlans != null && i < controlPlans.Length ? controlPlans[i] : default;
+            bool explicitSkillCommand = plan.UsesExplicitCombatCommands && plan.Command == BattleCombatCommand.Skill;
+            if (plan.UsesExplicitCombatCommands && !explicitSkillCommand)
                 continue;
             if (unit.SkillCooldownRemaining > 0f)
             {
-                if (externalSkillCommand)
+                if (explicitSkillCommand)
                 {
                     unit.RaiseSkillFailed();
-                    unit.ClearExternalSkillCommand();
+                    ConsumeCommand(controlSources, unit.State, BattleCombatCommand.Skill);
                 }
 
                 continue;
@@ -108,10 +118,10 @@ public sealed class BattleCombatSystem
             IBattleSkill skill = _skillRegistry.Get(unit.State.GetSkill());
             if (skill == null || !skill.CanActivate(unit))
             {
-                if (externalSkillCommand)
+                if (explicitSkillCommand)
                 {
                     unit.RaiseSkillFailed();
-                    unit.ClearExternalSkillCommand();
+                    ConsumeCommand(controlSources, unit.State, BattleCombatCommand.Skill);
                 }
 
                 continue;
@@ -123,7 +133,19 @@ public sealed class BattleCombatSystem
             unit.SetSkillState(unit.GetSkillAnimationDuration());
             unit.State.ResetSkillCooldown();
             unit.RaiseSkillActivated();
-            unit.ClearExternalSkillCommand();
+            ConsumeCommand(controlSources, unit.State, BattleCombatCommand.Skill);
+        }
+    }
+
+    private static void ConsumeCommand(
+        BattleControlSourceRegistry controlSources,
+        BattleUnitCombatState state,
+        BattleCombatCommand command
+    )
+    {
+        if (controlSources != null && controlSources.TryGet(state, out IBattleUnitControlSource source))
+        {
+            source.ConsumeCommand(state, command);
         }
     }
 

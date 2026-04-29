@@ -48,6 +48,7 @@ public class GladiatorAgent : Agent
     private bool _boundaryResetRequested;
     private GladiatorRewardEvaluator _rewardEvaluator;
     private IGladiatorAgentActionSink _actionSink;
+    private BattleAgentControlBuffer _agentControlBuffer;
 
     public bool HasControlledUnit => _selfUnit != null;
 
@@ -80,7 +81,11 @@ public class GladiatorAgent : Agent
         _rosterView = CreateRosterView();
         _rewardEvaluator = new GladiatorRewardEvaluator(rewardConfig, HardBoundaryRadiusMultiplier);
         _rewardEvaluator.Reset();
-        _actionSink = new RuntimeUnitAgentActionSink(_selfUnit, _runtimeResolver);
+        _agentControlBuffer =
+            _flowManager != null && _flowManager.BattleSimulationManager != null
+                ? _flowManager.BattleSimulationManager.AgentControlBuffer
+                : null;
+        _actionSink = new RuntimeUnitAgentActionSink(_selfUnit, _runtimeResolver, _agentControlBuffer);
         _observationStats = ComputeInitialObservationStats();
 
         if (_selfUnit != null)
@@ -130,6 +135,8 @@ public class GladiatorAgent : Agent
     public override void CollectObservations(VectorSensor sensor)
     {
         float arenaRadius = _selfUnit != null ? _arenaExtentsMin - _selfUnit.BodyRadius : float.MaxValue;
+        BattleAgentControlInput controlInput =
+            _agentControlBuffer != null ? _agentControlBuffer.GetInputSnapshot(_selfState) : default;
         BattleObservationBuilder.Write(
             sensor,
             new GladiatorObservationContext(
@@ -141,10 +148,10 @@ public class GladiatorAgent : Agent
                 _arenaCenter,
                 arenaRadius,
                 _trainingBootstrapper != null ? _trainingBootstrapper.BattleTimeoutRemainingRatio : 1f,
-                _selfUnit != null ? _selfUnit.ExternalSmoothedLocalMove : Vector2.zero,
-                _selfUnit != null ? _selfUnit.ExternalSmoothedTurn : 0f,
-                _selfUnit != null ? _selfUnit.ExternalPreviousRawLocalMove : Vector2.zero,
-                _selfUnit != null ? _selfUnit.ExternalPreviousRawTurn : 0f
+                controlInput.SmoothedLocalMove,
+                controlInput.SmoothedTurn,
+                controlInput.PreviousRawLocalMove,
+                controlInput.PreviousRawTurn
             )
         );
     }
@@ -356,7 +363,9 @@ public class GladiatorAgent : Agent
 
     private bool CanRequestSkill()
     {
-        return _selfState != null && _selfState.GetSkill() != WeaponSkillId.None && _selfState.SkillCooldownRemaining <= 0f;
+        return _selfState != null
+            && _selfState.GetSkill() != WeaponSkillId.None
+            && _selfState.SkillCooldownRemaining <= 0f;
     }
 
     private float GetDistanceFromArenaCenter()

@@ -57,6 +57,7 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
     private BattleStartPayload _initialPayloadSnapshot;
 
     public IReadOnlyList<BattleRuntimeUnit> RuntimeUnits => _runtimeUnits;
+    public BattleSimulationManager BattleSimulationManager => battleSimulationManager;
     public BattleStartPayload CurrentPayload =>
         battleSimulationManager != null ? battleSimulationManager.InitialPayload : _initialPayloadSnapshot;
 
