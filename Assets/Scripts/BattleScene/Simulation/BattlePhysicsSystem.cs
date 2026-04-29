@@ -68,7 +68,7 @@ public sealed class BattlePhysicsSystem
 
             BattleControlPlan plan = i < (controlPlans?.Length ?? 0) ? controlPlans[i] : default;
             if (plan.Turn != 0f)
-                unit.Rotate(plan.Turn * BattleRuntimeUnit.ExternalTurnSpeedDegPerSec * tickDeltaTime);
+                unit.Rotate(plan.Turn * BattleRuntimeUnit.AgentTurnSpeedDegPerSec * tickDeltaTime);
 
             Vector3 plannedMoveDirection = GetWorldMoveDirection(unit, plan.LocalMove);
             if (plannedMoveDirection.sqrMagnitude > 0.0001f)

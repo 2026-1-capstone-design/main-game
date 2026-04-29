@@ -350,7 +350,7 @@ public sealed class BattleSceneMlAgentBinder : MonoBehaviour
             BattleRuntimeUnit unit = _boundUnits[i];
             if (unit != null)
             {
-                unit.ClearExternalControlInput();
+                unit.ClearAgentControlInput();
                 unit.SetControlMode(BattleUnitControlMode.BuiltInAI);
             }
         }
