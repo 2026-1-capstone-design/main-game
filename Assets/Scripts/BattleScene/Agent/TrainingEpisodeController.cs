@@ -120,12 +120,11 @@ public sealed class TrainingEpisodeController
             return false;
         }
 
-        IReadOnlyDictionary<BattleTeamId, Vector3[]> spawnPositionsByTeam =
-            _placementSampler.GenerateRandomPlacements(
-                payload,
-                _flowManager != null ? _flowManager.battlefieldCollider : null,
-                _simulationManager != null ? _simulationManager.UnitBodyRadius : 0.5f
-            );
+        IReadOnlyDictionary<BattleTeamId, Vector3[]> spawnPositionsByTeam = _placementSampler.GenerateRandomPlacements(
+            payload,
+            _flowManager != null ? _flowManager.battlefieldCollider : null,
+            _simulationManager != null ? _simulationManager.UnitBodyRadius : 0.5f
+        );
         bool resetOk = _flowManager != null && _flowManager.ResetAndBootstrap(payload, spawnPositionsByTeam);
         if (!resetOk)
         {

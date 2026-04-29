@@ -132,7 +132,9 @@ public sealed class TrainingBattlePayloadFactory
         int startIndex = Random.Range(0, settings.RandomClassPool.Length);
         for (int offset = 0; offset < settings.RandomClassPool.Length; offset++)
         {
-            GladiatorClassSO classSO = settings.RandomClassPool[(startIndex + offset) % settings.RandomClassPool.Length];
+            GladiatorClassSO classSO = settings.RandomClassPool[
+                (startIndex + offset) % settings.RandomClassPool.Length
+            ];
             if (classSO != null)
                 return classSO;
         }
@@ -181,7 +183,10 @@ public sealed class TrainingBattlePayloadFactory
         GladiatorClassSO classSO = classOverride != null ? classOverride : entry.classSO;
         if (classSO == null)
         {
-            Debug.LogError("[TrainingBattlePayloadFactory] Cannot create snapshot without a gladiator class.", _logContext);
+            Debug.LogError(
+                "[TrainingBattlePayloadFactory] Cannot create snapshot without a gladiator class.",
+                _logContext
+            );
             return null;
         }
 

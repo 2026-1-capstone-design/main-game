@@ -14,7 +14,9 @@ public sealed class TrainingSpawnPlacementSampler
 
         Vector3 center = battlefieldCollider != null ? battlefieldCollider.bounds.center : Vector3.zero;
         float radius =
-            battlefieldCollider != null ? Mathf.Min(battlefieldCollider.bounds.extents.x, battlefieldCollider.bounds.extents.z) * 0.85f : 5f;
+            battlefieldCollider != null
+                ? Mathf.Min(battlefieldCollider.bounds.extents.x, battlefieldCollider.bounds.extents.z) * 0.85f
+                : 5f;
         float minSeparation = bodyRadius * 2f;
 
         float divAngle = Random.Range(0f, Mathf.PI * 2f);
