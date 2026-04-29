@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   model: {fileID: 5022602860645237092, guid: b4ec46ea39946304f87cabc9d2b988c5, type: 3}
   behaviorName: Gladiator
-  controlledSide: 2
+  controlledSide: 3
   decisionPeriod: 1
   takeActionsBetweenDecisions: 1
   inferenceDevice: 0

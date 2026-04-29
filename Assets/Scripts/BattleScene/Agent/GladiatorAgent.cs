@@ -1,33 +1,33 @@
 using System.Collections.Generic;
 using Unity.MLAgents;
 using Unity.MLAgents.Actuators;
+using Unity.MLAgents.Policies;
 using Unity.MLAgents.Sensors;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
-// BehaviorParameters 설정 (Inspector):
-//   Space Size        = GladiatorObservationSchema.TotalSize (= 93)
-//   Discrete Branches = 4
-//     Branch 0 Size = GladiatorActionSchema.IntentBranchSize (= 3)
-//     Branch 1 Size = GladiatorActionSchema.MoveBranchSize (= 6)
-//     Branch 2 Size = GladiatorActionSchema.TargetBranchSize (= 6)
-//     Branch 3 Size = GladiatorActionSchema.RotationBranchSize (= 3)
+// BehaviorParameters Inspector 설정:
+//   Vector Observation Space Size = GladiatorObservationSchema.TotalSize (= 167)
+//   Stacked Vectors                = 1
+//   Discrete Branches              = 4
+//     Branch 0 Size = GladiatorActionSchema.IntentBranchSize       (= 5)
+//     Branch 1 Size = GladiatorActionSchema.MoveBranchSize         (= 6)
+//     Branch 2 Size = GladiatorActionSchema.TargetBranchSize       (= 6)
+//     Branch 3 Size = GladiatorActionSchema.RotationBranchSize     (= 3)
 //
-// Observation (93 floats):
-//   자신      (16):     경기장 중심 상대좌표(x,z), 체력, 최대 체력, 공격력, 사거리, 이동속도, 공격 쿨타임,
-//                       체력비, 낮은 체력비, 최근접 적 거리, 공격 가능 여부, 피격 위험 여부, 근처 적/아군 비율, 경계 압박
-//   내 팀 동료 (5 × 7): payload team-local index 오름차순 고정 슬롯
-//   상대팀    (6 × 7): payload team-local index 오름차순 고정 슬롯
+// 모드:
+//   - Default / InferenceOnly : ML-Agents 정책이 결정. SetControlMode(ExternalAgent).
+//   - HeuristicOnly            : Heuristic()가 룰베이스 결정을 ML-Agents action으로 inverse map.
+//                                BC demonstration 녹화 시 사용. SetControlMode는 BuiltInAI 유지.
+//                                (룰베이스가 직접 unit 행동, Heuristic은 action 기록용)
 //
-// Action:
-//   Branch 0 (의도):      0=이동  1=공격  2=유지
-//   Branch 1 (이동):      0=없음  1=전진  2=후퇴  3=좌측  4=우측  5=거리유지
-//   Branch 2 (대상):      0~5=상대팀 고정 슬롯
-//   Branch 3 (회전):      0=없음  1=왼쪽  2=오른쪽
+// Reward 설계는 GladiatorRewardConfig.cs 헤더 주석 참고.
 public class GladiatorAgent : Agent
 {
     private const float RotationSpeedDegPerSec = 240f;
     private const float HardBoundaryRadiusMultiplier = 1.25f;
+    private const string TeamSizeEnvironmentParameter = "team_size";
+    private const float MaxTeamSize = 6f;
+    private const float RangedAttackRangeThreshold = 3f;
 
     [SerializeField]
     private GladiatorRewardConfig rewardConfig;
@@ -40,6 +40,12 @@ public class GladiatorAgent : Agent
     private GladiatorRosterView _rosterView;
     private float _prevDistToNearestEnemy;
     private bool _boundaryResetRequested;
+    private bool _isHeuristicRecordingMode;
+
+    // 직전 step의 action (POMDP 대응 + 일관성 보상 입력).
+    private int _lastIntent = GladiatorActionSchema.IntentHold;
+    private int _lastMove = GladiatorActionSchema.MoveNone;
+    private int _lastRotate = GladiatorActionSchema.RotateNone;
 
     public bool HasControlledUnit => _selfUnit != null;
 
@@ -63,14 +69,31 @@ public class GladiatorAgent : Agent
         _trainingBootstrapper = trainingBootstrapper;
         _boundaryResetRequested = false;
 
+        // BehaviorType이 HeuristicOnly이면 BC 녹화 모드. 룰베이스가 unit 행동을 직접 결정한다.
+        BehaviorParameters bp = GetComponent<BehaviorParameters>();
+        _isHeuristicRecordingMode = bp != null && bp.BehaviorType == BehaviorType.HeuristicOnly;
+
         SphereCollider col = flowManager?.battlefieldCollider;
         _arenaCenter = col != null ? col.bounds.center : Vector3.zero;
         _arenaExtentsMin = col != null ? Mathf.Min(col.bounds.extents.x, col.bounds.extents.z) : float.MaxValue;
         _rosterView = CreateRosterView();
 
+        _lastIntent = GladiatorActionSchema.IntentHold;
+        _lastMove = GladiatorActionSchema.MoveNone;
+        _lastRotate = GladiatorActionSchema.RotateNone;
+
         if (_selfUnit != null)
         {
-            _selfUnit.SetControlMode(BattleUnitControlMode.ExternalAgent);
+            // 녹화 모드: BuiltInAI 유지 → 룰베이스가 PlannedDesiredPosition/PlannedTargetEnemy를 결정.
+            // 정상 모드: ExternalAgent → 정책 action이 SetExternalMovement/SetExternalAttackTarget로 적용됨.
+            if (!_isHeuristicRecordingMode)
+            {
+                _selfUnit.SetControlMode(BattleUnitControlMode.ExternalAgent);
+                // 머리 위 statusText에 [ML] 명시. ExternalAgent 모드에서 BattleDecisionSystem이 skip되어
+                // 갱신되지 않으므로 이 값이 그대로 유지된다. 룰베이스 unit은 매 tick EngageNearest 등으로 변동.
+                _selfUnit.SetCurrentAction("[ML]");
+            }
+
             _selfUnit.State.OnDamageTaken += HandleDamageTaken;
             _selfUnit.State.OnDied += HandleSelfDied;
             _selfUnit.OnAttackLanded += HandleAttackLanded;
@@ -103,10 +126,34 @@ public class GladiatorAgent : Agent
     public override void CollectObservations(VectorSensor sensor)
     {
         float arenaRadius = _selfUnit != null ? _arenaExtentsMin - _selfUnit.BodyRadius : float.MaxValue;
+        float teamSizeNormalized = ResolveTeamSizeNormalized();
         BattleObservationBuilder.Write(
             sensor,
-            new GladiatorObservationContext(_selfUnit, _rosterView, _arenaCenter, arenaRadius)
+            new GladiatorObservationContext(
+                _selfUnit,
+                _rosterView,
+                _arenaCenter,
+                arenaRadius,
+                _lastIntent,
+                _lastMove,
+                _lastRotate,
+                teamSizeNormalized
+            )
         );
+    }
+
+    private float ResolveTeamSizeNormalized()
+    {
+        if (Academy.IsInitialized)
+        {
+            float teamSize = Academy.Instance.EnvironmentParameters.GetWithDefault(
+                TeamSizeEnvironmentParameter,
+                MaxTeamSize
+            );
+            return Mathf.Clamp01(teamSize / MaxTeamSize);
+        }
+
+        return 1f;
     }
 
     public override void WriteDiscreteActionMask(IDiscreteActionMask actionMask)
@@ -116,9 +163,16 @@ public class GladiatorAgent : Agent
             return;
         }
 
+        // Stage 1~2: 스킬/방어 의도 봉인.
+        actionMask.SetActionEnabled(0, GladiatorActionSchema.IntentUseSkill, false);
+        actionMask.SetActionEnabled(0, GladiatorActionSchema.IntentDefend, false);
+
         bool hasValidTarget = HasLivingOpponent();
         if (!hasValidTarget)
+        {
+            actionMask.SetActionEnabled(0, GladiatorActionSchema.IntentAttack, false);
             return;
+        }
 
         for (int i = 0; i < GladiatorObservationSchema.OpponentSlots; i++)
         {
@@ -143,8 +197,42 @@ public class GladiatorAgent : Agent
         int targetSlot = actions.DiscreteActions[2];
         int rotateAction = actions.DiscreteActions[3];
 
+        // 녹화 모드는 unit 행동을 룰베이스에 위임. reward는 그래도 계산해서 demonstration의 advantage 추정에 활용.
+        if (_isHeuristicRecordingMode)
+        {
+            CacheLastAction(intent, moveMode, rotateAction);
+            return;
+        }
+
         AddReward(rewardConfig.step);
 
+        // ─── 회전 페널티 (현재 0으로 비활성, 자연스러움 우선) ───
+        if (rotateAction != GladiatorActionSchema.RotateNone)
+        {
+            AddReward(rewardConfig.rotateActionCost);
+            if (intent == GladiatorActionSchema.IntentMove && moveMode != GladiatorActionSchema.MoveNone)
+            {
+                AddReward(rewardConfig.rotateWhileMoving);
+            }
+        }
+
+        // ─── 자연스러움: 이동 일관성 ───────────────────────────
+        ApplyMovementConsistencyReward(intent, moveMode);
+
+        // ─── 자연스러움: 무기 부합 행동 ─────────────────────────
+        ApplyWeaponMatchedReward(intent, moveMode);
+
+        // ─── 시각 명료성: 분산 ──────────────────────────────────
+        ApplySpreadAndIsolationReward();
+
+        // ─── 봉인 의도 위반 안전망 ──────────────────────────────
+        if (intent == GladiatorActionSchema.IntentUseSkill || intent == GladiatorActionSchema.IntentDefend)
+        {
+            AddReward(rewardConfig.forbiddenIntent);
+            intent = GladiatorActionSchema.IntentHold;
+        }
+
+        // ─── 경계 페널티 / 강제 reset ────────────────────────────
         float playableRadius = _arenaExtentsMin - _selfUnit.BodyRadius;
         Vector3 flatPos = new Vector3(_selfUnit.Position.x, 0f, _selfUnit.Position.z);
         Vector3 flatCenter = new Vector3(_arenaCenter.x, 0f, _arenaCenter.z);
@@ -157,12 +245,17 @@ public class GladiatorAgent : Agent
                 RequestBoundaryReset();
                 _selfUnit.SetExternalMovement(Vector3.zero, 0f);
                 _selfUnit.SetExternalAttackTarget(null);
+                CacheLastAction(GladiatorActionSchema.IntentHold, GladiatorActionSchema.MoveNone, rotateAction);
                 return;
             }
         }
 
-        float nearestDist = GetDistToNearestOpponent();
-        bool shouldRetreat = ShouldRetreat(nearestDist);
+        // ─── 거리 변화 reward + 추격 보상 ────────────────────────
+        BattleRuntimeUnit nearestOpponent = ResolveNearestOpponent();
+        float nearestDist = nearestOpponent != null
+            ? Vector3.Distance(_selfUnit.Position, nearestOpponent.Position)
+            : float.MaxValue;
+        bool shouldRetreat = ShouldRetreat(nearestDist, nearestOpponent);
         if (_prevDistToNearestEnemy < float.MaxValue && nearestDist < float.MaxValue)
         {
             float approachDelta = _prevDistToNearestEnemy - nearestDist;
@@ -177,8 +270,8 @@ public class GladiatorAgent : Agent
 
         float rotDelta = rotateAction switch
         {
-            1 => -RotationSpeedDegPerSec,
-            2 => RotationSpeedDegPerSec,
+            GladiatorActionSchema.RotateLeft => -RotationSpeedDegPerSec,
+            GladiatorActionSchema.RotateRight => RotationSpeedDegPerSec,
             _ => 0f,
         };
 
@@ -186,7 +279,12 @@ public class GladiatorAgent : Agent
         bool isSpacingMove =
             intent == GladiatorActionSchema.IntentMove
             && (moveMode == GladiatorActionSchema.MoveBackward || moveMode == GladiatorActionSchema.MoveKeepRange);
-        if (!attackBlocked && !isSpacingMove && intent != GladiatorActionSchema.IntentAttack && HasAttackableOpponent())
+        if (
+            !attackBlocked
+            && !isSpacingMove
+            && intent != GladiatorActionSchema.IntentAttack
+            && HasAttackableOpponent()
+        )
         {
             AddReward(rewardConfig.inRangeNoAttack);
         }
@@ -198,6 +296,7 @@ public class GladiatorAgent : Agent
 
         _prevDistToNearestEnemy = nearestDist;
 
+        // ─── 의도별 분기 ────────────────────────────────────────
         if (intent == GladiatorActionSchema.IntentMove)
         {
             BattleRuntimeUnit target = ResolveOpponentSlot(targetSlot);
@@ -207,8 +306,26 @@ public class GladiatorAgent : Agent
                 AddReward(shouldRetreat ? rewardConfig.goodRetreat : rewardConfig.badRetreat);
             }
 
+            // 적 방향 이동 보너스 (자동 chase 대체).
+            if (
+                moveMode == GladiatorActionSchema.MoveForward
+                && nearestOpponent != null
+                && IsOutOfAttackRange(nearestOpponent)
+            )
+            {
+                Vector3 toEnemy = nearestOpponent.Position - _selfUnit.Position;
+                toEnemy.y = 0f;
+                if (toEnemy.sqrMagnitude > 0.0001f)
+                {
+                    float dot = Vector3.Dot(_selfUnit.transform.forward, toEnemy.normalized);
+                    if (dot > 0.5f)
+                        AddReward(rewardConfig.moveTowardTargetBonus);
+                }
+            }
+
             _selfUnit.SetExternalMovement(movement, rotDelta);
             _selfUnit.SetExternalAttackTarget(null);
+            CacheLastAction(intent, moveMode, rotateAction);
             return;
         }
 
@@ -218,6 +335,7 @@ public class GladiatorAgent : Agent
             if (target == null || target.IsCombatDisabled)
             {
                 AddReward(rewardConfig.invalidAction);
+                CacheLastAction(GladiatorActionSchema.IntentHold, GladiatorActionSchema.MoveNone, rotateAction);
                 return;
             }
 
@@ -226,24 +344,149 @@ public class GladiatorAgent : Agent
                 AddReward(rewardConfig.dangerousAttack);
             }
 
-            _selfUnit.SetExternalMovement(Vector3.zero, rotDelta);
-            _selfUnit.SetExternalAttackTarget(target);
+            // 자동 chase 제거: IntentAttack은 멈춰서 공격 frame 발동만 담당.
+            // 사거리 밖이면 정책이 IntentMove로 추격 학습해야 함.
+            // 다만 사거리 밖 공격 시도는 chaseTarget만 약하게 보상해서 추격 의도 신호는 남김.
             if (IsOutOfAttackRange(target))
             {
                 AddReward(rewardConfig.chaseTarget);
             }
+            else
+            {
+                // 정면 응시 체크
+                Vector3 toTarget = target.Position - _selfUnit.Position;
+                toTarget.y = 0f;
+                if (toTarget.sqrMagnitude > 0.0001f)
+                {
+                    float angle = Vector3.Angle(_selfUnit.transform.forward, toTarget);
+                    if (angle > rewardConfig.facingConeDegrees)
+                        AddReward(rewardConfig.notFacingTargetPenalty);
+                }
+            }
 
+            _selfUnit.SetExternalMovement(Vector3.zero, rotDelta);
+            _selfUnit.SetExternalAttackTarget(target);
+            CacheLastAction(intent, moveMode, rotateAction);
             return;
         }
 
+        // IntentHold (또는 봉인 fallback)
         _selfUnit.SetExternalMovement(Vector3.zero, rotDelta);
         _selfUnit.SetExternalAttackTarget(null);
+        CacheLastAction(intent, moveMode, rotateAction);
+    }
+
+    private void CacheLastAction(int intent, int moveMode, int rotateAction)
+    {
+        _lastIntent = intent;
+        _lastMove = moveMode;
+        _lastRotate = rotateAction;
+    }
+
+    private void ApplyMovementConsistencyReward(int intent, int moveMode)
+    {
+        if (intent != GladiatorActionSchema.IntentMove)
+            return;
+        if (moveMode == GladiatorActionSchema.MoveNone)
+            return;
+
+        if (moveMode == _lastMove)
+        {
+            AddReward(rewardConfig.movementConsistency);
+        }
+        else if (IsOppositeMove(moveMode, _lastMove))
+        {
+            AddReward(rewardConfig.directionFlipPenalty);
+        }
+    }
+
+    private static bool IsOppositeMove(int a, int b)
+    {
+        return (a == GladiatorActionSchema.MoveForward && b == GladiatorActionSchema.MoveBackward)
+            || (a == GladiatorActionSchema.MoveBackward && b == GladiatorActionSchema.MoveForward)
+            || (a == GladiatorActionSchema.MoveStrafeLeft && b == GladiatorActionSchema.MoveStrafeRight)
+            || (a == GladiatorActionSchema.MoveStrafeRight && b == GladiatorActionSchema.MoveStrafeLeft);
+    }
+
+    private void ApplyWeaponMatchedReward(int intent, int moveMode)
+    {
+        if (intent != GladiatorActionSchema.IntentMove)
+            return;
+
+        bool isRanged = _selfUnit.AttackRange >= RangedAttackRangeThreshold;
+        bool moveBackOrKeep =
+            moveMode == GladiatorActionSchema.MoveBackward || moveMode == GladiatorActionSchema.MoveKeepRange;
+        bool moveForward = moveMode == GladiatorActionSchema.MoveForward;
+
+        if (isRanged)
+        {
+            if (moveBackOrKeep)
+                AddReward(rewardConfig.weaponMatchedAction);
+            else if (moveForward)
+                AddReward(rewardConfig.weaponMismatchedAction);
+        }
+        else
+        {
+            if (moveForward)
+                AddReward(rewardConfig.weaponMatchedAction);
+            else if (moveBackOrKeep)
+                AddReward(rewardConfig.weaponMismatchedAction);
+        }
+    }
+
+    private void ApplySpreadAndIsolationReward()
+    {
+        if (_rosterView == null || _selfUnit == null)
+            return;
+
+        // 가까운 아군 페널티
+        float radiusSqr = rewardConfig.teammateProximityRadius * rewardConfig.teammateProximityRadius;
+        IReadOnlyList<BattleRuntimeUnit> teammates = _rosterView.GetSortedTeammates(_selfUnit);
+        bool anyTooClose = false;
+        Vector3 teamCenter = Vector3.zero;
+        int aliveTeammates = 0;
+
+        for (int i = 0; i < teammates.Count; i++)
+        {
+            BattleRuntimeUnit teammate = teammates[i];
+            if (teammate == null || teammate.IsCombatDisabled)
+                continue;
+
+            Vector3 delta = teammate.Position - _selfUnit.Position;
+            delta.y = 0f;
+            if (!anyTooClose && delta.sqrMagnitude <= radiusSqr)
+            {
+                anyTooClose = true;
+            }
+            teamCenter += teammate.Position;
+            aliveTeammates++;
+        }
+
+        if (anyTooClose)
+        {
+            AddReward(rewardConfig.teammateProximityPenalty);
+        }
+
+        // 본대 중심 고립 페널티
+        if (aliveTeammates >= 2)
+        {
+            teamCenter /= aliveTeammates;
+            Vector3 toCenter = teamCenter - _selfUnit.Position;
+            toCenter.y = 0f;
+            if (toCenter.magnitude > rewardConfig.isolationRadius)
+            {
+                AddReward(rewardConfig.isolationFromTeamPenalty);
+            }
+        }
     }
 
     public override void OnEpisodeBegin()
     {
         _boundaryResetRequested = false;
         _prevDistToNearestEnemy = GetDistToNearestOpponent();
+        _lastIntent = GladiatorActionSchema.IntentHold;
+        _lastMove = GladiatorActionSchema.MoveNone;
+        _lastRotate = GladiatorActionSchema.RotateNone;
     }
 
     public void GiveEndReward(BattleTeamId? winnerTeamId, bool isTimeout)
@@ -263,62 +506,147 @@ public class GladiatorAgent : Agent
         AddReward(winnerTeamId.Value == _selfUnit.TeamId ? rewardConfig.win : rewardConfig.loss);
     }
 
+    // BC demonstration용 Heuristic.
+    // 룰베이스 AI(BattleDecisionSystem + BattlePlanningSystem)가 이미 unit에 결정해둔 값을 읽어
+    // ML-Agents Discrete action 4 branches로 inverse map.
     public override void Heuristic(in ActionBuffers actionsOut)
     {
-        var kb = Keyboard.current;
         var discrete = actionsOut.DiscreteActions;
-        if (kb == null)
+
+        if (_selfUnit == null || _selfUnit.IsCombatDisabled)
         {
+            discrete[0] = GladiatorActionSchema.IntentHold;
+            discrete[1] = GladiatorActionSchema.MoveNone;
+            discrete[2] = 0;
+            discrete[3] = GladiatorActionSchema.RotateNone;
             return;
         }
 
-        if (kb.jKey.isPressed)
-            discrete[0] = GladiatorActionSchema.IntentAttack;
-        else if (kb.wKey.isPressed || kb.sKey.isPressed || kb.aKey.isPressed || kb.dKey.isPressed)
-            discrete[0] = GladiatorActionSchema.IntentMove;
-        else
-            discrete[0] = GladiatorActionSchema.IntentHold;
+        // Branch 0: Intent
+        discrete[0] = MapActionTypeToIntent(_selfUnit.CurrentActionType, _selfUnit.PlannedTargetEnemy);
 
-        if (kb.qKey.isPressed)
-            discrete[3] = GladiatorActionSchema.RotateLeft;
-        else if (kb.eKey.isPressed)
-            discrete[3] = GladiatorActionSchema.RotateRight;
-        else
-            discrete[3] = GladiatorActionSchema.RotateNone;
+        // Branch 2: Target slot (PlannedTargetEnemy → roster slot index)
+        discrete[2] = ResolveTargetSlotForState(_selfUnit.PlannedTargetEnemy);
 
-        if (kb.wKey.isPressed)
-            discrete[1] = GladiatorActionSchema.MoveForward;
-        else if (kb.sKey.isPressed)
-            discrete[1] = GladiatorActionSchema.MoveBackward;
-        else if (kb.aKey.isPressed)
-            discrete[1] = GladiatorActionSchema.MoveStrafeLeft;
-        else if (kb.dKey.isPressed)
-            discrete[1] = GladiatorActionSchema.MoveStrafeRight;
-        else
-            discrete[1] = GladiatorActionSchema.MoveNone;
+        // Branch 1: Move (PlannedDesiredPosition - Position → 6방향 분류)
+        discrete[1] = MapDesiredPositionToMove(_selfUnit, _selfUnit.PlannedTargetEnemy);
 
-        if (kb.jKey.isPressed)
-            discrete[2] = 0;
-        else if (kb.kKey.isPressed)
-            discrete[2] = 1;
-        else if (kb.lKey.isPressed)
-            discrete[2] = 2;
-        else if (kb.uKey.isPressed)
-            discrete[2] = 3;
-        else if (kb.iKey.isPressed)
-            discrete[2] = 4;
-        else if (kb.oKey.isPressed)
-            discrete[2] = 5;
+        // Branch 3: Rotate (PlannedDesiredPosition 또는 target 방향 vs forward → left/right/none)
+        discrete[3] = MapRotation(_selfUnit, _selfUnit.PlannedTargetEnemy);
+    }
+
+    private static int MapActionTypeToIntent(BattleActionType actionType, BattleUnitCombatState plannedTargetEnemy)
+    {
+        switch (actionType)
+        {
+            case BattleActionType.AssassinateIsolatedEnemy:
+            case BattleActionType.DiveEnemyBackline:
+            case BattleActionType.PeelForWeakAlly:
+            case BattleActionType.CollapseOnCluster:
+            case BattleActionType.EngageNearest:
+                // 적 타겟이 있으면 Attack 의도. 없으면 Move (접근 중).
+                return plannedTargetEnemy != null
+                    ? GladiatorActionSchema.IntentAttack
+                    : GladiatorActionSchema.IntentMove;
+
+            case BattleActionType.EscapeFromPressure:
+            case BattleActionType.RegroupToAllies:
+                return GladiatorActionSchema.IntentMove;
+
+            case BattleActionType.None:
+            default:
+                return GladiatorActionSchema.IntentHold;
+        }
+    }
+
+    private int ResolveTargetSlotForState(BattleUnitCombatState plannedEnemyState)
+    {
+        if (plannedEnemyState == null || _rosterView == null)
+            return 0;
+
+        IReadOnlyList<BattleRuntimeUnit> opponents = _rosterView.GetSortedHostiles(_selfUnit);
+        for (int i = 0; i < opponents.Count && i < GladiatorObservationSchema.OpponentSlots; i++)
+        {
+            BattleRuntimeUnit candidate = opponents[i];
+            if (candidate != null && candidate.State == plannedEnemyState)
+                return i;
+        }
+        return 0;
+    }
+
+    private int MapDesiredPositionToMove(BattleRuntimeUnit self, BattleUnitCombatState plannedEnemyState)
+    {
+        // 룰베이스가 이동 의도가 없으면 None.
+        if (!self.HasPlannedDesiredPosition)
+            return GladiatorActionSchema.MoveNone;
+
+        Vector3 desired = self.PlannedDesiredPosition;
+        Vector3 delta = desired - self.Position;
+        delta.y = 0f;
+        float distance = delta.magnitude;
+        if (distance < 0.05f)
+            return GladiatorActionSchema.MoveNone;
+
+        // 룰베이스가 적에게 너무 가까이 가서 KeepRange가 더 적합한 경우 처리.
+        // 적 타겟이 있고 이미 사거리 안이면 KeepRange (제자리 또는 미세 조정).
+        if (plannedEnemyState != null)
+        {
+            float effectiveRange = self.BodyRadius + plannedEnemyState.BodyRadius + self.AttackRange + 0.05f;
+            float distToEnemy = Vector3.Distance(self.Position, plannedEnemyState.Position);
+            if (distToEnemy <= effectiveRange * 0.95f && self.AttackRange >= RangedAttackRangeThreshold)
+                return GladiatorActionSchema.MoveKeepRange;
+        }
+
+        // self-local frame으로 변환해서 forward/backward/strafeLeft/strafeRight 분류.
+        Vector3 dirNormalized = delta / distance;
+        float forwardDot = Vector3.Dot(dirNormalized, self.transform.forward);
+        float rightDot = Vector3.Dot(dirNormalized, self.transform.right);
+
+        if (Mathf.Abs(forwardDot) >= Mathf.Abs(rightDot))
+        {
+            return forwardDot >= 0f ? GladiatorActionSchema.MoveForward : GladiatorActionSchema.MoveBackward;
+        }
         else
-            discrete[2] = 0;
+        {
+            return rightDot >= 0f ? GladiatorActionSchema.MoveStrafeRight : GladiatorActionSchema.MoveStrafeLeft;
+        }
+    }
+
+    private int MapRotation(BattleRuntimeUnit self, BattleUnitCombatState plannedEnemyState)
+    {
+        // 룰베이스 unit은 BattleRuntimeUnit.FaceTarget을 통해 자동 회전. 따라서 별도 회전 명령 불필요.
+        // 적이 정면 ±20° 안이면 RotateNone, 좌측이면 Left, 우측이면 Right.
+        Vector3 facing;
+        if (plannedEnemyState != null)
+        {
+            facing = plannedEnemyState.Position - self.Position;
+        }
+        else if (self.HasPlannedDesiredPosition)
+        {
+            facing = self.PlannedDesiredPosition - self.Position;
+        }
+        else
+        {
+            return GladiatorActionSchema.RotateNone;
+        }
+
+        facing.y = 0f;
+        if (facing.sqrMagnitude < 0.0001f)
+            return GladiatorActionSchema.RotateNone;
+
+        Vector3 normalized = facing.normalized;
+        float forwardDot = Vector3.Dot(self.transform.forward, normalized);
+        if (forwardDot >= 0.94f) // ~20° 안
+            return GladiatorActionSchema.RotateNone;
+
+        float rightDot = Vector3.Dot(self.transform.right, normalized);
+        return rightDot >= 0f ? GladiatorActionSchema.RotateRight : GladiatorActionSchema.RotateLeft;
     }
 
     private bool IsOutOfAttackRange(BattleRuntimeUnit target)
     {
         if (target == null || _selfUnit == null)
-        {
             return true;
-        }
 
         Vector3 delta = target.Position - _selfUnit.Position;
         delta.y = 0f;
@@ -342,7 +670,6 @@ public class GladiatorAgent : Agent
                 return true;
             }
         }
-
         return false;
     }
 
@@ -352,11 +679,8 @@ public class GladiatorAgent : Agent
         {
             BattleRuntimeUnit target = ResolveOpponentSlot(i);
             if (target != null && !target.IsCombatDisabled)
-            {
                 return true;
-            }
         }
-
         return false;
     }
 
@@ -405,9 +729,7 @@ public class GladiatorAgent : Agent
         {
             BattleRuntimeUnit target = ResolveOpponentSlot(i);
             if (target == null || target.IsCombatDisabled)
-            {
                 continue;
-            }
 
             Vector3 delta = target.Position - _selfUnit.Position;
             delta.y = 0f;
@@ -418,17 +740,12 @@ public class GladiatorAgent : Agent
                 nearest = target;
             }
         }
-
         return nearest;
     }
 
-    private bool ShouldRetreat(float nearestDist)
+    private bool ShouldRetreat(float nearestDist, BattleRuntimeUnit nearestOpponent)
     {
-        if (_selfUnit == null || nearestDist >= float.MaxValue)
-            return false;
-
-        BattleRuntimeUnit nearestOpponent = ResolveNearestOpponent();
-        if (nearestOpponent == null)
+        if (_selfUnit == null || nearestOpponent == null || nearestDist >= float.MaxValue)
             return false;
 
         float healthRatio = _selfUnit.MaxHealth > 0f ? _selfUnit.CurrentHealth / _selfUnit.MaxHealth : 1f;
@@ -440,84 +757,9 @@ public class GladiatorAgent : Agent
         bool lowHealthAndThreatened = healthRatio <= 0.45f && (insideEnemyRange || closeToEnemy);
         bool criticalHealthNearEnemy = healthRatio <= 0.3f && closeToEnemy;
         bool cooldownSpacing = _selfUnit.AttackCooldownRemaining > 0f && insideEnemyRange;
-        bool rangedTooClose = _selfUnit.AttackRange >= 3f && nearestDist <= selfEffectiveRange * 0.45f;
-        bool outnumberedNearby =
-            CountNearbyOpponents(opponentEffectiveRange * 1.25f)
-            > CountNearbyTeammates(opponentEffectiveRange * 1.25f) + 1;
-        bool lowSupportThreat = healthRatio <= 0.6f && outnumberedNearby && closeToEnemy;
-        bool boundaryThreat = IsNearBattlefieldBoundary() && closeToEnemy;
+        bool rangedTooClose = _selfUnit.AttackRange >= RangedAttackRangeThreshold && nearestDist <= selfEffectiveRange * 0.45f;
 
-        return lowHealthAndThreatened
-            || criticalHealthNearEnemy
-            || cooldownSpacing
-            || rangedTooClose
-            || lowSupportThreat
-            || boundaryThreat;
-    }
-
-    private int CountNearbyOpponents(float radius)
-    {
-        int count = 0;
-        float sqrRadius = radius * radius;
-        for (int i = 0; i < GladiatorObservationSchema.OpponentSlots; i++)
-        {
-            BattleRuntimeUnit target = ResolveOpponentSlot(i);
-            if (target == null || target.IsCombatDisabled)
-            {
-                continue;
-            }
-
-            Vector3 delta = target.Position - _selfUnit.Position;
-            delta.y = 0f;
-            if (delta.sqrMagnitude <= sqrRadius)
-            {
-                count++;
-            }
-        }
-
-        return count;
-    }
-
-    private int CountNearbyTeammates(float radius)
-    {
-        if (_rosterView == null)
-        {
-            return 0;
-        }
-
-        int count = 0;
-        float sqrRadius = radius * radius;
-        IReadOnlyList<BattleRuntimeUnit> teammates = _rosterView.GetSortedTeammates(_selfUnit);
-        for (int i = 0; i < teammates.Count; i++)
-        {
-            BattleRuntimeUnit teammate = teammates[i];
-            if (teammate == null || teammate.IsCombatDisabled)
-            {
-                continue;
-            }
-
-            Vector3 delta = teammate.Position - _selfUnit.Position;
-            delta.y = 0f;
-            if (delta.sqrMagnitude <= sqrRadius)
-            {
-                count++;
-            }
-        }
-
-        return count;
-    }
-
-    private bool IsNearBattlefieldBoundary()
-    {
-        float playableRadius = _arenaExtentsMin - _selfUnit.BodyRadius;
-        if (playableRadius <= 0f || playableRadius >= float.MaxValue)
-        {
-            return false;
-        }
-
-        Vector3 flatPos = new Vector3(_selfUnit.Position.x, 0f, _selfUnit.Position.z);
-        Vector3 flatCenter = new Vector3(_arenaCenter.x, 0f, _arenaCenter.z);
-        return Vector3.Distance(flatPos, flatCenter) >= playableRadius * 0.85f;
+        return lowHealthAndThreatened || criticalHealthNearEnemy || cooldownSpacing || rangedTooClose;
     }
 
     private void OnDestroy()
@@ -528,25 +770,20 @@ public class GladiatorAgent : Agent
     private void CleanupSubscriptions()
     {
         if (_selfUnit == null)
-        {
             return;
-        }
 
         if (_selfUnit.State != null)
         {
             _selfUnit.State.OnDamageTaken -= HandleDamageTaken;
             _selfUnit.State.OnDied -= HandleSelfDied;
         }
-
         _selfUnit.OnAttackLanded -= HandleAttackLanded;
     }
 
     private void RequestBoundaryReset()
     {
         if (_boundaryResetRequested)
-        {
             return;
-        }
 
         _boundaryResetRequested = true;
         _trainingBootstrapper?.RequestEpisodeReset();

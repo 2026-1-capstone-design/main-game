@@ -1,8 +1,12 @@
 using System.Collections.Generic;
 using BattleTest;
 using Unity.MLAgents;
+using Unity.MLAgents.Demonstrations;
+using Unity.MLAgents.Policies;
 using UnityEngine;
 
+// GladiatorAgent.Awake/OnEnable보다 먼저 실행되어야 BehaviorType과 Recorder 설정이 적용된다.
+[DefaultExecutionOrder(-1000)]
 public class TrainingBootstrapper : MonoBehaviour
 {
     private enum TrainingEpisodeEndReason
@@ -55,8 +59,24 @@ public class TrainingBootstrapper : MonoBehaviour
     [SerializeField]
     private GladiatorAgent[] enemyAgents;
 
+    // ML-Agents step과 battle simulation tick을 1:1 동기화.
+    // 4로 두면 학습/inference 결정 빈도 차이가 발생해 시각적 진동 유발 (이전 학습에서 검증됨).
+    // 1로 두면 learning rate가 충분히 작아야 하지만 자연스러움 보장에 우선.
     [SerializeField]
     private int battleTicksPerEnvironmentStep = 1;
+
+    [Header("BC Demonstration Recording")]
+    [Tooltip("체크하면 모든 Agent를 HeuristicOnly + Recorder.Record=true로 강제 설정. 룰베이스 행동을 .demo 파일로 녹화.")]
+    [SerializeField]
+    private bool recordDemonstrations = false;
+
+    [Tooltip("녹화할 ML-Agents step 수. 0이면 무한 (사용자가 직접 Stop). 권장 50000~200000.")]
+    [SerializeField]
+    private int demonstrationStepsPerAgent = 100000;
+
+    [Tooltip("녹화 파일 prefix. 16자 이하 alphanumeric/공백/하이픈만 허용 (ML-Agents 제약).")]
+    [SerializeField]
+    private string demonstrationName = "GladRuleBase";
 
     [Header("POCA Group Rewards")]
     [SerializeField]
@@ -98,8 +118,87 @@ public class TrainingBootstrapper : MonoBehaviour
         if (!ActiveBootstrappers.Contains(this))
             ActiveBootstrappers.Add(this);
 
+        // BC 녹화 모드면 모든 Agent의 BehaviorType과 DemonstrationRecorder를 자동 설정.
+        // 사용자는 Inspector에서 recordDemonstrations 체크박스만 토글하면 됨.
+        if (recordDemonstrations)
+        {
+            ApplyDemonstrationRecordingMode();
+            Debug.Log(
+                "[TrainingBootstrapper] ▶ BC RECORDING MODE. 룰베이스 AI가 검투사를 움직이고 행동을 .demo로 녹화. "
+                + $"각 Agent {demonstrationStepsPerAgent} step 후 자동 종료. 결과: Assets/Demonstrations/*.demo"
+            );
+        }
+        else
+        {
+            ApplyTrainingMode();
+            Debug.Log(
+                "[TrainingBootstrapper] ▶ TRAINING MODE. mlagents-learn 명령으로 외부 trainer를 먼저 실행하지 않으면 "
+                + "검투사가 정지합니다. 녹화하려면 Inspector에서 'Record Demonstrations'를 체크하세요."
+            );
+        }
+
         if (manuallyStepAcademy && _academyStepDriver == null)
             ClaimAcademyStepDriver();
+    }
+
+    private void ApplyDemonstrationRecordingMode()
+    {
+        ConfigureAgentArrayForRecording(allyAgents);
+        ConfigureAgentArrayForRecording(enemyAgents);
+    }
+
+    private void ApplyTrainingMode()
+    {
+        ConfigureAgentArrayForTraining(allyAgents);
+        ConfigureAgentArrayForTraining(enemyAgents);
+    }
+
+    private void ConfigureAgentArrayForRecording(GladiatorAgent[] agents)
+    {
+        if (agents == null)
+            return;
+
+        for (int i = 0; i < agents.Length; i++)
+        {
+            GladiatorAgent agent = agents[i];
+            if (agent == null)
+                continue;
+
+            BehaviorParameters bp = agent.GetComponent<BehaviorParameters>();
+            if (bp != null)
+                bp.BehaviorType = BehaviorType.HeuristicOnly;
+
+            // prefab에 Recorder가 없으면 runtime에서 자동 추가. prefab YAML 변경 불필요.
+            DemonstrationRecorder rec = agent.GetComponent<DemonstrationRecorder>();
+            if (rec == null)
+                rec = agent.gameObject.AddComponent<DemonstrationRecorder>();
+
+            rec.Record = true;
+            rec.NumStepsToRecord = demonstrationStepsPerAgent;
+            if (string.IsNullOrEmpty(rec.DemonstrationName))
+                rec.DemonstrationName = demonstrationName;
+        }
+    }
+
+    private void ConfigureAgentArrayForTraining(GladiatorAgent[] agents)
+    {
+        if (agents == null)
+            return;
+
+        for (int i = 0; i < agents.Length; i++)
+        {
+            GladiatorAgent agent = agents[i];
+            if (agent == null)
+                continue;
+
+            BehaviorParameters bp = agent.GetComponent<BehaviorParameters>();
+            if (bp != null)
+                bp.BehaviorType = BehaviorType.Default;
+
+            DemonstrationRecorder rec = agent.GetComponent<DemonstrationRecorder>();
+            if (rec != null)
+                rec.Record = false;
+        }
     }
 
     private void OnDisable()
@@ -782,7 +881,13 @@ public class TrainingBootstrapper : MonoBehaviour
                 continue;
             }
 
-            unit.SetControlMode(BattleUnitControlMode.ExternalAgent);
+            // 녹화 모드면 BuiltInAI 유지: 룰베이스가 unit.CurrentActionType/PlannedTarget을 채워야
+            // Heuristic이 그 값을 ML-Agents action으로 변환할 수 있다.
+            // 학습/추론 모드에서만 ExternalAgent로 전환.
+            if (!recordDemonstrations)
+            {
+                unit.SetControlMode(BattleUnitControlMode.ExternalAgent);
+            }
             sorted.Add((ResolveSortIndex(unit, projection), unit.UnitNumber, unit));
         }
 

@@ -11,24 +11,38 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 80c998aa54db4e1897d08acca359afc5, type: 3}
   m_Name: GladiatorRewardConfig
-  m_EditorClassIdentifier: 
-  step: -0.001
-  approach: 0.0005
+  m_EditorClassIdentifier:
+  step: -0.0005
+  approach: 0.0003
   retreatDistance: 0.0005
-  chaseTarget: 0.0005
-  disengaged: -0.01
+  chaseTarget: 0.0003
+  disengaged: -0.005
   goodRetreat: 0.001
-  badRetreat: -0.02
-  inRangeNoAttack: -0.01
-  dangerousAttack: -0.03
-  damageTaken: -0.01
-  damageTakenPerPoint: -0.002
-  death: -2
-  damageDealt: 0.01
-  attackLanded: 0.05
-  kill: 10
-  win: 20
-  loss: -20
-  timeout: -20
-  boundary: -0.2
-  invalidAction: -1
+  badRetreat: -0.01
+  inRangeNoAttack: -0.02
+  dangerousAttack: -0.02
+  invalidAction: -0.5
+  damageTaken: -0.005
+  damageTakenPerPoint: -0.001
+  death: -1
+  damageDealt: 0.005
+  attackLanded: 0.02
+  kill: 2
+  win: 5
+  loss: -5
+  timeout: -5
+  boundary: -0.1
+  rotateActionCost: 0
+  rotateWhileMoving: 0
+  movementConsistency: 0.0008
+  directionFlipPenalty: -0.001
+  weaponMatchedAction: 0.003
+  weaponMismatchedAction: -0.001
+  teammateProximityPenalty: -0.0015
+  teammateProximityRadius: 1.5
+  isolationFromTeamPenalty: -0.0008
+  isolationRadius: 8
+  notFacingTargetPenalty: -0.005
+  facingConeDegrees: 60
+  moveTowardTargetBonus: 0.001
+  forbiddenIntent: -0.3

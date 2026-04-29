@@ -2,6 +2,37 @@
 
 이 디렉토리는 전투 시뮬레이션을 Unity ML-Agents 학습 환경으로 노출하는 코드를 담습니다.
 
+## 현재 Schema 요약 (Stage 1~4 통합)
+
+학습 도중 차원이 변하면 weight 재사용이 막히므로, Stage 4까지 사용할 모든 차원을 미리 잡아두고 비활성 영역은 0으로 채우는 정책을 사용합니다.
+
+### Observation: 167 float
+- Self segment 43: yaw sin/cos, 체력비, 스탯 5, 쿨타임 2, 스킬 사거리 1, 무기 one-hot 12, 스킬 type one-hot 4, bias 1, 직전 action 14
+- Self situational 8: 경기장 상대좌표 2, 최근접 적 거리, 사거리 안 적 존재, 적/아군 근접 비율, boundary, team size
+- Teammates 5 × 9 = 45
+- Opponents 6 × 9 = 54
+- Personality 6 (Stage 2+, 현재는 0)
+- Order parameters 11 (Stage 3+, 현재는 0)
+
+### Action: 4 discrete branches
+- Branch 0 Intent (5): Move / Attack / UseSkill / Defend / Hold
+  - Stage 1~2에서 UseSkill, Defend는 ActionMask로 봉인.
+- Branch 1 Move (6): None / Forward / Backward / StrafeLeft / StrafeRight / KeepRange
+- Branch 2 Target (6): 적 슬롯 0~5
+- Branch 3 Rotate (3): None / Left / Right
+
+### Reward 신규 항목 (5문제 패치)
+- `rotateActionCost = -0.0005`: 회전 자체 페널티 (팽이 방지)
+- `rotateWhileMoving = -0.0005`: 이동 + 회전 동시 추가 페널티
+- `teammateProximityPenalty = -0.0003`, `teammateProximityRadius = 1.5`: 분산 보상 (뭉침 방지)
+- `forbiddenIntent = -0.5`: 봉인된 의도 위반 안전망
+
+### 동작 변화
+- IntentAttack 시 사거리 밖이면 자동 forward chase movement (사거리 추적 오류 해결).
+- 직전 action을 obs에 인코딩 (지그재그 완화).
+- `battleTicksPerEnvironmentStep = 4` (action repeat, 결정 빈도 ~3.75Hz).
+
+
 핵심 목표는 `Agent`의 decision, 전투 시뮬레이션 tick, reward/terminal 정산 시점을 같은 step 경계에 맞추는 것입니다. 일반 전투 씬은 `BattleSimulationManager.Update()`가 시간 누적으로 전투를 진행하지만, 학습 씬은 `TrainingBootstrapper`가 step을 직접 소유합니다.
 
 ## 주요 파일
