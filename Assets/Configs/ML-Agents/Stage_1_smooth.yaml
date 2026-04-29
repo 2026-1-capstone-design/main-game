@@ -1,13 +1,6 @@
 behaviors:
   GladiatorSmooth:
     trainer_type: poca
-    self_play:
-      save_steps: 50000
-      team_change: 200000
-      swap_steps: 20000
-      window: 10
-      play_against_latest_model_ratio: 0.7
-      initial_elo: 1200.0
     hyperparameters:
       batch_size: 512
       buffer_size: 40960
@@ -27,56 +20,57 @@ behaviors:
         gamma: 0.995
         strength: 1.0
     keep_checkpoints: 5
-    max_steps: 50000000
+    max_steps: 5000000
     time_horizon: 512
     summary_freq: 10000
 environment_parameters:
   team_size:
     curriculum:
-      - name: TeamSize_1v1
+      - name: TeamSize_1v1_PlanOpponent
         completion_criteria:
           measure: progress
           behavior: GladiatorSmooth
           signal_smoothing: true
           min_lesson_length: 1000
-          threshold: 0.15
+          threshold: 0.16
           require_reset: true
         value: 1.0
-      - name: TeamSize_2v2
+      - name: TeamSize_2v2_PlanOpponent
         completion_criteria:
           measure: progress
           behavior: GladiatorSmooth
           signal_smoothing: true
           min_lesson_length: 1000
-          threshold: 0.30
+          threshold: 0.32
           require_reset: true
         value: 2.0
-      - name: TeamSize_3v3
+      - name: TeamSize_3v3_PlanOpponent
         completion_criteria:
           measure: progress
           behavior: GladiatorSmooth
           signal_smoothing: true
           min_lesson_length: 1000
-          threshold: 0.45
+          threshold: 0.48
           require_reset: true
         value: 3.0
-      - name: TeamSize_4v4
+      - name: TeamSize_4v4_PlanOpponent
         completion_criteria:
           measure: progress
           behavior: GladiatorSmooth
           signal_smoothing: true
           min_lesson_length: 1000
-          threshold: 0.60
+          threshold: 0.64
           require_reset: true
         value: 4.0
-      - name: TeamSize_5v5
+      - name: TeamSize_5v5_PlanOpponent
         completion_criteria:
           measure: progress
           behavior: GladiatorSmooth
           signal_smoothing: true
           min_lesson_length: 1000
-          threshold: 0.75
+          threshold: 0.80
           require_reset: true
         value: 5.0
-      - name: TeamSize_6v6
+      - name: TeamSize_6v6_PlanOpponent
         value: 6.0
+  opponent_mode: 0.0

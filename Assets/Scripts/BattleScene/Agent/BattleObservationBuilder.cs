@@ -5,50 +5,91 @@ using UnityEngine;
 
 public readonly struct GladiatorObservationContext
 {
-    public readonly BattleRuntimeUnit Self;
-    public readonly GladiatorRosterView RosterView;
+    private const float Epsilon = 1e-6f;
+
+    public readonly BattleUnitCombatState Self;
+    public readonly IReadOnlyList<BattleUnitCombatState> Teammates;
+    public readonly IReadOnlyList<BattleUnitCombatState> Opponents;
+    public readonly GladiatorObservationStats Stats;
+    public readonly Vector3 SelfRight;
+    public readonly Vector3 SelfForward;
     public readonly Vector3 ArenaCenter;
     public readonly float ArenaRadius;
+    public readonly float BattleTimeoutRemainingRatio;
+    public readonly Vector2 ExternalSmoothedLocalMove;
+    public readonly float ExternalSmoothedTurn;
+    public readonly Vector2 ExternalPreviousRawLocalMove;
+    public readonly float ExternalPreviousRawTurn;
 
     public GladiatorObservationContext(
-        BattleRuntimeUnit self,
-        GladiatorRosterView rosterView,
+        BattleUnitCombatState self,
+        IReadOnlyList<BattleUnitCombatState> teammates,
+        IReadOnlyList<BattleUnitCombatState> opponents,
+        GladiatorObservationStats stats,
+        Vector3 selfRight,
+        Vector3 selfForward,
         Vector3 arenaCenter,
-        float arenaRadius
+        float arenaRadius,
+        float battleTimeoutRemainingRatio,
+        Vector2 externalSmoothedLocalMove,
+        float externalSmoothedTurn,
+        Vector2 externalPreviousRawLocalMove,
+        float externalPreviousRawTurn
     )
     {
         Self = self;
-        RosterView = rosterView;
+        Teammates = teammates ?? Array.Empty<BattleUnitCombatState>();
+        Opponents = opponents ?? Array.Empty<BattleUnitCombatState>();
+        Stats = stats;
+        SelfRight = selfRight.sqrMagnitude > Epsilon ? selfRight.normalized : Vector3.right;
+        SelfForward = selfForward.sqrMagnitude > Epsilon ? selfForward.normalized : Vector3.forward;
         ArenaCenter = arenaCenter;
         ArenaRadius = arenaRadius;
+        BattleTimeoutRemainingRatio = Mathf.Clamp01(battleTimeoutRemainingRatio);
+        ExternalSmoothedLocalMove = Vector2.ClampMagnitude(externalSmoothedLocalMove, 1f);
+        ExternalSmoothedTurn = Mathf.Clamp(externalSmoothedTurn, -1f, 1f);
+        ExternalPreviousRawLocalMove = Vector2.ClampMagnitude(externalPreviousRawLocalMove, 1f);
+        ExternalPreviousRawTurn = Mathf.Clamp(externalPreviousRawTurn, -1f, 1f);
+    }
+}
+
+public readonly struct GladiatorObservationStats
+{
+    private const float Epsilon = 1e-6f;
+
+    public readonly float MedianMaxHealth;
+    public readonly float MedianAttack;
+    public readonly float MaxMoveSpeed;
+
+    public GladiatorObservationStats(float medianMaxHealth, float medianAttack, float maxMoveSpeed)
+    {
+        MedianMaxHealth = Mathf.Max(Epsilon, medianMaxHealth);
+        MedianAttack = Mathf.Max(Epsilon, medianAttack);
+        MaxMoveSpeed = Mathf.Max(Epsilon, maxMoveSpeed);
     }
 }
 
 public static class BattleObservationBuilder
 {
+    private const float Epsilon = 1e-6f;
+    private const float LogCompressDecadeWindow = 3f;
+
     public static void Write(VectorSensor sensor, GladiatorObservationContext context)
     {
-        BattleRuntimeUnit self = context.Self;
+        BattleUnitCombatState self = context.Self;
         if (self == null || self.IsCombatDisabled)
         {
             AddZeroes(sensor, GladiatorObservationSchema.TotalSize);
             return;
         }
 
-        Vector2 arenaLocal = WorldToLocal(self, context.ArenaCenter - self.Position);
-        sensor.AddObservation(arenaLocal.x);
-        sensor.AddObservation(arenaLocal.y);
-        sensor.AddObservation(self.CurrentHealth);
-        sensor.AddObservation(self.MaxHealth);
-        sensor.AddObservation(self.Attack);
-        sensor.AddObservation(self.AttackRange);
-        sensor.AddObservation(self.MoveSpeed);
-        sensor.AddObservation(self.AttackCooldownRemaining);
-
-        IReadOnlyList<BattleRuntimeUnit> teammates = GetTeammatesSorted(context.RosterView, self);
-        IReadOnlyList<BattleRuntimeUnit> opponents = GetOpponentsSorted(context.RosterView, self);
-        BattleRuntimeUnit nearestOpponent = FindNearestLiving(self, opponents, out float nearestOpponentDistance);
+        Vector2 arenaLocal = WorldToLocal(context, context.ArenaCenter - self.Position);
+        IReadOnlyList<BattleUnitCombatState> teammates = context.Teammates;
+        IReadOnlyList<BattleUnitCombatState> opponents = context.Opponents;
+        BattleUnitCombatState nearestOpponent = FindNearestLiving(self, opponents, out float nearestOpponentDistance);
         float healthRatio = self.MaxHealth > 0f ? Mathf.Clamp01(self.CurrentHealth / self.MaxHealth) : 1f;
+        float selfDamageToNearestEnemyMaxHp = GetDamageToMaxHealthRatio(self, nearestOpponent);
+        float nearestEnemyDamageToSelfMaxHp = GetDamageToMaxHealthRatio(nearestOpponent, self);
         float selfEffectiveRange = GetEffectiveRange(self, nearestOpponent, self.AttackRange);
         float opponentEffectiveRange = GetEffectiveRange(nearestOpponent, self, nearestOpponent?.AttackRange ?? 0f);
         float threatRadius = Mathf.Max(selfEffectiveRange, opponentEffectiveRange) * 1.25f;
@@ -61,9 +102,17 @@ public static class BattleObservationBuilder
                 ? Mathf.Clamp01(distanceFromCenter / context.ArenaRadius)
                 : 0f;
 
+        sensor.AddObservation(NormalizeSignedByArenaRadius(arenaLocal.x, context.ArenaRadius));
+        sensor.AddObservation(NormalizeSignedByArenaRadius(arenaLocal.y, context.ArenaRadius));
         sensor.AddObservation(healthRatio);
-        sensor.AddObservation(1f - healthRatio);
-        sensor.AddObservation(nearestOpponentDistance < float.MaxValue ? nearestOpponentDistance : 0f);
+        sensor.AddObservation(LogCompress(self.MaxHealth, context.Stats.MedianMaxHealth));
+        sensor.AddObservation(LogCompress(self.Attack, context.Stats.MedianAttack));
+        sensor.AddObservation(NormalizeByArenaRadius(self.AttackRange, context.ArenaRadius));
+        sensor.AddObservation(NormalizePositiveByReference(self.MoveSpeed, context.Stats.MaxMoveSpeed));
+        sensor.AddObservation(NormalizeAttackCooldown(self));
+        sensor.AddObservation(selfDamageToNearestEnemyMaxHp);
+        sensor.AddObservation(nearestEnemyDamageToSelfMaxHp);
+        sensor.AddObservation(NormalizeDistance(nearestOpponentDistance, context.ArenaRadius));
         sensor.AddObservation(nearestOpponent != null && nearestOpponentDistance <= selfEffectiveRange ? 1f : 0f);
         sensor.AddObservation(nearestOpponent != null && nearestOpponentDistance <= opponentEffectiveRange ? 1f : 0f);
         sensor.AddObservation(
@@ -73,45 +122,45 @@ public static class BattleObservationBuilder
             CountLivingWithin(self, teammates, threatRadius) / (float)GladiatorObservationSchema.TeammateSlots
         );
         sensor.AddObservation(boundaryPressure);
-        sensor.AddObservation(self.ExternalSmoothedLocalMove.x);
-        sensor.AddObservation(self.ExternalSmoothedLocalMove.y);
-        sensor.AddObservation(self.ExternalSmoothedTurn);
-        sensor.AddObservation(self.ExternalPreviousRawLocalMove.x);
-        sensor.AddObservation(self.ExternalPreviousRawLocalMove.y);
-        sensor.AddObservation(self.ExternalPreviousRawTurn);
-        sensor.AddObservation(self.HasReadySkill() ? 1f : 0f);
-        sensor.AddObservation(
-            self.ExternalControlTarget != null && !self.ExternalControlTarget.IsCombatDisabled ? 1f : 0f
-        );
+        sensor.AddObservation(context.BattleTimeoutRemainingRatio);
+        sensor.AddObservation(context.ExternalSmoothedLocalMove.x);
+        sensor.AddObservation(context.ExternalSmoothedLocalMove.y);
+        sensor.AddObservation(context.ExternalSmoothedTurn);
+        sensor.AddObservation(context.ExternalPreviousRawLocalMove.x);
+        sensor.AddObservation(context.ExternalPreviousRawLocalMove.y);
+        sensor.AddObservation(context.ExternalPreviousRawTurn);
+        sensor.AddObservation(HasReadySkill(self) ? 1f : 0f);
+        sensor.AddObservation(self.CurrentTarget != null && !self.CurrentTarget.IsCombatDisabled ? 1f : 0f);
 
-        AddUnitSlotObservations(sensor, self, teammates, GladiatorObservationSchema.TeammateSlots);
-        AddUnitSlotObservations(sensor, self, opponents, GladiatorObservationSchema.OpponentSlots);
+        AddUnitSlotObservations(sensor, self, teammates, GladiatorObservationSchema.TeammateSlots, context);
+        AddUnitSlotObservations(sensor, self, opponents, GladiatorObservationSchema.OpponentSlots, context);
     }
 
     private static void AddUnitSlotObservations(
         VectorSensor sensor,
-        BattleRuntimeUnit self,
-        IReadOnlyList<BattleRuntimeUnit> units,
-        int slots
+        BattleUnitCombatState self,
+        IReadOnlyList<BattleUnitCombatState> units,
+        int slots,
+        GladiatorObservationContext context
     )
     {
         for (int i = 0; i < slots; i++)
         {
-            BattleRuntimeUnit unit = i < units.Count ? units[i] : null;
+            BattleUnitCombatState unit = i < units.Count ? units[i] : null;
             if (unit == null || unit.IsCombatDisabled)
             {
                 AddZeroes(sensor, GladiatorObservationSchema.UnitSlotSize);
                 continue;
             }
 
-            Vector2 localPos = WorldToLocal(self, unit.Position - self.Position);
-            sensor.AddObservation(localPos.x);
-            sensor.AddObservation(localPos.y);
-            sensor.AddObservation(unit.CurrentHealth);
-            sensor.AddObservation(unit.MaxHealth);
-            sensor.AddObservation(unit.Attack);
-            sensor.AddObservation(unit.AttackRange);
-            sensor.AddObservation(unit.MoveSpeed);
+            Vector2 localPos = WorldToLocal(context, unit.Position - self.Position);
+            sensor.AddObservation(NormalizeSignedByArenaRadius(localPos.x, context.ArenaRadius));
+            sensor.AddObservation(NormalizeSignedByArenaRadius(localPos.y, context.ArenaRadius));
+            sensor.AddObservation(unit.MaxHealth > 0f ? Mathf.Clamp01(unit.CurrentHealth / unit.MaxHealth) : 1f);
+            sensor.AddObservation(LogCompress(unit.MaxHealth, context.Stats.MedianMaxHealth));
+            sensor.AddObservation(LogCompress(unit.Attack, context.Stats.MedianAttack));
+            sensor.AddObservation(NormalizeByArenaRadius(unit.AttackRange, context.ArenaRadius));
+            sensor.AddObservation(NormalizePositiveByReference(unit.MoveSpeed, context.Stats.MaxMoveSpeed));
         }
     }
 
@@ -123,24 +172,24 @@ public static class BattleObservationBuilder
         }
     }
 
-    private static Vector2 WorldToLocal(BattleRuntimeUnit self, Vector3 worldDelta)
+    private static Vector2 WorldToLocal(GladiatorObservationContext context, Vector3 worldDelta)
     {
-        float x = Vector3.Dot(worldDelta, self.transform.right);
-        float z = Vector3.Dot(worldDelta, self.transform.forward);
+        float x = Vector3.Dot(worldDelta, context.SelfRight);
+        float z = Vector3.Dot(worldDelta, context.SelfForward);
         return new Vector2(x, z);
     }
 
-    private static BattleRuntimeUnit FindNearestLiving(
-        BattleRuntimeUnit self,
-        IReadOnlyList<BattleRuntimeUnit> units,
+    private static BattleUnitCombatState FindNearestLiving(
+        BattleUnitCombatState self,
+        IReadOnlyList<BattleUnitCombatState> units,
         out float nearestDistance
     )
     {
-        BattleRuntimeUnit nearest = null;
+        BattleUnitCombatState nearest = null;
         float nearestSqrDistance = float.MaxValue;
         for (int i = 0; i < units.Count; i++)
         {
-            BattleRuntimeUnit unit = units[i];
+            BattleUnitCombatState unit = units[i];
             if (unit == null || unit.IsCombatDisabled)
             {
                 continue;
@@ -160,7 +209,11 @@ public static class BattleObservationBuilder
         return nearest;
     }
 
-    private static float CountLivingWithin(BattleRuntimeUnit self, IReadOnlyList<BattleRuntimeUnit> units, float radius)
+    private static float CountLivingWithin(
+        BattleUnitCombatState self,
+        IReadOnlyList<BattleUnitCombatState> units,
+        float radius
+    )
     {
         if (radius <= 0f)
         {
@@ -171,7 +224,7 @@ public static class BattleObservationBuilder
         int count = 0;
         for (int i = 0; i < units.Count; i++)
         {
-            BattleRuntimeUnit unit = units[i];
+            BattleUnitCombatState unit = units[i];
             if (unit == null || unit.IsCombatDisabled)
             {
                 continue;
@@ -188,7 +241,11 @@ public static class BattleObservationBuilder
         return count;
     }
 
-    private static float GetEffectiveRange(BattleRuntimeUnit attacker, BattleRuntimeUnit target, float attackRange)
+    private static float GetEffectiveRange(
+        BattleUnitCombatState attacker,
+        BattleUnitCombatState target,
+        float attackRange
+    )
     {
         if (attacker == null || target == null)
         {
@@ -198,13 +255,73 @@ public static class BattleObservationBuilder
         return attacker.BodyRadius + target.BodyRadius + Mathf.Max(0f, attackRange) + 0.05f;
     }
 
-    private static IReadOnlyList<BattleRuntimeUnit> GetTeammatesSorted(
-        GladiatorRosterView rosterView,
-        BattleRuntimeUnit self
-    ) => rosterView != null ? rosterView.GetSortedTeammates(self) : Array.Empty<BattleRuntimeUnit>();
+    private static float GetDamageToMaxHealthRatio(BattleUnitCombatState attacker, BattleUnitCombatState target)
+    {
+        if (attacker == null || target == null || target.MaxHealth <= Epsilon)
+        {
+            return 0f;
+        }
 
-    private static IReadOnlyList<BattleRuntimeUnit> GetOpponentsSorted(
-        GladiatorRosterView rosterView,
-        BattleRuntimeUnit self
-    ) => rosterView != null ? rosterView.GetSortedHostiles(self) : Array.Empty<BattleRuntimeUnit>();
+        return Mathf.Clamp01(Mathf.Max(0f, attacker.Attack) / target.MaxHealth);
+    }
+
+    private static float LogCompress(float value, float reference)
+    {
+        float safeValue = Mathf.Max(Epsilon, value);
+        float safeReference = Mathf.Max(Epsilon, reference);
+        float ratio = safeValue / safeReference;
+        return Mathf.Clamp(Mathf.Log10(ratio) / LogCompressDecadeWindow, -1f, 1f);
+    }
+
+    private static float NormalizeAttackCooldown(BattleUnitCombatState unit)
+    {
+        if (unit == null)
+        {
+            return 0f;
+        }
+
+        float expectedCooldown = unit.AttackSpeed > Epsilon ? 1f / unit.AttackSpeed : 1f;
+        return NormalizePositiveByReference(unit.AttackCooldownRemaining, expectedCooldown);
+    }
+
+    private static bool HasReadySkill(BattleUnitCombatState unit)
+    {
+        return unit != null && unit.GetSkill() != WeaponSkillId.None && unit.SkillCooldownRemaining <= 0f;
+    }
+
+    private static float NormalizeSignedByArenaRadius(float value, float arenaRadius)
+    {
+        if (!IsValidReference(arenaRadius))
+        {
+            return 0f;
+        }
+
+        return Mathf.Clamp(value / arenaRadius, -1f, 1f);
+    }
+
+    private static float NormalizeByArenaRadius(float value, float arenaRadius)
+    {
+        return IsValidReference(arenaRadius) ? Mathf.Clamp01(Mathf.Max(0f, value) / arenaRadius) : 0f;
+    }
+
+    private static float NormalizeDistance(float distance, float arenaRadius)
+    {
+        if (distance >= float.MaxValue || !IsValidReference(arenaRadius))
+        {
+            return 0f;
+        }
+
+        return Mathf.Clamp01(Mathf.Max(0f, distance) / arenaRadius);
+    }
+
+    private static float NormalizePositiveByReference(float value, float reference)
+    {
+        return IsValidReference(reference) ? Mathf.Clamp01(Mathf.Max(0f, value) / reference) : 0f;
+    }
+
+    private static bool IsValidReference(float value)
+    {
+        return value > Epsilon && value < float.MaxValue;
+    }
+
 }
