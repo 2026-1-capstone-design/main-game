@@ -18,7 +18,7 @@ using UnityEngine.InputSystem;
 //   자신      (25):     정규화된 경기장 중심 상대좌표(x,z), 체력비, 최대 체력 로그비, 공격력 로그비,
 //                       정규화된 사거리/이동속도/공격 쿨타임, 최근접 적/자신 대상 피해비, 최근접 적 거리,
 //                       공격 가능 여부, 피격 위험 여부, 근처 적/아군 비율, 경계 압박,
-//                       timeout까지 남은 시간 비율, 현재/직전 외부 입력, 스킬 가능 여부, 대상 선택 여부
+//                       timeout까지 남은 시간 비율, 현재/직전 agent 입력, 스킬 가능 여부, 대상 선택 여부
 //   내 팀 동료 (5 × 7): 정규화된 상대좌표(x,z), 체력비, 최대 체력 로그비, 공격력 로그비, 사거리, 이동속도
 //   상대팀    (6 × 7): 정규화된 상대좌표(x,z), 체력비, 최대 체력 로그비, 공격력 로그비, 사거리, 이동속도
 //
@@ -90,7 +90,7 @@ public class GladiatorAgent : Agent
 
         if (_selfUnit != null)
         {
-            _selfUnit.SetControlMode(BattleUnitControlMode.ExternalAgent);
+            _selfUnit.SetControlMode(BattleUnitControlMode.AgentPolicy);
             _selfUnit.State.OnDamageTaken += HandleDamageTaken;
             _selfUnit.State.OnDied += HandleSelfDied;
             _selfUnit.OnAttackLanded += HandleAttackLanded;

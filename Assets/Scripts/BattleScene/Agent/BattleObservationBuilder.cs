@@ -13,10 +13,10 @@ public readonly struct GladiatorObservationContext
     public readonly Vector3 ArenaCenter;
     public readonly float ArenaRadius;
     public readonly float BattleTimeoutRemainingRatio;
-    public readonly Vector2 ExternalSmoothedLocalMove;
-    public readonly float ExternalSmoothedTurn;
-    public readonly Vector2 ExternalPreviousRawLocalMove;
-    public readonly float ExternalPreviousRawTurn;
+    public readonly Vector2 AgentSmoothedLocalMove;
+    public readonly float AgentSmoothedTurn;
+    public readonly Vector2 AgentPreviousRawLocalMove;
+    public readonly float AgentPreviousRawTurn;
 
     public GladiatorObservationContext(
         BattleUnitCombatState self,
@@ -27,10 +27,10 @@ public readonly struct GladiatorObservationContext
         Vector3 arenaCenter,
         float arenaRadius,
         float battleTimeoutRemainingRatio,
-        Vector2 externalSmoothedLocalMove,
-        float externalSmoothedTurn,
-        Vector2 externalPreviousRawLocalMove,
-        float externalPreviousRawTurn
+        Vector2 agentSmoothedLocalMove,
+        float agentSmoothedTurn,
+        Vector2 agentPreviousRawLocalMove,
+        float agentPreviousRawTurn
     )
     {
         Self = self;
@@ -41,10 +41,10 @@ public readonly struct GladiatorObservationContext
         ArenaCenter = arenaCenter;
         ArenaRadius = arenaRadius;
         BattleTimeoutRemainingRatio = Mathf.Clamp01(battleTimeoutRemainingRatio);
-        ExternalSmoothedLocalMove = Vector2.ClampMagnitude(externalSmoothedLocalMove, 1f);
-        ExternalSmoothedTurn = Mathf.Clamp(externalSmoothedTurn, -1f, 1f);
-        ExternalPreviousRawLocalMove = Vector2.ClampMagnitude(externalPreviousRawLocalMove, 1f);
-        ExternalPreviousRawTurn = Mathf.Clamp(externalPreviousRawTurn, -1f, 1f);
+        AgentSmoothedLocalMove = Vector2.ClampMagnitude(agentSmoothedLocalMove, 1f);
+        AgentSmoothedTurn = Mathf.Clamp(agentSmoothedTurn, -1f, 1f);
+        AgentPreviousRawLocalMove = Vector2.ClampMagnitude(agentPreviousRawLocalMove, 1f);
+        AgentPreviousRawTurn = Mathf.Clamp(agentPreviousRawTurn, -1f, 1f);
     }
 }
 
@@ -118,12 +118,12 @@ public static class BattleObservationBuilder
         );
         sensor.AddObservation(boundaryPressure);
         sensor.AddObservation(context.BattleTimeoutRemainingRatio);
-        sensor.AddObservation(context.ExternalSmoothedLocalMove.x);
-        sensor.AddObservation(context.ExternalSmoothedLocalMove.y);
-        sensor.AddObservation(context.ExternalSmoothedTurn);
-        sensor.AddObservation(context.ExternalPreviousRawLocalMove.x);
-        sensor.AddObservation(context.ExternalPreviousRawLocalMove.y);
-        sensor.AddObservation(context.ExternalPreviousRawTurn);
+        sensor.AddObservation(context.AgentSmoothedLocalMove.x);
+        sensor.AddObservation(context.AgentSmoothedLocalMove.y);
+        sensor.AddObservation(context.AgentSmoothedTurn);
+        sensor.AddObservation(context.AgentPreviousRawLocalMove.x);
+        sensor.AddObservation(context.AgentPreviousRawLocalMove.y);
+        sensor.AddObservation(context.AgentPreviousRawTurn);
         sensor.AddObservation(HasReadySkill(self) ? 1f : 0f);
         sensor.AddObservation(self.CurrentTarget != null && !self.CurrentTarget.IsCombatDisabled ? 1f : 0f);
 

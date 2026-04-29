@@ -30,7 +30,7 @@ public sealed class RuntimeUnitAgentActionSink : IGladiatorAgentActionSink
 
         BattleRuntimeUnit targetRuntime = _runtimeResolver != null ? _runtimeResolver.Resolve(target) : null;
         _controlBuffer?.SetRawInput(_unit.State, action.LocalMove, action.Turn, action.Command, action.Stance, target);
-        _unit.SetExternalControlInput(action.LocalMove, action.Turn, action.Command, action.Stance, targetRuntime);
+        _unit.SetAgentControlInput(action.LocalMove, action.Turn, action.Command, action.Stance, targetRuntime);
     }
 
     public void Clear()
@@ -40,6 +40,6 @@ public sealed class RuntimeUnitAgentActionSink : IGladiatorAgentActionSink
             _controlBuffer?.Clear(_unit.State);
         }
 
-        _unit?.ClearExternalControlInput();
+        _unit?.ClearAgentControlInput();
     }
 }

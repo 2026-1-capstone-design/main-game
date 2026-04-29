@@ -400,7 +400,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
             return;
 
         IBattleUnitControlSource source =
-            unit.ControlMode == BattleUnitControlMode.ExternalAgent ? _mlAgentControlSource : _builtInAiControlSource;
+            unit.ControlMode == BattleUnitControlMode.AgentPolicy ? _mlAgentControlSource : _builtInAiControlSource;
         _controlSourceRegistry.Set(unit.State, source);
     }
 

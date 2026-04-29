@@ -88,12 +88,12 @@ public sealed class BattleObservationBuilderTests
         Assert.That(SelfObservation(observations, GladiatorSelfObservationIndex.NearbyTeammateRatio), Is.EqualTo(1f / GladiatorObservationSchema.TeammateSlots).Within(0.0001f));
         Assert.That(SelfObservation(observations, GladiatorSelfObservationIndex.BoundaryPressure), Is.EqualTo(0.5f).Within(0.0001f));
         Assert.That(SelfObservation(observations, GladiatorSelfObservationIndex.BattleTimeoutRemainingRatio), Is.EqualTo(0.75f).Within(0.0001f));
-        Assert.That(SelfObservation(observations, GladiatorSelfObservationIndex.ExternalSmoothedLocalMoveX), Is.EqualTo(0.25f).Within(0.0001f));
-        Assert.That(SelfObservation(observations, GladiatorSelfObservationIndex.ExternalSmoothedLocalMoveZ), Is.EqualTo(-0.5f).Within(0.0001f));
-        Assert.That(SelfObservation(observations, GladiatorSelfObservationIndex.ExternalSmoothedTurn), Is.EqualTo(0.4f).Within(0.0001f));
-        Assert.That(SelfObservation(observations, GladiatorSelfObservationIndex.ExternalPreviousRawLocalMoveX), Is.EqualTo(-0.2f).Within(0.0001f));
-        Assert.That(SelfObservation(observations, GladiatorSelfObservationIndex.ExternalPreviousRawLocalMoveZ), Is.EqualTo(0.1f).Within(0.0001f));
-        Assert.That(SelfObservation(observations, GladiatorSelfObservationIndex.ExternalPreviousRawTurn), Is.EqualTo(-0.3f).Within(0.0001f));
+        Assert.That(SelfObservation(observations, GladiatorSelfObservationIndex.AgentSmoothedLocalMoveX), Is.EqualTo(0.25f).Within(0.0001f));
+        Assert.That(SelfObservation(observations, GladiatorSelfObservationIndex.AgentSmoothedLocalMoveZ), Is.EqualTo(-0.5f).Within(0.0001f));
+        Assert.That(SelfObservation(observations, GladiatorSelfObservationIndex.AgentSmoothedTurn), Is.EqualTo(0.4f).Within(0.0001f));
+        Assert.That(SelfObservation(observations, GladiatorSelfObservationIndex.AgentPreviousRawLocalMoveX), Is.EqualTo(-0.2f).Within(0.0001f));
+        Assert.That(SelfObservation(observations, GladiatorSelfObservationIndex.AgentPreviousRawLocalMoveZ), Is.EqualTo(0.1f).Within(0.0001f));
+        Assert.That(SelfObservation(observations, GladiatorSelfObservationIndex.AgentPreviousRawTurn), Is.EqualTo(-0.3f).Within(0.0001f));
         Assert.That(SelfObservation(observations, GladiatorSelfObservationIndex.HasReadySkill), Is.EqualTo(0f).Within(0.0001f));
         Assert.That(SelfObservation(observations, GladiatorSelfObservationIndex.HasTarget), Is.EqualTo(1f).Within(0.0001f));
 

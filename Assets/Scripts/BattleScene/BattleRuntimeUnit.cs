@@ -4,7 +4,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-public struct BattleExternalControlInput
+public struct BattleRuntimeAgentControlInput
 {
     public Vector2 RawLocalMove;
     public Vector2 SmoothedLocalMove;
@@ -26,7 +26,7 @@ public struct BattleExternalControlInput
 [DisallowMultipleComponent]
 public sealed class BattleRuntimeUnit : MonoBehaviour
 {
-    public const float ExternalTurnSpeedDegPerSec = 240f;
+    public const float AgentTurnSpeedDegPerSec = 240f;
 
     [Header("Debug")]
     [SerializeField]
@@ -110,12 +110,9 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     // ── 위치 (State 위임) ────────────────────────────────────────
     public Vector3 Position => State != null ? State.Position : transform.position;
 
-    // ── ML-Agents 외부 제어 ───────────────────────────────────────
+    // ── ML-Agents policy control ─────────────────────────────────
     public BattleUnitControlMode ControlMode { get; private set; } = BattleUnitControlMode.BuiltInAI;
-    public bool UsesExternalAgentControl => ControlMode == BattleUnitControlMode.ExternalAgent;
-
-    [Obsolete("Use UsesExternalAgentControl instead.")]
-    public bool IsExternallyControlled => UsesExternalAgentControl;
+    public bool UsesAgentPolicyControl => ControlMode == BattleUnitControlMode.AgentPolicy;
 
     // 공격이 실제로 적에게 적중했을 때 발화한다. (target, actualDamage, wasKillingBlow)
     public event Action<BattleRuntimeUnit, float, bool> OnAttackLanded;
@@ -125,54 +122,44 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
 
     private int _lastAttackTriggerFrame = -1;
 
-    private const float ExternalMoveInputChangePerSecond = 8f;
-    private const float ExternalTurnInputChangePerSecond = 8f;
+    private const float AgentMoveInputChangePerSecond = 8f;
+    private const float AgentTurnInputChangePerSecond = 8f;
 
-    private BattleExternalControlInput _externalControlInput;
-    private Vector2 _previousRawExternalLocalMove;
-    private float _previousRawExternalTurn;
+    private BattleRuntimeAgentControlInput _agentControlInput;
+    private Vector2 _previousRawAgentLocalMove;
+    private float _previousRawAgentTurn;
 
-    public BattleExternalControlInput ExternalControlInput => _externalControlInput;
-    public Vector2 ExternalRawLocalMove => _externalControlInput.RawLocalMove;
-    public Vector2 ExternalSmoothedLocalMove => _externalControlInput.SmoothedLocalMove;
-    public Vector2 ExternalPreviousRawLocalMove => _previousRawExternalLocalMove;
-    public float ExternalRawTurn => _externalControlInput.RawTurn;
-    public float ExternalSmoothedTurn => _externalControlInput.SmoothedTurn;
-    public float ExternalPreviousRawTurn => _previousRawExternalTurn;
-    public int ExternalCommand => _externalControlInput.Command;
-    public int ExternalStance => _externalControlInput.Stance;
-    public BattleRuntimeUnit ExternalControlTarget => _externalControlInput.Target;
-    public bool HasExternalAttackCommand => _externalControlInput.WantsBasicAttack;
-    public bool HasExternalSkillCommand => _externalControlInput.WantsSkill;
-
-    [Obsolete("Use ExternalSmoothedLocalMove or GetSmoothedExternalWorldMoveDirection instead.")]
-    public Vector3 ExternalMoveDirection => GetSmoothedExternalWorldMoveDirection();
-
-    [Obsolete("Use ExternalSmoothedTurn instead.")]
-    public float ExternalRotationDelta => ExternalSmoothedTurn * ExternalTurnSpeedDegPerSec;
+    public BattleRuntimeAgentControlInput AgentControlInput => _agentControlInput;
+    public Vector2 AgentRawLocalMove => _agentControlInput.RawLocalMove;
+    public Vector2 AgentSmoothedLocalMove => _agentControlInput.SmoothedLocalMove;
+    public Vector2 AgentPreviousRawLocalMove => _previousRawAgentLocalMove;
+    public float AgentRawTurn => _agentControlInput.RawTurn;
+    public float AgentSmoothedTurn => _agentControlInput.SmoothedTurn;
+    public float AgentPreviousRawTurn => _previousRawAgentTurn;
+    public int AgentCommand => _agentControlInput.Command;
+    public int AgentStance => _agentControlInput.Stance;
+    public BattleRuntimeUnit AgentControlTarget => _agentControlInput.Target;
+    public bool HasAgentAttackCommand => _agentControlInput.WantsBasicAttack;
+    public bool HasAgentSkillCommand => _agentControlInput.WantsSkill;
 
     public void SetControlMode(BattleUnitControlMode mode)
     {
         ControlMode = mode;
-        if (mode != BattleUnitControlMode.ExternalAgent)
+        if (mode != BattleUnitControlMode.AgentPolicy)
         {
-            ClearExternalControlInput();
+            ClearAgentControlInput();
         }
     }
 
-    public void ClearExternalControlInput()
+    public void ClearAgentControlInput()
     {
-        _externalControlInput = default;
-        _previousRawExternalLocalMove = Vector2.zero;
-        _previousRawExternalTurn = 0f;
-        SetExternalAttackTarget(null);
+        _agentControlInput = default;
+        _previousRawAgentLocalMove = Vector2.zero;
+        _previousRawAgentTurn = 0f;
+        SetAgentAttackTarget(null);
     }
 
-    [Obsolete("Use SetControlMode instead.")]
-    public void SetExternallyControlled(bool value) =>
-        SetControlMode(value ? BattleUnitControlMode.ExternalAgent : BattleUnitControlMode.BuiltInAI);
-
-    public void SetExternalMovement(Vector3 worldDirection, float rotationDeltaDegPerSec)
+    public void SetAgentMovement(Vector3 worldDirection, float rotationDeltaDegPerSec)
     {
         Vector3 flat = worldDirection;
         flat.y = 0f;
@@ -182,8 +169,8 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         }
 
         Vector2 localMove = new Vector2(Vector3.Dot(flat, transform.right), Vector3.Dot(flat, transform.forward));
-        float turn = Mathf.Clamp(rotationDeltaDegPerSec / Mathf.Max(0.0001f, ExternalTurnSpeedDegPerSec), -1f, 1f);
-        SetExternalControlInput(
+        float turn = Mathf.Clamp(rotationDeltaDegPerSec / Mathf.Max(0.0001f, AgentTurnSpeedDegPerSec), -1f, 1f);
+        SetAgentControlInput(
             localMove,
             turn,
             GladiatorActionSchema.CommandNone,
@@ -192,7 +179,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         );
     }
 
-    public void SetExternalControlInput(
+    public void SetAgentControlInput(
         Vector2 rawLocalMove,
         float rawTurn,
         int command,
@@ -200,8 +187,8 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         BattleRuntimeUnit target
     )
     {
-        _previousRawExternalLocalMove = _externalControlInput.RawLocalMove;
-        _previousRawExternalTurn = _externalControlInput.RawTurn;
+        _previousRawAgentLocalMove = _agentControlInput.RawLocalMove;
+        _previousRawAgentTurn = _agentControlInput.RawTurn;
 
         if (rawLocalMove.sqrMagnitude > 1f)
         {
@@ -212,43 +199,43 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         bool wantsBasicAttack = command == GladiatorActionSchema.CommandBasicAttack && hasValidTarget;
         bool wantsSkill = command == GladiatorActionSchema.CommandSkill && hasValidTarget;
 
-        _externalControlInput.RawLocalMove = rawLocalMove;
-        _externalControlInput.RawTurn = Mathf.Clamp(rawTurn, -1f, 1f);
-        _externalControlInput.Command = command;
-        _externalControlInput.Stance = stance;
-        _externalControlInput.Target = hasValidTarget ? target : null;
-        _externalControlInput.WantsBasicAttack = wantsBasicAttack;
-        _externalControlInput.WantsSkill = wantsSkill;
+        _agentControlInput.RawLocalMove = rawLocalMove;
+        _agentControlInput.RawTurn = Mathf.Clamp(rawTurn, -1f, 1f);
+        _agentControlInput.Command = command;
+        _agentControlInput.Stance = stance;
+        _agentControlInput.Target = hasValidTarget ? target : null;
+        _agentControlInput.WantsBasicAttack = wantsBasicAttack;
+        _agentControlInput.WantsSkill = wantsSkill;
 
         State?.SetPlannedTargets(hasValidTarget ? target.State : null, null);
     }
 
-    public void TickExternalControlInput(float tickDeltaTime)
+    public void TickAgentControlInput(float tickDeltaTime)
     {
-        float moveStep = ExternalMoveInputChangePerSecond * Mathf.Max(0f, tickDeltaTime);
-        float turnStep = ExternalTurnInputChangePerSecond * Mathf.Max(0f, tickDeltaTime);
+        float moveStep = AgentMoveInputChangePerSecond * Mathf.Max(0f, tickDeltaTime);
+        float turnStep = AgentTurnInputChangePerSecond * Mathf.Max(0f, tickDeltaTime);
 
-        Vector2 smoothed = _externalControlInput.SmoothedLocalMove;
-        smoothed.x = Mathf.MoveTowards(smoothed.x, _externalControlInput.RawLocalMove.x, moveStep);
-        smoothed.y = Mathf.MoveTowards(smoothed.y, _externalControlInput.RawLocalMove.y, moveStep);
+        Vector2 smoothed = _agentControlInput.SmoothedLocalMove;
+        smoothed.x = Mathf.MoveTowards(smoothed.x, _agentControlInput.RawLocalMove.x, moveStep);
+        smoothed.y = Mathf.MoveTowards(smoothed.y, _agentControlInput.RawLocalMove.y, moveStep);
         if (smoothed.sqrMagnitude > 1f)
         {
             smoothed.Normalize();
         }
 
-        _externalControlInput.SmoothedLocalMove = smoothed;
-        _externalControlInput.SmoothedTurn = Mathf.MoveTowards(
-            _externalControlInput.SmoothedTurn,
-            _externalControlInput.RawTurn,
+        _agentControlInput.SmoothedLocalMove = smoothed;
+        _agentControlInput.SmoothedTurn = Mathf.MoveTowards(
+            _agentControlInput.SmoothedTurn,
+            _agentControlInput.RawTurn,
             turnStep
         );
     }
 
-    public Vector3 GetSmoothedExternalWorldMoveDirection()
+    public Vector3 GetSmoothedAgentWorldMoveDirection()
     {
         Vector3 direction =
-            transform.right * _externalControlInput.SmoothedLocalMove.x
-            + transform.forward * _externalControlInput.SmoothedLocalMove.y;
+            transform.right * _agentControlInput.SmoothedLocalMove.x
+            + transform.forward * _agentControlInput.SmoothedLocalMove.y;
         direction.y = 0f;
         if (direction.sqrMagnitude > 1f)
         {
@@ -269,25 +256,25 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
 
     public event Action OnSkillFailed;
 
-    public void ClearExternalAttackCommand()
+    public void ClearAgentAttackCommand()
     {
-        _externalControlInput.WantsBasicAttack = false;
-        if (_externalControlInput.Command == GladiatorActionSchema.CommandBasicAttack)
+        _agentControlInput.WantsBasicAttack = false;
+        if (_agentControlInput.Command == GladiatorActionSchema.CommandBasicAttack)
         {
-            _externalControlInput.Command = GladiatorActionSchema.CommandNone;
+            _agentControlInput.Command = GladiatorActionSchema.CommandNone;
         }
     }
 
-    public void ClearExternalSkillCommand()
+    public void ClearAgentSkillCommand()
     {
-        _externalControlInput.WantsSkill = false;
-        if (_externalControlInput.Command == GladiatorActionSchema.CommandSkill)
+        _agentControlInput.WantsSkill = false;
+        if (_agentControlInput.Command == GladiatorActionSchema.CommandSkill)
         {
-            _externalControlInput.Command = GladiatorActionSchema.CommandNone;
+            _agentControlInput.Command = GladiatorActionSchema.CommandNone;
         }
     }
 
-    public void SetExternalAttackTarget(BattleRuntimeUnit target)
+    public void SetAgentAttackTarget(BattleRuntimeUnit target)
     {
         State?.SetPlannedTargets(target != null ? target.State : null, null);
     }

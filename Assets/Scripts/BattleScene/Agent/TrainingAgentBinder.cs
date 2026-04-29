@@ -185,15 +185,15 @@ public sealed class TrainingAgentBinder
         }
     }
 
-    private static void ApplyControlMode(IReadOnlyList<BattleRuntimeUnit> units, bool usesExternalControl)
+    private static void ApplyControlMode(IReadOnlyList<BattleRuntimeUnit> units, bool usesAgentPolicyControl)
     {
         if (units == null)
         {
             return;
         }
 
-        BattleUnitControlMode mode = usesExternalControl
-            ? BattleUnitControlMode.ExternalAgent
+        BattleUnitControlMode mode = usesAgentPolicyControl
+            ? BattleUnitControlMode.AgentPolicy
             : BattleUnitControlMode.BuiltInAI;
         for (int i = 0; i < units.Count; i++)
         {

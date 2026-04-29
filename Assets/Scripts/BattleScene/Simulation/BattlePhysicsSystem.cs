@@ -53,7 +53,7 @@ public sealed class BattlePhysicsSystem
 
             if (plan.UsesExplicitCombatCommands)
             {
-                float rotationDelta = plan.Turn * BattleRuntimeUnit.ExternalTurnSpeedDegPerSec;
+                float rotationDelta = plan.Turn * BattleRuntimeUnit.AgentTurnSpeedDegPerSec;
                 if (rotationDelta != 0f)
                     unit.Rotate(rotationDelta * tickDeltaTime);
 
