@@ -43,9 +43,8 @@ public class GladiatorAgent : Agent
     private GladiatorObservationStats _observationStats;
     private float _prevDistToNearestEnemy;
     private bool _boundaryResetRequested;
-    private Vector2 _previousRawMove;
-    private float _previousRawTurn;
-    private bool _hasPreviousRawAction;
+    private GladiatorRewardEvaluator _rewardEvaluator;
+    private IGladiatorAgentActionSink _actionSink;
     private readonly List<BattleUnitCombatState> _teammateObservationStates = new List<BattleUnitCombatState>();
     private readonly List<BattleUnitCombatState> _opponentObservationStates = new List<BattleUnitCombatState>();
 
@@ -75,6 +74,9 @@ public class GladiatorAgent : Agent
         _arenaCenter = col != null ? col.bounds.center : Vector3.zero;
         _arenaExtentsMin = col != null ? Mathf.Min(col.bounds.extents.x, col.bounds.extents.z) : float.MaxValue;
         _rosterView = CreateRosterView();
+        _rewardEvaluator = new GladiatorRewardEvaluator(rewardConfig, HardBoundaryRadiusMultiplier);
+        _rewardEvaluator.Reset();
+        _actionSink = new RuntimeUnitAgentActionSink(_selfUnit, _rosterView);
         _observationStats = ComputeInitialObservationStats();
 
         if (_selfUnit != null)
@@ -179,140 +181,56 @@ public class GladiatorAgent : Agent
             return;
         }
 
-        Vector2 localMove = Vector2.zero;
-        if (actions.ContinuousActions.Length >= GladiatorActionSchema.ContinuousSize)
+        GladiatorAgentAction action = GladiatorAgentActionParser.Parse(actions);
+        BattleRuntimeUnit target = ResolveOpponentSlot(action.TargetSlot);
+        GladiatorAgentTacticalContext tacticalContext = CreateTacticalContext(target);
+        GladiatorRewardEvaluation evaluation = _rewardEvaluator.EvaluateActionStep(action, tacticalContext);
+        AddReward(evaluation.Reward);
+        if (evaluation.RequestsBoundaryReset)
         {
-            localMove = new Vector2(
-                Mathf.Clamp(actions.ContinuousActions[GladiatorActionSchema.ContinuousMoveX], -1f, 1f),
-                Mathf.Clamp(actions.ContinuousActions[GladiatorActionSchema.ContinuousMoveZ], -1f, 1f)
-            );
-            if (localMove.sqrMagnitude > 1f)
-            {
-                localMove.Normalize();
-            }
+            RequestBoundaryReset();
+            _actionSink?.Clear();
+            return;
         }
 
-        float turn =
-            actions.ContinuousActions.Length > GladiatorActionSchema.ContinuousTurn
-                ? Mathf.Clamp(actions.ContinuousActions[GladiatorActionSchema.ContinuousTurn], -1f, 1f)
-                : 0f;
+        if (evaluation.UpdatesNearestOpponentDistance)
+        {
+            _prevDistToNearestEnemy = evaluation.NearestOpponentDistance;
+        }
 
-        int command =
-            actions.DiscreteActions.Length > GladiatorActionSchema.CommandBranch
-                ? actions.DiscreteActions[GladiatorActionSchema.CommandBranch]
-                : GladiatorActionSchema.CommandNone;
-        int targetSlot =
-            actions.DiscreteActions.Length > GladiatorActionSchema.TargetBranch
-                ? actions.DiscreteActions[GladiatorActionSchema.TargetBranch]
-                : 0;
-        int stance =
-            actions.DiscreteActions.Length > GladiatorActionSchema.StanceBranch
-                ? actions.DiscreteActions[GladiatorActionSchema.StanceBranch]
-                : GladiatorActionSchema.StanceNeutral;
+        BattleUnitCombatState effectiveTarget = tacticalContext.HasValidTarget ? target.State : null;
+        _actionSink?.Apply(evaluation.EffectiveAction, effectiveTarget);
+    }
 
-        AddReward(rewardConfig.step);
-        ApplyActionSmoothnessReward(localMove, turn);
-
+    private GladiatorAgentTacticalContext CreateTacticalContext(BattleRuntimeUnit target)
+    {
         float playableRadius = _arenaExtentsMin - _selfUnit.BodyRadius;
-        Vector3 flatPos = new Vector3(_selfUnit.Position.x, 0f, _selfUnit.Position.z);
-        Vector3 flatCenter = new Vector3(_arenaCenter.x, 0f, _arenaCenter.z);
-        float distanceFromCenter = Vector3.Distance(flatPos, flatCenter);
-        if (distanceFromCenter >= playableRadius)
-        {
-            AddReward(rewardConfig.boundary);
-            if (distanceFromCenter >= playableRadius * HardBoundaryRadiusMultiplier)
-            {
-                RequestBoundaryReset();
-                _selfUnit.ClearExternalControlInput();
-                return;
-            }
-        }
-
+        float distanceFromCenter = GetDistanceFromArenaCenter();
         float nearestDist = GetDistToNearestOpponent();
         bool shouldRetreat = ShouldRetreat(nearestDist);
-        if (_prevDistToNearestEnemy < float.MaxValue && nearestDist < float.MaxValue)
-        {
-            float approachDelta = _prevDistToNearestEnemy - nearestDist;
-            if (Mathf.Abs(approachDelta) > 0.0001f)
-            {
-                if (approachDelta < 0f && shouldRetreat)
-                    AddReward(-approachDelta * rewardConfig.retreatDistance);
-                else
-                    AddReward(approachDelta * rewardConfig.approach);
-            }
-        }
-
         bool attackBlocked = _selfUnit.AttackCooldownRemaining > 0f || _selfUnit.IsAttacking;
-        bool isSpacingMove = localMove.y < -0.2f || stance == GladiatorActionSchema.StanceKeepRange;
-        bool wantsBasicAttack = command == GladiatorActionSchema.CommandBasicAttack;
-        if (!attackBlocked && !isSpacingMove && !wantsBasicAttack && HasAttackableOpponent())
-        {
-            AddReward(rewardConfig.inRangeNoAttack);
-        }
-
-        if (
-            !attackBlocked
-            && localMove.sqrMagnitude <= 0.0001f
-            && command == GladiatorActionSchema.CommandNone
-            && HasLivingOpponent()
-        )
-        {
-            AddReward(rewardConfig.disengaged);
-        }
-
-        _prevDistToNearestEnemy = nearestDist;
-
-        BattleRuntimeUnit target = ResolveOpponentSlot(targetSlot);
         bool hasValidTarget = target != null && !target.IsCombatDisabled;
-        int effectiveCommand = command;
-        BattleRuntimeUnit effectiveTarget = hasValidTarget ? target : null;
-
-        if (command != GladiatorActionSchema.CommandNone && !hasValidTarget)
-        {
-            AddReward(rewardConfig.invalidAction);
-            effectiveCommand = GladiatorActionSchema.CommandNone;
-        }
-
-        if (isSpacingMove)
-        {
-            AddReward(shouldRetreat ? rewardConfig.goodRetreat : rewardConfig.badRetreat);
-        }
-
-        if (effectiveCommand == GladiatorActionSchema.CommandBasicAttack)
-        {
-            if (shouldRetreat)
-            {
-                AddReward(rewardConfig.dangerousAttack);
-            }
-
-            if (IsOutOfAttackRange(target))
-            {
-                AddReward(rewardConfig.chaseTarget);
-            }
-
-            if (attackBlocked)
-            {
-                AddReward(rewardConfig.invalidSkill * 0.25f);
-            }
-        }
-
-        if (effectiveCommand == GladiatorActionSchema.CommandSkill && !CanRequestSkill())
-        {
-            AddReward(rewardConfig.invalidSkill);
-            effectiveCommand = GladiatorActionSchema.CommandNone;
-        }
-
-        _selfUnit.SetExternalControlInput(localMove, turn, effectiveCommand, stance, effectiveTarget);
+        return new GladiatorAgentTacticalContext(
+            _prevDistToNearestEnemy,
+            nearestDist,
+            distanceFromCenter,
+            playableRadius,
+            shouldRetreat,
+            HasLivingOpponent(),
+            HasAttackableOpponent(),
+            hasValidTarget,
+            IsOutOfAttackRange(target),
+            attackBlocked,
+            CanRequestSkill()
+        );
     }
 
     public override void OnEpisodeBegin()
     {
         _boundaryResetRequested = false;
         _prevDistToNearestEnemy = GetDistToNearestOpponent();
-        _previousRawMove = Vector2.zero;
-        _previousRawTurn = 0f;
-        _hasPreviousRawAction = false;
-        _selfUnit?.ClearExternalControlInput();
+        _rewardEvaluator?.Reset();
+        _actionSink?.Clear();
     }
 
     public void GiveEndReward(BattleTeamId? winnerTeamId, bool isTimeout)
@@ -434,29 +352,16 @@ public class GladiatorAgent : Agent
         return false;
     }
 
-    private void ApplyActionSmoothnessReward(Vector2 localMove, float turn)
-    {
-        if (_hasPreviousRawAction)
-        {
-            float moveDelta = Vector2.Distance(_previousRawMove, localMove);
-            float turnDelta = Mathf.Abs(_previousRawTurn - turn);
-            AddReward(moveDelta * rewardConfig.actionDelta);
-            AddReward(turnDelta * rewardConfig.turnDelta);
-
-            if (localMove.sqrMagnitude <= 0.0001f && Mathf.Abs(turn) > 0.1f)
-            {
-                AddReward(Mathf.Abs(turn) * rewardConfig.idleJitter);
-            }
-        }
-
-        _previousRawMove = localMove;
-        _previousRawTurn = turn;
-        _hasPreviousRawAction = true;
-    }
-
     private bool CanRequestSkill()
     {
         return _selfUnit != null && _selfUnit.HasReadySkill();
+    }
+
+    private float GetDistanceFromArenaCenter()
+    {
+        Vector3 flatPos = new Vector3(_selfUnit.Position.x, 0f, _selfUnit.Position.z);
+        Vector3 flatCenter = new Vector3(_arenaCenter.x, 0f, _arenaCenter.z);
+        return Vector3.Distance(flatPos, flatCenter);
     }
 
     private Vector3 ResolveKeepRangeDirection(BattleRuntimeUnit target)
