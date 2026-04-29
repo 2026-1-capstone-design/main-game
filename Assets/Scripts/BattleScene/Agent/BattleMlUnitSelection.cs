@@ -44,7 +44,11 @@ public static class BattleMlUnitSelection
 
     private static int ResolveSortIndex(BattleRuntimeUnit unit, BattleRosterProjection projection)
     {
-        if (projection != null && projection.IsPlayerUnit(unit) && projection.TryGetPlayerIndex(unit, out int playerIndex))
+        if (
+            projection != null
+            && projection.IsPlayerUnit(unit)
+            && projection.TryGetPlayerIndex(unit, out int playerIndex)
+        )
         {
             return playerIndex;
         }
