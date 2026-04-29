@@ -34,6 +34,9 @@ public class GladiatorAgent : Agent
     [SerializeField]
     private GladiatorRewardConfig rewardConfig;
 
+    [Header("Heuristic (Demo Recording)")]
+    [SerializeField] private bool useBuiltInAiHeuristic = false;
+
     private BattleRuntimeUnit _selfUnit;
     private BattleSceneFlowManager _flowManager;
     private TrainingBootstrapper _trainingBootstrapper;
@@ -49,6 +52,7 @@ public class GladiatorAgent : Agent
     private GladiatorRewardEvaluator _rewardEvaluator;
     private IGladiatorAgentActionSink _actionSink;
     private BattleAgentControlBuffer _agentControlBuffer;
+    private BuiltInAiControlSource _aiHeuristic;
 
     public bool HasControlledUnit => _selfUnit != null;
 
@@ -99,6 +103,18 @@ public class GladiatorAgent : Agent
         }
 
         _prevDistToNearestEnemy = GetDistToNearestOpponent();
+
+        if (useBuiltInAiHeuristic)
+        {
+            _aiHeuristic = new BuiltInAiControlSource();
+            IReadOnlyList<BattleRuntimeUnit> units = _flowManager != null ? _flowManager.RuntimeUnits : null;
+            BattleAITuningSO tuning = _flowManager?.BattleSimulationManager?.aiTuning;
+            _aiHeuristic.Configure(units, tuning);
+        }
+        else
+        {
+            _aiHeuristic = null;
+        }
     }
 
     private void HandleDamageTaken(float damage)
@@ -261,6 +277,20 @@ public class GladiatorAgent : Agent
 
     public override void Heuristic(in ActionBuffers actionsOut)
     {
+        if (useBuiltInAiHeuristic && _aiHeuristic != null && _selfState != null)
+        {
+            BattleFieldSnapshot snapshot = _flowManager?.BattleSimulationManager?.CurrentSnapshot;
+            float tickDelta = _flowManager?.BattleSimulationManager != null
+                ? 1f / _flowManager.BattleSimulationManager.simulationTickRate
+                : 1f / 15f;
+            if (_aiHeuristic.TryBuildPlan(_selfState, snapshot, tickDelta, out BattleControlPlan plan))
+            {
+                BattleUnitPose pose = _poseProvider != null ? _poseProvider.CurrentPose : BattleUnitPose.Default;
+                BuiltInAiHeuristicTranslator.Write(actionsOut, plan, pose, _selfState, _rosterView);
+                return;
+            }
+        }
+
         var kb = Keyboard.current;
         var continuous = actionsOut.ContinuousActions;
         var discrete = actionsOut.DiscreteActions;

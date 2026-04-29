@@ -31,6 +31,16 @@ public class TrainingBootstrapper : MonoBehaviour, ITrainingEnvironment
     [SerializeField]
     private float defaultStatMultiplier = 1f;
 
+    [Header("Editor Playback")]
+    [SerializeField]
+    private float timeScale = 1f;
+
+    [SerializeField]
+    private bool logTrainingProgress = true;
+
+    [SerializeField]
+    private int logProgressInterval = 100;
+
     [Header("Agent Control")]
     [SerializeField]
     private BattleMlControlledSide controlledSide = BattleMlControlledSide.BothTeams;
@@ -55,16 +65,16 @@ public class TrainingBootstrapper : MonoBehaviour, ITrainingEnvironment
     private bool usePocaGroupRewards = true;
 
     [SerializeField]
-    private float groupWinReward = 1f;
+    private float groupWinReward = 20f;
 
     [SerializeField]
-    private float groupLossReward = -1f;
+    private float groupLossReward = -20f;
 
     [SerializeField]
-    private float groupTimeoutReward = -0.25f;
+    private float groupTimeoutReward = -20f;
 
     [SerializeField]
-    private float groupInterruptedReward = -0.1f;
+    private float groupInterruptedReward = -20f;
 
     // true이면 ML-Agents 자동 FixedUpdate stepper를 끄고 이 bootstrapper가 직접 Academy step을 진행한다.
     [SerializeField]
@@ -75,6 +85,10 @@ public class TrainingBootstrapper : MonoBehaviour, ITrainingEnvironment
     private TrainingAcademyStepCoordinator _academyStepCoordinator;
     private TrainingEpisodeController _episodeController;
     private TrainingAgentBinder _agentBinder;
+    private bool _timeScaleApplied;
+
+    private static int _activeTimeScaleUsers;
+    private static float _previousTimeScale = 1f;
 
     public int BattleTimeoutTickLimit => BattleTimeoutTicks;
 
@@ -100,6 +114,7 @@ public class TrainingBootstrapper : MonoBehaviour, ITrainingEnvironment
     private void OnValidate()
     {
         battleTicksPerEnvironmentStep = Mathf.Max(1, battleTicksPerEnvironmentStep);
+        logProgressInterval = Mathf.Max(1, logProgressInterval);
         defaultTeamSize = Mathf.Clamp(defaultTeamSize, 1, BattleTeamConstants.MaxUnitsPerTeam);
         defaultUnitLevel = Mathf.Max(1, defaultUnitLevel);
         defaultStatMultiplier = Mathf.Max(0f, defaultStatMultiplier);
@@ -118,6 +133,8 @@ public class TrainingBootstrapper : MonoBehaviour, ITrainingEnvironment
 
     private void OnDisable()
     {
+        ReleaseTimeScale();
+
         if (battleSimulationManager != null && _episodeController != null)
         {
             battleSimulationManager.OnBattleFinished -= _episodeController.HandleBattleFinished;
@@ -134,6 +151,7 @@ public class TrainingBootstrapper : MonoBehaviour, ITrainingEnvironment
 
     private void Start()
     {
+        ApplyTimeScale();
         BuildServices();
 
         if (battleSimulationManager != null)
@@ -150,6 +168,7 @@ public class TrainingBootstrapper : MonoBehaviour, ITrainingEnvironment
         }
 
         _episodeController.StartEpisode();
+        LogTrainingProgress("Episode started");
     }
 
     private void FixedUpdate()
@@ -172,6 +191,7 @@ public class TrainingBootstrapper : MonoBehaviour, ITrainingEnvironment
     public void StepTrainingEnvironment()
     {
         _episodeController?.TickBattle(battleTicksPerEnvironmentStep);
+        LogTrainingProgress("Progress");
     }
 
     public void TryResetFinishedOrTimedOutEpisode()
@@ -200,6 +220,38 @@ public class TrainingBootstrapper : MonoBehaviour, ITrainingEnvironment
             RefreshAllUnitAnimations,
             this
         );
+    }
+
+    private void ApplyTimeScale()
+    {
+        if (_timeScaleApplied)
+        {
+            return;
+        }
+
+        if (_activeTimeScaleUsers == 0)
+        {
+            _previousTimeScale = Time.timeScale;
+        }
+
+        _activeTimeScaleUsers++;
+        Time.timeScale = Mathf.Max(0f, timeScale);
+        _timeScaleApplied = true;
+    }
+
+    private void ReleaseTimeScale()
+    {
+        if (!_timeScaleApplied)
+        {
+            return;
+        }
+
+        _timeScaleApplied = false;
+        _activeTimeScaleUsers = Mathf.Max(0, _activeTimeScaleUsers - 1);
+        if (_activeTimeScaleUsers == 0)
+        {
+            Time.timeScale = _previousTimeScale;
+        }
     }
 
     private TrainingBattlePayloadSettings CreatePayloadSettings()
@@ -269,5 +321,26 @@ public class TrainingBootstrapper : MonoBehaviour, ITrainingEnvironment
                 animator.runtimeAnimatorController = controller;
             }
         }
+    }
+
+    private void LogTrainingProgress(string label)
+    {
+        if (!logTrainingProgress || battleSimulationManager == null)
+        {
+            return;
+        }
+
+        int academyStepCount = _academyStepCoordinator != null ? _academyStepCoordinator.EnvironmentStepCount : 0;
+        int battleTickCount = battleSimulationManager.BattleTickCount;
+        if (!string.Equals(label, "Episode started", System.StringComparison.Ordinal)
+            && academyStepCount % logProgressInterval != 0)
+        {
+            return;
+        }
+
+        Debug.Log(
+            $"[TrainingBootstrapper] {label}: academyStep={academyStepCount}, battleTick={battleTickCount}, timeScale={Time.timeScale}, stepTicks={battleTicksPerEnvironmentStep}",
+            this
+        );
     }
 }

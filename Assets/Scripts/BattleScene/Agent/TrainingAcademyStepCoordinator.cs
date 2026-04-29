@@ -8,12 +8,15 @@ public sealed class TrainingAcademyStepCoordinator
     private readonly List<ITrainingEnvironment> _environments = new List<ITrainingEnvironment>();
     private ITrainingEnvironment _driver;
     private bool _academySteppingWasAutomatic;
+    private int _environmentStepCount;
 
     private TrainingAcademyStepCoordinator() { }
 
     public static TrainingAcademyStepCoordinator Instance => Shared;
 
     public bool HasDriver => _driver != null;
+
+    public int EnvironmentStepCount => _environmentStepCount;
 
     public void Register(ITrainingEnvironment environment)
     {
@@ -81,6 +84,7 @@ public sealed class TrainingAcademyStepCoordinator
     public void Tick()
     {
         Academy.Instance.EnvironmentStep();
+        _environmentStepCount++;
 
         for (int i = 0; i < _environments.Count; i++)
         {

@@ -241,7 +241,7 @@ public sealed class TrainingBattlePayloadFactory
             gladiatorClass: classSO,
             trait: null,
             personality: null,
-            equippedPerk: null,
+            equippedArtifact: null,
             weaponType: resolvedType,
             leftWeaponPrefab: leftPrefab,
             rightWeaponPrefab: rightPrefab,

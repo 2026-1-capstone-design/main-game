@@ -112,6 +112,35 @@ episode가 끝나는 조건은 크게 두 가지입니다.
 
 reset 시 `TrainingBootstrapper`는 모든 agent에 `EndEpisode()`를 호출하고, 새 payload와 spawn position을 만든 뒤 같은 씬 안에서 전투 환경을 다시 bootstrap합니다. 이후 agent와 새 runtime unit을 다시 연결합니다.
 
+## BuiltInAI 데모 녹화
+
+`Stage_1_smooth.yaml`은 `behavioral_cloning.demo_path`로 `Assets/Demos/GladiatorBuiltInAI.demo`를 참조합니다. 이 파일은 Unity Editor에서 `DemonstrationRecorder`와 `GladiatorAgent.Heuristic()`의 BuiltInAI 경로를 사용해 녹화합니다.
+
+녹화 전 준비는 다음 순서로 진행합니다.
+
+1. Unity Editor에서 학습용 씬 또는 `TrainPlatform`이 들어간 씬을 엽니다.
+2. `GladiatorAgent`가 붙어 있는 agent GameObject를 선택합니다.
+3. `GladiatorAgent` 컴포넌트에서 `Use Built In Ai Heuristic`을 켭니다.
+4. `Behavior Parameters` 컴포넌트에서 `Behavior Type`을 `Heuristic Only`로 바꿉니다.
+5. `Assets/Demos/` 폴더가 없으면 Project 창에서 `Assets` 아래에 `Demos` 폴더를 만듭니다.
+
+그 다음 같은 agent GameObject에 `Demonstration Recorder` 컴포넌트를 추가하고 다음 값으로 설정합니다.
+
+- `Record`: 켬
+- `Num Steps To Record`: `200000`
+- `Demonstration Name`: `GladiatorBuiltInAI`
+- `Demonstration Directory`: `Assets/Demos/`
+
+녹화는 Editor Play로 시작합니다. Play 중 agent가 키보드 입력 없이 BuiltInAI처럼 이동하고 공격하는지 확인합니다. `Num Steps To Record`가 목표 step에 도달하면 녹화가 끝나며, 자동으로 멈추지 않으면 충분한 step이 지난 뒤 Stop을 누릅니다. 종료 후 `Assets/Demos/GladiatorBuiltInAI.demo`가 생성되었는지 확인합니다.
+
+녹화 후에는 학습/일반 실행 설정으로 반드시 복원합니다.
+
+1. `Demonstration Recorder`의 `Record`를 끕니다.
+2. `Behavior Parameters`의 `Behavior Type`을 `Default`로 되돌립니다.
+3. `GladiatorAgent`의 `Use Built In Ai Heuristic`을 끕니다.
+
+이 복원 과정을 빠뜨리면 이후 학습이 trainer 정책 대신 heuristic 입력으로만 진행되거나, 의도하지 않게 데모 파일을 계속 덮어쓸 수 있습니다.
+
 ## ML-Agents CLI 가이드
 
 ML-Agents 학습은 Python 패키지의 `mlagents-learn` CLI로 실행합니다. 기본 형식은 trainer 설정 YAML과 run id를 넘기는 방식입니다.
