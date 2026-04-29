@@ -25,7 +25,7 @@ MonoBehaviour:
   damageTakenPerPoint: -0.002
   death: -2
   damageDealt: 0.01
-  attackLanded: 0.05
+  attackLanded: 0.5
   kill: 10
   win: 20
   loss: -20

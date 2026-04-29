@@ -6,7 +6,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 
 // BehaviorParameters 설정 (Inspector):
-//   Space Size         = GladiatorObservationSchema.TotalSize (= 101)
+//   Space Size         = GladiatorObservationSchema.TotalSize (= 102)
 //   Continuous Actions = GladiatorActionSchema.ContinuousSize (= 3)
 //     0=local strafe, 1=local advance, 2=turn
 //   Discrete Branches  = 3
@@ -14,12 +14,13 @@ using UnityEngine.InputSystem;
 //     Branch 1 Size = GladiatorActionSchema.TargetBranchSize (= 6)
 //     Branch 2 Size = GladiatorActionSchema.StanceBranchSize (= 3)
 //
-// Observation (101 floats):
-//   자신      (24):     경기장 중심 상대좌표(x,z), 체력, 최대 체력, 공격력, 사거리, 이동속도, 공격 쿨타임,
-//                       체력비, 낮은 체력비, 최근접 적 거리, 공격 가능 여부, 피격 위험 여부, 근처 적/아군 비율, 경계 압박,
-//                       현재/직전 외부 입력, 스킬 가능 여부, 대상 선택 여부
-//   내 팀 동료 (5 × 7): payload team-local index 오름차순 고정 슬롯
-//   상대팀    (6 × 7): payload team-local index 오름차순 고정 슬롯
+// Observation (102 floats):
+//   자신      (25):     정규화된 경기장 중심 상대좌표(x,z), 체력비, 최대 체력 로그비, 공격력 로그비,
+//                       정규화된 사거리/이동속도/공격 쿨타임, 최근접 적/자신 대상 피해비, 최근접 적 거리,
+//                       공격 가능 여부, 피격 위험 여부, 근처 적/아군 비율, 경계 압박,
+//                       timeout까지 남은 시간 비율, 현재/직전 외부 입력, 스킬 가능 여부, 대상 선택 여부
+//   내 팀 동료 (5 × 7): 정규화된 상대좌표(x,z), 체력비, 최대 체력 로그비, 공격력 로그비, 사거리, 이동속도
+//   상대팀    (6 × 7): 정규화된 상대좌표(x,z), 체력비, 최대 체력 로그비, 공격력 로그비, 사거리, 이동속도
 //
 // Action:
 //   Continuous 0/1/2:   local strafe / local advance / turn
@@ -39,11 +40,14 @@ public class GladiatorAgent : Agent
     private Vector3 _arenaCenter;
     private float _arenaExtentsMin;
     private GladiatorRosterView _rosterView;
+    private GladiatorObservationStats _observationStats;
     private float _prevDistToNearestEnemy;
     private bool _boundaryResetRequested;
     private Vector2 _previousRawMove;
     private float _previousRawTurn;
     private bool _hasPreviousRawAction;
+    private readonly List<BattleUnitCombatState> _teammateObservationStates = new List<BattleUnitCombatState>();
+    private readonly List<BattleUnitCombatState> _opponentObservationStates = new List<BattleUnitCombatState>();
 
     public bool HasControlledUnit => _selfUnit != null;
 
@@ -71,6 +75,7 @@ public class GladiatorAgent : Agent
         _arenaCenter = col != null ? col.bounds.center : Vector3.zero;
         _arenaExtentsMin = col != null ? Mathf.Min(col.bounds.extents.x, col.bounds.extents.z) : float.MaxValue;
         _rosterView = CreateRosterView();
+        _observationStats = ComputeInitialObservationStats();
 
         if (_selfUnit != null)
         {
@@ -119,9 +124,24 @@ public class GladiatorAgent : Agent
     public override void CollectObservations(VectorSensor sensor)
     {
         float arenaRadius = _selfUnit != null ? _arenaExtentsMin - _selfUnit.BodyRadius : float.MaxValue;
+        FillObservationStates();
         BattleObservationBuilder.Write(
             sensor,
-            new GladiatorObservationContext(_selfUnit, _rosterView, _arenaCenter, arenaRadius)
+            new GladiatorObservationContext(
+                _selfUnit != null ? _selfUnit.State : null,
+                _teammateObservationStates,
+                _opponentObservationStates,
+                _observationStats,
+                _selfUnit != null ? _selfUnit.transform.right : Vector3.right,
+                _selfUnit != null ? _selfUnit.transform.forward : Vector3.forward,
+                _arenaCenter,
+                arenaRadius,
+                _trainingBootstrapper != null ? _trainingBootstrapper.BattleTimeoutRemainingRatio : 1f,
+                _selfUnit != null ? _selfUnit.ExternalSmoothedLocalMove : Vector2.zero,
+                _selfUnit != null ? _selfUnit.ExternalSmoothedTurn : 0f,
+                _selfUnit != null ? _selfUnit.ExternalPreviousRawLocalMove : Vector2.zero,
+                _selfUnit != null ? _selfUnit.ExternalPreviousRawTurn : 0f
+            )
         );
     }
 
@@ -626,5 +646,117 @@ public class GladiatorAgent : Agent
         IBattleRosterProjection projection = payload != null ? new BattleRosterProjection(payload) : null;
         IReadOnlyList<BattleRuntimeUnit> runtimeUnits = _flowManager != null ? _flowManager.RuntimeUnits : null;
         return new GladiatorRosterView(_selfUnit, payload, projection, runtimeUnits);
+    }
+
+    private void FillObservationStates()
+    {
+        _teammateObservationStates.Clear();
+        _opponentObservationStates.Clear();
+
+        if (_rosterView == null || _selfUnit == null)
+        {
+            return;
+        }
+
+        AddObservationStates(_rosterView.GetSortedTeammates(_selfUnit), _teammateObservationStates);
+        AddObservationStates(_rosterView.GetSortedHostiles(_selfUnit), _opponentObservationStates);
+    }
+
+    private static void AddObservationStates(
+        IReadOnlyList<BattleRuntimeUnit> units,
+        List<BattleUnitCombatState> states
+    )
+    {
+        if (units == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < units.Count; i++)
+        {
+            BattleRuntimeUnit unit = units[i];
+            states.Add(unit != null ? unit.State : null);
+        }
+    }
+
+    private GladiatorObservationStats ComputeInitialObservationStats()
+    {
+        var maxHealthValues = new List<float>();
+        var attackValues = new List<float>();
+        float maxMoveSpeed = 0f;
+
+        IReadOnlyList<BattleRuntimeUnit> runtimeUnits = _flowManager != null ? _flowManager.RuntimeUnits : null;
+        bool sawSelf = false;
+        if (runtimeUnits != null)
+        {
+            for (int i = 0; i < runtimeUnits.Count; i++)
+            {
+                BattleRuntimeUnit unit = runtimeUnits[i];
+                if (unit == _selfUnit)
+                {
+                    sawSelf = true;
+                }
+
+                AddInitialUnitStats(unit, maxHealthValues, attackValues, ref maxMoveSpeed);
+            }
+        }
+
+        if (!sawSelf)
+        {
+            AddInitialUnitStats(_selfUnit, maxHealthValues, attackValues, ref maxMoveSpeed);
+        }
+
+        float fallbackMaxHealth = _selfUnit != null ? _selfUnit.MaxHealth : 1f;
+        float fallbackAttack = _selfUnit != null ? _selfUnit.Attack : 1f;
+        float fallbackMoveSpeed = _selfUnit != null ? _selfUnit.MoveSpeed : 1f;
+
+        return new GladiatorObservationStats(
+            Median(maxHealthValues, fallbackMaxHealth),
+            Median(attackValues, fallbackAttack),
+            maxMoveSpeed > 0f ? maxMoveSpeed : fallbackMoveSpeed
+        );
+    }
+
+    private static void AddInitialUnitStats(
+        BattleRuntimeUnit unit,
+        List<float> maxHealthValues,
+        List<float> attackValues,
+        ref float maxMoveSpeed
+    )
+    {
+        if (unit == null)
+        {
+            return;
+        }
+
+        if (unit.MaxHealth > 0f)
+        {
+            maxHealthValues.Add(unit.MaxHealth);
+        }
+
+        if (unit.Attack > 0f)
+        {
+            attackValues.Add(unit.Attack);
+        }
+
+        maxMoveSpeed = Mathf.Max(maxMoveSpeed, unit.MoveSpeed);
+    }
+
+    private static float Median(List<float> values, float fallback)
+    {
+        if (values.Count == 0)
+        {
+            return Mathf.Max(1e-6f, fallback);
+        }
+
+        values.Sort();
+
+        int mid = values.Count / 2;
+        if (values.Count % 2 == 1)
+        {
+            return values[mid];
+        }
+
+        return (values[mid - 1] + values[mid]) * 0.5f;
     }
 }

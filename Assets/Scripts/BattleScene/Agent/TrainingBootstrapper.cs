@@ -49,6 +49,16 @@ public class TrainingBootstrapper : MonoBehaviour
     [SerializeField]
     private float defaultStatMultiplier = 1f;
 
+    [Header("Agent Control")]
+    [SerializeField]
+    private BattleMlControlledSide controlledSide = BattleMlControlledSide.BothTeams;
+
+    [SerializeField]
+    private bool useCurriculumOpponentMode = true;
+
+    [SerializeField]
+    private string opponentModeEnvironmentParameter = "opponent_mode";
+
     [SerializeField]
     private GladiatorAgent[] allyAgents;
 
@@ -84,6 +94,23 @@ public class TrainingBootstrapper : MonoBehaviour
     private BattleOutcome? _lastOutcome;
     private SimpleMultiAgentGroup _allyGroup;
     private SimpleMultiAgentGroup _enemyGroup;
+
+    public int BattleTimeoutTickLimit => BattleTimeoutTicks;
+
+    public float BattleTimeoutRemainingRatio
+    {
+        get
+        {
+            if (battleSimulationManager == null)
+            {
+                return 1f;
+            }
+
+            return Mathf.Clamp01(
+                (BattleTimeoutTicks - battleSimulationManager.BattleTickCount) / (float)BattleTimeoutTicks
+            );
+        }
+    }
 
     private void OnValidate()
     {
@@ -277,21 +304,32 @@ public class TrainingBootstrapper : MonoBehaviour
         _academyStepDriver = null;
     }
 
-    private void ForEachAgent(System.Action<GladiatorAgent> action)
+    private void ForEachControlledAgent(System.Action<GladiatorAgent> action)
     {
-        foreach (GladiatorAgent agent in allyAgents)
+        if (action == null)
         {
-            if (agent != null)
+            return;
+        }
+
+        if (allyAgents != null)
+        {
+            foreach (GladiatorAgent agent in allyAgents)
             {
-                action(agent);
+                if (IsActiveControlledAgent(agent))
+                {
+                    action(agent);
+                }
             }
         }
 
-        foreach (GladiatorAgent agent in enemyAgents)
+        if (enemyAgents != null)
         {
-            if (agent != null)
+            foreach (GladiatorAgent agent in enemyAgents)
             {
-                action(agent);
+                if (IsActiveControlledAgent(agent))
+                {
+                    action(agent);
+                }
             }
         }
     }
@@ -345,42 +383,22 @@ public class TrainingBootstrapper : MonoBehaviour
         BattleRosterProjection projection = new BattleRosterProjection(payload);
         List<BattleRuntimeUnit> playerUnits = GetSortedUnitsForTeam(payload.GetPlayerTeam().TeamId, projection);
         List<BattleRuntimeUnit> hostileUnits = GetSortedUnitsForTeam(payload.GetHostileTeam().TeamId, projection);
+        BattleMlControlledSide resolvedControlledSide = ResolveControlledSide();
+        bool controlsPlayerTeam = ControlsPlayerTeam(resolvedControlledSide);
+        bool controlsHostileTeam = ControlsHostileTeam(resolvedControlledSide);
 
         Debug.Log(
-            $"[TrainingBootstrapper] Linking agents: {playerUnits.Count} player units / {allyAgents.Length} ally agents, {hostileUnits.Count} hostile units / {enemyAgents.Length} enemy agents."
+            $"[TrainingBootstrapper] Linking agents: Side={resolvedControlledSide}, "
+                + $"{playerUnits.Count} player units / {GetAgentCount(allyAgents)} ally agents, "
+                + $"{hostileUnits.Count} hostile units / {GetAgentCount(enemyAgents)} enemy agents."
         );
 
         ResetTrainingGroups();
+        ApplyControlMode(playerUnits, controlsPlayerTeam);
+        ApplyControlMode(hostileUnits, controlsHostileTeam);
 
-        for (int i = 0; i < allyAgents.Length; i++)
-        {
-            if (allyAgents[i] == null)
-            {
-                continue;
-            }
-
-            BattleRuntimeUnit unit = i < playerUnits.Count ? playerUnits[i] : null;
-            allyAgents[i].Initialize(unit, battleSceneFlowManager, this);
-            if (unit != null)
-            {
-                _allyGroup.RegisterAgent(allyAgents[i]);
-            }
-        }
-
-        for (int i = 0; i < enemyAgents.Length; i++)
-        {
-            if (enemyAgents[i] == null)
-            {
-                continue;
-            }
-
-            BattleRuntimeUnit unit = i < hostileUnits.Count ? hostileUnits[i] : null;
-            enemyAgents[i].Initialize(unit, battleSceneFlowManager, this);
-            if (unit != null)
-            {
-                _enemyGroup.RegisterAgent(enemyAgents[i]);
-            }
-        }
+        BindAgentsToUnits(allyAgents, playerUnits, _allyGroup, controlsPlayerTeam);
+        BindAgentsToUnits(enemyAgents, hostileUnits, _enemyGroup, controlsHostileTeam);
     }
 
     private void ResetTrainingGroups()
@@ -402,8 +420,8 @@ public class TrainingBootstrapper : MonoBehaviour
     {
         if (!usePocaGroupRewards || _allyGroup == null || _enemyGroup == null)
         {
-            ForEachAgent(agent => agent.GiveEndReward(winnerTeamId, isTimeout));
-            ForEachAgent(agent => agent.EndEpisode());
+            ForEachControlledAgent(agent => agent.GiveEndReward(winnerTeamId, isTimeout));
+            ForEachControlledAgent(agent => agent.EndEpisode());
             return;
         }
 
@@ -414,7 +432,6 @@ public class TrainingBootstrapper : MonoBehaviour
             _enemyGroup.AddGroupReward(allyWon ? groupLossReward : groupWinReward);
             _allyGroup.EndGroupEpisode();
             _enemyGroup.EndGroupEpisode();
-            EndInactiveAgentEpisodes(interrupted: false);
             return;
         }
 
@@ -424,21 +441,6 @@ public class TrainingBootstrapper : MonoBehaviour
         _enemyGroup.AddGroupReward(interruptionReward);
         _allyGroup.GroupEpisodeInterrupted();
         _enemyGroup.GroupEpisodeInterrupted();
-        EndInactiveAgentEpisodes(interrupted: true);
-    }
-
-    private void EndInactiveAgentEpisodes(bool interrupted)
-    {
-        ForEachAgent(agent =>
-        {
-            if (agent.HasControlledUnit)
-                return;
-
-            if (interrupted)
-                agent.EpisodeInterrupted();
-            else
-                agent.EndEpisode();
-        });
     }
 
     private IReadOnlyDictionary<BattleTeamId, Vector3[]> GenerateRandomPlacements(BattleStartPayload payload)
@@ -782,7 +784,6 @@ public class TrainingBootstrapper : MonoBehaviour
                 continue;
             }
 
-            unit.SetControlMode(BattleUnitControlMode.ExternalAgent);
             sorted.Add((ResolveSortIndex(unit, projection), unit.UnitNumber, unit));
         }
 
@@ -802,6 +803,86 @@ public class TrainingBootstrapper : MonoBehaviour
 
         return result;
     }
+
+    private void BindAgentsToUnits(
+        GladiatorAgent[] agents,
+        IReadOnlyList<BattleRuntimeUnit> units,
+        SimpleMultiAgentGroup group,
+        bool bindTeam
+    )
+    {
+        if (agents == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < agents.Length; i++)
+        {
+            GladiatorAgent agent = agents[i];
+            if (agent == null)
+            {
+                continue;
+            }
+
+            BattleRuntimeUnit unit = bindTeam && i < units.Count ? units[i] : null;
+            if (unit == null)
+            {
+                agent.Initialize(null, battleSceneFlowManager, this);
+                agent.gameObject.SetActive(false);
+                continue;
+            }
+
+            if (!agent.gameObject.activeSelf)
+            {
+                agent.gameObject.SetActive(true);
+            }
+
+            agent.Initialize(unit, battleSceneFlowManager, this);
+            group.RegisterAgent(agent);
+        }
+    }
+
+    private static void ApplyControlMode(IReadOnlyList<BattleRuntimeUnit> units, bool usesExternalControl)
+    {
+        if (units == null)
+        {
+            return;
+        }
+
+        BattleUnitControlMode mode = usesExternalControl
+            ? BattleUnitControlMode.ExternalAgent
+            : BattleUnitControlMode.BuiltInAI;
+        for (int i = 0; i < units.Count; i++)
+        {
+            units[i]?.SetControlMode(mode);
+        }
+    }
+
+    private BattleMlControlledSide ResolveControlledSide()
+    {
+        if (!useCurriculumOpponentMode || string.IsNullOrWhiteSpace(opponentModeEnvironmentParameter))
+        {
+            return controlledSide;
+        }
+
+        float opponentMode = Academy.Instance.EnvironmentParameters.GetWithDefault(
+            opponentModeEnvironmentParameter,
+            controlledSide == BattleMlControlledSide.BothTeams ? 1f : 0f
+        );
+
+        return opponentMode >= 0.5f ? BattleMlControlledSide.BothTeams : BattleMlControlledSide.PlayerTeam;
+    }
+
+    private static bool ControlsPlayerTeam(BattleMlControlledSide side) =>
+        side == BattleMlControlledSide.PlayerTeam || side == BattleMlControlledSide.BothTeams;
+
+    private static bool ControlsHostileTeam(BattleMlControlledSide side) =>
+        side == BattleMlControlledSide.HostileTeam || side == BattleMlControlledSide.BothTeams;
+
+    private static int GetAgentCount(GladiatorAgent[] agents) => agents != null ? agents.Length : 0;
+
+    private static bool IsActiveControlledAgent(GladiatorAgent agent) =>
+        agent != null && agent.gameObject.activeInHierarchy && agent.HasControlledUnit;
 
     private static int ResolveSortIndex(BattleRuntimeUnit unit, BattleRosterProjection projection)
     {
