@@ -345,12 +345,17 @@ public sealed class BattleSceneMlAgentBinder : MonoBehaviour
 
     private void UnbindUnits()
     {
+        BattleAgentControlBuffer controlBuffer =
+            flowManager != null && flowManager.BattleSimulationManager != null
+                ? flowManager.BattleSimulationManager.AgentControlBuffer
+                : null;
+
         for (int i = 0; i < _boundUnits.Count; i++)
         {
             BattleRuntimeUnit unit = _boundUnits[i];
             if (unit != null)
             {
-                unit.ClearAgentControlInput();
+                controlBuffer?.Clear(unit.State);
                 unit.SetControlMode(BattleUnitControlMode.BuiltInAI);
             }
         }

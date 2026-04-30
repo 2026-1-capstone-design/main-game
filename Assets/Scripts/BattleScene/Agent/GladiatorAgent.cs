@@ -45,7 +45,6 @@ public class GladiatorAgent : Agent
     private float _arenaExtentsMin;
     private BattleUnitCombatState _selfState;
     private GladiatorStateRosterView _rosterView;
-    private IBattleRuntimeUnitResolver _runtimeResolver;
     private IBattleUnitPoseProvider _poseProvider;
     private GladiatorObservationStats _observationStats;
     private float _prevDistToNearestEnemy;
@@ -81,7 +80,6 @@ public class GladiatorAgent : Agent
         SphereCollider col = flowManager?.battlefieldCollider;
         _arenaCenter = col != null ? col.bounds.center : Vector3.zero;
         _arenaExtentsMin = col != null ? Mathf.Min(col.bounds.extents.x, col.bounds.extents.z) : float.MaxValue;
-        _runtimeResolver = new BattleRuntimeUnitResolver(_flowManager != null ? _flowManager.RuntimeUnits : null);
         _poseProvider = new RuntimeBattleUnitPoseProvider(_selfUnit);
         _rosterView = CreateRosterView();
         _rewardEvaluator = new GladiatorRewardEvaluator(rewardConfig, HardBoundaryRadiusMultiplier);
@@ -90,7 +88,7 @@ public class GladiatorAgent : Agent
             _flowManager != null && _flowManager.BattleSimulationManager != null
                 ? _flowManager.BattleSimulationManager.AgentControlBuffer
                 : null;
-        _actionSink = new RuntimeUnitAgentActionSink(_selfUnit, _runtimeResolver, _agentControlBuffer);
+        _actionSink = new RuntimeUnitAgentActionSink(_selfUnit, _agentControlBuffer);
         _observationStats = ComputeInitialObservationStats();
 
         if (_selfUnit != null)

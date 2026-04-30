@@ -338,12 +338,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
             tickDeltaTime,
             _rosterMutationSystem
         );
-        _physicsSystem.Execute(
-            _runtimeUnits,
-            tickDeltaTime,
-            _artifactSystem.MovementPolicy,
-            _channelSystem
-        );
+        _physicsSystem.Execute(_runtimeUnits, tickDeltaTime, _artifactSystem.MovementPolicy, _channelSystem);
         _positionHistory.RecordAll(_runtimeUnits, battleTime);
         _artifactSystem.TickPositionHistoryArtifacts(_positionHistory, tickContext, _effectSystem);
         _combatSystem.Execute(

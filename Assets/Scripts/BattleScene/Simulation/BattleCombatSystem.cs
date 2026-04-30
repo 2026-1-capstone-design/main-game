@@ -180,10 +180,7 @@ public sealed class BattleCombatSystem
                 continue;
             }
 
-            BattleRuntimeUnit primaryTarget = ResolveRuntimeUnit(
-                runtimeUnitByState,
-                plan.TargetEnemy
-            );
+            BattleRuntimeUnit primaryTarget = ResolveRuntimeUnit(runtimeUnitByState, plan.TargetEnemy);
             BattleEffectContext context = new BattleEffectContext(
                 unit,
                 primaryTarget,
