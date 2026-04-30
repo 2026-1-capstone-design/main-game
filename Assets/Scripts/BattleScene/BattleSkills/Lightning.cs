@@ -24,7 +24,7 @@ public sealed class LightningSkill : IBattleSkill
         foreach (BattleRuntimeUnit unitView in context.Units)
         {
             BattleUnitCombatState unit = unitView != null ? unitView.State : null;
-            if (unit == null || unit.IsCombatDisabled || !BattleFieldSnapshot.IsValidEnemyTarget(caster, unit))
+            if (!BattleFieldSnapshot.IsValidEnemyTarget(caster, unit))
                 continue;
 
             if (Vector3.Distance(target.Position, unit.Position) <= 40f)
