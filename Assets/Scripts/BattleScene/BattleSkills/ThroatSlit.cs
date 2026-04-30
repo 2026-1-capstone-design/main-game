@@ -16,8 +16,8 @@ public sealed class ThroatSlitSkill : IBattleSkill
 
     public void Activate(in BattleEffectContext context, IBattleEffectSink effects)
     {
-        BattleRuntimeUnit caster = context.Actor;
-        BattleRuntimeUnit target = context.PrimaryTarget;
+        BattleUnitCombatState caster = context.Actor != null ? context.Actor.State : null;
+        BattleUnitCombatState target = context.PrimaryTarget != null ? context.PrimaryTarget.State : null;
         if (target == null)
             return;
 
@@ -26,7 +26,7 @@ public sealed class ThroatSlitSkill : IBattleSkill
         Vector3 behindPos = target.Position + dirToTarget * 2f;
         behindPos.y = caster.Position.y;
 
-        caster.SetPosition(behindPos); // 텔레포트
+        context.Actor?.SetPosition(behindPos); // 텔레포트는 Transform 동기화가 필요하다.
         effects.DealDamage(
             new BattleDamageRequest
             {

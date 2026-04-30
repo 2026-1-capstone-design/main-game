@@ -17,8 +17,8 @@ public sealed class RevolverFanningSkill : IBattleSkill
 
     public void Activate(in BattleEffectContext context, IBattleEffectSink effects)
     {
-        BattleRuntimeUnit caster = context.Actor;
-        BattleRuntimeUnit target = context.PrimaryTarget;
+        BattleUnitCombatState caster = context.Actor != null ? context.Actor.State : null;
+        BattleUnitCombatState target = context.PrimaryTarget != null ? context.PrimaryTarget.State : null;
         if (target == null)
             return;
 

@@ -13,6 +13,7 @@ public sealed class LongGripSkill : IBattleSkill
 
     public void Activate(in BattleEffectContext context, IBattleEffectSink effects)
     {
-        effects.ApplyBuff(context.Actor, context.Actor, BuffType.AttackRange, 5, 10f); // 사거리 +2.5
+        BattleUnitCombatState caster = context.Actor != null ? context.Actor.State : null;
+        effects.ApplyBuff(caster, caster, BuffType.AttackRange, 5, 10f); // 사거리 +2.5
     }
 }

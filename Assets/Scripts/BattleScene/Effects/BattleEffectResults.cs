@@ -2,15 +2,15 @@
 // 현재 전투 로그는 BattleCombatResult를 쓰지만, 요청량/최종량 분리가 필요한 후속 훅에서 사용한다.
 public readonly struct BattleDamageResult
 {
-    public BattleRuntimeUnit Source { get; }
-    public BattleRuntimeUnit Target { get; }
+    public BattleUnitCombatState Source { get; }
+    public BattleUnitCombatState Target { get; }
     public float RequestedAmount { get; }
     public float FinalAmount { get; }
     public bool TargetDied { get; }
 
     public BattleDamageResult(
-        BattleRuntimeUnit source,
-        BattleRuntimeUnit target,
+        BattleUnitCombatState source,
+        BattleUnitCombatState target,
         float requestedAmount,
         float finalAmount,
         bool targetDied

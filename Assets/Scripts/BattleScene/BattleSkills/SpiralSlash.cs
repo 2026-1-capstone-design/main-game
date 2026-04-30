@@ -15,14 +15,11 @@ public sealed class SpiralSlashSkill : IBattleSkill
 
     public void Activate(in BattleEffectContext context, IBattleEffectSink effects)
     {
-        BattleRuntimeUnit caster = context.Actor;
-        foreach (BattleRuntimeUnit unit in context.Units)
+        BattleUnitCombatState caster = context.Actor != null ? context.Actor.State : null;
+        foreach (BattleRuntimeUnit unitView in context.Units)
         {
-            if (
-                unit != null
-                && !unit.IsCombatDisabled
-                && BattleFieldSnapshot.IsValidEnemyTarget(caster.State, unit.State)
-            )
+            BattleUnitCombatState unit = unitView != null ? unitView.State : null;
+            if (unit != null && !unit.IsCombatDisabled && BattleFieldSnapshot.IsValidEnemyTarget(caster, unit))
             {
                 if (Vector3.Distance(caster.Position, unit.Position) <= 45f) // 광역 반경 45
                 {

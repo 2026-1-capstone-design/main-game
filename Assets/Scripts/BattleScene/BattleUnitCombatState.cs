@@ -5,6 +5,8 @@ using UnityEngine;
 // BattleUnitCombatState: 순수 전투 상태 컨테이너 (MonoBehaviour 없음, Unity 씬 의존 없음)
 // BattleRuntimeUnit이 소유하며, BattleSimulationManager가 이 객체를 통해 전투 상태를 읽고 쓴다.
 // Animator, UI, Transform 등 비주얼 관련 로직은 포함하지 않는다.
+// TODO: 더 짧고 문맥에 맞는 이름으로 BattleUnitState를 검토한다. BattleScene 문맥상 Combat은
+// 중복에 가깝고, 이 타입의 핵심 책임은 HP/쿨다운/버프/타겟/행동 같은 계산 상태 보유다.
 [Serializable]
 public sealed class BattleUnitCombatState
 {

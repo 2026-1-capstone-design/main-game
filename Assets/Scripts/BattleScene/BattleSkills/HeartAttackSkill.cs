@@ -14,19 +14,19 @@ public sealed class HeartAttackSkill : IBattleSkill
 
     public bool CanActivate(in BattleEffectContext context)
     {
-        BattleRuntimeUnit caster = context.Actor;
+        BattleUnitCombatState caster = context.Actor != null ? context.Actor.State : null;
         if (caster == null)
             return false;
 
         BattleUnitCombatState target = caster.PlannedTargetEnemy;
-        return BattleFieldSnapshot.IsValidEnemyTarget(caster.State, target)
-            && BattleFieldSnapshot.IsWithinEffectiveAttackDistance(caster.State, target);
+        return BattleFieldSnapshot.IsValidEnemyTarget(caster, target)
+            && BattleFieldSnapshot.IsWithinEffectiveAttackDistance(caster, target);
     }
 
     public void Activate(in BattleEffectContext context, IBattleEffectSink effects)
     {
-        BattleRuntimeUnit caster = context.Actor;
-        BattleRuntimeUnit target = context.PrimaryTarget;
+        BattleUnitCombatState caster = context.Actor != null ? context.Actor.State : null;
+        BattleUnitCombatState target = context.PrimaryTarget != null ? context.PrimaryTarget.State : null;
         if (target == null)
             return;
         Vector3 pushDir = target.Position - caster.Position;

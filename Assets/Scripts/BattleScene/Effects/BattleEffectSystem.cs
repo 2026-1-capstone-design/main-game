@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 // 전투 효과의 실제 적용 지점이다.
@@ -6,15 +7,20 @@ public sealed class BattleEffectSystem : IBattleEffectSink
 {
     private readonly BattleArtifactSystem _artifacts;
     private BattleCombatResultBuffer _combatResults;
+    private IReadOnlyDictionary<BattleUnitCombatState, BattleRuntimeUnit> _runtimeUnitByState;
 
     public BattleEffectSystem(BattleArtifactSystem artifacts)
     {
         _artifacts = artifacts;
     }
 
-    public void Configure(BattleCombatResultBuffer combatResults)
+    public void Configure(
+        BattleCombatResultBuffer combatResults,
+        IReadOnlyDictionary<BattleUnitCombatState, BattleRuntimeUnit> runtimeUnitByState
+    )
     {
         _combatResults = combatResults;
+        _runtimeUnitByState = runtimeUnitByState;
     }
 
     public void DealDamage(BattleDamageRequest request)
@@ -22,41 +28,65 @@ public sealed class BattleEffectSystem : IBattleEffectSink
         // 피해량을 바꾸는 장신구는 ApplyDamage 직전에만 개입한다.
         _artifacts?.ModifyDamage(ref request);
 
-        BattleRuntimeUnit target = request.Target;
+        BattleUnitCombatState target = request.Target;
         if (target == null || target.IsCombatDisabled)
             return;
 
         float requestedAmount = request.Amount;
         float finalAmount = Mathf.Max(0f, requestedAmount);
-        target.State.ApplyDamage(finalAmount);
+        target.ApplyDamage(finalAmount);
+
+        BattleRuntimeUnit sourceRuntime = ResolveRuntimeUnit(request.Source);
+        BattleRuntimeUnit targetRuntime = ResolveRuntimeUnit(target);
 
         _combatResults?.Add(
-            new BattleCombatResult(request.Source, target, finalAmount, target.IsCombatDisabled, request.IsSkill)
+            new BattleCombatResult(sourceRuntime, targetRuntime, finalAmount, target.IsCombatDisabled, request.IsSkill)
         );
     }
 
     public void Heal(BattleHealRequest request)
     {
-        BattleRuntimeUnit target = request.Target;
+        BattleUnitCombatState target = request.Target;
         if (target == null || target.IsCombatDisabled)
             return;
 
-        target.State.ApplyHeal(Mathf.Max(0f, request.Amount));
+        target.ApplyHeal(Mathf.Max(0f, request.Amount));
     }
 
-    public void ApplyBuff(BattleRuntimeUnit source, BattleRuntimeUnit target, BuffType type, int level, float duration)
+    public void ApplyBuff(
+        BattleUnitCombatState source,
+        BattleUnitCombatState target,
+        BuffType type,
+        int level,
+        float duration
+    )
     {
         if (target == null || target.IsCombatDisabled)
             return;
 
-        target.State.BuffApply(type, level, duration);
+        target.BuffApply(type, level, duration);
     }
 
-    public void AddKnockback(BattleRuntimeUnit target, Vector3 direction, float force)
+    public void AddKnockback(BattleUnitCombatState target, Vector3 direction, float force)
     {
         if (target == null || target.IsCombatDisabled)
             return;
 
-        target.State.AddKnockback(direction, force);
+        target.AddKnockback(direction, force);
+    }
+
+    public void PlayVisual(BattleVisualEffectRequest request)
+    {
+        // TODO
+        // Presentation Layer 연결 지점.
+        // 실제 파티클/사운드 재생기는 후속 PresentationSystem에서 구독한다.
+    }
+
+    private BattleRuntimeUnit ResolveRuntimeUnit(BattleUnitCombatState state)
+    {
+        if (state == null || _runtimeUnitByState == null)
+            return null;
+
+        return _runtimeUnitByState.TryGetValue(state, out BattleRuntimeUnit runtime) ? runtime : null;
     }
 }

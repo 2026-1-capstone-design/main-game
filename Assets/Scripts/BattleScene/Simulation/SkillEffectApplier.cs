@@ -30,12 +30,18 @@ public sealed class SkillEffectApplier : IBattleEffectSink
         _effects?.Heal(request);
     }
 
-    public void ApplyBuff(BattleRuntimeUnit source, BattleRuntimeUnit target, BuffType type, int level, float duration)
+    public void ApplyBuff(
+        BattleUnitCombatState source,
+        BattleUnitCombatState target,
+        BuffType type,
+        int level,
+        float duration
+    )
     {
         _effects?.ApplyBuff(source, target, type, level, duration);
     }
 
-    public void AddKnockback(BattleRuntimeUnit target, Vector3 direction, float force)
+    public void AddKnockback(BattleUnitCombatState target, Vector3 direction, float force)
     {
         _effects?.AddKnockback(target, direction, force);
     }
@@ -49,8 +55,8 @@ public sealed class SkillEffectApplier : IBattleEffectSink
         DealDamage(
             new BattleDamageRequest
             {
-                Source = _caster,
-                Target = targetRuntime,
+                Source = _caster != null ? _caster.State : null,
+                Target = target,
                 Amount = amount,
                 SourceKind = BattleEffectSourceKind.Skill,
                 DamageKind = BattleDamageKind.Direct,
@@ -58,15 +64,6 @@ public sealed class SkillEffectApplier : IBattleEffectSink
                 IsSkill = true,
             }
         );
-    }
-
-    public void AddKnockback(BattleUnitCombatState target, Vector3 direction, float force)
-    {
-        BattleRuntimeUnit targetRuntime = ResolveRuntimeUnit(target);
-        if (targetRuntime == null)
-            return;
-
-        AddKnockback(targetRuntime, direction, force);
     }
 
     public void ApplyHeal(BattleUnitCombatState caster, float amount)
@@ -78,8 +75,8 @@ public sealed class SkillEffectApplier : IBattleEffectSink
         Heal(
             new BattleHealRequest
             {
-                Source = _caster,
-                Target = targetRuntime,
+                Source = _caster != null ? _caster.State : null,
+                Target = caster,
                 Amount = amount,
                 SourceKind = BattleEffectSourceKind.Skill,
             }
@@ -92,7 +89,12 @@ public sealed class SkillEffectApplier : IBattleEffectSink
         if (targetRuntime == null)
             return;
 
-        ApplyBuff(_caster, targetRuntime, type, level, duration);
+        ApplyBuff(_caster != null ? _caster.State : null, caster, type, level, duration);
+    }
+
+    public void PlayVisual(BattleVisualEffectRequest request)
+    {
+        _effects?.PlayVisual(request);
     }
 
     private BattleRuntimeUnit ResolveRuntimeUnit(BattleUnitCombatState state)

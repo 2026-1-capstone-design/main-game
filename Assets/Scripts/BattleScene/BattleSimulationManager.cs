@@ -177,7 +177,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
             escapeTowardTeamBlend,
             CurrentSnapshot
         );
-        _effectSystem.Configure(_tickCombatResultBuffer);
+        _effectSystem.Configure(_tickCombatResultBuffer, _runtimeUnitByState);
         _artifactSystem.Initialize(_runtimeUnits, CurrentSnapshot, 0f, 0, _effectSystem);
         _physicsSystem.Configure(_battlefieldCollider, desiredPositionStopDistance);
 

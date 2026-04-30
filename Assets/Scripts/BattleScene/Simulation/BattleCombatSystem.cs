@@ -42,7 +42,7 @@ public sealed class BattleCombatSystem
             return;
 
         results.Clear();
-        _effects.Configure(results);
+        _effects.Configure(results, runtimeUnitByState);
         ExecuteAttackPhase(units, runtimeUnitByState, _effects);
         ExecuteSkillPhase(units, runtimeUnitByState, snapshot, battleTime, battleTick);
     }
@@ -73,8 +73,8 @@ public sealed class BattleCombatSystem
             effects.DealDamage(
                 new BattleDamageRequest
                 {
-                    Source = attacker,
-                    Target = targetRuntime,
+                    Source = attacker.State,
+                    Target = target,
                     Amount = attacker.Attack,
                     SourceKind = BattleEffectSourceKind.BasicAttack,
                     DamageKind = BattleDamageKind.Direct,
