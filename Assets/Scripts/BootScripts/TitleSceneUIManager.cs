@@ -508,14 +508,14 @@ public sealed class TitleSceneUIManager : MonoBehaviour
     // 저장 데이터 프리뷰를 기반으로 슬롯 텍스트를 갱신한다.
     private void RefreshLoadGameSlotPreviewTexts()
     {
-        if (_loadGameSlotTexts == null)
+        if (loadGameSlotTexts == null)
         {
             return;
         }
 
-        for (int slotIndex = 0; slotIndex < _loadGameSlotTexts.Length; slotIndex++)
+        for (int slotIndex = 0; slotIndex < loadGameSlotTexts.Length; slotIndex++)
         {
-            TMP_Text slotText = _loadGameSlotTexts[slotIndex];
+            TMP_Text slotText = loadGameSlotTexts[slotIndex];
             if (slotText == null)
             {
                 continue;
