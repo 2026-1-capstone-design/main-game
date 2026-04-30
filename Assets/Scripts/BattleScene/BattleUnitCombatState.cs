@@ -78,6 +78,11 @@ public sealed class BattleUnitCombatState
     public bool HasTaunt => GetStatusLevel(BattleStatusType.Taunt) > 0;
     public bool IsSkillDisabled => GetStatusLevel(BattleStatusType.SkillDisabled) > 0;
 
+    public void SetTeamId(BattleTeamId teamId)
+    {
+        TeamId = teamId;
+    }
+
     // ── 넉백 ───────────────────────────────────────────────────────
     public Vector3 CurrentKnockback { get; private set; }
 

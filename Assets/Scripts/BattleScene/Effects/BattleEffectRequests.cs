@@ -163,4 +163,16 @@ public interface IBattleEffectSink
 
     // 수치 판정과 분리된 시각/청각 표현 요청을 전달한다.
     void PlayVisual(BattleVisualEffectRequest request);
+
+    // 현재 전투 시간 기준으로 미래 효과 실행을 예약한다.
+    int ScheduleEffect(
+        float delay,
+        BattleRuntimeUnit source,
+        BattleRuntimeUnit target,
+        in BattleEffectContext context,
+        System.Action<BattleEffectContext, IBattleEffectSink> execute
+    );
+
+    // 소환, 임시 팀 변경 등 전투 중 로스터 변경을 요청하는 sink다.
+    IBattleRosterMutationSink RosterMutations { get; }
 }

@@ -4,10 +4,21 @@ public sealed class BattleCombatSystem
 {
     private readonly BattleSkillRegistry _skillRegistry;
     private readonly BattleEffectSystem _effects;
+    private readonly BattleSkillChannelSystem _channelSystem;
+    private readonly BattleArtifactSystem _artifactSystem;
+    private readonly BattleRosterMutationSystem _rosterMutationSystem;
 
-    public BattleCombatSystem(BattleEffectSystem effects)
+    public BattleCombatSystem(
+        BattleEffectSystem effects,
+        BattleSkillChannelSystem channelSystem = null,
+        BattleArtifactSystem artifactSystem = null,
+        BattleRosterMutationSystem rosterMutationSystem = null
+    )
     {
         _effects = effects;
+        _channelSystem = channelSystem;
+        _artifactSystem = artifactSystem;
+        _rosterMutationSystem = rosterMutationSystem;
         _skillRegistry = new BattleSkillRegistry(
             new IBattleSkill[]
             {
@@ -43,7 +54,7 @@ public sealed class BattleCombatSystem
 
         results.Clear();
         _effects.Configure(results, runtimeUnitByState);
-        ExecuteAttackPhase(units, runtimeUnitByState, snapshot, _effects);
+        ExecuteAttackPhase(units, runtimeUnitByState, snapshot, _effects, _channelSystem, _artifactSystem);
         ExecuteSkillPhase(units, runtimeUnitByState, snapshot, battleTime, battleTick);
     }
 
@@ -51,7 +62,9 @@ public sealed class BattleCombatSystem
         IReadOnlyList<BattleRuntimeUnit> units,
         IReadOnlyDictionary<BattleUnitCombatState, BattleRuntimeUnit> runtimeUnitByState,
         BattleFieldSnapshot snapshot,
-        IBattleEffectSink effects
+        IBattleEffectSink effects,
+        BattleSkillChannelSystem channelSystem,
+        BattleArtifactSystem artifactSystem
     )
     {
         for (int i = 0; i < units.Count; i++)
@@ -59,8 +72,18 @@ public sealed class BattleCombatSystem
             BattleRuntimeUnit attacker = units[i];
             if (attacker == null || attacker.IsCombatDisabled || attacker.State.IsStunned)
                 continue;
+            if (channelSystem != null && channelSystem.IsBasicAttackBlocked(attacker))
+                continue;
 
             BattleUnitCombatState target = attacker.PlannedTargetEnemy;
+            if (
+                artifactSystem != null
+                && artifactSystem.TryOverrideBasicAttackTarget(attacker, snapshot, out BattleRuntimeUnit overrideTarget)
+            )
+            {
+                target = overrideTarget != null ? overrideTarget.State : null;
+            }
+
             if (snapshot != null)
             {
                 if (!snapshot.CanTarget(attacker.State, target, BattleTargetingReason.BasicAttack))
@@ -110,9 +133,14 @@ public sealed class BattleCombatSystem
             BattleRuntimeUnit unit = units[i];
             if (unit == null || unit.IsCombatDisabled || unit.State.IsStunned)
                 continue;
+            if (_channelSystem != null && _channelSystem.IsChanneling(unit))
+                continue;
             if (unit.IsExternallyControlled)
                 continue;
-            if (unit.State.IsSkillDisabled)
+            if (
+                unit.State.IsSkillDisabled
+                || (_rosterMutationSystem != null && _rosterMutationSystem.IsSkillDisabled(unit))
+            )
                 continue;
             if (unit.SkillCooldownRemaining > 0f)
                 continue;
@@ -131,7 +159,15 @@ public sealed class BattleCombatSystem
             if (skill == null || !skill.CanActivate(context))
                 continue;
 
-            skill.Activate(context, _effects);
+            if (skill is IChanneledBattleSkill channeledSkill)
+            {
+                _channelSystem?.StartChannel(unit, channeledSkill, context, _effects);
+            }
+            else
+            {
+                skill.Activate(context, _effects);
+            }
+
             _effects.NotifySkillCast(
                 new BattleSkillCastEvent(unit.State, unit, unit.State.GetSkill(), primaryTarget, snapshot)
             );

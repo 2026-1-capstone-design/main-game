@@ -58,3 +58,30 @@ public interface ISkillCastReactionArtifact : IBattleArtifact
 {
     void OnSkillCast(BattleUnitCombatState owner, in BattleSkillCastEvent skillCastEvent, IBattleEffectSink effects);
 }
+
+// 다른 장신구 효과를 복제하거나 이전받는 특수 장신구 훅이다.
+public interface IArtifactCopyEffect : IBattleArtifact
+{
+    void CopyFrom(BattleRuntimeUnit owner, BattleRuntimeUnit source, IBattleArtifact copiedEffect);
+}
+
+// 기본 공격 대상 선택을 장신구가 강제로 바꿀 수 있게 하는 훅이다.
+public interface IAttackRetargetArtifact : IBattleArtifact
+{
+    bool TryOverrideBasicAttackTarget(
+        BattleRuntimeUnit owner,
+        BattleFieldSnapshot snapshot,
+        out BattleRuntimeUnit target
+    );
+}
+
+// 위치 히스토리를 사용하는 장신구가 매 틱 과거 위치를 조회할 수 있게 하는 훅이다.
+public interface IPositionHistoryArtifact : IBattleArtifact
+{
+    void TickWithPositionHistory(
+        BattleRuntimeUnit owner,
+        BattlePositionHistory history,
+        in BattleEffectContext context,
+        IBattleEffectSink effects
+    );
+}

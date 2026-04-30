@@ -9,6 +9,9 @@ public sealed class BattleEffectSystem : IBattleEffectSink
     private BattleCombatResultBuffer _combatResults;
     private IReadOnlyDictionary<BattleUnitCombatState, BattleRuntimeUnit> _runtimeUnitByState;
     private SphereCollider _battlefieldCollider;
+    private BattleScheduledEffectSystem _scheduledEffects;
+    private BattleDamageLifecycle _damageLifecycle;
+    private IBattleRosterMutationSink _rosterMutations;
 
     public BattleEffectSystem(BattleArtifactSystem artifacts)
     {
@@ -27,23 +30,62 @@ public sealed class BattleEffectSystem : IBattleEffectSink
             _battlefieldCollider = battlefieldCollider;
     }
 
+    public IBattleRosterMutationSink RosterMutations => _rosterMutations;
+
+    public void ConfigureLongRunningSystems(
+        BattleScheduledEffectSystem scheduledEffects,
+        BattleDamageLifecycle damageLifecycle,
+        IBattleRosterMutationSink rosterMutations
+    )
+    {
+        _scheduledEffects = scheduledEffects;
+        _damageLifecycle = damageLifecycle;
+        _rosterMutations = rosterMutations;
+    }
+
     public void DealDamage(BattleDamageRequest request)
     {
-        // 피해량을 바꾸는 장신구는 ApplyDamage 직전에만 개입한다.
-        _artifacts?.ModifyDamage(ref request);
+        BattleDamageResolution resolution =
+            _damageLifecycle != null
+                ? _damageLifecycle.BeforeDamage(ref request, this)
+                : BattleDamageResolution.Continue;
+        if (resolution == BattleDamageResolution.Ignore)
+            return;
+        if (resolution == BattleDamageResolution.Redirect)
+        {
+            DealDamage(request);
+            _damageLifecycle?.FinishRedirectResolution();
+            return;
+        }
 
         BattleUnitCombatState target = request.Target;
         if (target == null || target.IsCombatDisabled)
             return;
 
+        // 피해량을 바꾸는 장신구는 ApplyDamage 직전에만 개입한다.
+        _artifacts?.ModifyDamage(ref request);
+
         float requestedAmount = request.Amount;
         float finalAmount = Mathf.Max(0f, requestedAmount);
         finalAmount *= Mathf.Max(0f, 1f + target.GetStatusLevel(BattleStatusType.DamageTakenPercent) / 100f);
         finalAmount *= Mathf.Max(0f, 1f - target.GetStatusLevel(BattleStatusType.DamageReductionPercent) / 100f);
+        BattleRuntimeUnit targetRuntime = ResolveRuntimeUnit(target);
+
+        if (
+            finalAmount >= target.CurrentHealth
+            && _damageLifecycle != null
+            && _damageLifecycle.TryPreventLethalDamage(targetRuntime, ref request, this)
+        )
+        {
+            return;
+        }
+
+        if (resolution == BattleDamageResolution.ClampToMinimumHealth)
+            finalAmount = Mathf.Max(0f, target.CurrentHealth - 1f);
+
         target.ApplyDamage(finalAmount);
 
         BattleRuntimeUnit sourceRuntime = ResolveRuntimeUnit(request.Source);
-        BattleRuntimeUnit targetRuntime = ResolveRuntimeUnit(target);
         BattleDamageResult result = new BattleDamageResult(
             request.Source,
             target,
@@ -56,6 +98,7 @@ public sealed class BattleEffectSystem : IBattleEffectSink
             new BattleCombatResult(sourceRuntime, targetRuntime, finalAmount, target.IsCombatDisabled, request.IsSkill)
         );
 
+        _damageLifecycle?.Accumulate(result);
         _artifacts?.AfterDamage(result, this);
         if (result.TargetDied)
             _artifacts?.OnUnitKilled(new BattleKillEvent(request.Source, target), this);
@@ -261,6 +304,20 @@ public sealed class BattleEffectSystem : IBattleEffectSink
         // TODO
         // Presentation Layer 연결 지점.
         // 실제 파티클/사운드 재생기는 후속 PresentationSystem에서 구독한다.
+    }
+
+    public int ScheduleEffect(
+        float delay,
+        BattleRuntimeUnit source,
+        BattleRuntimeUnit target,
+        in BattleEffectContext context,
+        System.Action<BattleEffectContext, IBattleEffectSink> execute
+    )
+    {
+        if (_scheduledEffects == null)
+            return 0;
+
+        return _scheduledEffects.Schedule(delay, source, target, context, execute);
     }
 
     public void NotifySkillCast(in BattleSkillCastEvent skillCastEvent)

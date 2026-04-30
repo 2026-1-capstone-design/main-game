@@ -59,6 +59,11 @@ public sealed class BattleSimulationManager : MonoBehaviour
     private readonly BattlePlanningSystem _planningSystem = new BattlePlanningSystem();
     private readonly BattlePhysicsSystem _physicsSystem = new BattlePhysicsSystem();
     private readonly BattleArtifactSystem _artifactSystem = new BattleArtifactSystem();
+    private readonly BattleSkillChannelSystem _channelSystem = new BattleSkillChannelSystem();
+    private readonly BattleScheduledEffectSystem _scheduledEffectSystem = new BattleScheduledEffectSystem();
+    private readonly BattlePositionHistory _positionHistory = new BattlePositionHistory();
+    private readonly BattleDamageLifecycle _damageLifecycle = new BattleDamageLifecycle();
+    private readonly BattleRosterMutationSystem _rosterMutationSystem = new BattleRosterMutationSystem();
     private BattleEffectSystem _effectSystem;
     private BattleCombatSystem _combatSystem;
     private readonly BattleVictorySystem _victorySystem = new BattleVictorySystem();
@@ -147,6 +152,11 @@ public sealed class BattleSimulationManager : MonoBehaviour
         _runtimeUnits.Clear();
         _unitStates.Clear();
         _runtimeUnitByState.Clear();
+        _channelSystem.Clear();
+        _scheduledEffectSystem.Clear();
+        _positionHistory.Clear();
+        _damageLifecycle.Clear();
+        _rosterMutationSystem.Clear();
         _battlefieldCollider = battlefieldCollider;
 
         for (int i = 0; i < runtimeUnits.Count; i++)
@@ -170,6 +180,14 @@ public sealed class BattleSimulationManager : MonoBehaviour
 
         ReleaseSnapshot();
         EnsureCombatSystems();
+        _rosterMutationSystem.Configure(
+            _runtimeUnits,
+            _unitStates,
+            _runtimeUnitByState,
+            _battlefieldCollider,
+            _payload != null ? _payload.PlayerTeamId : BattleTeamIds.Player
+        );
+        _effectSystem.ConfigureLongRunningSystems(_scheduledEffectSystem, _damageLifecycle, _rosterMutationSystem);
         BattleParameterRadii initialRadii = BattleParameterSystem.BuildRadii(aiTuning);
         CurrentSnapshot = BattleFieldSnapshot.Build(
             _runtimeUnits,
@@ -249,19 +267,40 @@ public sealed class BattleSimulationManager : MonoBehaviour
             CurrentSnapshot,
             _artifactSystem.TargetingPolicy
         );
+        float battleTime = _battleTickCount * _tickInterval;
+        BattleEffectContext tickContext = new BattleEffectContext(
+            null,
+            null,
+            CurrentSnapshot,
+            _runtimeUnits,
+            battleTime,
+            _battleTickCount
+        );
+        _rosterMutationSystem.Tick(battleTime);
+        _channelSystem.Tick(tickContext, _effectSystem);
+        _scheduledEffectSystem.Tick(tickContext, _effectSystem);
         _cooldownSystem.Tick(_runtimeUnits, tickDeltaTime);
 
         _parameterSystem.Compute(_runtimeUnits, radii, aiTuning, CurrentSnapshot, _tickModifierOverflowFlagsBuffer);
-        _decisionSystem.Decide(_runtimeUnits, aiTuning, tickDeltaTime, _tickDecisionBuffer);
+        _decisionSystem.Decide(
+            _runtimeUnits,
+            aiTuning,
+            tickDeltaTime,
+            _tickDecisionBuffer,
+            _channelSystem,
+            _rosterMutationSystem
+        );
 
-        _planningSystem.Build(_runtimeUnits, CurrentSnapshot);
-        _physicsSystem.Execute(_runtimeUnits, tickDeltaTime, _artifactSystem.MovementPolicy);
+        _planningSystem.Build(_runtimeUnits, CurrentSnapshot, _rosterMutationSystem);
+        _physicsSystem.Execute(_runtimeUnits, tickDeltaTime, _artifactSystem.MovementPolicy, _channelSystem);
+        _positionHistory.RecordAll(_runtimeUnits, battleTime);
+        _artifactSystem.TickPositionHistoryArtifacts(_positionHistory, tickContext, _effectSystem);
         _combatSystem.Execute(
             _runtimeUnits,
             _runtimeUnitByState,
             _tickCombatResultBuffer,
             CurrentSnapshot,
-            _battleTickCount * _tickInterval,
+            battleTime,
             _battleTickCount
         );
 
@@ -354,7 +393,12 @@ public sealed class BattleSimulationManager : MonoBehaviour
             _effectSystem = new BattleEffectSystem(_artifactSystem);
 
         if (_combatSystem == null)
-            _combatSystem = new BattleCombatSystem(_effectSystem);
+            _combatSystem = new BattleCombatSystem(
+                _effectSystem,
+                _channelSystem,
+                _artifactSystem,
+                _rosterMutationSystem
+            );
     }
 
     private void ReleaseSnapshot()
