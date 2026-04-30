@@ -33,7 +33,8 @@ public sealed class BattleArtifactSystem
         for (int i = 0; i < units.Count; i++)
         {
             BattleRuntimeUnit owner = units[i];
-            if (owner == null || owner.Snapshot == null || owner.Snapshot.ArtifactIds == null)
+            BattleUnitCombatState ownerState = owner != null ? owner.State : null;
+            if (owner == null || ownerState == null || owner.Snapshot == null || owner.Snapshot.ArtifactIds == null)
                 continue;
 
             BattleEffectContext context = new BattleEffectContext(owner, null, snapshot, units, battleTime, battleTick);
@@ -45,13 +46,17 @@ public sealed class BattleArtifactSystem
                 if (artifact == null)
                     continue;
 
-                artifact.Initialize(owner, context);
+                artifact.Initialize(ownerState, context);
 
                 if (artifact is IDamageModifierArtifact damageModifier)
-                    _damageModifiers.Add(new ArtifactBinding<IDamageModifierArtifact>(owner, damageModifier));
+                    _damageModifiers.Add(
+                        new ArtifactBinding<IDamageModifierArtifact>(ownerState, owner, damageModifier)
+                    );
 
                 if (artifact is IBattleStartArtifactEffect startEffect)
-                    _battleStartEffects.Add(new ArtifactBinding<IBattleStartArtifactEffect>(owner, startEffect));
+                    _battleStartEffects.Add(
+                        new ArtifactBinding<IBattleStartArtifactEffect>(ownerState, owner, startEffect)
+                    );
             }
         }
 
@@ -59,7 +64,7 @@ public sealed class BattleArtifactSystem
         {
             ArtifactBinding<IBattleStartArtifactEffect> binding = _battleStartEffects[i];
             BattleEffectContext context = new BattleEffectContext(
-                binding.Owner,
+                binding.OwnerView,
                 null,
                 snapshot,
                 units,
@@ -85,12 +90,14 @@ public sealed class BattleArtifactSystem
     private readonly struct ArtifactBinding<T>
         where T : IBattleArtifact
     {
-        public BattleRuntimeUnit Owner { get; }
+        public BattleUnitCombatState Owner { get; }
+        public BattleRuntimeUnit OwnerView { get; }
         public T Artifact { get; }
 
-        public ArtifactBinding(BattleRuntimeUnit owner, T artifact)
+        public ArtifactBinding(BattleUnitCombatState owner, BattleRuntimeUnit ownerView, T artifact)
         {
             Owner = owner;
+            OwnerView = ownerView;
             Artifact = artifact;
         }
     }

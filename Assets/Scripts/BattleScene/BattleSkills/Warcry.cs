@@ -14,10 +14,11 @@ public sealed class WarcrySkill : IBattleSkill
 
     public void Activate(in BattleEffectContext context, IBattleEffectSink effects)
     {
-        BattleRuntimeUnit caster = context.Actor;
-        foreach (BattleRuntimeUnit unit in context.Units)
+        BattleUnitCombatState caster = context.Actor != null ? context.Actor.State : null;
+        foreach (BattleRuntimeUnit unitView in context.Units)
         {
-            if (unit != null && !unit.IsCombatDisabled && unit.TeamId == caster.State.TeamId)
+            BattleUnitCombatState unit = unitView != null ? unitView.State : null;
+            if (unit != null && !unit.IsCombatDisabled && unit.TeamId == caster.TeamId)
             {
                 effects.ApplyBuff(caster, unit, BuffType.AttackDamage, 3, 10f); // 공격력 +30
             }

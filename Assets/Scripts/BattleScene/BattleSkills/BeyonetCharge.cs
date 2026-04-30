@@ -14,7 +14,7 @@ public sealed class BayonetChargeSkill : IBattleSkill
 
     public void Activate(in BattleEffectContext context, IBattleEffectSink effects)
     {
-        BattleRuntimeUnit caster = context.Actor;
+        BattleUnitCombatState caster = context.Actor != null ? context.Actor.State : null;
         effects.ApplyBuff(caster, caster, BuffType.AttackSpeed, 3, 10f);
         effects.ApplyBuff(caster, caster, BuffType.AttackDamage, 2, 10f);
         effects.ApplyBuff(caster, caster, BuffType.MoveSpeed, 3, 10f);

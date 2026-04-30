@@ -17,12 +17,12 @@ public sealed class FireballSkill : IBattleSkill
 
     public void Activate(in BattleEffectContext context, IBattleEffectSink effects)
     {
-        BattleRuntimeUnit caster = context.Actor;
+        BattleUnitCombatState caster = context.Actor != null ? context.Actor.State : null;
         effects.DealDamage(
             new BattleDamageRequest
             {
                 Source = caster,
-                Target = context.PrimaryTarget,
+                Target = context.PrimaryTarget != null ? context.PrimaryTarget.State : null,
                 Amount = caster.Attack * 2.5f,
                 SourceKind = BattleEffectSourceKind.Skill,
                 DamageKind = BattleDamageKind.Direct,

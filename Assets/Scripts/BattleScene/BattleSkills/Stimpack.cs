@@ -15,6 +15,7 @@ public sealed class StimpackSkill : IBattleSkill
 
     public void Activate(in BattleEffectContext context, IBattleEffectSink effects)
     {
-        effects.ApplyBuff(context.Actor, context.Actor, BuffType.AttackSpeed, 4, 8f);
+        BattleUnitCombatState caster = context.Actor != null ? context.Actor.State : null;
+        effects.ApplyBuff(caster, caster, BuffType.AttackSpeed, 4, 8f);
     }
 }

@@ -47,7 +47,7 @@ public readonly struct BattleEffectContext
         BattleRuntimeUnit actor,
         BattleRuntimeUnit primaryTarget,
         BattleFieldSnapshot snapshot,
-        IReadOnlyList<BattleRuntimeUnit> units,
+        IReadOnlyList<BattleRuntimeUnit> unitViews,
         float battleTime,
         int battleTick
     )
@@ -55,7 +55,7 @@ public readonly struct BattleEffectContext
         Actor = actor;
         PrimaryTarget = primaryTarget;
         Snapshot = snapshot;
-        Units = units;
+        Units = unitViews;
         BattleTime = battleTime;
         BattleTick = battleTick;
     }
@@ -65,8 +65,8 @@ public readonly struct BattleEffectContext
 // 기본 공격, 스킬, 장신구 피해가 같은 보정/기록 파이프라인을 사용하게 만든다.
 public struct BattleDamageRequest
 {
-    public BattleRuntimeUnit Source;
-    public BattleRuntimeUnit Target;
+    public BattleUnitCombatState Source;
+    public BattleUnitCombatState Target;
     public float Amount;
     public BattleEffectSourceKind SourceKind;
     public BattleDamageKind DamageKind;
@@ -81,11 +81,40 @@ public struct BattleDamageRequest
 // 현재는 즉시 치유만 담지만, 출처와 장신구 ID를 포함해 후속 보정 훅을 붙일 수 있다.
 public struct BattleHealRequest
 {
-    public BattleRuntimeUnit Source;
-    public BattleRuntimeUnit Target;
+    public BattleUnitCombatState Source;
+    public BattleUnitCombatState Target;
     public float Amount;
     public BattleEffectSourceKind SourceKind;
     public ArtifactId ArtifactId;
+}
+
+// 파티클, 사운드, 모션 같은 표현 계층 요청이다.
+// 수치 판정은 State 기반으로 처리하고, 표현이 필요한 경우에만 런타임 뷰를 함께 전달한다.
+public readonly struct BattleVisualEffectRequest
+{
+    public BattleEffectSourceKind SourceKind { get; }
+    public WeaponSkillId SkillId { get; }
+    public ArtifactId ArtifactId { get; }
+    public BattleRuntimeUnit SourceView { get; }
+    public BattleRuntimeUnit TargetView { get; }
+    public string EffectKey { get; }
+
+    public BattleVisualEffectRequest(
+        BattleEffectSourceKind sourceKind,
+        WeaponSkillId skillId,
+        ArtifactId artifactId,
+        BattleRuntimeUnit sourceView,
+        BattleRuntimeUnit targetView,
+        string effectKey
+    )
+    {
+        SourceKind = sourceKind;
+        SkillId = skillId;
+        ArtifactId = artifactId;
+        SourceView = sourceView;
+        TargetView = targetView;
+        EffectKey = effectKey;
+    }
 }
 
 // 전투 효과가 실제 상태 변경을 요청하는 단일 진입점이다.
@@ -94,6 +123,13 @@ public interface IBattleEffectSink
 {
     void DealDamage(BattleDamageRequest request);
     void Heal(BattleHealRequest request);
-    void ApplyBuff(BattleRuntimeUnit source, BattleRuntimeUnit target, BuffType type, int level, float duration);
-    void AddKnockback(BattleRuntimeUnit target, Vector3 direction, float force);
+    void ApplyBuff(
+        BattleUnitCombatState source,
+        BattleUnitCombatState target,
+        BuffType type,
+        int level,
+        float duration
+    );
+    void AddKnockback(BattleUnitCombatState target, Vector3 direction, float force);
+    void PlayVisual(BattleVisualEffectRequest request);
 }

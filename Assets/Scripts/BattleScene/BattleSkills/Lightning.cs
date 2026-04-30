@@ -16,18 +16,15 @@ public sealed class LightningSkill : IBattleSkill
 
     public void Activate(in BattleEffectContext context, IBattleEffectSink effects)
     {
-        BattleRuntimeUnit caster = context.Actor;
-        BattleRuntimeUnit target = context.PrimaryTarget;
+        BattleUnitCombatState caster = context.Actor != null ? context.Actor.State : null;
+        BattleUnitCombatState target = context.PrimaryTarget != null ? context.PrimaryTarget.State : null;
         if (target == null)
             return;
 
-        foreach (BattleRuntimeUnit unit in context.Units)
+        foreach (BattleRuntimeUnit unitView in context.Units)
         {
-            if (
-                unit == null
-                || unit.IsCombatDisabled
-                || !BattleFieldSnapshot.IsValidEnemyTarget(caster.State, unit.State)
-            )
+            BattleUnitCombatState unit = unitView != null ? unitView.State : null;
+            if (unit == null || unit.IsCombatDisabled || !BattleFieldSnapshot.IsValidEnemyTarget(caster, unit))
                 continue;
 
             if (Vector3.Distance(target.Position, unit.Position) <= 40f)

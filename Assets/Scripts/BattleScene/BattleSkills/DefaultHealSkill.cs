@@ -19,8 +19,8 @@ public sealed class DefaultHealSkill : IBattleSkill
         effects.Heal(
             new BattleHealRequest
             {
-                Source = context.Actor,
-                Target = context.Actor,
+                Source = context.Actor != null ? context.Actor.State : null,
+                Target = context.Actor != null ? context.Actor.State : null,
                 Amount = 10f,
                 SourceKind = BattleEffectSourceKind.Skill,
             }
