@@ -43,13 +43,14 @@ public sealed class BattleCombatSystem
 
         results.Clear();
         _effects.Configure(results, runtimeUnitByState);
-        ExecuteAttackPhase(units, runtimeUnitByState, _effects);
+        ExecuteAttackPhase(units, runtimeUnitByState, snapshot, _effects);
         ExecuteSkillPhase(units, runtimeUnitByState, snapshot, battleTime, battleTick);
     }
 
     private static void ExecuteAttackPhase(
         IReadOnlyList<BattleRuntimeUnit> units,
         IReadOnlyDictionary<BattleUnitCombatState, BattleRuntimeUnit> runtimeUnitByState,
+        BattleFieldSnapshot snapshot,
         IBattleEffectSink effects
     )
     {
@@ -60,8 +61,15 @@ public sealed class BattleCombatSystem
                 continue;
 
             BattleUnitCombatState target = attacker.PlannedTargetEnemy;
-            if (!BattleFieldSnapshot.IsValidEnemyTarget(attacker.State, target))
+            if (snapshot != null)
+            {
+                if (!snapshot.CanTarget(attacker.State, target, BattleTargetingReason.BasicAttack))
+                    continue;
+            }
+            else if (!BattleFieldSnapshot.IsValidEnemyTarget(attacker.State, target))
+            {
                 continue;
+            }
             if (!BattleFieldSnapshot.IsWithinEffectiveAttackDistance(attacker.State, target))
                 continue;
             if (attacker.AttackCooldownRemaining > 0f)
@@ -104,6 +112,8 @@ public sealed class BattleCombatSystem
                 continue;
             if (unit.IsExternallyControlled)
                 continue;
+            if (unit.State.IsSkillDisabled)
+                continue;
             if (unit.SkillCooldownRemaining > 0f)
                 continue;
 
@@ -122,6 +132,9 @@ public sealed class BattleCombatSystem
                 continue;
 
             skill.Activate(context, _effects);
+            _effects.NotifySkillCast(
+                new BattleSkillCastEvent(unit.State, unit, unit.State.GetSkill(), primaryTarget, snapshot)
+            );
 
             unit.SetSkillState(unit.GetSkillAnimationDuration());
             unit.State.ResetSkillCooldown();

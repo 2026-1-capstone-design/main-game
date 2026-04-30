@@ -121,8 +121,17 @@ public readonly struct BattleVisualEffectRequest
 // 스킬과 장신구 구현체는 State를 직접 만지는 대신 이 sink를 호출한다.
 public interface IBattleEffectSink
 {
+    // 피해를 적용하고 피해 보정, 전투 결과 기록, 피해/킬 반응 훅을 함께 처리한다.
     void DealDamage(BattleDamageRequest request);
+
+    // 치유를 적용하고 치유 후 반응 훅을 호출한다.
     void Heal(BattleHealRequest request);
+
+    // BattleStatusRequest 기반 신규 상태를 적용한다.
+    void ApplyStatus(BattleStatusRequest request);
+
+    // 기존 BuffType 호출부를 유지하기 위한 호환 API다.
+    // 내부에서는 BattleStatusRequest로 변환되어 신규 상태 저장소에 들어간다.
     void ApplyBuff(
         BattleUnitCombatState source,
         BattleUnitCombatState target,
@@ -130,6 +139,28 @@ public interface IBattleEffectSink
         int level,
         float duration
     );
+
+    // 필터 조건에 맞는 버프/디버프를 즉시 제거한다.
+    void Dispel(BattleUnitCombatState target, BattleDispelFilter filter);
+
+    // 필터 조건에 맞는 상태들의 남은 지속시간을 지정값으로 갱신한다.
+    void RefreshStatuses(BattleUnitCombatState target, BattleStatusFilter filter, float duration);
+
+    // 전투불능 상태의 유닛을 지정 체력으로 복귀시킨다.
+    void Revive(BattleUnitCombatState target, float health);
+
+    // 넉백 힘을 누적한다. 강제 이동 무시 정책이 있으면 적용 전에 차단될 수 있다.
     void AddKnockback(BattleUnitCombatState target, Vector3 direction, float force);
+
+    // 대상 유닛을 지정 월드 좌표로 이동시키고 전장 경계 안으로 보정한다.
+    void Teleport(BattleUnitCombatState target, Vector3 destination);
+
+    // source 쪽으로 target을 끌어오되 source와 stopDistance만큼 거리를 남긴다.
+    void PullTo(BattleUnitCombatState source, BattleUnitCombatState target, float stopDistance);
+
+    // target을 전장 가장자리로 밀어내고 필요하면 짧은 둔화 상태를 부여한다.
+    void PushToArenaEdge(BattleUnitCombatState source, BattleUnitCombatState target, float slowDuration);
+
+    // 수치 판정과 분리된 시각/청각 표현 요청을 전달한다.
     void PlayVisual(BattleVisualEffectRequest request);
 }

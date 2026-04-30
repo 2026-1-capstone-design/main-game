@@ -175,9 +175,10 @@ public sealed class BattleSimulationManager : MonoBehaviour
             _runtimeUnits,
             initialRadii,
             escapeTowardTeamBlend,
-            CurrentSnapshot
+            CurrentSnapshot,
+            _artifactSystem.TargetingPolicy
         );
-        _effectSystem.Configure(_tickCombatResultBuffer, _runtimeUnitByState);
+        _effectSystem.Configure(_tickCombatResultBuffer, _runtimeUnitByState, _battlefieldCollider);
         _artifactSystem.Initialize(_runtimeUnits, CurrentSnapshot, 0f, 0, _effectSystem);
         _physicsSystem.Configure(_battlefieldCollider, desiredPositionStopDistance);
 
@@ -241,14 +242,20 @@ public sealed class BattleSimulationManager : MonoBehaviour
         _battleTickCount++;
 
         BattleParameterRadii radii = BattleParameterSystem.BuildRadii(aiTuning);
-        CurrentSnapshot = BattleFieldSnapshot.Build(_runtimeUnits, radii, escapeTowardTeamBlend, CurrentSnapshot);
+        CurrentSnapshot = BattleFieldSnapshot.Build(
+            _runtimeUnits,
+            radii,
+            escapeTowardTeamBlend,
+            CurrentSnapshot,
+            _artifactSystem.TargetingPolicy
+        );
         _cooldownSystem.Tick(_runtimeUnits, tickDeltaTime);
 
         _parameterSystem.Compute(_runtimeUnits, radii, aiTuning, CurrentSnapshot, _tickModifierOverflowFlagsBuffer);
         _decisionSystem.Decide(_runtimeUnits, aiTuning, tickDeltaTime, _tickDecisionBuffer);
 
         _planningSystem.Build(_runtimeUnits, CurrentSnapshot);
-        _physicsSystem.Execute(_runtimeUnits, tickDeltaTime);
+        _physicsSystem.Execute(_runtimeUnits, tickDeltaTime, _artifactSystem.MovementPolicy);
         _combatSystem.Execute(
             _runtimeUnits,
             _runtimeUnitByState,

@@ -34,6 +34,11 @@ public sealed class BattleFieldSnapshot
         BattleUnitCombatState,
         Vector3
     >(BattleTeamConstants.MaxUnitsInBattle);
+    private readonly Dictionary<BattleUnitCombatState, BattleRuntimeUnit> _runtimeByState = new Dictionary<
+        BattleUnitCombatState,
+        BattleRuntimeUnit
+    >(BattleTeamConstants.MaxUnitsInBattle);
+    private IBattleTargetingPolicy _targetingPolicy = DefaultBattleTargetingPolicy.Instance;
 
     public IReadOnlyList<BattleUnitCombatState> AllLiving => _allLivingStates;
     public float EscapeTowardTeamBlend { get; private set; }
@@ -44,11 +49,12 @@ public sealed class BattleFieldSnapshot
         IReadOnlyList<BattleRuntimeUnit> units,
         BattleParameterRadii radii,
         float escapeTowardTeamBlend,
-        BattleFieldSnapshot reusableSnapshot = null
+        BattleFieldSnapshot reusableSnapshot = null,
+        IBattleTargetingPolicy targetingPolicy = null
     )
     {
         BattleFieldSnapshot snapshot = reusableSnapshot ?? new BattleFieldSnapshot();
-        snapshot.Rebuild(units, radii, escapeTowardTeamBlend);
+        snapshot.Rebuild(units, radii, escapeTowardTeamBlend, targetingPolicy);
         return snapshot;
     }
 
@@ -96,6 +102,36 @@ public sealed class BattleFieldSnapshot
         return delta.sqrMagnitude <= range * range;
     }
 
+    public bool CanTarget(
+        BattleUnitCombatState requester,
+        BattleUnitCombatState candidate,
+        BattleTargetingReason reason = BattleTargetingReason.Planner
+    )
+    {
+        if (!IsValidEnemyTarget(requester, candidate))
+            return false;
+
+        return _targetingPolicy.CanTarget(ResolveRuntime(requester), ResolveRuntime(candidate), reason);
+    }
+
+    public float ModifyTargetScore(
+        BattleUnitCombatState requester,
+        BattleUnitCombatState candidate,
+        float baseScore,
+        BattleTargetingReason reason = BattleTargetingReason.Planner
+    )
+    {
+        if (!IsValidEnemyTarget(requester, candidate))
+            return baseScore;
+
+        return _targetingPolicy.ModifyTargetScore(
+            ResolveRuntime(requester),
+            ResolveRuntime(candidate),
+            baseScore,
+            reason
+        );
+    }
+
     public void GetLivingAllies(BattleUnitCombatState requester, List<BattleUnitCombatState> result)
     {
         if (result == null)
@@ -137,19 +173,19 @@ public sealed class BattleFieldSnapshot
             return null;
 
         BattleUnitCombatState nearest = null;
-        float bestSqr = float.MaxValue;
+        float bestScore = float.MinValue;
         for (int i = 0; i < _allLivingStates.Count; i++)
         {
             BattleUnitCombatState candidate = _allLivingStates[i];
-            if (!IsValidEnemyTarget(requester, candidate))
+            if (!CanTarget(requester, candidate, BattleTargetingReason.Planner))
                 continue;
 
             Vector3 delta = candidate.Position - requester.Position;
             delta.y = 0f;
-            float sqr = delta.sqrMagnitude;
-            if (sqr < bestSqr)
+            float score = ModifyTargetScore(requester, candidate, -delta.sqrMagnitude, BattleTargetingReason.Planner);
+            if (score > bestScore)
             {
-                bestSqr = sqr;
+                bestScore = score;
                 nearest = candidate;
             }
         }
@@ -199,7 +235,7 @@ public sealed class BattleFieldSnapshot
         for (int i = 0; i < _allLivingStates.Count; i++)
         {
             BattleUnitCombatState enemy = _allLivingStates[i];
-            if (!IsValidEnemyTarget(self, enemy))
+            if (!CanTarget(self, enemy, BattleTargetingReason.Planner))
                 continue;
 
             float score = BattleParameterComputer.ComputeIsolatedEnemyTargetScore(
@@ -208,6 +244,7 @@ public sealed class BattleFieldSnapshot
                 enemyViews,
                 _radii
             );
+            score = ModifyTargetScore(self, enemy, score, BattleTargetingReason.Planner);
             if (score > bestScore)
             {
                 bestScore = score;
@@ -235,7 +272,7 @@ public sealed class BattleFieldSnapshot
         for (int i = 0; i < _allLivingStates.Count; i++)
         {
             BattleUnitCombatState enemy = _allLivingStates[i];
-            if (!IsValidEnemyTarget(self, enemy))
+            if (!CanTarget(self, enemy, BattleTargetingReason.Planner))
                 continue;
 
             Vector3 enemyCenter = ComputeTeamCenter(enemy.TeamId);
@@ -250,6 +287,7 @@ public sealed class BattleFieldSnapshot
                 Vector3.Distance(enemy.Position, enemyCenter) / _radii.teamCenterDistanceRadius
             );
             float score = hpLow * 0.45f + isolation * 0.35f + backlineFactor * 0.20f;
+            score = ModifyTargetScore(self, enemy, score, BattleTargetingReason.Planner);
 
             if (score > bestScore)
             {
@@ -314,13 +352,14 @@ public sealed class BattleFieldSnapshot
         for (int i = 0; i < _allLivingStates.Count; i++)
         {
             BattleUnitCombatState enemy = _allLivingStates[i];
-            if (!IsValidEnemyTarget(self, enemy))
+            if (!CanTarget(self, enemy, BattleTargetingReason.Planner))
                 continue;
             if (enemy.CurrentTarget != protectedAlly && enemy.PlannedTargetEnemy != protectedAlly)
                 continue;
 
             float dist = Vector3.Distance(enemy.Position, protectedAlly.Position);
             float score = 1f - Mathf.Clamp01(dist / _radii.peelRadius);
+            score = ModifyTargetScore(self, enemy, score, BattleTargetingReason.Planner);
             if (score > bestScore)
             {
                 bestScore = score;
@@ -337,17 +376,18 @@ public sealed class BattleFieldSnapshot
             return null;
 
         BattleUnitCombatState best = null;
-        float bestDist = float.MaxValue;
+        float bestScore = float.MinValue;
 
         for (int i = 0; i < _allLivingStates.Count; i++)
         {
             BattleUnitCombatState enemy = _allLivingStates[i];
-            if (!IsValidEnemyTarget(self, enemy))
+            if (!CanTarget(self, enemy, BattleTargetingReason.Planner))
                 continue;
             float distance = Vector3.Distance(enemy.Position, point);
-            if (distance < bestDist)
+            float score = ModifyTargetScore(self, enemy, -distance, BattleTargetingReason.Planner);
+            if (score > bestScore)
             {
-                bestDist = distance;
+                bestScore = score;
                 best = enemy;
             }
         }
@@ -369,7 +409,7 @@ public sealed class BattleFieldSnapshot
         for (int i = 0; i < _allLivingStates.Count; i++)
         {
             BattleUnitCombatState enemy = _allLivingStates[i];
-            if (!IsValidEnemyTarget(self, enemy))
+            if (!CanTarget(self, enemy, BattleTargetingReason.Planner))
                 continue;
 
             float distance = Vector3.Distance(self.Position, enemy.Position);
@@ -386,13 +426,15 @@ public sealed class BattleFieldSnapshot
     private void Rebuild(
         IReadOnlyList<BattleRuntimeUnit> units,
         BattleParameterRadii radii,
-        float escapeTowardTeamBlend
+        float escapeTowardTeamBlend,
+        IBattleTargetingPolicy targetingPolicy
     )
     {
         ResetForReuse();
 
         _radii = radii;
         EscapeTowardTeamBlend = escapeTowardTeamBlend;
+        _targetingPolicy = targetingPolicy ?? DefaultBattleTargetingPolicy.Instance;
 
         if (units == null)
             return;
@@ -405,6 +447,7 @@ public sealed class BattleFieldSnapshot
                 continue;
 
             _allLivingStates.Add(state);
+            _runtimeByState[state] = unit;
 
             BattleUnitView view = BattleUnitView.From(state);
             _allLivingViews.Add(view);
@@ -428,6 +471,8 @@ public sealed class BattleFieldSnapshot
         _bestBacklineEnemyCache.Clear();
         _mostPressuredAllyCache.Clear();
         _enemyPressureCenterCache.Clear();
+        _runtimeByState.Clear();
+        _targetingPolicy = DefaultBattleTargetingPolicy.Instance;
     }
 
     private static bool IsLiving(BattleUnitCombatState unit) => unit != null && !unit.IsCombatDisabled;
@@ -442,6 +487,8 @@ public sealed class BattleFieldSnapshot
         {
             BattleUnitCombatState candidate = _allLivingStates[i];
             bool matches = allies ? requester.TeamId == candidate.TeamId : requester.TeamId != candidate.TeamId;
+            if (!allies && !CanTarget(requester, candidate, BattleTargetingReason.Planner))
+                matches = false;
             if (matches)
                 result.Add(candidate);
         }
@@ -478,7 +525,7 @@ public sealed class BattleFieldSnapshot
         for (int i = 0; i < _allLivingStates.Count; i++)
         {
             BattleUnitCombatState enemy = _allLivingStates[i];
-            if (!IsValidEnemyTarget(requester, enemy))
+            if (!CanTarget(requester, enemy, BattleTargetingReason.Planner))
                 continue;
 
             if (enemy.CurrentTarget == ally || enemy.PlannedTargetEnemy == ally)
@@ -542,5 +589,13 @@ public sealed class BattleFieldSnapshot
         {
             pair.Value.Clear();
         }
+    }
+
+    private BattleRuntimeUnit ResolveRuntime(BattleUnitCombatState state)
+    {
+        if (state == null)
+            return null;
+
+        return _runtimeByState.TryGetValue(state, out BattleRuntimeUnit runtime) ? runtime : null;
     }
 }

@@ -2,13 +2,28 @@ using System.Collections.Generic;
 
 // 전투 시작 시 유닛의 ArtifactId 목록을 전투용 효과 객체로 만들고 훅별로 캐싱한다.
 // 매 피해 처리마다 전체 장신구를 다시 훑지 않도록 필요한 훅 목록만 유지한다.
-public sealed class BattleArtifactSystem
+public sealed class BattleArtifactSystem : IBattleTargetingPolicy, IBattleMovementPolicy
 {
     private readonly BattleArtifactRegistry _registry;
     private readonly List<ArtifactBinding<IDamageModifierArtifact>> _damageModifiers =
         new List<ArtifactBinding<IDamageModifierArtifact>>();
     private readonly List<ArtifactBinding<IBattleStartArtifactEffect>> _battleStartEffects =
         new List<ArtifactBinding<IBattleStartArtifactEffect>>();
+    private readonly List<ArtifactBinding<ITargetingModifierArtifact>> _targetingModifiers =
+        new List<ArtifactBinding<ITargetingModifierArtifact>>();
+    private readonly List<ArtifactBinding<IMovementModifierArtifact>> _movementModifiers =
+        new List<ArtifactBinding<IMovementModifierArtifact>>();
+    private readonly List<ArtifactBinding<IDamageReactionArtifact>> _damageReactions =
+        new List<ArtifactBinding<IDamageReactionArtifact>>();
+    private readonly List<ArtifactBinding<IHealReactionArtifact>> _healReactions =
+        new List<ArtifactBinding<IHealReactionArtifact>>();
+    private readonly List<ArtifactBinding<IKillReactionArtifact>> _killReactions =
+        new List<ArtifactBinding<IKillReactionArtifact>>();
+    private readonly List<ArtifactBinding<ISkillCastReactionArtifact>> _skillCastReactions =
+        new List<ArtifactBinding<ISkillCastReactionArtifact>>();
+
+    public IBattleTargetingPolicy TargetingPolicy => this;
+    public IBattleMovementPolicy MovementPolicy => this;
 
     public BattleArtifactSystem(BattleArtifactRegistry registry = null)
     {
@@ -26,6 +41,12 @@ public sealed class BattleArtifactSystem
         // BattleSimulationManager.Initialize가 재호출될 수 있으므로 이전 전투의 훅 캐시를 비운다.
         _damageModifiers.Clear();
         _battleStartEffects.Clear();
+        _targetingModifiers.Clear();
+        _movementModifiers.Clear();
+        _damageReactions.Clear();
+        _healReactions.Clear();
+        _killReactions.Clear();
+        _skillCastReactions.Clear();
 
         if (units == null)
             return;
@@ -57,6 +78,32 @@ public sealed class BattleArtifactSystem
                     _battleStartEffects.Add(
                         new ArtifactBinding<IBattleStartArtifactEffect>(ownerState, owner, startEffect)
                     );
+
+                if (artifact is ITargetingModifierArtifact targetingModifier)
+                    _targetingModifiers.Add(
+                        new ArtifactBinding<ITargetingModifierArtifact>(ownerState, owner, targetingModifier)
+                    );
+
+                if (artifact is IMovementModifierArtifact movementModifier)
+                    _movementModifiers.Add(
+                        new ArtifactBinding<IMovementModifierArtifact>(ownerState, owner, movementModifier)
+                    );
+
+                if (artifact is IDamageReactionArtifact damageReaction)
+                    _damageReactions.Add(
+                        new ArtifactBinding<IDamageReactionArtifact>(ownerState, owner, damageReaction)
+                    );
+
+                if (artifact is IHealReactionArtifact healReaction)
+                    _healReactions.Add(new ArtifactBinding<IHealReactionArtifact>(ownerState, owner, healReaction));
+
+                if (artifact is IKillReactionArtifact killReaction)
+                    _killReactions.Add(new ArtifactBinding<IKillReactionArtifact>(ownerState, owner, killReaction));
+
+                if (artifact is ISkillCastReactionArtifact skillCastReaction)
+                    _skillCastReactions.Add(
+                        new ArtifactBinding<ISkillCastReactionArtifact>(ownerState, owner, skillCastReaction)
+                    );
             }
         }
 
@@ -83,6 +130,109 @@ public sealed class BattleArtifactSystem
         {
             ArtifactBinding<IDamageModifierArtifact> binding = _damageModifiers[i];
             binding.Artifact.ModifyDamage(binding.Owner, ref request);
+        }
+    }
+
+    public bool CanTarget(BattleRuntimeUnit requester, BattleRuntimeUnit candidate, BattleTargetingReason reason)
+    {
+        if (!DefaultBattleTargetingPolicy.Instance.CanTarget(requester, candidate, reason))
+            return false;
+
+        for (int i = 0; i < _targetingModifiers.Count; i++)
+        {
+            ArtifactBinding<ITargetingModifierArtifact> binding = _targetingModifiers[i];
+            if (candidate == null || binding.Owner != candidate.State)
+                continue;
+            if (!binding.Artifact.CanBeTargeted(binding.Owner, requester, reason))
+                return false;
+        }
+
+        return true;
+    }
+
+    public float ModifyTargetScore(
+        BattleRuntimeUnit requester,
+        BattleRuntimeUnit candidate,
+        float baseScore,
+        BattleTargetingReason reason
+    )
+    {
+        BattleTargetScore score = new BattleTargetScore
+        {
+            Requester = requester,
+            Candidate = candidate,
+            Value = baseScore,
+            Reason = reason,
+        };
+
+        for (int i = 0; i < _targetingModifiers.Count; i++)
+        {
+            ArtifactBinding<ITargetingModifierArtifact> binding = _targetingModifiers[i];
+            binding.Artifact.ModifyTargetScore(binding.Owner, ref score);
+        }
+
+        return score.Value;
+    }
+
+    public void ModifyMoveSpeed(ref BattleMoveRequest request)
+    {
+        for (int i = 0; i < _movementModifiers.Count; i++)
+        {
+            ArtifactBinding<IMovementModifierArtifact> binding = _movementModifiers[i];
+            binding.Artifact.ModifyMoveSpeed(binding.Owner, ref request);
+        }
+    }
+
+    public bool CanIgnoreForcedMovement(BattleRuntimeUnit target, in BattleForcedMovementRequest request)
+    {
+        if (target == null)
+            return false;
+
+        for (int i = 0; i < _movementModifiers.Count; i++)
+        {
+            ArtifactBinding<IMovementModifierArtifact> binding = _movementModifiers[i];
+            if (binding.Owner != target.State)
+                continue;
+            if (binding.Artifact.CanIgnoreForcedMovement(binding.Owner, request))
+                return true;
+        }
+
+        return false;
+    }
+
+    public void AfterDamage(in BattleDamageResult result, IBattleEffectSink effects)
+    {
+        for (int i = 0; i < _damageReactions.Count; i++)
+        {
+            ArtifactBinding<IDamageReactionArtifact> binding = _damageReactions[i];
+            binding.Artifact.AfterDamage(binding.Owner, result, effects);
+        }
+    }
+
+    public void AfterHeal(in BattleHealResult result, IBattleEffectSink effects)
+    {
+        for (int i = 0; i < _healReactions.Count; i++)
+        {
+            ArtifactBinding<IHealReactionArtifact> binding = _healReactions[i];
+            binding.Artifact.AfterHeal(binding.Owner, result, effects);
+        }
+    }
+
+    public void OnUnitKilled(in BattleKillEvent killEvent, IBattleEffectSink effects)
+    {
+        for (int i = 0; i < _killReactions.Count; i++)
+        {
+            ArtifactBinding<IKillReactionArtifact> binding = _killReactions[i];
+            binding.Artifact.OnUnitKilled(binding.Owner, killEvent, effects);
+        }
+    }
+
+    public void OnSkillCast(in BattleSkillCastEvent skillCastEvent, IBattleEffectSink effects)
+    {
+        for (int i = 0; i < _skillCastReactions.Count; i++)
+        {
+            ArtifactBinding<ISkillCastReactionArtifact> binding = _skillCastReactions[i];
+            binding.Artifact.OnSkillCast(binding.Owner, skillCastEvent, effects);
         }
     }
 
