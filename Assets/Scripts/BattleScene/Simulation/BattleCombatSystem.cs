@@ -56,7 +56,16 @@ public sealed class BattleCombatSystem
 
         results.Clear();
         _effects.Configure(results, runtimeUnitByState);
-        ExecuteAttackPhase(units, runtimeUnitByState, snapshot, _effects, _channelSystem, _artifactSystem, controlPlans, controlSources);
+        ExecuteAttackPhase(
+            units,
+            runtimeUnitByState,
+            snapshot,
+            _effects,
+            _channelSystem,
+            _artifactSystem,
+            controlPlans,
+            controlSources
+        );
         ExecuteSkillPhase(units, runtimeUnitByState, snapshot, battleTime, battleTick, controlPlans, controlSources);
     }
 
@@ -175,7 +184,10 @@ public sealed class BattleCombatSystem
                 continue;
             }
 
-            BattleRuntimeUnit primaryTarget = ResolveRuntimeUnit(runtimeUnitByState, plan.TargetEnemy ?? unit.PlannedTargetEnemy);
+            BattleRuntimeUnit primaryTarget = ResolveRuntimeUnit(
+                runtimeUnitByState,
+                plan.TargetEnemy ?? unit.PlannedTargetEnemy
+            );
             BattleEffectContext context = new BattleEffectContext(
                 unit,
                 primaryTarget,

@@ -35,7 +35,8 @@ public class GladiatorAgent : Agent
     private GladiatorRewardConfig rewardConfig;
 
     [Header("Heuristic (Demo Recording)")]
-    [SerializeField] private bool useBuiltInAiHeuristic = false;
+    [SerializeField]
+    private bool useBuiltInAiHeuristic = false;
 
     private BattleRuntimeUnit _selfUnit;
     private BattleSceneFlowManager _flowManager;
@@ -280,9 +281,10 @@ public class GladiatorAgent : Agent
         if (useBuiltInAiHeuristic && _aiHeuristic != null && _selfState != null)
         {
             BattleFieldSnapshot snapshot = _flowManager?.BattleSimulationManager?.CurrentSnapshot;
-            float tickDelta = _flowManager?.BattleSimulationManager != null
-                ? 1f / _flowManager.BattleSimulationManager.simulationTickRate
-                : 1f / 15f;
+            float tickDelta =
+                _flowManager?.BattleSimulationManager != null
+                    ? 1f / _flowManager.BattleSimulationManager.simulationTickRate
+                    : 1f / 15f;
             if (_aiHeuristic.TryBuildPlan(_selfState, snapshot, tickDelta, out BattleControlPlan plan))
             {
                 BattleUnitPose pose = _poseProvider != null ? _poseProvider.CurrentPose : BattleUnitPose.Default;

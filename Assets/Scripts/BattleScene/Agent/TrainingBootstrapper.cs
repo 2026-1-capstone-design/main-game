@@ -332,8 +332,10 @@ public class TrainingBootstrapper : MonoBehaviour, ITrainingEnvironment
 
         int academyStepCount = _academyStepCoordinator != null ? _academyStepCoordinator.EnvironmentStepCount : 0;
         int battleTickCount = battleSimulationManager.BattleTickCount;
-        if (!string.Equals(label, "Episode started", System.StringComparison.Ordinal)
-            && academyStepCount % logProgressInterval != 0)
+        if (
+            !string.Equals(label, "Episode started", System.StringComparison.Ordinal)
+            && academyStepCount % logProgressInterval != 0
+        )
         {
             return;
         }
