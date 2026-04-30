@@ -65,8 +65,6 @@ public sealed class TitleSceneUIManager : MonoBehaviour
     private bool _isNavigating; // 씬 이동 중 중복 클릭 방지
     private Button _settingsBackdropButton;
     private Button _loadGameBackdropButton;
-    private Button[] _loadGameSlotButtons;
-    private TMP_Text[] _loadGameSlotTexts;
 
     private void Start()
     {
@@ -165,8 +163,6 @@ public sealed class TitleSceneUIManager : MonoBehaviour
         {
             return;
         }
-
-        CacheLoadGameModalControls();
 
         if (loadGameModalRoot == null)
         {
@@ -437,9 +433,6 @@ public sealed class TitleSceneUIManager : MonoBehaviour
     // 슬롯 텍스트들을 캐싱해 두면 이후 실제 세이브 데이터 연결 시 갱신만 하면 된다.
     private void CacheLoadGameSlotTextReferences(Transform modalRootTransform)
     {
-        _loadGameSlotButtons = new Button[5];
-        _loadGameSlotTexts = new TMP_Text[5];
-
         if (loadGameSlotButtons == null || loadGameSlotButtons.Length != 5)
         {
             loadGameSlotButtons = new Button[5];
@@ -450,44 +443,39 @@ public sealed class TitleSceneUIManager : MonoBehaviour
             loadGameSlotTexts = new TMP_Text[5];
         }
 
-        for (int slotIndex = 0; slotIndex < _loadGameSlotTexts.Length; slotIndex++)
+        for (int slotIndex = 0; slotIndex < loadGameSlotButtons.Length; slotIndex++)
         {
             int slotNumber = slotIndex + 1;
             Button slotButton = loadGameSlotButtons[slotIndex];
             if (slotButton == null)
             {
                 slotButton = FindLoadSlotButton(modalRootTransform, slotNumber);
+                loadGameSlotButtons[slotIndex] = slotButton;
             }
-
-            _loadGameSlotButtons[slotIndex] = slotButton;
-            loadGameSlotButtons[slotIndex] = slotButton;
 
             string slotTextName = $"Slot{slotIndex + 1}Text";
             TMP_Text slotText = loadGameSlotTexts[slotIndex];
             if (slotText == null)
             {
                 slotText = FindChildComponent<TMP_Text>(modalRootTransform, slotTextName);
+                loadGameSlotTexts[slotIndex] = slotText;
             }
 
-            _loadGameSlotTexts[slotIndex] = slotText;
-            loadGameSlotTexts[slotIndex] = slotText;
-
-            if (_loadGameSlotTexts[slotIndex] is TextMeshProUGUI tmpText)
+            if (loadGameSlotTexts[slotIndex] is TextMeshProUGUI tmpText)
             {
                 tmpText.raycastTarget = false;
             }
 
-            slotButton = _loadGameSlotButtons[slotIndex];
-            if (slotButton != null)
+            if (loadGameSlotButtons[slotIndex] != null)
             {
                 int capturedSlotNumber = slotNumber;
-                slotButton.onClick.RemoveAllListeners();
-                slotButton.onClick.AddListener(() => OnLoadGameSlotClicked(capturedSlotNumber));
+                loadGameSlotButtons[slotIndex].onClick.RemoveAllListeners();
+                loadGameSlotButtons[slotIndex].onClick.AddListener(() => OnLoadGameSlotClicked(capturedSlotNumber));
 
                 if (verboseLog)
                 {
                     Debug.Log(
-                        $"[TitleSceneUIManager] Bound load slot button: Slot{capturedSlotNumber} -> {slotButton.name}",
+                        $"[TitleSceneUIManager] Bound load slot button: Slot{capturedSlotNumber} -> {loadGameSlotButtons[slotIndex].name}",
                         this
                     );
                 }
@@ -495,8 +483,9 @@ public sealed class TitleSceneUIManager : MonoBehaviour
 
             if (verboseLog)
             {
-                string textName = _loadGameSlotTexts[slotIndex] != null ? _loadGameSlotTexts[slotIndex].name : "null";
-                string buttonName = slotButton != null ? slotButton.name : "null";
+                string textName = loadGameSlotTexts[slotIndex] != null ? loadGameSlotTexts[slotIndex].name : "null";
+                string buttonName =
+                    loadGameSlotButtons[slotIndex] != null ? loadGameSlotButtons[slotIndex].name : "null";
                 Debug.Log(
                     $"[TitleSceneUIManager] Load slot bind: index={slotNumber}, button={buttonName}, text={textName}",
                     this
@@ -591,18 +580,6 @@ public sealed class TitleSceneUIManager : MonoBehaviour
         {
             Debug.Log($"[TitleSceneUIManager] Load game clicked. Slot={slotNumber}", this);
         }
-    }
-
-    // 인스펙터에 배치된 로드 모달 참조가 있으면 캐싱만 다시 수행한다.
-    private void CacheLoadGameModalControls()
-    {
-        if (loadGameModalRoot != null)
-        {
-            CacheLoadGameControls();
-            return;
-        }
-
-        Debug.LogError("[TitleSceneUIManager] loadGameModalRoot is null.", this);
     }
 
     // 자식 계층을 이름으로 재귀 탐색한다.

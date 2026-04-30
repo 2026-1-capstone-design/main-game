@@ -256,7 +256,7 @@ public static class SaveGameService
             sessionManager.SetClassCounterEntriesForLoad(data.classCounters);
         }
 
-        if (randomManager != null && data.sessionSeed != 0)
+        if (randomManager != null)
         {
             randomManager.InitializeForNewSession(data.sessionSeed);
         }
