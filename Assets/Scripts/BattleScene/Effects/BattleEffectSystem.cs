@@ -53,8 +53,8 @@ public sealed class BattleEffectSystem : IBattleEffectSink
             return;
         if (resolution == BattleDamageResolution.Redirect)
         {
+            request.IsRedirected = true;
             DealDamage(request);
-            _damageLifecycle?.FinishRedirectResolution();
             return;
         }
 
