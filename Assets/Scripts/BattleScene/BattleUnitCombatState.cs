@@ -448,6 +448,21 @@ public sealed class BattleUnitCombatState
         return count;
     }
 
+    // DamageTakenPercent와 DamageReductionPercent를 한 번 순회로 읽어 반환한다.
+    public void GetDamageScaleFactors(out float takenPercent, out float reductionPercent)
+    {
+        takenPercent = 0f;
+        reductionPercent = 0f;
+        for (int i = 0; i < _statuses.Count; i++)
+        {
+            BattleStatusInstance s = _statuses[i];
+            if (s.Type == BattleStatusType.DamageTakenPercent)
+                takenPercent += s.Level;
+            else if (s.Type == BattleStatusType.DamageReductionPercent)
+                reductionPercent += s.Level;
+        }
+    }
+
     public void ApplyStatus(BattleStatusRequest request)
     {
         if (request.Target != null && request.Target != this)
