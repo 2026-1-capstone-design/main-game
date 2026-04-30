@@ -1,63 +1,98 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public sealed class SkillEffectApplier : ISkillEffectApplier
+public sealed class SkillEffectApplier : IBattleEffectSink
 {
     private BattleRuntimeUnit _caster;
     private IReadOnlyDictionary<BattleUnitCombatState, BattleRuntimeUnit> _runtimeUnitByState;
-    private BattleCombatResultBuffer _combatResults;
+    private BattleEffectSystem _effects;
 
     public IEnumerable<BattleUnitCombatState> AllUnits => _runtimeUnitByState.Keys;
 
     public void Configure(
         BattleRuntimeUnit caster,
         IReadOnlyDictionary<BattleUnitCombatState, BattleRuntimeUnit> runtimeUnitByState,
-        BattleCombatResultBuffer combatResults
+        BattleEffectSystem effects
     )
     {
         _caster = caster;
         _runtimeUnitByState = runtimeUnitByState;
-        _combatResults = combatResults;
+        _effects = effects;
+    }
+
+    public void DealDamage(BattleDamageRequest request)
+    {
+        _effects?.DealDamage(request);
+    }
+
+    public void Heal(BattleHealRequest request)
+    {
+        _effects?.Heal(request);
+    }
+
+    public void ApplyBuff(BattleRuntimeUnit source, BattleRuntimeUnit target, BuffType type, int level, float duration)
+    {
+        _effects?.ApplyBuff(source, target, type, level, duration);
+    }
+
+    public void AddKnockback(BattleRuntimeUnit target, Vector3 direction, float force)
+    {
+        _effects?.AddKnockback(target, direction, force);
     }
 
     public void ApplyDamage(BattleUnitCombatState target, float amount)
     {
-        if (target == null)
+        BattleRuntimeUnit targetRuntime = ResolveRuntimeUnit(target);
+        if (targetRuntime == null)
             return;
 
-        target.ApplyDamage(amount);
-        BattleRuntimeUnit targetRuntime = ResolveRuntimeUnit(target);
-
-        if (_combatResults != null)
-        {
-            _combatResults.Add(
-                new BattleCombatResult(_caster, targetRuntime, amount, target.IsCombatDisabled, wasSkill: true)
-            );
-        }
+        DealDamage(
+            new BattleDamageRequest
+            {
+                Source = _caster,
+                Target = targetRuntime,
+                Amount = amount,
+                SourceKind = BattleEffectSourceKind.Skill,
+                DamageKind = BattleDamageKind.Direct,
+                SkillId = _caster != null ? _caster.State.GetSkill() : WeaponSkillId.None,
+                IsSkill = true,
+            }
+        );
     }
 
     public void AddKnockback(BattleUnitCombatState target, Vector3 direction, float force)
     {
-        if (target == null)
+        BattleRuntimeUnit targetRuntime = ResolveRuntimeUnit(target);
+        if (targetRuntime == null)
             return;
 
-        target.AddKnockback(direction, force);
+        AddKnockback(targetRuntime, direction, force);
     }
 
     public void ApplyHeal(BattleUnitCombatState caster, float amount)
     {
-        if (caster == null)
+        BattleRuntimeUnit targetRuntime = ResolveRuntimeUnit(caster);
+        if (targetRuntime == null)
             return;
 
-        caster.ApplyHeal(amount);
+        Heal(
+            new BattleHealRequest
+            {
+                Source = _caster,
+                Target = targetRuntime,
+                Amount = amount,
+                SourceKind = BattleEffectSourceKind.Skill,
+            }
+        );
     }
 
     public void ApplyBuff(BattleUnitCombatState caster, BuffType type, int level, float duration)
     {
-        if (caster == null)
+        BattleRuntimeUnit targetRuntime = ResolveRuntimeUnit(caster);
+        if (targetRuntime == null)
             return;
 
-        caster.BuffApply(type, level, duration);
+        ApplyBuff(_caster, targetRuntime, type, level, duration);
     }
 
     private BattleRuntimeUnit ResolveRuntimeUnit(BattleUnitCombatState state)

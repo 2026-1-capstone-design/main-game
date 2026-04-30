@@ -3,11 +3,11 @@ using System.Collections.Generic;
 public sealed class BattleCombatSystem
 {
     private readonly BattleSkillRegistry _skillRegistry;
-    private readonly SkillEffectApplier _skillEffectApplier;
+    private readonly BattleEffectSystem _effects;
 
-    public BattleCombatSystem(SkillEffectApplier skillEffectApplier)
+    public BattleCombatSystem(BattleEffectSystem effects)
     {
-        _skillEffectApplier = skillEffectApplier ?? new SkillEffectApplier();
+        _effects = effects;
         _skillRegistry = new BattleSkillRegistry(
             new IBattleSkill[]
             {
@@ -32,21 +32,25 @@ public sealed class BattleCombatSystem
     public void Execute(
         IReadOnlyList<BattleRuntimeUnit> units,
         IReadOnlyDictionary<BattleUnitCombatState, BattleRuntimeUnit> runtimeUnitByState,
-        BattleCombatResultBuffer results
+        BattleCombatResultBuffer results,
+        BattleFieldSnapshot snapshot,
+        float battleTime,
+        int battleTick
     )
     {
-        if (units == null || results == null)
+        if (units == null || results == null || _effects == null)
             return;
 
         results.Clear();
-        ExecuteAttackPhase(units, runtimeUnitByState, results);
-        ExecuteSkillPhase(units, runtimeUnitByState, results);
+        _effects.Configure(results);
+        ExecuteAttackPhase(units, runtimeUnitByState, _effects);
+        ExecuteSkillPhase(units, runtimeUnitByState, snapshot, battleTime, battleTick);
     }
 
     private static void ExecuteAttackPhase(
         IReadOnlyList<BattleRuntimeUnit> units,
         IReadOnlyDictionary<BattleUnitCombatState, BattleRuntimeUnit> runtimeUnitByState,
-        BattleCombatResultBuffer results
+        IBattleEffectSink effects
     )
     {
         for (int i = 0; i < units.Count; i++)
@@ -65,22 +69,32 @@ public sealed class BattleCombatSystem
 
             attacker.State.SetAttackState(true);
 
-            float damage = attacker.Attack;
-            target.ApplyDamage(damage);
             BattleRuntimeUnit targetRuntime = ResolveRuntimeUnit(runtimeUnitByState, target);
+            effects.DealDamage(
+                new BattleDamageRequest
+                {
+                    Source = attacker,
+                    Target = targetRuntime,
+                    Amount = attacker.Attack,
+                    SourceKind = BattleEffectSourceKind.BasicAttack,
+                    DamageKind = BattleDamageKind.Direct,
+                    SkillId = WeaponSkillId.None,
+                    ArtifactId = ArtifactId.None,
+                    IsBasicAttack = true,
+                }
+            );
+
             attacker.RaiseAttackLanded(targetRuntime, target.IsCombatDisabled);
             attacker.State.ResetAttackCooldown();
-
-            results.Add(
-                new BattleCombatResult(attacker, targetRuntime, damage, target.IsCombatDisabled, wasSkill: false)
-            );
         }
     }
 
     private void ExecuteSkillPhase(
         IReadOnlyList<BattleRuntimeUnit> units,
         IReadOnlyDictionary<BattleUnitCombatState, BattleRuntimeUnit> runtimeUnitByState,
-        BattleCombatResultBuffer results
+        BattleFieldSnapshot snapshot,
+        float battleTime,
+        int battleTick
     )
     {
         for (int i = 0; i < units.Count; i++)
@@ -94,11 +108,20 @@ public sealed class BattleCombatSystem
                 continue;
 
             IBattleSkill skill = _skillRegistry.Get(unit.State.GetSkill());
-            if (skill == null || !skill.CanActivate(unit))
+            BattleRuntimeUnit primaryTarget = ResolveRuntimeUnit(runtimeUnitByState, unit.PlannedTargetEnemy);
+            BattleEffectContext context = new BattleEffectContext(
+                unit,
+                primaryTarget,
+                snapshot,
+                units,
+                battleTime,
+                battleTick
+            );
+
+            if (skill == null || !skill.CanActivate(context))
                 continue;
 
-            _skillEffectApplier.Configure(unit, runtimeUnitByState, results);
-            skill.Apply(unit, _skillEffectApplier);
+            skill.Activate(context, _effects);
 
             unit.SetSkillState(unit.GetSkillAnimationDuration());
             unit.State.ResetSkillCooldown();

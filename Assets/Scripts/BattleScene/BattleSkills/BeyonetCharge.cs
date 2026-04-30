@@ -6,14 +6,18 @@ public sealed class BayonetChargeSkill : IBattleSkill
     public WeaponSkillId SkillId => WeaponSkillId.BayonetCharge;
     public skillType SkillCategory => skillType.enhance;
     public IReadOnlyList<WeaponType> CompatibleWeaponTypes { get; } = new[] { WeaponType.rifle };
+    public BattleSkillTargetPolicy TargetPolicy => BattleSkillTargetPolicy.Self;
+    public float CastRange => 0f;
+    public float AreaRadius => 0f;
 
-    public bool CanActivate(BattleRuntimeUnit caster) => true;
+    public bool CanActivate(in BattleEffectContext context) => context.Actor != null;
 
-    public void Apply(BattleRuntimeUnit caster, ISkillEffectApplier applier)
+    public void Activate(in BattleEffectContext context, IBattleEffectSink effects)
     {
-        applier.ApplyBuff(caster.State, BuffType.AttackSpeed, 3, 10f);
-        applier.ApplyBuff(caster.State, BuffType.AttackDamage, 2, 10f);
-        applier.ApplyBuff(caster.State, BuffType.MoveSpeed, 3, 10f);
-        applier.ApplyBuff(caster.State, BuffType.AttackRange, -20, 10f); // 음수를 넣어 사거리 대폭 감소!
+        BattleRuntimeUnit caster = context.Actor;
+        effects.ApplyBuff(caster, caster, BuffType.AttackSpeed, 3, 10f);
+        effects.ApplyBuff(caster, caster, BuffType.AttackDamage, 2, 10f);
+        effects.ApplyBuff(caster, caster, BuffType.MoveSpeed, 3, 10f);
+        effects.ApplyBuff(caster, caster, BuffType.AttackRange, -20, 10f); // 음수를 넣어 사거리 대폭 감소!
     }
 }

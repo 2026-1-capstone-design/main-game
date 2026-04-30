@@ -19,7 +19,7 @@ public sealed class ResearchUIManager : MonoBehaviour
 
     [Header("Viewer")]
     [SerializeField]
-    private OwnedItemGridViewer perkViewer;
+    private OwnedItemGridViewer artifactViewer;
 
     [Header("Optional Labels")]
     [SerializeField]
@@ -28,7 +28,7 @@ public sealed class ResearchUIManager : MonoBehaviour
     [SerializeField]
     private TMP_Text statusText;
 
-    private readonly List<OwnedItemViewData> _perkViewBuffer = new List<OwnedItemViewData>();
+    private readonly List<OwnedItemViewData> _artifactViewBuffer = new List<OwnedItemViewData>();
 
     private MainFlowManager _flow;
     private ResearchManager _researchManager;
@@ -62,7 +62,7 @@ public sealed class ResearchUIManager : MonoBehaviour
     {
         SetPanelActive(true);
         RefreshTexts();
-        RefreshPerkViewer();
+        RefreshArtifactViewer();
     }
 
     public void ClosePanel()
@@ -70,52 +70,52 @@ public sealed class ResearchUIManager : MonoBehaviour
         SetPanelActive(false);
     }
 
-    private void RefreshPerkViewer()
+    private void RefreshArtifactViewer()
     {
-        if (perkViewer == null)
+        if (artifactViewer == null)
         {
-            Debug.LogWarning("[ResearchUIManager] perkViewer is not assigned.", this);
+            Debug.LogWarning("[ResearchUIManager] artifactViewer is not assigned.", this);
             return;
         }
 
-        _perkViewBuffer.Clear();
+        _artifactViewBuffer.Clear();
 
         if (_researchManager != null)
         {
-            IReadOnlyList<PerkSO> perks = _researchManager.UnlockedPerks;
-            for (int i = 0; i < perks.Count; i++)
+            IReadOnlyList<ArtifactSO> artifacts = _researchManager.UnlockedArtifacts;
+            for (int i = 0; i < artifacts.Count; i++)
             {
-                PerkSO perk = perks[i];
-                if (perk == null)
+                ArtifactSO artifact = artifacts[i];
+                if (artifact == null)
                 {
                     continue;
                 }
 
-                _perkViewBuffer.Add(new OwnedItemViewData(perk.icon, perk.perkName, perk));
+                _artifactViewBuffer.Add(new OwnedItemViewData(artifact.icon, artifact.artifactName, artifact));
             }
         }
 
         Canvas.ForceUpdateCanvases();
-        perkViewer.SetItems(_perkViewBuffer, OnPerkCellClicked);
+        artifactViewer.SetItems(_artifactViewBuffer, OnArtifactCellClicked);
 
         if (statusText != null)
         {
-            statusText.text = $"Num of Perks: {_perkViewBuffer.Count}";
+            statusText.text = $"Num of Artifacts: {_artifactViewBuffer.Count}";
         }
     }
 
-    private void OnPerkCellClicked(OwnedItemViewData data)
+    private void OnArtifactCellClicked(OwnedItemViewData data)
     {
-        if (data.Source is not PerkSO perk)
+        if (data.Source is not ArtifactSO artifact)
         {
             return;
         }
 
-        Debug.Log($"[ResearchUIManager] Perk clicked: {perk.perkName}", this);
+        Debug.Log($"[ResearchUIManager] Artifact clicked: {artifact.artifactName}", this);
 
         if (statusText != null)
         {
-            statusText.text = $"Selected Perk : {perk.perkName}";
+            statusText.text = $"Selected Artifact : {artifact.artifactName}";
         }
     }
 
@@ -141,8 +141,8 @@ public sealed class ResearchUIManager : MonoBehaviour
     {
         if (headerText != null)
         {
-            int perkCount = _researchManager != null ? _researchManager.GetUnlockedPerkCount() : 0;
-            headerText.text = $"Research (Unlocked Perks : {perkCount})";
+            int artifactCount = _researchManager != null ? _researchManager.GetUnlockedArtifactCount() : 0;
+            headerText.text = $"Research (Unlocked Artifacts : {artifactCount})";
         }
 
         if (statusText != null && string.IsNullOrEmpty(statusText.text))

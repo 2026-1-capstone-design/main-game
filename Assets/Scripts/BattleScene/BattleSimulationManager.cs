@@ -58,7 +58,9 @@ public sealed class BattleSimulationManager : MonoBehaviour
     private readonly BattleDecisionSystem _decisionSystem = new BattleDecisionSystem();
     private readonly BattlePlanningSystem _planningSystem = new BattlePlanningSystem();
     private readonly BattlePhysicsSystem _physicsSystem = new BattlePhysicsSystem();
-    private readonly BattleCombatSystem _combatSystem = new BattleCombatSystem(new SkillEffectApplier());
+    private readonly BattleArtifactSystem _artifactSystem = new BattleArtifactSystem();
+    private BattleEffectSystem _effectSystem;
+    private BattleCombatSystem _combatSystem;
     private readonly BattleVictorySystem _victorySystem = new BattleVictorySystem();
     private readonly int[] _tickUnitNumbersBuffer = new int[BattleTeamConstants.MaxUnitsInBattle];
     private readonly BattleParameterSet[] _tickRawParametersBuffer = new BattleParameterSet[
@@ -167,6 +169,16 @@ public sealed class BattleSimulationManager : MonoBehaviour
         _payload = payload;
 
         ReleaseSnapshot();
+        EnsureCombatSystems();
+        BattleParameterRadii initialRadii = BattleParameterSystem.BuildRadii(aiTuning);
+        CurrentSnapshot = BattleFieldSnapshot.Build(
+            _runtimeUnits,
+            initialRadii,
+            escapeTowardTeamBlend,
+            CurrentSnapshot
+        );
+        _effectSystem.Configure(_tickCombatResultBuffer);
+        _artifactSystem.Initialize(_runtimeUnits, CurrentSnapshot, 0f, 0, _effectSystem);
         _physicsSystem.Configure(_battlefieldCollider, desiredPositionStopDistance);
 
         _tickAccumulator = 0f;
@@ -237,7 +249,14 @@ public sealed class BattleSimulationManager : MonoBehaviour
 
         _planningSystem.Build(_runtimeUnits, CurrentSnapshot);
         _physicsSystem.Execute(_runtimeUnits, tickDeltaTime);
-        _combatSystem.Execute(_runtimeUnits, _runtimeUnitByState, _tickCombatResultBuffer);
+        _combatSystem.Execute(
+            _runtimeUnits,
+            _runtimeUnitByState,
+            _tickCombatResultBuffer,
+            CurrentSnapshot,
+            _battleTickCount * _tickInterval,
+            _battleTickCount
+        );
 
         BattleOutcome? outcome = _victorySystem.Evaluate(
             _runtimeUnits,
@@ -320,6 +339,15 @@ public sealed class BattleSimulationManager : MonoBehaviour
 
         if (!ReferenceEquals(_tickData.CombatResults, _tickCombatResultBuffer.Items))
             _tickData.UpdateCombatResultsBuffer(_tickCombatResultBuffer.Items);
+    }
+
+    private void EnsureCombatSystems()
+    {
+        if (_effectSystem == null)
+            _effectSystem = new BattleEffectSystem(_artifactSystem);
+
+        if (_combatSystem == null)
+            _combatSystem = new BattleCombatSystem(_effectSystem);
     }
 
     private void ReleaseSnapshot()

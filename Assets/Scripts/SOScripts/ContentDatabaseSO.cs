@@ -9,7 +9,7 @@ public sealed class ContentDatabaseSO : ScriptableObject
     public List<WeaponSkillSO> weaponSkills = new();
     public List<TraitSO> traits = new();
     public List<SynergySO> synergies = new();
-    public List<PerkSO> perks = new();
+    public List<ArtifactSO> artifacts = new();
     public List<PersonalitySO> personalities = new();
     public BalanceSO balance;
 }

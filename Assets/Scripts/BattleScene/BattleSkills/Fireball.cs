@@ -6,13 +6,29 @@ public sealed class FireballSkill : IBattleSkill
     public WeaponSkillId SkillId => WeaponSkillId.Fireball;
     public skillType SkillCategory => skillType.attack;
     public IReadOnlyList<WeaponType> CompatibleWeaponTypes { get; } = new[] { WeaponType.staff };
+    public BattleSkillTargetPolicy TargetPolicy => BattleSkillTargetPolicy.PlannedEnemy;
+    public float CastRange => 0f;
+    public float AreaRadius => 0f;
 
-    public bool CanActivate(BattleRuntimeUnit caster) =>
-        caster.PlannedTargetEnemy != null
-        && BattleFieldSnapshot.IsWithinEffectiveAttackDistance(caster.State, caster.PlannedTargetEnemy);
+    public bool CanActivate(in BattleEffectContext context) =>
+        context.Actor != null
+        && context.Actor.PlannedTargetEnemy != null
+        && BattleFieldSnapshot.IsWithinEffectiveAttackDistance(context.Actor.State, context.Actor.PlannedTargetEnemy);
 
-    public void Apply(BattleRuntimeUnit caster, ISkillEffectApplier applier)
+    public void Activate(in BattleEffectContext context, IBattleEffectSink effects)
     {
-        applier.ApplyDamage(caster.PlannedTargetEnemy, caster.Attack * 2.5f);
+        BattleRuntimeUnit caster = context.Actor;
+        effects.DealDamage(
+            new BattleDamageRequest
+            {
+                Source = caster,
+                Target = context.PrimaryTarget,
+                Amount = caster.Attack * 2.5f,
+                SourceKind = BattleEffectSourceKind.Skill,
+                DamageKind = BattleDamageKind.Direct,
+                SkillId = SkillId,
+                IsSkill = true,
+            }
+        );
     }
 }
