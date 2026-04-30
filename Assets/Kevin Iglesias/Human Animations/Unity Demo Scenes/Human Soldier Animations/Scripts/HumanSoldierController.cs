@@ -5,8 +5,8 @@
 
 // Contact Support: support@keviniglesias.com
 
-using UnityEngine;
 using System.Collections;
+using UnityEngine;
 
 namespace KevinIglesias
 {
@@ -17,14 +17,14 @@ namespace KevinIglesias
         Bazooka,
         Rifle,
         Gun,
-        DualGun
+        DualGun,
     }
 
     public enum SoldierPosition
     {
         StandUp,
         Crouch,
-        Prone
+        Prone,
     }
 
     public enum SoldierAction
@@ -71,7 +71,7 @@ namespace KevinIglesias
         Run,
         Sprint,
         StrafeL,
-        StrafeR
+        StrafeR,
     }
 
     public enum UnsheatheWeapons
@@ -80,7 +80,7 @@ namespace KevinIglesias
         GetRifle,
         GetBazooka,
         GetGun,
-        GetGuns
+        GetGuns,
     }
 
     public class HumanSoldierController : MonoBehaviour

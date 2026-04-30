@@ -1,10 +1,10 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
-using UnityEditor;
-using System;
 using System.IO;
 using System.Reflection;
+using UnityEditor;
+using UnityEngine;
 
 [CustomEditor(typeof(Readme))]
 [InitializeOnLoad]
@@ -23,11 +23,14 @@ public class ReadmeEditor : Editor
 
     static void RemoveTutorial()
     {
-        if (EditorUtility.DisplayDialog("Remove Readme Assets",
-
-            $"All contents under {s_ReadmeSourceDirectory} will be removed, are you sure you want to proceed?",
-            "Proceed",
-            "Cancel"))
+        if (
+            EditorUtility.DisplayDialog(
+                "Remove Readme Assets",
+                $"All contents under {s_ReadmeSourceDirectory} will be removed, are you sure you want to proceed?",
+                "Proceed",
+                "Cancel"
+            )
+        )
         {
             if (Directory.Exists(s_ReadmeSourceDirectory))
             {
@@ -109,7 +112,6 @@ public class ReadmeEditor : Editor
             GUILayout.Space(k_Space);
             GUILayout.BeginVertical();
             {
-
                 GUILayout.FlexibleSpace();
                 GUILayout.Label(readme.title, TitleStyle);
                 GUILayout.FlexibleSpace();

@@ -16,7 +16,8 @@ namespace KevinIglesias
     public class SpineProxy : MonoBehaviour
     {
         //Assign 'B-spine' (or equivalent) here:
-        [SerializeField] private Transform originalSpine;
+        [SerializeField]
+        private Transform originalSpine;
 
         private Quaternion rotationOffset = Quaternion.identity;
 
@@ -24,16 +25,16 @@ namespace KevinIglesias
         //Attempting to find the original spine bone.
         void OnValidate()
         {
-            if(originalSpine == null)
+            if (originalSpine == null)
             {
                 Transform parent = transform.parent;
-                if(parent != null)
+                if (parent != null)
                 {
                     Transform hips = parent.Find("B-hips");
-                    if(hips != null)
+                    if (hips != null)
                     {
                         Transform spine = hips.Find("B-spine");
-                        if(spine != null)
+                        if (spine != null)
                         {
                             originalSpine = spine;
                         }
@@ -47,7 +48,7 @@ namespace KevinIglesias
         void Awake()
         {
             if (originalSpine != null)
-            {//originalSpine.rotation must be the default rotation in your character T-pose when this happens:
+            { //originalSpine.rotation must be the default rotation in your character T-pose when this happens:
                 rotationOffset = Quaternion.Inverse(transform.rotation) * originalSpine.rotation;
             }
         }

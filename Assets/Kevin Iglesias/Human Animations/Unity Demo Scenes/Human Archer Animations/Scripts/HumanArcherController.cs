@@ -5,8 +5,8 @@
 
 // Contact Support: support@keviniglesias.com
 
-using UnityEngine;
 using System.Collections;
+using UnityEngine;
 
 namespace KevinIglesias
 {
@@ -125,6 +125,7 @@ namespace KevinIglesias
             bowAnimation = LoadBowCoroutine(delay, duration);
             StartCoroutine(bowAnimation);
         }
+
         public void ShootArrow(float delay, float duration)
         {
             if (bowAnimation != null)
@@ -135,6 +136,7 @@ namespace KevinIglesias
             bowAnimation = ShootArrowCoroutine(delay, duration);
             StartCoroutine(bowAnimation);
         }
+
         public void CancelLoadBow(float delay, float cancelDuration)
         {
             if (bowAnimation != null)
@@ -149,10 +151,16 @@ namespace KevinIglesias
         {
             yield return new WaitForSeconds(delay);
 
-            Vector3 limb01LoadLocalEulerAngles =
-            new Vector3(initialLimb01LocalEulerAngles.x, initialLimb01LocalEulerAngles.y, initialLimb01LocalEulerAngles.z - 15f);
-            Vector3 limb02LoadLocalEulerAngles =
-            new Vector3(initialLimb02LocalEulerAngles.x, initialLimb02LocalEulerAngles.y, initialLimb02LocalEulerAngles.z - 15f);
+            Vector3 limb01LoadLocalEulerAngles = new Vector3(
+                initialLimb01LocalEulerAngles.x,
+                initialLimb01LocalEulerAngles.y,
+                initialLimb01LocalEulerAngles.z - 15f
+            );
+            Vector3 limb02LoadLocalEulerAngles = new Vector3(
+                initialLimb02LocalEulerAngles.x,
+                initialLimb02LocalEulerAngles.y,
+                initialLimb02LocalEulerAngles.z - 15f
+            );
 
             nockPoint.localPosition = nockPointRestLocalPosition;
 
@@ -160,10 +168,8 @@ namespace KevinIglesias
             while (t < 1)
             {
                 t += Time.deltaTime / duration;
-                limb01.localEulerAngles =
-                Vector3.Lerp(initialLimb01LocalEulerAngles, limb01LoadLocalEulerAngles, t);
-                limb02.localEulerAngles =
-                Vector3.Lerp(initialLimb02LocalEulerAngles, limb02LoadLocalEulerAngles, t);
+                limb01.localEulerAngles = Vector3.Lerp(initialLimb01LocalEulerAngles, limb01LoadLocalEulerAngles, t);
+                limb02.localEulerAngles = Vector3.Lerp(initialLimb02LocalEulerAngles, limb02LoadLocalEulerAngles, t);
 
                 nockPoint.position = Vector3.Lerp(nockPoint.position, bowstringAnchorPoint.position, t);
 
@@ -175,10 +181,16 @@ namespace KevinIglesias
         {
             yield return new WaitForSeconds(delay);
 
-            Vector3 limb01LoadLocalEulerAngles =
-            new Vector3(initialLimb01LocalEulerAngles.x, initialLimb01LocalEulerAngles.y, initialLimb01LocalEulerAngles.z - 15f);
-            Vector3 limb02LoadLocalEulerAngles =
-            new Vector3(initialLimb02LocalEulerAngles.x, initialLimb02LocalEulerAngles.y, initialLimb02LocalEulerAngles.z - 15f);
+            Vector3 limb01LoadLocalEulerAngles = new Vector3(
+                initialLimb01LocalEulerAngles.x,
+                initialLimb01LocalEulerAngles.y,
+                initialLimb01LocalEulerAngles.z - 15f
+            );
+            Vector3 limb02LoadLocalEulerAngles = new Vector3(
+                initialLimb02LocalEulerAngles.x,
+                initialLimb02LocalEulerAngles.y,
+                initialLimb02LocalEulerAngles.z - 15f
+            );
 
             Vector3 initialNockRestLocalPosition = nockPoint.localPosition;
 
@@ -190,12 +202,22 @@ namespace KevinIglesias
             while (t < 1)
             {
                 t += Time.deltaTime / duration;
-                limb01.localEulerAngles =
-                Vector3.LerpUnclamped(limb01LoadLocalEulerAngles, initialLimb01LocalEulerAngles, bowReleaseCurve.Evaluate(t));
-                limb02.localEulerAngles =
-                Vector3.LerpUnclamped(limb02LoadLocalEulerAngles, initialLimb02LocalEulerAngles, bowReleaseCurve.Evaluate(t));
+                limb01.localEulerAngles = Vector3.LerpUnclamped(
+                    limb01LoadLocalEulerAngles,
+                    initialLimb01LocalEulerAngles,
+                    bowReleaseCurve.Evaluate(t)
+                );
+                limb02.localEulerAngles = Vector3.LerpUnclamped(
+                    limb02LoadLocalEulerAngles,
+                    initialLimb02LocalEulerAngles,
+                    bowReleaseCurve.Evaluate(t)
+                );
 
-                nockPoint.localPosition = Vector3.LerpUnclamped(initialNockRestLocalPosition, nockPointRestLocalPosition, bowReleaseCurve.Evaluate(t));
+                nockPoint.localPosition = Vector3.LerpUnclamped(
+                    initialNockRestLocalPosition,
+                    nockPointRestLocalPosition,
+                    bowReleaseCurve.Evaluate(t)
+                );
 
                 yield return null;
             }
@@ -205,10 +227,16 @@ namespace KevinIglesias
         {
             yield return new WaitForSeconds(delay);
 
-            Vector3 limb01LoadLocalEulerAngles =
-            new Vector3(initialLimb01LocalEulerAngles.x, initialLimb01LocalEulerAngles.y, initialLimb01LocalEulerAngles.z - 15f);
-            Vector3 limb02LoadLocalEulerAngles =
-            new Vector3(initialLimb02LocalEulerAngles.x, initialLimb02LocalEulerAngles.y, initialLimb02LocalEulerAngles.z - 15f);
+            Vector3 limb01LoadLocalEulerAngles = new Vector3(
+                initialLimb01LocalEulerAngles.x,
+                initialLimb01LocalEulerAngles.y,
+                initialLimb01LocalEulerAngles.z - 15f
+            );
+            Vector3 limb02LoadLocalEulerAngles = new Vector3(
+                initialLimb02LocalEulerAngles.x,
+                initialLimb02LocalEulerAngles.y,
+                initialLimb02LocalEulerAngles.z - 15f
+            );
 
             Vector3 initialNockRestLocalPosition = nockPoint.localPosition;
 
@@ -216,12 +244,22 @@ namespace KevinIglesias
             while (t < 1)
             {
                 t += Time.deltaTime / duration;
-                limb01.localEulerAngles =
-                Vector3.LerpUnclamped(limb01LoadLocalEulerAngles, initialLimb01LocalEulerAngles, t);
-                limb02.localEulerAngles =
-                Vector3.LerpUnclamped(limb02LoadLocalEulerAngles, initialLimb02LocalEulerAngles, t);
+                limb01.localEulerAngles = Vector3.LerpUnclamped(
+                    limb01LoadLocalEulerAngles,
+                    initialLimb01LocalEulerAngles,
+                    t
+                );
+                limb02.localEulerAngles = Vector3.LerpUnclamped(
+                    limb02LoadLocalEulerAngles,
+                    initialLimb02LocalEulerAngles,
+                    t
+                );
 
-                nockPoint.localPosition = Vector3.LerpUnclamped(initialNockRestLocalPosition, nockPointRestLocalPosition, t);
+                nockPoint.localPosition = Vector3.LerpUnclamped(
+                    initialNockRestLocalPosition,
+                    nockPointRestLocalPosition,
+                    t
+                );
 
                 yield return null;
             }
@@ -262,7 +300,6 @@ namespace KevinIglesias
 
             bowSheathed.SetActive(false);
             bowInHand.SetActive(true);
-
         }
 
         public void SheatheBow(float delay)
@@ -282,6 +319,5 @@ namespace KevinIglesias
             bowSheathed.SetActive(true);
             bowInHand.SetActive(false);
         }
-
     }
 }

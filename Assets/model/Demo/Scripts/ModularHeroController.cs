@@ -18,7 +18,8 @@ namespace GanzSe
 
         public void RandomizeArmorParts()
         {
-            if (armorPartsRoot == null) return;
+            if (armorPartsRoot == null)
+                return;
             foreach (Transform category in armorPartsRoot)
             {
                 SetRandomActiveChild(category);
@@ -27,7 +28,8 @@ namespace GanzSe
 
         public void RandomizeFaceParts()
         {
-            if (facePartsRoot == null) return;
+            if (facePartsRoot == null)
+                return;
             foreach (Transform category in facePartsRoot)
             {
                 SetRandomActiveChild(category);
@@ -39,7 +41,8 @@ namespace GanzSe
             Transform heads = armorPartsRoot.Find("HEADS");
             Transform faceParent = facePartsRoot;
 
-            if (heads == null || faceParent == null) return;
+            if (heads == null || faceParent == null)
+                return;
 
             heads.gameObject.SetActive(showHelmet);
             faceParent.gameObject.SetActive(!showHelmet);
@@ -47,7 +50,8 @@ namespace GanzSe
 
         private void SetRandomActiveChild(Transform category)
         {
-            if (category.childCount == 0) return;
+            if (category.childCount == 0)
+                return;
 
             foreach (Transform child in category)
             {
