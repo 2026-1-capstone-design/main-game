@@ -54,19 +54,8 @@ public sealed class BattlePositionHistory
             return false;
 
         float targetTime = Mathf.Max(0f, battleTime);
-        PositionSample best = samples[0];
-        float bestDistance = Mathf.Abs(best.BattleTime - targetTime);
-        for (int i = 1; i < samples.Count; i++)
-        {
-            float distance = Mathf.Abs(samples[i].BattleTime - targetTime);
-            if (distance > bestDistance)
-                continue;
-
-            best = samples[i];
-            bestDistance = distance;
-        }
-
-        position = best.Position;
+        int idx = SortedSearch.NearestIndex(samples, targetTime, s => s.BattleTime);
+        position = samples[idx].Position;
         return true;
     }
 
