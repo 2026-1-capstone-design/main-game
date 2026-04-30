@@ -196,22 +196,28 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
 
     public MarketGladiatorOffer GetGladiatorOffer(int slotIndex)
     {
-        if (slotIndex < 0 || slotIndex >= _gladiatorOffers.Count)
+        for (int i = 0; i < _gladiatorOffers.Count; i++)
         {
-            return null;
+            if (_gladiatorOffers[i] != null && _gladiatorOffers[i].SlotIndex == slotIndex)
+            {
+                return _gladiatorOffers[i];
+            }
         }
 
-        return _gladiatorOffers[slotIndex];
+        return null;
     }
 
     public MarketWeaponOffer GetWeaponOffer(int slotIndex)
     {
-        if (slotIndex < 0 || slotIndex >= _weaponOffers.Count)
+        for (int i = 0; i < _weaponOffers.Count; i++)
         {
-            return null;
+            if (_weaponOffers[i] != null && _weaponOffers[i].SlotIndex == slotIndex)
+            {
+                return _weaponOffers[i];
+            }
         }
 
-        return _weaponOffers[slotIndex];
+        return null;
     }
 
     public int GetGladiatorSellPrice(OwnedGladiatorData gladiator)
