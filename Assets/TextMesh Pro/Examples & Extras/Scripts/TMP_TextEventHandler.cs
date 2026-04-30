@@ -1,12 +1,10 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.EventSystems;
-using System;
-
 
 namespace TMPro
 {
-
     public class TMP_TextEventHandler : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     {
         [Serializable]
@@ -24,7 +22,6 @@ namespace TMPro
         [Serializable]
         public class LinkSelectionEvent : UnityEvent<string, string, int> { }
 
-
         /// <summary>
         /// Event delegate triggered when pointer is over a character.
         /// </summary>
@@ -33,9 +30,9 @@ namespace TMPro
             get { return m_OnCharacterSelection; }
             set { m_OnCharacterSelection = value; }
         }
+
         [SerializeField]
         private CharacterSelectionEvent m_OnCharacterSelection = new CharacterSelectionEvent();
-
 
         /// <summary>
         /// Event delegate triggered when pointer is over a sprite.
@@ -45,9 +42,9 @@ namespace TMPro
             get { return m_OnSpriteSelection; }
             set { m_OnSpriteSelection = value; }
         }
+
         [SerializeField]
         private SpriteSelectionEvent m_OnSpriteSelection = new SpriteSelectionEvent();
-
 
         /// <summary>
         /// Event delegate triggered when pointer is over a word.
@@ -57,9 +54,9 @@ namespace TMPro
             get { return m_OnWordSelection; }
             set { m_OnWordSelection = value; }
         }
+
         [SerializeField]
         private WordSelectionEvent m_OnWordSelection = new WordSelectionEvent();
-
 
         /// <summary>
         /// Event delegate triggered when pointer is over a line.
@@ -69,9 +66,9 @@ namespace TMPro
             get { return m_OnLineSelection; }
             set { m_OnLineSelection = value; }
         }
+
         [SerializeField]
         private LineSelectionEvent m_OnLineSelection = new LineSelectionEvent();
-
 
         /// <summary>
         /// Event delegate triggered when pointer is over a link.
@@ -81,10 +78,9 @@ namespace TMPro
             get { return m_OnLinkSelection; }
             set { m_OnLinkSelection = value; }
         }
+
         [SerializeField]
         private LinkSelectionEvent m_OnLinkSelection = new LinkSelectionEvent();
-
-
 
         private TMP_Text m_TextComponent;
 
@@ -119,10 +115,15 @@ namespace TMPro
             }
         }
 
-
         void LateUpdate()
         {
-            if (TMP_TextUtilities.IsIntersectingRectTransform(m_TextComponent.rectTransform, Input.mousePosition, m_Camera))
+            if (
+                TMP_TextUtilities.IsIntersectingRectTransform(
+                    m_TextComponent.rectTransform,
+                    Input.mousePosition,
+                    m_Camera
+                )
+            )
             {
                 #region Nearest Character
                 /*int charIndex = TMP_TextUtilities.FindNearestCharacterOnLine(m_TextComponent, Input.mousePosition, 0, m_Camera, false);
@@ -134,7 +135,12 @@ namespace TMPro
 
 
                 #region Example of Character or Sprite Selection
-                int charIndex = TMP_TextUtilities.FindIntersectingCharacter(m_TextComponent, Input.mousePosition, m_Camera, true);
+                int charIndex = TMP_TextUtilities.FindIntersectingCharacter(
+                    m_TextComponent,
+                    Input.mousePosition,
+                    m_Camera,
+                    true
+                );
                 if (charIndex != -1 && charIndex != m_lastCharIndex)
                 {
                     m_lastCharIndex = charIndex;
@@ -143,7 +149,10 @@ namespace TMPro
 
                     // Send event to any event listeners depending on whether it is a character or sprite.
                     if (elementType == TMP_TextElementType.Character)
-                        SendOnCharacterSelection(m_TextComponent.textInfo.characterInfo[charIndex].character, charIndex);
+                        SendOnCharacterSelection(
+                            m_TextComponent.textInfo.characterInfo[charIndex].character,
+                            charIndex
+                        );
                     else if (elementType == TMP_TextElementType.Sprite)
                         SendOnSpriteSelection(m_TextComponent.textInfo.characterInfo[charIndex].character, charIndex);
                 }
@@ -178,7 +187,11 @@ namespace TMPro
 
                     // Send the event to any listeners.
                     char[] buffer = new char[lineInfo.characterCount];
-                    for (int i = 0; i < lineInfo.characterCount && i < m_TextComponent.textInfo.characterInfo.Length; i++)
+                    for (
+                        int i = 0;
+                        i < lineInfo.characterCount && i < m_TextComponent.textInfo.characterInfo.Length;
+                        i++
+                    )
                     {
                         buffer[i] = m_TextComponent.textInfo.characterInfo[i + lineInfo.firstCharacterIndex].character;
                     }
@@ -216,18 +229,15 @@ namespace TMPro
             }
         }
 
-
         public void OnPointerEnter(PointerEventData eventData)
         {
             //Debug.Log("OnPointerEnter()");
         }
 
-
         public void OnPointerExit(PointerEventData eventData)
         {
             //Debug.Log("OnPointerExit()");
         }
-
 
         private void SendOnCharacterSelection(char character, int characterIndex)
         {
@@ -258,6 +268,5 @@ namespace TMPro
             if (onLinkSelection != null)
                 onLinkSelection.Invoke(linkID, linkText, linkIndex);
         }
-
     }
 }

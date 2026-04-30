@@ -16,7 +16,7 @@ namespace KevinIglesias
 
         private HumanArcherController hAC;
 
-        override public void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
+        public override void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
         {
             if (!hAC)
             {

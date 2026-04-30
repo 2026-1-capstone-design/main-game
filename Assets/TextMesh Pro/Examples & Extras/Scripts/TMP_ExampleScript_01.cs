@@ -1,15 +1,17 @@
-﻿using UnityEngine;
-using UnityEngine.UI;
-using System.Collections;
+﻿using System.Collections;
 using TMPro;
-
+using UnityEngine;
+using UnityEngine.UI;
 
 namespace TMPro.Examples
 {
-
     public class TMP_ExampleScript_01 : MonoBehaviour
     {
-        public enum objectType { TextMeshPro = 0, TextMeshProUGUI = 1 };
+        public enum objectType
+        {
+            TextMeshPro = 0,
+            TextMeshProUGUI = 1,
+        };
 
         public objectType ObjectType;
         public bool isStatic;
@@ -17,7 +19,6 @@ namespace TMPro.Examples
         private TMP_Text m_text;
 
         //private TMP_InputField m_inputfield;
-
 
         private const string k_label = "The count is <#0080ff>{0}</color>";
         private int count;
@@ -50,7 +51,6 @@ namespace TMPro.Examples
             m_text.rectTransform.sizeDelta = new Vector2(size.x, size.y);
         }
 
-
         void Update()
         {
             if (!isStatic)
@@ -59,6 +59,5 @@ namespace TMPro.Examples
                 count += 1;
             }
         }
-
     }
 }
