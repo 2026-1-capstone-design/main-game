@@ -67,8 +67,9 @@ public sealed class BattleEffectSystem : IBattleEffectSink
 
         float requestedAmount = request.Amount;
         float finalAmount = Mathf.Max(0f, requestedAmount);
-        finalAmount *= Mathf.Max(0f, 1f + target.GetStatusLevel(BattleStatusType.DamageTakenPercent) / 100f);
-        finalAmount *= Mathf.Max(0f, 1f - target.GetStatusLevel(BattleStatusType.DamageReductionPercent) / 100f);
+        target.GetDamageScaleFactors(out float takenPercent, out float reductionPercent);
+        finalAmount *= Mathf.Max(0f, 1f + takenPercent / 100f);
+        finalAmount *= Mathf.Max(0f, 1f - reductionPercent / 100f);
         BattleRuntimeUnit targetRuntime = ResolveRuntimeUnit(target);
 
         if (
