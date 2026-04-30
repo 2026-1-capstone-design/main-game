@@ -30,6 +30,11 @@ public sealed class SkillEffectApplier : IBattleEffectSink
         _effects?.Heal(request);
     }
 
+    public void ApplyStatus(BattleStatusRequest request)
+    {
+        _effects?.ApplyStatus(request);
+    }
+
     public void ApplyBuff(
         BattleUnitCombatState source,
         BattleUnitCombatState target,
@@ -44,6 +49,36 @@ public sealed class SkillEffectApplier : IBattleEffectSink
     public void AddKnockback(BattleUnitCombatState target, Vector3 direction, float force)
     {
         _effects?.AddKnockback(target, direction, force);
+    }
+
+    public void Dispel(BattleUnitCombatState target, BattleDispelFilter filter)
+    {
+        _effects?.Dispel(target, filter);
+    }
+
+    public void RefreshStatuses(BattleUnitCombatState target, BattleStatusFilter filter, float duration)
+    {
+        _effects?.RefreshStatuses(target, filter, duration);
+    }
+
+    public void Revive(BattleUnitCombatState target, float health)
+    {
+        _effects?.Revive(target, health);
+    }
+
+    public void Teleport(BattleUnitCombatState target, Vector3 destination)
+    {
+        _effects?.Teleport(target, destination);
+    }
+
+    public void PullTo(BattleUnitCombatState source, BattleUnitCombatState target, float stopDistance)
+    {
+        _effects?.PullTo(source, target, stopDistance);
+    }
+
+    public void PushToArenaEdge(BattleUnitCombatState source, BattleUnitCombatState target, float slowDuration)
+    {
+        _effects?.PushToArenaEdge(source, target, slowDuration);
     }
 
     public void ApplyDamage(BattleUnitCombatState target, float amount)

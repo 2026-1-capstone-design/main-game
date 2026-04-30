@@ -5,6 +5,8 @@ public sealed class BattlePhysicsSystem
 {
     private SphereCollider _battlefieldCollider;
     private float _desiredPositionStopDistance;
+    private IBattleMovementPolicy _movementPolicy = DefaultBattleMovementPolicy.Instance;
+    private IReadOnlyList<BattleRuntimeUnit> _units;
 
     public void Configure(SphereCollider battlefieldCollider, float desiredPositionStopDistance)
     {
@@ -12,11 +14,17 @@ public sealed class BattlePhysicsSystem
         _desiredPositionStopDistance = Mathf.Max(0f, desiredPositionStopDistance);
     }
 
-    public void Execute(IReadOnlyList<BattleRuntimeUnit> units, float tickDeltaTime)
+    public void Execute(
+        IReadOnlyList<BattleRuntimeUnit> units,
+        float tickDeltaTime,
+        IBattleMovementPolicy movementPolicy = null
+    )
     {
         if (units == null)
             return;
 
+        _units = units;
+        _movementPolicy = movementPolicy ?? DefaultBattleMovementPolicy.Instance;
         ExecuteSpecialEffect(units, tickDeltaTime);
         ExecuteMovementPhase(units, tickDeltaTime);
         ResolveUnitSeparation(units);
@@ -52,7 +60,14 @@ public sealed class BattlePhysicsSystem
 
                 if (unit.ExternalMoveDirection.sqrMagnitude > 0.0001f)
                 {
-                    unit.SetPosition(unit.Position + unit.ExternalMoveDirection * unit.MoveSpeed * tickDeltaTime);
+                    BattleMoveRequest request = BattleMoveRequest.ForMover(
+                        unit,
+                        unit.ExternalMoveDirection.normalized,
+                        null,
+                        unit.MoveSpeed
+                    );
+                    _movementPolicy.ModifyMoveSpeed(ref request);
+                    unit.SetPosition(unit.Position + request.Direction * request.Speed * tickDeltaTime);
                     unit.ClampInsideBattlefield(_battlefieldCollider);
                     unit.State.SetMovementState(true);
                 }
@@ -119,11 +134,14 @@ public sealed class BattlePhysicsSystem
 
         Vector3 direction = centerDistance > 0.0001f ? toTarget / centerDistance : Vector3.zero;
         float remainingDistanceUntilAttack = Mathf.Max(0f, centerDistance - effectiveAttackDistance);
-        float moveDistance = Mathf.Min(mover.MoveSpeed * tickDeltaTime, remainingDistanceUntilAttack);
+        BattleRuntimeUnit targetRuntime = FindRuntimeUnitForState(target);
+        BattleMoveRequest request = BattleMoveRequest.ForMover(mover, direction, targetRuntime, mover.MoveSpeed);
+        _movementPolicy.ModifyMoveSpeed(ref request);
+        float moveDistance = Mathf.Min(request.Speed * tickDeltaTime, remainingDistanceUntilAttack);
         if (moveDistance <= 0.0001f)
             return false;
 
-        mover.SetPosition(currentPosition + direction * moveDistance);
+        mover.SetPosition(currentPosition + request.Direction * moveDistance);
         mover.ClampInsideBattlefield(_battlefieldCollider);
         return true;
     }
@@ -142,13 +160,33 @@ public sealed class BattlePhysicsSystem
             return false;
 
         Vector3 direction = distance > 0.0001f ? toTarget / distance : Vector3.zero;
-        float moveDistance = Mathf.Min(mover.MoveSpeed * tickDeltaTime, distance);
+        BattleMoveRequest request = BattleMoveRequest.ForMover(mover, direction, null, mover.MoveSpeed);
+        _movementPolicy.ModifyMoveSpeed(ref request);
+        float moveDistance = Mathf.Min(request.Speed * tickDeltaTime, distance);
         if (moveDistance <= 0.0001f)
             return false;
 
-        mover.SetPosition(currentPosition + direction * moveDistance);
+        mover.SetPosition(currentPosition + request.Direction * moveDistance);
         mover.ClampInsideBattlefield(_battlefieldCollider);
         return true;
+    }
+
+    private BattleRuntimeUnit FindRuntimeUnitForState(BattleUnitCombatState state)
+    {
+        if (state == null)
+            return null;
+
+        if (_units == null)
+            return null;
+
+        for (int i = 0; i < _units.Count; i++)
+        {
+            BattleRuntimeUnit unit = _units[i];
+            if (unit != null && unit.State == state)
+                return unit;
+        }
+
+        return null;
     }
 
     private void ResolveUnitSeparation(IReadOnlyList<BattleRuntimeUnit> units)

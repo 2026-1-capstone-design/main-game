@@ -233,6 +233,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         state = new BattleUnitCombatState(snapshot, unitNumber, teamId);
         State.OnHealthChanged += _ => RefreshHPbar();
         State.OnDied += HandleUnitDied;
+        State.OnRevived += HandleUnitRevived;
         State.OnActionTypeChanged += (_, _) => RefreshStatusText();
         State.OnMovingStateChanged += isMoving => _myAnimation?.SetBool("isMoving", isMoving);
         State.OnIdleStateEntered += () => _myAnimation?.SetBool("isMoving", false);
@@ -395,6 +396,12 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
             _myAnimation.SetTrigger("die");
         }
 
+        RefreshVisualState();
+    }
+
+    private void HandleUnitRevived()
+    {
+        RefreshHPbar();
         RefreshVisualState();
     }
 

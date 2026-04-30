@@ -26,3 +26,35 @@ public interface IDamageModifierArtifact : IBattleArtifact
 {
     void ModifyDamage(BattleUnitCombatState owner, ref BattleDamageRequest request);
 }
+
+public interface ITargetingModifierArtifact : IBattleArtifact
+{
+    void ModifyTargetScore(BattleUnitCombatState owner, ref BattleTargetScore score);
+    bool CanBeTargeted(BattleUnitCombatState owner, BattleRuntimeUnit requester, BattleTargetingReason reason);
+}
+
+public interface IMovementModifierArtifact : IBattleArtifact
+{
+    void ModifyMoveSpeed(BattleUnitCombatState owner, ref BattleMoveRequest request);
+    bool CanIgnoreForcedMovement(BattleUnitCombatState owner, in BattleForcedMovementRequest request);
+}
+
+public interface IDamageReactionArtifact : IBattleArtifact
+{
+    void AfterDamage(BattleUnitCombatState owner, in BattleDamageResult result, IBattleEffectSink effects);
+}
+
+public interface IHealReactionArtifact : IBattleArtifact
+{
+    void AfterHeal(BattleUnitCombatState owner, in BattleHealResult result, IBattleEffectSink effects);
+}
+
+public interface IKillReactionArtifact : IBattleArtifact
+{
+    void OnUnitKilled(BattleUnitCombatState owner, in BattleKillEvent killEvent, IBattleEffectSink effects);
+}
+
+public interface ISkillCastReactionArtifact : IBattleArtifact
+{
+    void OnSkillCast(BattleUnitCombatState owner, in BattleSkillCastEvent skillCastEvent, IBattleEffectSink effects);
+}
