@@ -17,7 +17,6 @@ public sealed class BattlePhysicsSystem
     public void Execute(
         IReadOnlyList<BattleRuntimeUnit> units,
         float tickDeltaTime,
-        BattleControlPlan[] controlPlans,
         IBattleMovementPolicy movementPolicy = null,
         BattleSkillChannelSystem channelSystem = null
     )
@@ -28,7 +27,7 @@ public sealed class BattlePhysicsSystem
         _units = units;
         _movementPolicy = movementPolicy ?? DefaultBattleMovementPolicy.Instance;
         ExecuteSpecialEffect(units, tickDeltaTime);
-        ExecuteMovementPhase(units, tickDeltaTime, controlPlans, channelSystem);
+        ExecuteMovementPhase(units, tickDeltaTime, channelSystem);
         ResolveUnitSeparation(units);
     }
 
@@ -47,7 +46,6 @@ public sealed class BattlePhysicsSystem
     private void ExecuteMovementPhase(
         IReadOnlyList<BattleRuntimeUnit> units,
         float tickDeltaTime,
-        BattleControlPlan[] controlPlans,
         BattleSkillChannelSystem channelSystem
     )
     {
@@ -66,7 +64,7 @@ public sealed class BattlePhysicsSystem
                 continue;
             }
 
-            BattleControlPlan plan = i < (controlPlans?.Length ?? 0) ? controlPlans[i] : default;
+            BattleControlPlan plan = unit.State.CurrentPlan;
             if (plan.Turn != 0f)
                 unit.Rotate(plan.Turn * BattleRuntimeUnit.AgentTurnSpeedDegPerSec * tickDeltaTime);
 

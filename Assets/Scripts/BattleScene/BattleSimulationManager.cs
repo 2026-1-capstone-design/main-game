@@ -84,9 +84,6 @@ public sealed class BattleSimulationManager : MonoBehaviour
     private readonly BattleActionType[] _tickDecisionBuffer = new BattleActionType[
         BattleTeamConstants.MaxUnitsInBattle
     ];
-    private readonly BattleControlPlan[] _tickControlPlanBuffer = new BattleControlPlan[
-        BattleTeamConstants.MaxUnitsInBattle
-    ];
     private readonly BattleCombatResultBuffer _tickCombatResultBuffer = new BattleCombatResultBuffer(
         BattleTeamConstants.MaxUnitsInBattle
     );
@@ -339,13 +336,11 @@ public sealed class BattleSimulationManager : MonoBehaviour
             CurrentSnapshot,
             _controlSourceRegistry,
             tickDeltaTime,
-            _tickControlPlanBuffer,
             _rosterMutationSystem
         );
         _physicsSystem.Execute(
             _runtimeUnits,
             tickDeltaTime,
-            _tickControlPlanBuffer,
             _artifactSystem.MovementPolicy,
             _channelSystem
         );
@@ -358,7 +353,6 @@ public sealed class BattleSimulationManager : MonoBehaviour
             CurrentSnapshot,
             battleTime,
             _battleTickCount,
-            _tickControlPlanBuffer,
             _controlSourceRegistry
         );
 

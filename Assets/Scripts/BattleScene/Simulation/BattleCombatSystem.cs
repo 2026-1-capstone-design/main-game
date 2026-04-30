@@ -47,7 +47,6 @@ public sealed class BattleCombatSystem
         BattleFieldSnapshot snapshot,
         float battleTime,
         int battleTick,
-        BattleControlPlan[] controlPlans = null,
         BattleControlSourceRegistry controlSources = null
     )
     {
@@ -63,10 +62,9 @@ public sealed class BattleCombatSystem
             _effects,
             _channelSystem,
             _artifactSystem,
-            controlPlans,
             controlSources
         );
-        ExecuteSkillPhase(units, runtimeUnitByState, snapshot, battleTime, battleTick, controlPlans, controlSources);
+        ExecuteSkillPhase(units, runtimeUnitByState, snapshot, battleTime, battleTick, controlSources);
     }
 
     private static void ExecuteAttackPhase(
@@ -76,7 +74,6 @@ public sealed class BattleCombatSystem
         IBattleEffectSink effects,
         BattleSkillChannelSystem channelSystem,
         BattleArtifactSystem artifactSystem,
-        BattleControlPlan[] controlPlans,
         BattleControlSourceRegistry controlSources
     )
     {
@@ -88,11 +85,11 @@ public sealed class BattleCombatSystem
             if (channelSystem != null && channelSystem.IsBasicAttackBlocked(attacker))
                 continue;
 
-            BattleControlPlan plan = GetPlan(controlPlans, i);
+            BattleControlPlan plan = attacker.State.CurrentPlan;
             if (plan.UsesExplicitCombatCommands && plan.Command != BattleCombatCommand.BasicAttack)
                 continue;
 
-            BattleUnitCombatState target = plan.TargetEnemy ?? attacker.PlannedTargetEnemy;
+            BattleUnitCombatState target = plan.TargetEnemy;
             if (
                 artifactSystem != null
                 && artifactSystem.TryOverrideBasicAttackTarget(attacker, snapshot, out BattleRuntimeUnit overrideTarget)
@@ -148,7 +145,6 @@ public sealed class BattleCombatSystem
         BattleFieldSnapshot snapshot,
         float battleTime,
         int battleTick,
-        BattleControlPlan[] controlPlans,
         BattleControlSourceRegistry controlSources
     )
     {
@@ -160,7 +156,7 @@ public sealed class BattleCombatSystem
             if (_channelSystem != null && _channelSystem.IsChanneling(unit))
                 continue;
 
-            BattleControlPlan plan = GetPlan(controlPlans, i);
+            BattleControlPlan plan = unit.State.CurrentPlan;
             bool explicitSkillCommand = plan.UsesExplicitCombatCommands && plan.Command == BattleCombatCommand.Skill;
             if (plan.UsesExplicitCombatCommands && !explicitSkillCommand)
                 continue;
@@ -186,7 +182,7 @@ public sealed class BattleCombatSystem
 
             BattleRuntimeUnit primaryTarget = ResolveRuntimeUnit(
                 runtimeUnitByState,
-                plan.TargetEnemy ?? unit.PlannedTargetEnemy
+                plan.TargetEnemy
             );
             BattleEffectContext context = new BattleEffectContext(
                 unit,
@@ -227,11 +223,6 @@ public sealed class BattleCombatSystem
             unit.RaiseSkillActivated();
             ConsumeCommand(controlSources, unit.State, BattleCombatCommand.Skill);
         }
-    }
-
-    private static BattleControlPlan GetPlan(BattleControlPlan[] controlPlans, int index)
-    {
-        return controlPlans != null && index >= 0 && index < controlPlans.Length ? controlPlans[index] : default;
     }
 
     private static void ConsumeCommand(

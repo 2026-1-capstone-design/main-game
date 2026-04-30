@@ -209,7 +209,6 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         _agentControlInput.WantsBasicAttack = wantsBasicAttack;
         _agentControlInput.WantsSkill = wantsSkill;
 
-        State?.SetPlannedTargets(hasValidTarget ? target.State : null, null);
     }
 
     public void TickAgentControlInput(float tickDeltaTime)
@@ -650,14 +649,12 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
 
     public void SetExecutionPlan(BattleActionExecutionPlan plan)
     {
-        State.SetPlannedTargets(plan.TargetEnemy, plan.TargetAlly);
-        State.SetExecutionPlanPosition(plan.DesiredPosition, plan.HasDesiredPosition);
+        State.SetCurrentPlan(BattleControlPlan.FromExecutionPlan(plan.Action, plan));
     }
 
     public void ClearExecutionPlan()
     {
-        State.ClearTargets();
-        State.ClearExecutionPlanPosition();
+        State.ClearCurrentPlan();
     }
 
     // ── 쿨다운 위임 ────────────────────────────────────────────────

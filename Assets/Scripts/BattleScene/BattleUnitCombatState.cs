@@ -221,19 +221,6 @@ public sealed class BattleUnitCombatState
         OnIdleStateEntered?.Invoke();
     }
 
-    // ── 실행 플랜 위치 세터 ────────────────────────────────────────
-    public void SetExecutionPlanPosition(Vector3 desiredPosition, bool hasDesiredPosition)
-    {
-        PlannedDesiredPosition = desiredPosition;
-        HasPlannedDesiredPosition = hasDesiredPosition;
-    }
-
-    public void ClearExecutionPlanPosition()
-    {
-        PlannedDesiredPosition = Vector3.zero;
-        HasPlannedDesiredPosition = false;
-    }
-
     // ── 행동/결정 상태 이벤트 ─────────────────────────────────────
     // BattleRuntimeUnit이 구독하여 StatusText를 갱신한다.
     public event Action<BattleActionType, string> OnActionTypeChanged;
@@ -272,14 +259,15 @@ public sealed class BattleUnitCombatState
     public skillType SkillType { get; private set; }
     public float SkillCooldownRemaining { get; private set; }
 
-    // ── 실행 플랜 위치 / 이동-공격 플래그 ─────────────────────────
-    public Vector3 PlannedDesiredPosition { get; private set; }
-    public bool HasPlannedDesiredPosition { get; private set; }
+    // ── 실행 플랜 / 이동-공격 플래그 ─────────────────────────────
+    public BattleControlPlan CurrentPlan { get; private set; }
+    public Vector3 PlannedDesiredPosition => CurrentPlan.DesiredPosition;
+    public bool HasPlannedDesiredPosition => CurrentPlan.HasDesiredPosition;
     public bool IsMoving { get; private set; }
     public bool IsAttacking { get; private set; }
     public BattleUnitCombatState CurrentTarget { get; private set; }
-    public BattleUnitCombatState PlannedTargetEnemy { get; private set; }
-    public BattleUnitCombatState PlannedTargetAlly { get; private set; }
+    public BattleUnitCombatState PlannedTargetEnemy => CurrentPlan.TargetEnemy;
+    public BattleUnitCombatState PlannedTargetAlly => CurrentPlan.TargetAlly;
 
     // ── 생성자 ─────────────────────────────────────────────────────
     public BattleUnitCombatState(BattleUnitSnapshot snapshot, int unitNumber, BattleTeamId teamId)
@@ -321,14 +309,11 @@ public sealed class BattleUnitCombatState
         SkillType = skillType.None;
         SkillCooldownRemaining = 0f;
 
-        PlannedDesiredPosition = Vector3.zero;
-        HasPlannedDesiredPosition = false;
+        CurrentPlan = default;
         IsMoving = false;
         IsAttacking = false;
         Position = Vector3.zero;
         CurrentTarget = null;
-        PlannedTargetEnemy = null;
-        PlannedTargetAlly = null;
     }
 
     // ── 공격 쿨다운 ────────────────────────────────────────────────
@@ -565,17 +550,38 @@ public sealed class BattleUnitCombatState
         CurrentTarget = target;
     }
 
+    public void SetCurrentPlan(BattleControlPlan plan)
+    {
+        CurrentPlan = plan;
+        CurrentTarget = plan.TargetEnemy;
+    }
+
+    public void ClearCurrentPlan()
+    {
+        CurrentPlan = default;
+        CurrentTarget = null;
+    }
+
     public void SetPlannedTargets(BattleUnitCombatState enemy, BattleUnitCombatState ally)
     {
-        PlannedTargetEnemy = enemy;
-        PlannedTargetAlly = ally;
-        CurrentTarget = enemy;
+        SetCurrentPlan(
+            new BattleControlPlan(
+                CurrentPlan.ActionType,
+                enemy,
+                ally,
+                CurrentPlan.DesiredPosition,
+                CurrentPlan.HasDesiredPosition,
+                CurrentPlan.LocalMove,
+                CurrentPlan.Turn,
+                CurrentPlan.Command,
+                CurrentPlan.Stance,
+                CurrentPlan.UsesExplicitCombatCommands
+            )
+        );
     }
 
     public void ClearTargets()
     {
-        CurrentTarget = null;
-        PlannedTargetEnemy = null;
-        PlannedTargetAlly = null;
+        ClearCurrentPlan();
     }
 }

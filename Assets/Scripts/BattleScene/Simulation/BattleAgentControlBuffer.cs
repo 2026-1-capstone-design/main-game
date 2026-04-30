@@ -42,7 +42,6 @@ public sealed class BattleAgentControlBuffer
         input.WantsSkill = input.Command == BattleCombatCommand.Skill && hasValidTarget;
 
         _inputs[self] = input;
-        self.SetPlannedTargets(input.Target, null);
     }
 
     public BattleAgentControlInput GetSmoothedInput(BattleUnitCombatState self, float tickDeltaTime)
@@ -107,7 +106,6 @@ public sealed class BattleAgentControlBuffer
         }
 
         _inputs.Remove(self);
-        self.SetPlannedTargets(null, null);
     }
 
     public void ClearAll()

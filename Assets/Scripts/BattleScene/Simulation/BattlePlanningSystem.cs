@@ -7,22 +7,19 @@ public sealed class BattlePlanningSystem
         BattleFieldSnapshot snapshot,
         BattleControlSourceRegistry controlSources,
         float tickDeltaTime,
-        BattleControlPlan[] controlPlans,
         BattleRosterMutationSystem rosterMutationSystem = null
     )
     {
-        if (units == null || snapshot == null || controlSources == null || controlPlans == null)
+        if (units == null || snapshot == null || controlSources == null)
             return;
 
         for (int i = 0; i < units.Count; i++)
         {
-            if (i >= controlPlans.Length)
-                break;
-
-            controlPlans[i] = default;
             BattleRuntimeUnit unit = units[i];
             if (unit == null || unit.IsCombatDisabled)
                 continue;
+
+            unit.State.ClearCurrentPlan();
 
             if (rosterMutationSystem != null && rosterMutationSystem.IsCommandDisabled(unit))
                 continue;
@@ -33,9 +30,7 @@ public sealed class BattlePlanningSystem
             if (!source.TryBuildPlan(unit.State, snapshot, tickDeltaTime, out BattleControlPlan plan))
                 continue;
 
-            controlPlans[i] = plan;
-            unit.State.SetPlannedTargets(plan.TargetEnemy, plan.TargetAlly);
-            unit.State.SetExecutionPlanPosition(plan.DesiredPosition, plan.HasDesiredPosition);
+            unit.State.SetCurrentPlan(plan);
         }
     }
 }
