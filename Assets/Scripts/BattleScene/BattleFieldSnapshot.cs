@@ -18,6 +18,7 @@ public sealed class BattleFieldSnapshot
     private readonly Dictionary<BattleTeamId, List<BattleUnitView>> _hostileViewsByTeam =
         new Dictionary<BattleTeamId, List<BattleUnitView>>();
     private readonly Dictionary<BattleTeamId, Vector3> _teamCenterByTeam = new Dictionary<BattleTeamId, Vector3>();
+    private readonly Dictionary<BattleTeamId, Vector3> _hostileCenterByTeam = new Dictionary<BattleTeamId, Vector3>();
     private readonly Dictionary<BattleUnitCombatState, BattleUnitCombatState> _bestIsolatedEnemyCache = new Dictionary<
         BattleUnitCombatState,
         BattleUnitCombatState
@@ -467,6 +468,7 @@ public sealed class BattleFieldSnapshot
         ClearViewDictionary(_livingViewsByTeam);
         ClearViewDictionary(_hostileViewsByTeam);
         _teamCenterByTeam.Clear();
+        _hostileCenterByTeam.Clear();
         _bestIsolatedEnemyCache.Clear();
         _bestBacklineEnemyCache.Clear();
         _mostPressuredAllyCache.Clear();
@@ -508,7 +510,7 @@ public sealed class BattleFieldSnapshot
     }
 
     private Vector3 ComputeHostileCenter(BattleUnitCombatState requester) =>
-        BattleParameterComputer.ComputeTeamCenter(GetLivingViews(requester.TeamId, allies: false), Vector3.zero);
+        _hostileCenterByTeam.TryGetValue(requester.TeamId, out Vector3 center) ? center : Vector3.zero;
 
     private IReadOnlyList<BattleUnitView> GetLivingViews(BattleTeamId requesterTeamId, bool allies)
     {
@@ -566,6 +568,14 @@ public sealed class BattleFieldSnapshot
                 continue;
 
             _teamCenterByTeam[pair.Key] = BattleParameterComputer.ComputeTeamCenter(pair.Value, Vector3.zero);
+        }
+
+        foreach (KeyValuePair<BattleTeamId, List<BattleUnitView>> pair in _hostileViewsByTeam)
+        {
+            if (pair.Value.Count == 0)
+                continue;
+
+            _hostileCenterByTeam[pair.Key] = BattleParameterComputer.ComputeTeamCenter(pair.Value, Vector3.zero);
         }
     }
 
