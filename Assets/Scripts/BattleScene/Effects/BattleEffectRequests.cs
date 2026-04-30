@@ -75,6 +75,8 @@ public struct BattleDamageRequest
     public bool IsBasicAttack;
     public bool IsSkill;
     public bool IsArea;
+    // 리다이렉트된 피해임을 표시해 BeforeDamage 훅이 무한 루프 없이 한 번만 적용되게 한다.
+    public bool IsRedirected;
 }
 
 // 치유 효과 요청 DTO다.

@@ -36,7 +36,6 @@ public sealed class BattleDamageLifecycle
     private readonly List<ILethalDamageInterceptor> _lethalInterceptors = new List<ILethalDamageInterceptor>();
     private readonly List<BattleRuntimeUnit> _accumulatorOwners = new List<BattleRuntimeUnit>();
     private readonly List<IDamageAccumulatorEffect> _accumulators = new List<IDamageAccumulatorEffect>();
-    private bool _isResolvingRedirect;
 
     public void Clear()
     {
@@ -45,7 +44,6 @@ public sealed class BattleDamageLifecycle
         _lethalInterceptors.Clear();
         _accumulatorOwners.Clear();
         _accumulators.Clear();
-        _isResolvingRedirect = false;
     }
 
     public void RegisterRedirect(IDamageRedirectEffect effect)
@@ -74,27 +72,18 @@ public sealed class BattleDamageLifecycle
 
     public BattleDamageResolution BeforeDamage(ref BattleDamageRequest request, IBattleEffectSink effects)
     {
-        if (_isResolvingRedirect)
+        // 이미 리다이렉트된 피해는 훅을 다시 통과하지 않는다.
+        if (request.IsRedirected)
             return BattleDamageResolution.Continue;
 
         for (int i = 0; i < _redirects.Count; i++)
         {
             BattleDamageResolution resolution = _redirects[i].BeforeDamage(ref request, effects);
-            if (resolution == BattleDamageResolution.Continue)
-                continue;
-
-            if (resolution == BattleDamageResolution.Redirect)
-                _isResolvingRedirect = true;
-
-            return resolution;
+            if (resolution != BattleDamageResolution.Continue)
+                return resolution;
         }
 
         return BattleDamageResolution.Continue;
-    }
-
-    public void FinishRedirectResolution()
-    {
-        _isResolvingRedirect = false;
     }
 
     public bool TryPreventLethalDamage(
