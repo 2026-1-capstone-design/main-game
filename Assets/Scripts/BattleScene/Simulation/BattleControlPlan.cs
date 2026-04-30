@@ -11,7 +11,6 @@ public readonly struct BattleControlPlan
     public readonly float Turn;
     public readonly BattleCombatCommand Command;
     public readonly BattleControlStance Stance;
-    public readonly bool UsesExplicitCombatCommands;
 
     public BattleControlPlan(
         BattleActionType actionType,
@@ -22,8 +21,7 @@ public readonly struct BattleControlPlan
         Vector2 localMove,
         float turn,
         BattleCombatCommand command,
-        BattleControlStance stance,
-        bool usesExplicitCombatCommands
+        BattleControlStance stance
     )
     {
         ActionType = actionType;
@@ -35,10 +33,14 @@ public readonly struct BattleControlPlan
         Turn = Mathf.Clamp(turn, -1f, 1f);
         Command = command;
         Stance = stance;
-        UsesExplicitCombatCommands = usesExplicitCombatCommands;
     }
 
-    public static BattleControlPlan FromExecutionPlan(BattleActionType actionType, BattleActionExecutionPlan plan) =>
+    public static BattleControlPlan FromExecutionPlan(
+        BattleActionType actionType,
+        BattleActionExecutionPlan plan,
+        BattleCombatCommand command = BattleCombatCommand.None,
+        BattleControlStance stance = BattleControlStance.Neutral
+    ) =>
         new BattleControlPlan(
             actionType,
             plan.TargetEnemy,
@@ -47,9 +49,8 @@ public readonly struct BattleControlPlan
             plan.HasDesiredPosition,
             Vector2.zero,
             0f,
-            BattleCombatCommand.None,
-            BattleControlStance.Neutral,
-            usesExplicitCombatCommands: false
+            command,
+            stance
         );
 
     public static BattleControlPlan FromAgentInput(BattleUnitCombatState self, BattleAgentControlInput input)
@@ -64,8 +65,7 @@ public readonly struct BattleControlPlan
             input.SmoothedLocalMove,
             input.SmoothedTurn,
             input.Command,
-            input.Stance,
-            usesExplicitCombatCommands: true
+            input.Stance
         );
     }
 }

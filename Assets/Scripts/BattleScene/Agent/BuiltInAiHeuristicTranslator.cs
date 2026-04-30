@@ -68,13 +68,15 @@ public static class BuiltInAiHeuristicTranslator
 
     private static int ResolveCommand(BattleControlPlan plan, BattleUnitCombatState self)
     {
+        if (plan.Command == BattleCombatCommand.Skill)
+            return GladiatorActionSchema.CommandSkill;
+        if (plan.Command != BattleCombatCommand.BasicAttack)
+            return GladiatorActionSchema.CommandNone;
         if (plan.TargetEnemy == null || plan.TargetEnemy.IsCombatDisabled)
             return GladiatorActionSchema.CommandNone;
         if (self == null || self.AttackCooldownRemaining > 0f)
             return GladiatorActionSchema.CommandNone;
-        return IsCombatAction(plan.ActionType)
-            ? GladiatorActionSchema.CommandBasicAttack
-            : GladiatorActionSchema.CommandNone;
+        return GladiatorActionSchema.CommandBasicAttack;
     }
 
     private static int ResolveTargetSlot(BattleUnitCombatState target, GladiatorStateRosterView rosterView)
@@ -98,14 +100,4 @@ public static class BuiltInAiHeuristicTranslator
             _ => GladiatorActionSchema.StanceNeutral,
         };
 
-    private static bool IsCombatAction(BattleActionType actionType) =>
-        actionType switch
-        {
-            BattleActionType.EngageNearest => true,
-            BattleActionType.AssassinateIsolatedEnemy => true,
-            BattleActionType.DiveEnemyBackline => true,
-            BattleActionType.PeelForWeakAlly => true,
-            BattleActionType.CollapseOnCluster => true,
-            _ => false,
-        };
 }

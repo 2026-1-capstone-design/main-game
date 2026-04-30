@@ -51,7 +51,8 @@ public sealed class BuiltInAiControlSource : IBattleUnitControlSource
             _rosterMutationSystem
         );
         BattleActionExecutionPlan executionPlan = BuildExecutionPlan(unit, snapshot);
-        plan = BattleControlPlan.FromExecutionPlan(unit.CurrentActionType, executionPlan);
+        BattleCombatCommand command = ResolveCombatCommand(unit, executionPlan);
+        plan = BattleControlPlan.FromExecutionPlan(unit.CurrentActionType, executionPlan, command);
         return true;
     }
 
@@ -82,6 +83,38 @@ public sealed class BuiltInAiControlSource : IBattleUnitControlSource
         }
 
         return plan;
+    }
+
+    private static BattleCombatCommand ResolveCombatCommand(BattleRuntimeUnit unit, BattleActionExecutionPlan plan)
+    {
+        if (unit == null || unit.IsCombatDisabled)
+        {
+            return BattleCombatCommand.None;
+        }
+
+        if (unit.HasReadySkill())
+        {
+            return BattleCombatCommand.Skill;
+        }
+
+        return IsCombatAction(plan.Action) && BattleFieldSnapshot.IsValidEnemyTarget(unit.State, plan.TargetEnemy)
+            ? BattleCombatCommand.BasicAttack
+            : BattleCombatCommand.None;
+    }
+
+    private static bool IsCombatAction(BattleActionType actionType)
+    {
+        switch (actionType)
+        {
+            case BattleActionType.EngageNearest:
+            case BattleActionType.AssassinateIsolatedEnemy:
+            case BattleActionType.DiveEnemyBackline:
+            case BattleActionType.PeelForWeakAlly:
+            case BattleActionType.CollapseOnCluster:
+                return true;
+            default:
+                return false;
+        }
     }
 
     private BattleRuntimeUnit FindRuntimeUnit(BattleUnitCombatState state)

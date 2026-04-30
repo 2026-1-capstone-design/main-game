@@ -87,8 +87,7 @@ public sealed class BattlePhysicsSystem
 
             BattleUnitCombatState targetEnemy = plan.TargetEnemy;
             if (
-                plan.UsesExplicitCombatCommands
-                && (plan.Command == BattleCombatCommand.BasicAttack || plan.Stance == BattleControlStance.Pressure)
+                (plan.Command == BattleCombatCommand.BasicAttack || plan.Stance == BattleControlStance.Pressure)
                 && BattleFieldSnapshot.IsValidEnemyTarget(unit.State, targetEnemy)
             )
             {

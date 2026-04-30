@@ -86,7 +86,7 @@ public sealed class BattleCombatSystem
                 continue;
 
             BattleControlPlan plan = attacker.State.CurrentPlan;
-            if (plan.UsesExplicitCombatCommands && plan.Command != BattleCombatCommand.BasicAttack)
+            if (plan.Command != BattleCombatCommand.BasicAttack)
                 continue;
 
             BattleUnitCombatState target = plan.TargetEnemy;
@@ -157,25 +157,20 @@ public sealed class BattleCombatSystem
                 continue;
 
             BattleControlPlan plan = unit.State.CurrentPlan;
-            bool explicitSkillCommand = plan.UsesExplicitCombatCommands && plan.Command == BattleCombatCommand.Skill;
-            if (plan.UsesExplicitCombatCommands && !explicitSkillCommand)
+            if (plan.Command != BattleCombatCommand.Skill)
                 continue;
             if (
                 unit.State.IsSkillDisabled
                 || (_rosterMutationSystem != null && _rosterMutationSystem.IsSkillDisabled(unit))
             )
             {
-                if (explicitSkillCommand)
-                    ConsumeCommand(controlSources, unit.State, BattleCombatCommand.Skill);
+                ConsumeCommand(controlSources, unit.State, BattleCombatCommand.Skill);
                 continue;
             }
             if (unit.SkillCooldownRemaining > 0f)
             {
-                if (explicitSkillCommand)
-                {
-                    unit.RaiseSkillFailed();
-                    ConsumeCommand(controlSources, unit.State, BattleCombatCommand.Skill);
-                }
+                unit.RaiseSkillFailed();
+                ConsumeCommand(controlSources, unit.State, BattleCombatCommand.Skill);
 
                 continue;
             }
@@ -193,11 +188,8 @@ public sealed class BattleCombatSystem
             IBattleSkill skill = _skillRegistry.Get(unit.State.GetSkill());
             if (skill == null || !skill.CanActivate(context))
             {
-                if (explicitSkillCommand)
-                {
-                    unit.RaiseSkillFailed();
-                    ConsumeCommand(controlSources, unit.State, BattleCombatCommand.Skill);
-                }
+                unit.RaiseSkillFailed();
+                ConsumeCommand(controlSources, unit.State, BattleCombatCommand.Skill);
 
                 continue;
             }

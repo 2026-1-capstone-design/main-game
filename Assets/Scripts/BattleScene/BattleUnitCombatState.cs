@@ -574,8 +574,7 @@ public sealed class BattleUnitCombatState
                 CurrentPlan.LocalMove,
                 CurrentPlan.Turn,
                 CurrentPlan.Command,
-                CurrentPlan.Stance,
-                CurrentPlan.UsesExplicitCombatCommands
+                CurrentPlan.Stance
             )
         );
     }
