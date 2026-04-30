@@ -6,16 +6,20 @@ public sealed class WarcrySkill : IBattleSkill
     public WeaponSkillId SkillId => WeaponSkillId.Warcry;
     public skillType SkillCategory => skillType.support;
     public IReadOnlyList<WeaponType> CompatibleWeaponTypes { get; } = new[] { WeaponType.twoHand };
+    public BattleSkillTargetPolicy TargetPolicy => BattleSkillTargetPolicy.AreaAroundSelf;
+    public float CastRange => 0f;
+    public float AreaRadius => 0f;
 
-    public bool CanActivate(BattleRuntimeUnit caster) => true;
+    public bool CanActivate(in BattleEffectContext context) => context.Actor != null;
 
-    public void Apply(BattleRuntimeUnit caster, ISkillEffectApplier applier)
+    public void Activate(in BattleEffectContext context, IBattleEffectSink effects)
     {
-        foreach (var unit in applier.AllUnits)
+        BattleRuntimeUnit caster = context.Actor;
+        foreach (BattleRuntimeUnit unit in context.Units)
         {
             if (unit != null && !unit.IsCombatDisabled && unit.TeamId == caster.State.TeamId)
             {
-                applier.ApplyBuff(unit, BuffType.AttackDamage, 3, 10f); // 공격력 +30
+                effects.ApplyBuff(caster, unit, BuffType.AttackDamage, 3, 10f); // 공격력 +30
             }
         }
     }

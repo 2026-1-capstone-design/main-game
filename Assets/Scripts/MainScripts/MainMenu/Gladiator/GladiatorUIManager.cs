@@ -54,12 +54,12 @@ public sealed class GladiatorUIManager : MonoBehaviour
     [SerializeField]
     private Image weaponOverlayImage;
 
-    [Header("Detail Perk Slot")]
+    [Header("Detail Artifact Slot")]
     [SerializeField]
-    private Button perkSlotButton;
+    private Button artifactSlotButton;
 
     [SerializeField]
-    private Image perkOverlayImage;
+    private Image artifactOverlayImage;
 
     [Header("Inventory Layer")]
     [SerializeField]
@@ -148,7 +148,7 @@ public sealed class GladiatorUIManager : MonoBehaviour
         ConfigureOverlayImage(detailGladiatorIconImage);
         ConfigureOverlayImage(traitOverlayImage);
         ConfigureOverlayImage(weaponOverlayImage);
-        ConfigureOverlayImage(perkOverlayImage);
+        ConfigureOverlayImage(artifactOverlayImage);
 
         SetPanelActive(false);
         SetDetailActive(false);
@@ -321,12 +321,12 @@ public sealed class GladiatorUIManager : MonoBehaviour
             gladiator.EquippedWeapon != null && gladiator.EquippedWeapon.Weapon != null
                 ? gladiator.EquippedWeapon.Weapon.icon
                 : null;
-        Sprite perkIcon = gladiator.EquippedPerk != null ? gladiator.EquippedPerk.icon : null;
+        Sprite artifactIcon = gladiator.EquippedArtifact != null ? gladiator.EquippedArtifact.icon : null;
 
         SetPassiveImage(detailGladiatorIconImage, gladiatorIcon);
         SetSlotVisual(traitSlotButton, traitOverlayImage, traitIcon);
         SetSlotVisual(weaponSlotButton, weaponOverlayImage, weaponIcon);
-        SetSlotVisual(perkSlotButton, perkOverlayImage, perkIcon);
+        SetSlotVisual(artifactSlotButton, artifactOverlayImage, artifactIcon);
 
         if (detailText != null)
         {

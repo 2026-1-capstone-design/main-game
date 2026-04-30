@@ -30,7 +30,8 @@ public sealed class BattleUnitSnapshot
     public GladiatorClassSO GladiatorClass { get; }
     public TraitSO Trait { get; }
     public PersonalitySO Personality { get; }
-    public PerkSO EquippedPerk { get; }
+    public ArtifactSO EquippedArtifact { get; }
+    public IReadOnlyList<ArtifactId> ArtifactIds { get; }
     public WeaponType WeaponType { get; }
 
     // 무기 왼쪽 오른쪽 추가
@@ -62,7 +63,7 @@ public sealed class BattleUnitSnapshot
         GladiatorClassSO gladiatorClass,
         TraitSO trait,
         PersonalitySO personality,
-        PerkSO equippedPerk,
+        ArtifactSO equippedArtifact,
         WeaponType weaponType,
         GameObject leftWeaponPrefab,
         GameObject rightWeaponPrefab,
@@ -88,7 +89,8 @@ public sealed class BattleUnitSnapshot
         GladiatorClass = gladiatorClass;
         Trait = trait;
         Personality = personality;
-        EquippedPerk = equippedPerk;
+        EquippedArtifact = equippedArtifact;
+        ArtifactIds = BuildArtifactIds(equippedArtifact);
         WeaponType = weaponType;
 
         // 생성자에 추가
@@ -123,7 +125,7 @@ public sealed class BattleUnitSnapshot
             GladiatorClass,
             Trait,
             Personality,
-            EquippedPerk,
+            EquippedArtifact,
             WeaponType,
             LeftWeaponPrefab,
             RightWeaponPrefab,
@@ -197,7 +199,7 @@ public sealed class BattleUnitSnapshot
             source.GladiatorClass,
             source.Trait,
             source.Personality,
-            source.EquippedPerk,
+            source.EquippedArtifact,
             weaponType,
             leftPrefab,
             rightPrefab,
@@ -207,6 +209,14 @@ public sealed class BattleUnitSnapshot
             useProjectile,
             resolvedPortrait
         );
+    }
+
+    private static IReadOnlyList<ArtifactId> BuildArtifactIds(ArtifactSO equippedArtifact)
+    {
+        if (equippedArtifact == null || equippedArtifact.artifactId == ArtifactId.None)
+            return Array.Empty<ArtifactId>();
+
+        return new[] { equippedArtifact.artifactId };
     }
 }
 

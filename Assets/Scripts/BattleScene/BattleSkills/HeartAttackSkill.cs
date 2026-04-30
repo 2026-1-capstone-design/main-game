@@ -8,21 +8,40 @@ public sealed class HeartAttackSkill : IBattleSkill
     public skillType SkillCategory => skillType.attack;
 
     public IReadOnlyList<WeaponType> CompatibleWeaponTypes { get; } = new[] { WeaponType.oneHand, WeaponType.twoHand };
+    public BattleSkillTargetPolicy TargetPolicy => BattleSkillTargetPolicy.PlannedEnemy;
+    public float CastRange => 0f;
+    public float AreaRadius => 0f;
 
-    public bool CanActivate(BattleRuntimeUnit caster)
+    public bool CanActivate(in BattleEffectContext context)
     {
+        BattleRuntimeUnit caster = context.Actor;
+        if (caster == null)
+            return false;
+
         BattleUnitCombatState target = caster.PlannedTargetEnemy;
         return BattleFieldSnapshot.IsValidEnemyTarget(caster.State, target)
             && BattleFieldSnapshot.IsWithinEffectiveAttackDistance(caster.State, target);
     }
 
-    public void Apply(BattleRuntimeUnit caster, ISkillEffectApplier applier)
+    public void Activate(in BattleEffectContext context, IBattleEffectSink effects)
     {
-        BattleUnitCombatState target = caster.PlannedTargetEnemy;
+        BattleRuntimeUnit caster = context.Actor;
+        BattleRuntimeUnit target = context.PrimaryTarget;
         if (target == null)
             return;
         Vector3 pushDir = target.Position - caster.Position;
-        applier.ApplyDamage(target, 20f);
-        applier.AddKnockback(target, pushDir, 50f);
+        effects.DealDamage(
+            new BattleDamageRequest
+            {
+                Source = caster,
+                Target = target,
+                Amount = 20f,
+                SourceKind = BattleEffectSourceKind.Skill,
+                DamageKind = BattleDamageKind.Direct,
+                SkillId = SkillId,
+                IsSkill = true,
+            }
+        );
+        effects.AddKnockback(target, pushDir, 50f);
     }
 }
