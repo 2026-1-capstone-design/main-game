@@ -3,34 +3,35 @@ using System.Collections.Generic;
 public sealed class BattlePlanningSystem
 {
     public void Build(
-        IReadOnlyList<BattleRuntimeUnit> units,
+        IReadOnlyList<BattleUnitCombatState> states,
         BattleFieldSnapshot snapshot,
-        BattleControlSourceRegistry controlSources,
         float tickDeltaTime,
         BattleRosterMutationSystem rosterMutationSystem = null
     )
     {
-        if (units == null || snapshot == null || controlSources == null)
+        if (states == null || snapshot == null)
             return;
 
-        for (int i = 0; i < units.Count; i++)
+        for (int i = 0; i < states.Count; i++)
         {
-            BattleRuntimeUnit unit = units[i];
-            if (unit == null || unit.IsCombatDisabled)
+            BattleUnitCombatState state = states[i];
+            if (state == null || state.IsCombatDisabled)
                 continue;
 
-            unit.State.ClearCurrentPlan();
+            state.ClearCurrentPlan();
 
-            if (rosterMutationSystem != null && rosterMutationSystem.IsCommandDisabled(unit))
+            if (rosterMutationSystem != null && rosterMutationSystem.IsCommandDisabled(state))
                 continue;
 
-            if (!controlSources.TryGet(unit.State, out IBattleUnitControlSource source))
+            // CurrentPlan은 실행 대상 상태에 저장하지만, plan 생성 책임은 State가 소유한 ControlSource가 가진다.
+            IBattleUnitControlSource source = state.ControlSource;
+            if (source == null)
                 continue;
 
-            if (!source.TryBuildPlan(unit.State, snapshot, tickDeltaTime, out BattleControlPlan plan))
+            if (!source.TryBuildPlan(state, snapshot, tickDeltaTime, out BattleControlPlan plan))
                 continue;
 
-            unit.State.SetCurrentPlan(plan);
+            state.SetCurrentPlan(plan);
         }
     }
 }

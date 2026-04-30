@@ -127,6 +127,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     public void Rotate(float deltaAngleDeg)
     {
         transform.Rotate(0f, deltaAngleDeg, 0f, Space.World);
+        State?.SyncFacingDirection(transform.forward);
     }
 
     public void SetRuntimeRootObject(GameObject runtimeRootObject)
@@ -240,6 +241,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         State.OnAttackTriggered += HandleAttackTriggered;
 
         State.SyncPosition(transform.position);
+        State.SyncFacingDirection(transform.forward);
         State.ClearTargets();
 
         _myAnimation = transform.GetComponent<Animator>();
@@ -562,7 +564,10 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         Vector3 direction = targetPos - transform.position;
         direction.y = 0f;
         if (direction.sqrMagnitude > 0.0001f)
+        {
             transform.rotation = Quaternion.LookRotation(direction);
+            State?.SyncFacingDirection(transform.forward);
+        }
     }
 
     public void PlaceAt(Vector3 worldPos, Transform battlefield)
@@ -573,6 +578,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         transform.position = worldPos;
         transform.rotation = Quaternion.identity;
         State?.SyncPosition(transform.position);
+        State?.SyncFacingDirection(transform.forward);
     }
 
     /*

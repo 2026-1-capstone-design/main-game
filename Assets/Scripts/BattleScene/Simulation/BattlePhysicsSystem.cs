@@ -138,10 +138,11 @@ public sealed class BattlePhysicsSystem
 
     private static Vector3 GetWorldMoveDirection(BattleRuntimeUnit unit, Vector2 localMove)
     {
-        if (unit == null)
+        BattleUnitCombatState state = unit != null ? unit.State : null;
+        if (state == null)
             return Vector3.zero;
 
-        Vector3 direction = unit.transform.right * localMove.x + unit.transform.forward * localMove.y;
+        Vector3 direction = state.RightDirection * localMove.x + state.FacingDirection * localMove.y;
         direction.y = 0f;
         if (direction.sqrMagnitude > 1f)
             direction.Normalize();

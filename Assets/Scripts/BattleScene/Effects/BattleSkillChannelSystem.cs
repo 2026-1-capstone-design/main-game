@@ -44,6 +44,9 @@ public sealed class BattleSkillChannelSystem
     public bool IsDecisionChangeBlocked(BattleRuntimeUnit unit) =>
         TryGetChannel(unit, out ActiveChannel channel) && channel.Skill.BlocksDecisionChange;
 
+    public bool IsDecisionChangeBlocked(BattleUnitCombatState state) =>
+        TryGetChannel(state, out ActiveChannel channel) && channel.Skill.BlocksDecisionChange;
+
     public bool IsChanneling(BattleRuntimeUnit unit) => TryGetChannel(unit, out _);
 
     public void StartChannel(
@@ -151,6 +154,22 @@ public sealed class BattleSkillChannelSystem
         for (int i = 0; i < _channels.Count; i++)
         {
             if (_channels[i].Caster != unit)
+                continue;
+
+            channel = _channels[i];
+            return true;
+        }
+
+        channel = default;
+        return false;
+    }
+
+    private bool TryGetChannel(BattleUnitCombatState state, out ActiveChannel channel)
+    {
+        for (int i = 0; i < _channels.Count; i++)
+        {
+            BattleRuntimeUnit caster = _channels[i].Caster;
+            if (caster == null || caster.State != state)
                 continue;
 
             channel = _channels[i];

@@ -5,7 +5,7 @@ public sealed class BuiltInAiControlSource : IBattleUnitControlSource
     private readonly BattleDecisionSystem _decisionSystem = new BattleDecisionSystem();
     private readonly Dictionary<BattleActionType, IBattleActionPlanner> _planners;
 
-    private IReadOnlyList<BattleRuntimeUnit> _units;
+    private IReadOnlyList<BattleUnitCombatState> _states;
     private BattleAITuningSO _aiTuning;
     private BattleSkillChannelSystem _channelSystem;
     private BattleRosterMutationSystem _rosterMutationSystem;
@@ -16,13 +16,13 @@ public sealed class BuiltInAiControlSource : IBattleUnitControlSource
     }
 
     public void Configure(
-        IReadOnlyList<BattleRuntimeUnit> units,
+        IReadOnlyList<BattleUnitCombatState> states,
         BattleAITuningSO aiTuning,
         BattleSkillChannelSystem channelSystem = null,
         BattleRosterMutationSystem rosterMutationSystem = null
     )
     {
-        _units = units;
+        _states = states;
         _aiTuning = aiTuning;
         _channelSystem = channelSystem;
         _rosterMutationSystem = rosterMutationSystem;
@@ -36,48 +36,47 @@ public sealed class BuiltInAiControlSource : IBattleUnitControlSource
     )
     {
         plan = default;
-        BattleRuntimeUnit unit = FindRuntimeUnit(self);
-        if (unit == null || unit.IsCombatDisabled || snapshot == null)
+        if (self == null || self.IsCombatDisabled || snapshot == null)
         {
             return false;
         }
 
         _decisionSystem.DecideBuiltInUnit(
-            _units,
-            unit,
+            _states,
+            self,
             _aiTuning,
             tickDeltaTime,
             _channelSystem,
             _rosterMutationSystem
         );
-        BattleActionExecutionPlan executionPlan = BuildExecutionPlan(unit, snapshot);
-        BattleCombatCommand command = ResolveCombatCommand(unit, executionPlan);
-        plan = BattleControlPlan.FromExecutionPlan(unit.CurrentActionType, executionPlan, command);
+        BattleActionExecutionPlan executionPlan = BuildExecutionPlan(self, snapshot);
+        BattleCombatCommand command = ResolveCombatCommand(self, executionPlan);
+        plan = BattleControlPlan.FromExecutionPlan(self.CurrentActionType, executionPlan, command);
         return true;
     }
 
     public void ConsumeCommand(BattleUnitCombatState self, BattleCombatCommand command) { }
 
-    private BattleActionExecutionPlan BuildExecutionPlan(BattleRuntimeUnit unit, BattleFieldSnapshot snapshot)
+    private BattleActionExecutionPlan BuildExecutionPlan(BattleUnitCombatState state, BattleFieldSnapshot snapshot)
     {
         BattleActionExecutionPlan plan;
-        if (!_planners.TryGetValue(unit.CurrentActionType, out IBattleActionPlanner planner))
+        if (!_planners.TryGetValue(state.CurrentActionType, out IBattleActionPlanner planner))
         {
-            plan = _planners[BattleActionType.EngageNearest].Build(unit, snapshot);
+            plan = _planners[BattleActionType.EngageNearest].Build(state, snapshot);
         }
         else
         {
-            plan = planner.Build(unit, snapshot);
-            if (!planner.IsUsable(unit, plan))
+            plan = planner.Build(state, snapshot);
+            if (!planner.IsUsable(state, plan))
             {
                 IBattleActionPlanner engagePlanner = _planners[BattleActionType.EngageNearest];
-                BattleActionExecutionPlan engagePlan = engagePlanner.Build(unit, snapshot);
-                plan = engagePlanner.IsUsable(unit, engagePlan) ? engagePlan : default;
+                BattleActionExecutionPlan engagePlan = engagePlanner.Build(state, snapshot);
+                plan = engagePlanner.IsUsable(state, engagePlan) ? engagePlan : default;
 
                 if (plan.Action == BattleActionType.None)
                 {
-                    plan.Action = unit.CurrentActionType;
-                    plan.DesiredPosition = unit.Position;
+                    plan.Action = state.CurrentActionType;
+                    plan.DesiredPosition = state.Position;
                 }
             }
         }
@@ -85,22 +84,25 @@ public sealed class BuiltInAiControlSource : IBattleUnitControlSource
         return plan;
     }
 
-    private static BattleCombatCommand ResolveCombatCommand(BattleRuntimeUnit unit, BattleActionExecutionPlan plan)
+    private static BattleCombatCommand ResolveCombatCommand(BattleUnitCombatState state, BattleActionExecutionPlan plan)
     {
-        if (unit == null || unit.IsCombatDisabled)
+        if (state == null || state.IsCombatDisabled)
         {
             return BattleCombatCommand.None;
         }
 
-        if (unit.HasReadySkill())
+        if (HasReadySkill(state))
         {
             return BattleCombatCommand.Skill;
         }
 
-        return IsCombatAction(plan.Action) && BattleFieldSnapshot.IsValidEnemyTarget(unit.State, plan.TargetEnemy)
+        return IsCombatAction(plan.Action) && BattleFieldSnapshot.IsValidEnemyTarget(state, plan.TargetEnemy)
             ? BattleCombatCommand.BasicAttack
             : BattleCombatCommand.None;
     }
+
+    private static bool HasReadySkill(BattleUnitCombatState state) =>
+        state != null && state.GetSkill() != WeaponSkillId.None && state.SkillCooldownRemaining <= 0f;
 
     private static bool IsCombatAction(BattleActionType actionType)
     {
@@ -115,25 +117,6 @@ public sealed class BuiltInAiControlSource : IBattleUnitControlSource
             default:
                 return false;
         }
-    }
-
-    private BattleRuntimeUnit FindRuntimeUnit(BattleUnitCombatState state)
-    {
-        if (state == null || _units == null)
-        {
-            return null;
-        }
-
-        for (int i = 0; i < _units.Count; i++)
-        {
-            BattleRuntimeUnit unit = _units[i];
-            if (unit != null && unit.State == state)
-            {
-                return unit;
-            }
-        }
-
-        return null;
     }
 
     private static Dictionary<BattleActionType, IBattleActionPlanner> BuildPlannerRegistry()

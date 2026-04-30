@@ -70,7 +70,6 @@ public sealed class BattleSimulationManager : MonoBehaviour
     private BattleCombatSystem _combatSystem;
     private readonly BattleVictorySystem _victorySystem = new BattleVictorySystem();
     private readonly BattleAgentControlBuffer _agentControlBuffer = new BattleAgentControlBuffer();
-    private readonly BattleControlSourceRegistry _controlSourceRegistry = new BattleControlSourceRegistry();
     private readonly BuiltInAiControlSource _builtInAiControlSource = new BuiltInAiControlSource();
     private MlAgentControlSource _mlAgentControlSource;
     private readonly int[] _tickUnitNumbersBuffer = new int[BattleTeamConstants.MaxUnitsInBattle];
@@ -166,7 +165,6 @@ public sealed class BattleSimulationManager : MonoBehaviour
         _positionHistory.Clear();
         _damageLifecycle.Clear();
         _rosterMutationSystem.Clear();
-        _controlSourceRegistry.Clear();
         _agentControlBuffer.ClearAll();
         _battlefieldCollider = battlefieldCollider;
         if (_mlAgentControlSource == null)
@@ -187,7 +185,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
             _runtimeUnits.Add(unit);
             _unitStates.Add(unit.State);
             _runtimeUnitByState[unit.State] = unit;
-            RegisterControlSource(unit);
+            AssignControlSource(unit);
         }
 
         _payload = payload;
@@ -204,7 +202,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
         _effectSystem.ConfigureLongRunningSystems(_scheduledEffectSystem, _damageLifecycle, _rosterMutationSystem);
         BattleParameterRadii initialRadii = BattleParameterSystem.BuildRadii(aiTuning);
         CurrentSnapshot = BattleFieldSnapshot.Build(
-            _runtimeUnits,
+            _unitStates,
             initialRadii,
             escapeTowardTeamBlend,
             CurrentSnapshot,
@@ -307,7 +305,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
 
         BattleParameterRadii radii = BattleParameterSystem.BuildRadii(aiTuning);
         CurrentSnapshot = BattleFieldSnapshot.Build(
-            _runtimeUnits,
+            _unitStates,
             radii,
             escapeTowardTeamBlend,
             CurrentSnapshot,
@@ -328,16 +326,10 @@ public sealed class BattleSimulationManager : MonoBehaviour
         _cooldownSystem.Tick(_runtimeUnits, tickDeltaTime);
 
         _parameterSystem.Compute(_runtimeUnits, radii, aiTuning, CurrentSnapshot, _tickModifierOverflowFlagsBuffer);
-        _builtInAiControlSource.Configure(_runtimeUnits, aiTuning, _channelSystem, _rosterMutationSystem);
+        _builtInAiControlSource.Configure(_unitStates, aiTuning, _channelSystem, _rosterMutationSystem);
         RefreshControlSources();
 
-        _planningSystem.Build(
-            _runtimeUnits,
-            CurrentSnapshot,
-            _controlSourceRegistry,
-            tickDeltaTime,
-            _rosterMutationSystem
-        );
+        _planningSystem.Build(_unitStates, CurrentSnapshot, tickDeltaTime, _rosterMutationSystem);
         _physicsSystem.Execute(_runtimeUnits, tickDeltaTime, _artifactSystem.MovementPolicy, _channelSystem);
         _positionHistory.RecordAll(_runtimeUnits, battleTime);
         _artifactSystem.TickPositionHistoryArtifacts(_positionHistory, tickContext, _effectSystem);
@@ -347,8 +339,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
             _tickCombatResultBuffer,
             CurrentSnapshot,
             battleTime,
-            _battleTickCount,
-            _controlSourceRegistry
+            _battleTickCount
         );
 
         BattleOutcome? outcome = _victorySystem.Evaluate(
@@ -458,21 +449,23 @@ public sealed class BattleSimulationManager : MonoBehaviour
         CurrentSnapshot = null;
     }
 
-    private void RegisterControlSource(BattleRuntimeUnit unit)
+    private void AssignControlSource(BattleRuntimeUnit unit)
     {
         if (unit == null || unit.State == null)
             return;
 
+        // 같은 simulation tick 안에서도 유닛별 ControlMode가 다를 수 있다.
+        // State가 CurrentPlan과 ControlSource를 함께 들고, PlanningSystem/CombatSystem은 State만 참조한다.
         IBattleUnitControlSource source =
             unit.ControlMode == BattleUnitControlMode.AgentPolicy ? _mlAgentControlSource : _builtInAiControlSource;
-        _controlSourceRegistry.Set(unit.State, source);
+        unit.State.SetControlSource(source);
     }
 
     private void RefreshControlSources()
     {
         for (int i = 0; i < _runtimeUnits.Count; i++)
         {
-            RegisterControlSource(_runtimeUnits[i]);
+            AssignControlSource(_runtimeUnits[i]);
         }
     }
 }

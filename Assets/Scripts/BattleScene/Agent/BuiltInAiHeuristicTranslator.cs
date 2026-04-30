@@ -99,5 +99,4 @@ public static class BuiltInAiHeuristicTranslator
             BattleActionType.CollapseOnCluster => GladiatorActionSchema.StancePressure,
             _ => GladiatorActionSchema.StanceNeutral,
         };
-
 }

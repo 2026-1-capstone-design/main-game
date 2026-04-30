@@ -80,7 +80,7 @@ public class GladiatorAgent : Agent
         SphereCollider col = flowManager?.battlefieldCollider;
         _arenaCenter = col != null ? col.bounds.center : Vector3.zero;
         _arenaExtentsMin = col != null ? Mathf.Min(col.bounds.extents.x, col.bounds.extents.z) : float.MaxValue;
-        _poseProvider = new RuntimeBattleUnitPoseProvider(_selfUnit);
+        _poseProvider = new BattleUnitStatePoseProvider(_selfState);
         _rosterView = CreateRosterView();
         _rewardEvaluator = new GladiatorRewardEvaluator(rewardConfig, HardBoundaryRadiusMultiplier);
         _rewardEvaluator.Reset();
@@ -106,9 +106,11 @@ public class GladiatorAgent : Agent
         if (useBuiltInAiHeuristic)
         {
             _aiHeuristic = new BuiltInAiControlSource();
-            IReadOnlyList<BattleRuntimeUnit> units = _flowManager != null ? _flowManager.RuntimeUnits : null;
+            IReadOnlyList<BattleUnitCombatState> states = ToStates(
+                _flowManager != null ? _flowManager.RuntimeUnits : null
+            );
             BattleAITuningSO tuning = _flowManager?.BattleSimulationManager?.aiTuning;
-            _aiHeuristic.Configure(units, tuning);
+            _aiHeuristic.Configure(states, tuning);
         }
         else
         {

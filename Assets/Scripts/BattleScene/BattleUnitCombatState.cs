@@ -15,6 +15,7 @@ public sealed class BattleUnitCombatState
     public BattleTeamId TeamId { get; private set; }
     public string DisplayName { get; private set; }
     public int Level { get; private set; }
+    public WeaponType WeaponType { get; private set; }
 
     // ── 체력 / 전투불능 ────────────────────────────────────────────
     public float MaxHealth { get; private set; }
@@ -50,6 +51,8 @@ public sealed class BattleUnitCombatState
     // ── 바디 반경 (분리/클램프 계산용) ────────────────────────────
     public float BodyRadius { get; private set; }
     public Vector3 Position { get; private set; }
+    public Vector3 FacingDirection { get; private set; }
+    public Vector3 RightDirection => new Vector3(FacingDirection.z, 0f, -FacingDirection.x);
 
     public void SetBodyRadius(float bodyRadius)
     {
@@ -59,6 +62,12 @@ public sealed class BattleUnitCombatState
     public void SyncPosition(Vector3 worldPosition)
     {
         Position = worldPosition;
+    }
+
+    public void SyncFacingDirection(Vector3 worldForward)
+    {
+        worldForward.y = 0f;
+        FacingDirection = worldForward.sqrMagnitude > 0.0001f ? worldForward.normalized : Vector3.forward;
     }
 
     // ── 버프 ───────────────────────────────────────────────────────
@@ -260,6 +269,10 @@ public sealed class BattleUnitCombatState
     public float SkillCooldownRemaining { get; private set; }
 
     // ── 실행 플랜 / 이동-공격 플래그 ─────────────────────────────
+    // CurrentPlan은 "이번 틱에 무엇을 할지"라는 실행 결과만 담는다.
+    // ControlSource는 이 유닛의 plan 생성과 command consume을 담당하는 제어 주체다.
+    // State가 source를 직접 들면 planning/combat 테스트가 별도 registry fixture 없이 유닛 상태만으로 구성된다.
+    public IBattleUnitControlSource ControlSource { get; private set; }
     public BattleControlPlan CurrentPlan { get; private set; }
     public Vector3 PlannedDesiredPosition => CurrentPlan.DesiredPosition;
     public bool HasPlannedDesiredPosition => CurrentPlan.HasDesiredPosition;
@@ -277,6 +290,7 @@ public sealed class BattleUnitCombatState
 
         DisplayName = snapshot.DisplayName;
         Level = snapshot.Level;
+        WeaponType = snapshot.WeaponType;
 
         MaxHealth = snapshot.MaxHealth;
         CurrentHealth = snapshot.CurrentHealth;
@@ -310,9 +324,11 @@ public sealed class BattleUnitCombatState
         SkillCooldownRemaining = 0f;
 
         CurrentPlan = default;
+        ControlSource = null;
         IsMoving = false;
         IsAttacking = false;
         Position = Vector3.zero;
+        FacingDirection = Vector3.forward;
         CurrentTarget = null;
     }
 
@@ -554,6 +570,11 @@ public sealed class BattleUnitCombatState
     {
         CurrentPlan = plan;
         CurrentTarget = plan.TargetEnemy;
+    }
+
+    public void SetControlSource(IBattleUnitControlSource source)
+    {
+        ControlSource = source;
     }
 
     public void ClearCurrentPlan()

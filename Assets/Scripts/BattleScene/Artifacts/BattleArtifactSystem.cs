@@ -149,7 +149,11 @@ public sealed class BattleArtifactSystem : IBattleTargetingPolicy, IBattleMoveme
         }
     }
 
-    public bool CanTarget(BattleRuntimeUnit requester, BattleRuntimeUnit candidate, BattleTargetingReason reason)
+    public bool CanTarget(
+        BattleUnitCombatState requester,
+        BattleUnitCombatState candidate,
+        BattleTargetingReason reason
+    )
     {
         if (!DefaultBattleTargetingPolicy.Instance.CanTarget(requester, candidate, reason))
             return false;
@@ -157,7 +161,7 @@ public sealed class BattleArtifactSystem : IBattleTargetingPolicy, IBattleMoveme
         for (int i = 0; i < _targetingModifiers.Count; i++)
         {
             ArtifactBinding<ITargetingModifierArtifact> binding = _targetingModifiers[i];
-            if (candidate == null || binding.Owner != candidate.State)
+            if (candidate == null || binding.Owner != candidate)
                 continue;
             if (!binding.Artifact.CanBeTargeted(binding.Owner, requester, reason))
                 return false;
@@ -167,8 +171,8 @@ public sealed class BattleArtifactSystem : IBattleTargetingPolicy, IBattleMoveme
     }
 
     public float ModifyTargetScore(
-        BattleRuntimeUnit requester,
-        BattleRuntimeUnit candidate,
+        BattleUnitCombatState requester,
+        BattleUnitCombatState candidate,
         float baseScore,
         BattleTargetingReason reason
     )

@@ -3,15 +3,16 @@ public interface IBattleUnitPoseProvider
     BattleUnitPose CurrentPose { get; }
 }
 
-public sealed class RuntimeBattleUnitPoseProvider : IBattleUnitPoseProvider
+// ML 관찰/휴리스틱이 Transform 대신 BattleUnitCombatState에 동기화된 방향을 읽도록 하는 provider다.
+public sealed class BattleUnitStatePoseProvider : IBattleUnitPoseProvider
 {
-    private readonly BattleRuntimeUnit _unit;
+    private readonly BattleUnitCombatState _state;
 
-    public RuntimeBattleUnitPoseProvider(BattleRuntimeUnit unit)
+    public BattleUnitStatePoseProvider(BattleUnitCombatState state)
     {
-        _unit = unit;
+        _state = state;
     }
 
     public BattleUnitPose CurrentPose =>
-        _unit != null ? new BattleUnitPose(_unit.transform.right, _unit.transform.forward) : BattleUnitPose.Default;
+        _state != null ? new BattleUnitPose(_state.RightDirection, _state.FacingDirection) : BattleUnitPose.Default;
 }

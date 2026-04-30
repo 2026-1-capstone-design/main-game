@@ -14,8 +14,8 @@ public enum BattleTargetingReason
 // Value는 호출자가 계산한 기본 점수에서 시작하며, 보정 훅들이 같은 값을 누적 수정한다.
 public struct BattleTargetScore
 {
-    public BattleRuntimeUnit Requester;
-    public BattleRuntimeUnit Candidate;
+    public BattleUnitCombatState Requester;
+    public BattleUnitCombatState Candidate;
     public float Value;
     public BattleTargetingReason Reason;
 }
@@ -24,10 +24,10 @@ public struct BattleTargetScore
 // 구현체는 후보를 제외하거나 기본 점수를 가감하되, 실제 타겟 선택 루프는 호출자가 유지한다.
 public interface IBattleTargetingPolicy
 {
-    bool CanTarget(BattleRuntimeUnit requester, BattleRuntimeUnit candidate, BattleTargetingReason reason);
+    bool CanTarget(BattleUnitCombatState requester, BattleUnitCombatState candidate, BattleTargetingReason reason);
     float ModifyTargetScore(
-        BattleRuntimeUnit requester,
-        BattleRuntimeUnit candidate,
+        BattleUnitCombatState requester,
+        BattleUnitCombatState candidate,
         float baseScore,
         BattleTargetingReason reason
     );
@@ -41,15 +41,15 @@ public sealed class DefaultBattleTargetingPolicy : IBattleTargetingPolicy
 
     private DefaultBattleTargetingPolicy() { }
 
-    public bool CanTarget(BattleRuntimeUnit requester, BattleRuntimeUnit candidate, BattleTargetingReason reason) =>
-        BattleFieldSnapshot.IsValidEnemyTarget(
-            requester != null ? requester.State : null,
-            candidate != null ? candidate.State : null
-        );
+    public bool CanTarget(
+        BattleUnitCombatState requester,
+        BattleUnitCombatState candidate,
+        BattleTargetingReason reason
+    ) => BattleFieldSnapshot.IsValidEnemyTarget(requester, candidate);
 
     public float ModifyTargetScore(
-        BattleRuntimeUnit requester,
-        BattleRuntimeUnit candidate,
+        BattleUnitCombatState requester,
+        BattleUnitCombatState candidate,
         float baseScore,
         BattleTargetingReason reason
     ) => baseScore;

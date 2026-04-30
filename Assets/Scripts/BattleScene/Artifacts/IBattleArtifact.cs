@@ -30,7 +30,7 @@ public interface IDamageModifierArtifact : IBattleArtifact
 public interface ITargetingModifierArtifact : IBattleArtifact
 {
     void ModifyTargetScore(BattleUnitCombatState owner, ref BattleTargetScore score);
-    bool CanBeTargeted(BattleUnitCombatState owner, BattleRuntimeUnit requester, BattleTargetingReason reason);
+    bool CanBeTargeted(BattleUnitCombatState owner, BattleUnitCombatState requester, BattleTargetingReason reason);
 }
 
 public interface IMovementModifierArtifact : IBattleArtifact

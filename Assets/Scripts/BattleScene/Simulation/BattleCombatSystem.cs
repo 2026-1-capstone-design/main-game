@@ -46,8 +46,7 @@ public sealed class BattleCombatSystem
         BattleCombatResultBuffer results,
         BattleFieldSnapshot snapshot,
         float battleTime,
-        int battleTick,
-        BattleControlSourceRegistry controlSources = null
+        int battleTick
     )
     {
         if (units == null || results == null || _effects == null)
@@ -55,16 +54,8 @@ public sealed class BattleCombatSystem
 
         results.Clear();
         _effects.Configure(results, runtimeUnitByState);
-        ExecuteAttackPhase(
-            units,
-            runtimeUnitByState,
-            snapshot,
-            _effects,
-            _channelSystem,
-            _artifactSystem,
-            controlSources
-        );
-        ExecuteSkillPhase(units, runtimeUnitByState, snapshot, battleTime, battleTick, controlSources);
+        ExecuteAttackPhase(units, runtimeUnitByState, snapshot, _effects, _channelSystem, _artifactSystem);
+        ExecuteSkillPhase(units, runtimeUnitByState, snapshot, battleTime, battleTick);
     }
 
     private static void ExecuteAttackPhase(
@@ -73,8 +64,7 @@ public sealed class BattleCombatSystem
         BattleFieldSnapshot snapshot,
         IBattleEffectSink effects,
         BattleSkillChannelSystem channelSystem,
-        BattleArtifactSystem artifactSystem,
-        BattleControlSourceRegistry controlSources
+        BattleArtifactSystem artifactSystem
     )
     {
         for (int i = 0; i < units.Count; i++)
@@ -135,7 +125,7 @@ public sealed class BattleCombatSystem
             bool wasKill = !wasDisabledBeforeDamage && target.IsCombatDisabled;
             attacker.RaiseAttackLanded(targetRuntime, actualDamage, wasKill);
             attacker.State.ResetAttackCooldown();
-            ConsumeCommand(controlSources, attacker.State, BattleCombatCommand.BasicAttack);
+            ConsumeCommand(attacker.State, BattleCombatCommand.BasicAttack);
         }
     }
 
@@ -144,8 +134,7 @@ public sealed class BattleCombatSystem
         IReadOnlyDictionary<BattleUnitCombatState, BattleRuntimeUnit> runtimeUnitByState,
         BattleFieldSnapshot snapshot,
         float battleTime,
-        int battleTick,
-        BattleControlSourceRegistry controlSources
+        int battleTick
     )
     {
         for (int i = 0; i < units.Count; i++)
@@ -164,13 +153,13 @@ public sealed class BattleCombatSystem
                 || (_rosterMutationSystem != null && _rosterMutationSystem.IsSkillDisabled(unit))
             )
             {
-                ConsumeCommand(controlSources, unit.State, BattleCombatCommand.Skill);
+                ConsumeCommand(unit.State, BattleCombatCommand.Skill);
                 continue;
             }
             if (unit.SkillCooldownRemaining > 0f)
             {
                 unit.RaiseSkillFailed();
-                ConsumeCommand(controlSources, unit.State, BattleCombatCommand.Skill);
+                ConsumeCommand(unit.State, BattleCombatCommand.Skill);
 
                 continue;
             }
@@ -189,7 +178,7 @@ public sealed class BattleCombatSystem
             if (skill == null || !skill.CanActivate(context))
             {
                 unit.RaiseSkillFailed();
-                ConsumeCommand(controlSources, unit.State, BattleCombatCommand.Skill);
+                ConsumeCommand(unit.State, BattleCombatCommand.Skill);
 
                 continue;
             }
@@ -210,18 +199,13 @@ public sealed class BattleCombatSystem
             unit.SetSkillState(unit.GetSkillAnimationDuration());
             unit.State.ResetSkillCooldown();
             unit.RaiseSkillActivated();
-            ConsumeCommand(controlSources, unit.State, BattleCombatCommand.Skill);
+            ConsumeCommand(unit.State, BattleCombatCommand.Skill);
         }
     }
 
-    private static void ConsumeCommand(
-        BattleControlSourceRegistry controlSources,
-        BattleUnitCombatState state,
-        BattleCombatCommand command
-    )
+    private static void ConsumeCommand(BattleUnitCombatState state, BattleCombatCommand command)
     {
-        if (controlSources != null && controlSources.TryGet(state, out IBattleUnitControlSource source))
-            source.ConsumeCommand(state, command);
+        state?.ControlSource?.ConsumeCommand(state, command);
     }
 
     private static BattleRuntimeUnit ResolveRuntimeUnit(
