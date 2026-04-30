@@ -103,6 +103,8 @@ public sealed class BattleRosterMutationSystem : IBattleRosterMutationSink
             return null;
 
         Transform parent = _battlefieldCollider != null ? _battlefieldCollider.transform : prefab.transform.parent;
+        // TODO: 소환 스킬이 짧은 시간 안에 반복 시전되거나 여러 유닛이 동시에 소환할 수 있는 경우
+        // Object.Instantiate를 오브젝트 풀링으로 교체한다. 호출 횟수가 늘어날수록 GC 스파이크가 발생한다.
         GameObject runtimeRoot = Object.Instantiate(prefab, parent);
         BattleRuntimeUnit runtimeUnit = runtimeRoot.GetComponentInChildren<BattleRuntimeUnit>(true);
         if (runtimeUnit == null)
