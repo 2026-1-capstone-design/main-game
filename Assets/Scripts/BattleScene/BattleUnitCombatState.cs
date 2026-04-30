@@ -10,7 +10,7 @@ public sealed class BattleUnitCombatState
 {
     // ── 유닛 정체성 ────────────────────────────────────────────────
     public int UnitNumber { get; private set; }
-    public bool IsEnemy { get; private set; }
+    public BattleTeamId TeamId { get; private set; }
     public string DisplayName { get; private set; }
     public int Level { get; private set; }
 
@@ -254,10 +254,10 @@ public sealed class BattleUnitCombatState
     public BattleUnitCombatState PlannedTargetAlly { get; private set; }
 
     // ── 생성자 ─────────────────────────────────────────────────────
-    public BattleUnitCombatState(BattleUnitSnapshot snapshot, int unitNumber, bool isEnemy)
+    public BattleUnitCombatState(BattleUnitSnapshot snapshot, int unitNumber, BattleTeamId teamId)
     {
         UnitNumber = unitNumber;
-        IsEnemy = isEnemy;
+        TeamId = teamId;
 
         DisplayName = snapshot.DisplayName;
         Level = snapshot.Level;

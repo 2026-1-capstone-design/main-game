@@ -14,7 +14,7 @@ public sealed class SpiralSlashSkill : IBattleSkill
     {
         foreach (var unit in applier.AllUnits)
         {
-            if (unit != null && !unit.IsCombatDisabled && unit.IsEnemy != caster.IsEnemy)
+            if (unit != null && !unit.IsCombatDisabled && BattleFieldSnapshot.IsValidEnemyTarget(caster.State, unit))
             {
                 if (Vector3.Distance(caster.Position, unit.Position) <= 45f) // 광역 반경 45
                 {

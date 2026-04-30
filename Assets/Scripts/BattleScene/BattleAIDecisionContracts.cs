@@ -401,7 +401,7 @@ public struct BattleParameterRadii
 public readonly struct BattleUnitView
 {
     public readonly int UnitNumber;
-    public readonly bool IsEnemy;
+    public readonly BattleTeamId TeamId;
     public readonly Vector3 Position;
     public readonly float CurrentHealth;
     public readonly float MaxHealth;
@@ -413,7 +413,7 @@ public readonly struct BattleUnitView
 
     public BattleUnitView(
         int unitNumber,
-        bool isEnemy,
+        BattleTeamId teamId,
         Vector3 position,
         float currentHealth,
         float maxHealth,
@@ -425,7 +425,7 @@ public readonly struct BattleUnitView
     )
     {
         UnitNumber = unitNumber;
-        IsEnemy = isEnemy;
+        TeamId = teamId;
         Position = position;
         CurrentHealth = currentHealth;
         MaxHealth = maxHealth;
@@ -448,7 +448,7 @@ public readonly struct BattleUnitView
 
         return new BattleUnitView(
             u.UnitNumber,
-            u.IsEnemy,
+            u.TeamId,
             u.Position,
             u.CurrentHealth,
             u.MaxHealth,

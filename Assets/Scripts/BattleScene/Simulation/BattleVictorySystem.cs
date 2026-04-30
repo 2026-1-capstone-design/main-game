@@ -3,14 +3,18 @@ using UnityEngine;
 
 public sealed class BattleVictorySystem
 {
-    public BattleOutcome? Evaluate(IReadOnlyList<BattleRuntimeUnit> units, int currentTick)
+    private readonly List<BattleRuntimeUnit> _survivorBuffer = new List<BattleRuntimeUnit>(
+        BattleTeamConstants.MaxUnitsInBattle
+    );
+    private readonly HashSet<BattleTeamId> _livingTeams = new HashSet<BattleTeamId>();
+
+    public BattleOutcome? Evaluate(IReadOnlyList<BattleRuntimeUnit> units, int currentTick, BattleTeamId playerTeamId)
     {
         if (units == null)
             return null;
 
-        bool hasLivingAlly = false;
-        bool hasLivingEnemy = false;
-        var survivors = new List<BattleRuntimeUnit>(units.Count);
+        _survivorBuffer.Clear();
+        _livingTeams.Clear();
 
         for (int i = 0; i < units.Count; i++)
         {
@@ -18,18 +22,21 @@ public sealed class BattleVictorySystem
             if (unit == null || unit.IsCombatDisabled)
                 continue;
 
-            survivors.Add(unit);
-
-            if (unit.IsEnemy)
-                hasLivingEnemy = true;
-            else
-                hasLivingAlly = true;
-
-            if (hasLivingAlly && hasLivingEnemy)
-                return null;
+            _survivorBuffer.Add(unit);
+            _livingTeams.Add(unit.TeamId);
         }
 
-        bool wasWin = hasLivingAlly && !hasLivingEnemy;
+        if (_livingTeams.Count > 1)
+            return null;
+
+        BattleTeamId? winnerTeamId = null;
+        foreach (BattleTeamId teamId in _livingTeams)
+        {
+            winnerTeamId = teamId;
+            break;
+        }
+
+        bool wasWin = winnerTeamId.HasValue && winnerTeamId.Value == playerTeamId;
         int currentDay = SessionManager.Instance != null ? Mathf.Max(1, SessionManager.Instance.CurrentDay) : 1;
         int pendingReward = wasWin ? CalculateVictoryReward(currentDay) : 0;
 
@@ -37,9 +44,9 @@ public sealed class BattleVictorySystem
             SessionManager.Instance.SetPendingBattleReward(pendingReward);
 
         BattleResolution resolution = BattleResolution.Create(wasWin, pendingReward, currentDay);
-        BattleTeam winner = wasWin ? BattleTeam.Ally : (hasLivingEnemy ? BattleTeam.Enemy : BattleTeam.None);
+        BattleTeam winner = !winnerTeamId.HasValue ? BattleTeam.None : (wasWin ? BattleTeam.Ally : BattleTeam.Enemy);
 
-        return new BattleOutcome(winner, currentTick, survivors, resolution);
+        return new BattleOutcome(winner, winnerTeamId, currentTick, _survivorBuffer, resolution);
     }
 
     private static int CalculateVictoryReward(int currentDay)
