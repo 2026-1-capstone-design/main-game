@@ -25,8 +25,6 @@ public sealed class SaveSlotData
     public int battleEncounterGeneratedDay;
     public int selectedEncounterIndex;
     public SaveBattleEncounterData[] battleEncounters;
-
-    public bool hasPendingBattle;
 }
 
 [Serializable]

@@ -194,7 +194,6 @@ public static class SaveGameService
             battleEncounterGeneratedDay = battleManager != null ? battleManager.EncounterGeneratedDay : 1,
             selectedEncounterIndex = battleManager != null ? battleManager.SelectedEncounterIndex : -1,
             battleEncounters = battleEncounters,
-            hasPendingBattle = sessionManager != null && sessionManager.HasPendingBattleReward,
         };
 
         return data;
