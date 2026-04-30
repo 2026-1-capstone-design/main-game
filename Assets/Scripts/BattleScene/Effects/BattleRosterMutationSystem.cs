@@ -1,0 +1,201 @@
+using System.Collections.Generic;
+using UnityEngine;
+
+// 전투 중 소환할 유닛의 원본, 팀, 위치, 임시 지속시간을 담는 요청이다.
+public struct BattleSummonRequest
+{
+    public BattleRuntimeUnit Source;
+    public BattleTeamId TeamId;
+    public BattleUnitSnapshot Snapshot;
+    public Vector3 SpawnPosition;
+    public float Duration;
+}
+
+// 효과 구현체가 전투 런타임 유닛 목록을 안전한 경로로 변경하기 위한 계약이다.
+public interface IBattleRosterMutationSink
+{
+    BattleRuntimeUnit Summon(BattleSummonRequest request);
+    void ChangeTeam(BattleRuntimeUnit unit, BattleTeamId newTeamId, float duration);
+    void RestoreTeam(BattleRuntimeUnit unit);
+    void DisableCommandAndSkill(BattleRuntimeUnit unit, float duration);
+}
+
+// 전투 중 런타임 유닛 구성, 임시 팀 변경, 명령/스킬 금지 상태를 관리한다.
+// BattleSimulationManager의 리스트와 state 역조회 딕셔너리를 직접 공유받아 스냅샷 재빌드 경로를 유지한다.
+public sealed class BattleRosterMutationSystem : IBattleRosterMutationSink
+{
+    private readonly List<TeamChange> _teamChanges = new List<TeamChange>();
+    private readonly List<TimedUnitBlock> _commandBlocks = new List<TimedUnitBlock>();
+    private List<BattleRuntimeUnit> _runtimeUnits;
+    private List<BattleUnitCombatState> _unitStates;
+    private Dictionary<BattleUnitCombatState, BattleRuntimeUnit> _runtimeUnitByState;
+    private SphereCollider _battlefieldCollider;
+    private BattleTeamId _playerTeamId;
+    private float _battleTime;
+    private int _nextSummonedUnitNumber = 10000;
+
+    public void Configure(
+        List<BattleRuntimeUnit> runtimeUnits,
+        List<BattleUnitCombatState> unitStates,
+        Dictionary<BattleUnitCombatState, BattleRuntimeUnit> runtimeUnitByState,
+        SphereCollider battlefieldCollider,
+        BattleTeamId playerTeamId
+    )
+    {
+        _runtimeUnits = runtimeUnits;
+        _unitStates = unitStates;
+        _runtimeUnitByState = runtimeUnitByState;
+        _battlefieldCollider = battlefieldCollider;
+        _playerTeamId = playerTeamId;
+    }
+
+    public void Clear()
+    {
+        _teamChanges.Clear();
+        _commandBlocks.Clear();
+        _battleTime = 0f;
+        _nextSummonedUnitNumber = 10000;
+    }
+
+    public void Tick(float battleTime)
+    {
+        _battleTime = battleTime;
+
+        for (int i = _teamChanges.Count - 1; i >= 0; i--)
+        {
+            TeamChange change = _teamChanges[i];
+            if (change.RestoreAtBattleTime > battleTime)
+                continue;
+
+            RestoreTeam(change.Unit);
+        }
+
+        for (int i = _commandBlocks.Count - 1; i >= 0; i--)
+        {
+            if (_commandBlocks[i].UntilBattleTime <= battleTime)
+                _commandBlocks.RemoveAt(i);
+        }
+    }
+
+    public bool IsCommandDisabled(BattleRuntimeUnit unit)
+    {
+        if (unit == null)
+            return false;
+
+        for (int i = 0; i < _commandBlocks.Count; i++)
+        {
+            if (_commandBlocks[i].Unit == unit)
+                return true;
+        }
+
+        return false;
+    }
+
+    public bool IsSkillDisabled(BattleRuntimeUnit unit) => IsCommandDisabled(unit);
+
+    public BattleRuntimeUnit Summon(BattleSummonRequest request)
+    {
+        if (request.Source == null || request.Snapshot == null || _runtimeUnits == null)
+            return null;
+
+        GameObject prefab = request.Source.RuntimeRootObject;
+        if (prefab == null)
+            return null;
+
+        Transform parent = _battlefieldCollider != null ? _battlefieldCollider.transform : prefab.transform.parent;
+        GameObject runtimeRoot = Object.Instantiate(prefab, parent);
+        BattleRuntimeUnit runtimeUnit = runtimeRoot.GetComponentInChildren<BattleRuntimeUnit>(true);
+        if (runtimeUnit == null)
+        {
+            Object.Destroy(runtimeRoot);
+            return null;
+        }
+
+        runtimeUnit.SetRuntimeRootObject(runtimeRoot);
+        runtimeUnit.Initialize(
+            request.Snapshot.Clone(),
+            _nextSummonedUnitNumber++,
+            request.TeamId,
+            request.TeamId == _playerTeamId
+        );
+        runtimeUnit.PlaceAt(request.SpawnPosition, parent);
+        runtimeUnit.ClampInsideBattlefield(_battlefieldCollider);
+
+        _runtimeUnits.Add(runtimeUnit);
+        _unitStates?.Add(runtimeUnit.State);
+        if (_runtimeUnitByState != null)
+            _runtimeUnitByState[runtimeUnit.State] = runtimeUnit;
+
+        if (request.Duration > 0f)
+            DisableCommandAndSkill(runtimeUnit, request.Duration);
+
+        return runtimeUnit;
+    }
+
+    public void ChangeTeam(BattleRuntimeUnit unit, BattleTeamId newTeamId, float duration)
+    {
+        if (unit == null || unit.State == null)
+            return;
+
+        BattleTeamId originalTeamId = unit.TeamId;
+        if (originalTeamId == newTeamId)
+            return;
+
+        float restoreAtBattleTime = duration > 0f ? _battleTime + duration : float.PositiveInfinity;
+        _teamChanges.Add(new TeamChange(unit, originalTeamId, restoreAtBattleTime));
+        unit.State.SetTeamId(newTeamId);
+        unit.ClearExecutionPlan();
+    }
+
+    public void RestoreTeam(BattleRuntimeUnit unit)
+    {
+        if (unit == null || unit.State == null)
+            return;
+
+        for (int i = _teamChanges.Count - 1; i >= 0; i--)
+        {
+            TeamChange change = _teamChanges[i];
+            if (change.Unit != unit)
+                continue;
+
+            unit.State.SetTeamId(change.OriginalTeamId);
+            unit.ClearExecutionPlan();
+            _teamChanges.RemoveAt(i);
+            return;
+        }
+    }
+
+    public void DisableCommandAndSkill(BattleRuntimeUnit unit, float duration)
+    {
+        if (unit == null || duration <= 0f)
+            return;
+
+        _commandBlocks.Add(new TimedUnitBlock(unit, _battleTime + duration));
+    }
+
+    private readonly struct TeamChange
+    {
+        public BattleRuntimeUnit Unit { get; }
+        public BattleTeamId OriginalTeamId { get; }
+        public float RestoreAtBattleTime { get; }
+
+        public TeamChange(BattleRuntimeUnit unit, BattleTeamId originalTeamId, float restoreAtBattleTime)
+        {
+            Unit = unit;
+            OriginalTeamId = originalTeamId;
+            RestoreAtBattleTime = restoreAtBattleTime;
+        }
+    }
+
+    private readonly struct TimedUnitBlock
+    {
+        public BattleRuntimeUnit Unit { get; }
+        public float UntilBattleTime { get; }
+
+        public TimedUnitBlock(BattleRuntimeUnit unit, float untilBattleTime)
+        {
+            Unit = unit;
+            UntilBattleTime = untilBattleTime;
+        }
+    }
+}

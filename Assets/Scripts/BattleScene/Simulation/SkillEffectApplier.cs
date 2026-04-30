@@ -8,6 +8,7 @@ public sealed class SkillEffectApplier : IBattleEffectSink
     private BattleEffectSystem _effects;
 
     public IEnumerable<BattleUnitCombatState> AllUnits => _runtimeUnitByState.Keys;
+    public IBattleRosterMutationSink RosterMutations => _effects != null ? _effects.RosterMutations : null;
 
     public void Configure(
         BattleRuntimeUnit caster,
@@ -130,6 +131,17 @@ public sealed class SkillEffectApplier : IBattleEffectSink
     public void PlayVisual(BattleVisualEffectRequest request)
     {
         _effects?.PlayVisual(request);
+    }
+
+    public int ScheduleEffect(
+        float delay,
+        BattleRuntimeUnit source,
+        BattleRuntimeUnit target,
+        in BattleEffectContext context,
+        System.Action<BattleEffectContext, IBattleEffectSink> execute
+    )
+    {
+        return _effects != null ? _effects.ScheduleEffect(delay, source, target, context, execute) : 0;
     }
 
     private BattleRuntimeUnit ResolveRuntimeUnit(BattleUnitCombatState state)

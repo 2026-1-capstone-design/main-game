@@ -21,6 +21,10 @@ public sealed class BattleArtifactSystem : IBattleTargetingPolicy, IBattleMoveme
         new List<ArtifactBinding<IKillReactionArtifact>>();
     private readonly List<ArtifactBinding<ISkillCastReactionArtifact>> _skillCastReactions =
         new List<ArtifactBinding<ISkillCastReactionArtifact>>();
+    private readonly List<ArtifactBinding<IAttackRetargetArtifact>> _attackRetargets =
+        new List<ArtifactBinding<IAttackRetargetArtifact>>();
+    private readonly List<ArtifactBinding<IPositionHistoryArtifact>> _positionHistoryEffects =
+        new List<ArtifactBinding<IPositionHistoryArtifact>>();
 
     public IBattleTargetingPolicy TargetingPolicy => this;
     public IBattleMovementPolicy MovementPolicy => this;
@@ -47,6 +51,8 @@ public sealed class BattleArtifactSystem : IBattleTargetingPolicy, IBattleMoveme
         _healReactions.Clear();
         _killReactions.Clear();
         _skillCastReactions.Clear();
+        _attackRetargets.Clear();
+        _positionHistoryEffects.Clear();
 
         if (units == null)
             return;
@@ -103,6 +109,16 @@ public sealed class BattleArtifactSystem : IBattleTargetingPolicy, IBattleMoveme
                 if (artifact is ISkillCastReactionArtifact skillCastReaction)
                     _skillCastReactions.Add(
                         new ArtifactBinding<ISkillCastReactionArtifact>(ownerState, owner, skillCastReaction)
+                    );
+
+                if (artifact is IAttackRetargetArtifact attackRetarget)
+                    _attackRetargets.Add(
+                        new ArtifactBinding<IAttackRetargetArtifact>(ownerState, owner, attackRetarget)
+                    );
+
+                if (artifact is IPositionHistoryArtifact positionHistoryEffect)
+                    _positionHistoryEffects.Add(
+                        new ArtifactBinding<IPositionHistoryArtifact>(ownerState, owner, positionHistoryEffect)
                     );
             }
         }
@@ -233,6 +249,45 @@ public sealed class BattleArtifactSystem : IBattleTargetingPolicy, IBattleMoveme
         {
             ArtifactBinding<ISkillCastReactionArtifact> binding = _skillCastReactions[i];
             binding.Artifact.OnSkillCast(binding.Owner, skillCastEvent, effects);
+        }
+    }
+
+    public bool TryOverrideBasicAttackTarget(
+        BattleRuntimeUnit owner,
+        BattleFieldSnapshot snapshot,
+        out BattleRuntimeUnit target
+    )
+    {
+        target = null;
+        if (owner == null)
+            return false;
+
+        for (int i = 0; i < _attackRetargets.Count; i++)
+        {
+            ArtifactBinding<IAttackRetargetArtifact> binding = _attackRetargets[i];
+            if (binding.OwnerView != owner)
+                continue;
+
+            if (binding.Artifact.TryOverrideBasicAttackTarget(owner, snapshot, out target))
+                return true;
+        }
+
+        return false;
+    }
+
+    public void TickPositionHistoryArtifacts(
+        BattlePositionHistory history,
+        in BattleEffectContext context,
+        IBattleEffectSink effects
+    )
+    {
+        for (int i = 0; i < _positionHistoryEffects.Count; i++)
+        {
+            ArtifactBinding<IPositionHistoryArtifact> binding = _positionHistoryEffects[i];
+            if (binding.OwnerView == null || binding.OwnerView.IsCombatDisabled)
+                continue;
+
+            binding.Artifact.TickWithPositionHistory(binding.OwnerView, history, context, effects);
         }
     }
 

@@ -17,7 +17,8 @@ public sealed class BattlePhysicsSystem
     public void Execute(
         IReadOnlyList<BattleRuntimeUnit> units,
         float tickDeltaTime,
-        IBattleMovementPolicy movementPolicy = null
+        IBattleMovementPolicy movementPolicy = null,
+        BattleSkillChannelSystem channelSystem = null
     )
     {
         if (units == null)
@@ -26,7 +27,7 @@ public sealed class BattlePhysicsSystem
         _units = units;
         _movementPolicy = movementPolicy ?? DefaultBattleMovementPolicy.Instance;
         ExecuteSpecialEffect(units, tickDeltaTime);
-        ExecuteMovementPhase(units, tickDeltaTime);
+        ExecuteMovementPhase(units, tickDeltaTime, channelSystem);
         ResolveUnitSeparation(units);
     }
 
@@ -42,7 +43,11 @@ public sealed class BattlePhysicsSystem
         }
     }
 
-    private void ExecuteMovementPhase(IReadOnlyList<BattleRuntimeUnit> units, float tickDeltaTime)
+    private void ExecuteMovementPhase(
+        IReadOnlyList<BattleRuntimeUnit> units,
+        float tickDeltaTime,
+        BattleSkillChannelSystem channelSystem
+    )
     {
         for (int i = 0; i < units.Count; i++)
         {
@@ -52,6 +57,12 @@ public sealed class BattlePhysicsSystem
 
             if (unit.IsAttacking)
                 continue;
+
+            if (channelSystem != null && channelSystem.IsMovementBlocked(unit))
+            {
+                unit.State.SetIdleState();
+                continue;
+            }
 
             if (unit.IsExternallyControlled)
             {
