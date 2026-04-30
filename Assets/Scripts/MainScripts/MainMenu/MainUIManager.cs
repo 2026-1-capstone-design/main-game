@@ -241,8 +241,10 @@ public sealed class MainUIManager : MonoBehaviour
 
     private void OnSaveSlotClicked(int slotIndex)
     {
-        // 슬롯 클릭 시 해당 번호로 저장을 요청하고, 저장 직후 프리뷰를 즉시 갱신한다.
-        Debug.Log($"[MainUIManager] Slot{slotIndex} clicked.", this);
+        if (verboseLog)
+        {
+            Debug.Log($"[MainUIManager] Slot{slotIndex} clicked.", this);
+        }
 
         if (_flow == null)
         {
