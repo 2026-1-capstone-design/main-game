@@ -23,6 +23,9 @@ public sealed class BattleSimulationManager : MonoBehaviour
     public float simulationTickRate = 15f;
     public float simulationSpeedMultiplier = 1f;
 
+    // Update()에서 자동으로 시뮬레이션 틱을 진행할지 여부. false로 설정하면 외부에서 명시적으로 StepSimulationTick() 또는 StepSimulationTicks()를 호출해야 틱이 진행됨.
+    public bool autoStepInUpdate = true;
+
     [Header("Simulation Speed Clamp")]
     public float minSimulationSpeed = 0.05f;
     public float maxSimulationSpeed = 8f;
@@ -55,7 +58,6 @@ public sealed class BattleSimulationManager : MonoBehaviour
     private BattleStartPayload _payload;
     private readonly BattleCooldownSystem _cooldownSystem = new BattleCooldownSystem();
     private readonly BattleParameterSystem _parameterSystem = new BattleParameterSystem();
-    private readonly BattleDecisionSystem _decisionSystem = new BattleDecisionSystem();
     private readonly BattlePlanningSystem _planningSystem = new BattlePlanningSystem();
     private readonly BattlePhysicsSystem _physicsSystem = new BattlePhysicsSystem();
     private readonly BattleArtifactSystem _artifactSystem = new BattleArtifactSystem();
@@ -67,6 +69,9 @@ public sealed class BattleSimulationManager : MonoBehaviour
     private BattleEffectSystem _effectSystem;
     private BattleCombatSystem _combatSystem;
     private readonly BattleVictorySystem _victorySystem = new BattleVictorySystem();
+    private readonly BattleAgentControlBuffer _agentControlBuffer = new BattleAgentControlBuffer();
+    private readonly BuiltInAiControlSource _builtInAiControlSource = new BuiltInAiControlSource();
+    private MlAgentControlSource _mlAgentControlSource;
     private readonly int[] _tickUnitNumbersBuffer = new int[BattleTeamConstants.MaxUnitsInBattle];
     private readonly BattleParameterSet[] _tickRawParametersBuffer = new BattleParameterSet[
         BattleTeamConstants.MaxUnitsInBattle
@@ -95,9 +100,12 @@ public sealed class BattleSimulationManager : MonoBehaviour
     public float UnitBodyRadius => unitBodyRadius;
     public bool IsBattleFinished => _battleFinished;
     public bool IsTemporarilyPaused => _isTemporarilyPaused;
+    public bool AutoStepInUpdate => autoStepInUpdate;
     public BattleStartPayload InitialPayload => _payload;
     public int BattleTickCount => _battleTickCount;
+    public float TickInterval => _tickInterval;
     public BattleFieldSnapshot CurrentSnapshot { get; private set; }
+    public BattleAgentControlBuffer AgentControlBuffer => _agentControlBuffer;
 
     public event Action<SimulationTickData> OnSimulationTicked;
     public event Action<BattleOutcome> OnBattleFinished;
@@ -157,7 +165,10 @@ public sealed class BattleSimulationManager : MonoBehaviour
         _positionHistory.Clear();
         _damageLifecycle.Clear();
         _rosterMutationSystem.Clear();
+        _agentControlBuffer.ClearAll();
         _battlefieldCollider = battlefieldCollider;
+        if (_mlAgentControlSource == null)
+            _mlAgentControlSource = new MlAgentControlSource(_agentControlBuffer);
 
         for (int i = 0; i < runtimeUnits.Count; i++)
         {
@@ -174,6 +185,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
             _runtimeUnits.Add(unit);
             _unitStates.Add(unit.State);
             _runtimeUnitByState[unit.State] = unit;
+            AssignControlSource(unit);
         }
 
         _payload = payload;
@@ -190,7 +202,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
         _effectSystem.ConfigureLongRunningSystems(_scheduledEffectSystem, _damageLifecycle, _rosterMutationSystem);
         BattleParameterRadii initialRadii = BattleParameterSystem.BuildRadii(aiTuning);
         CurrentSnapshot = BattleFieldSnapshot.Build(
-            _runtimeUnits,
+            _unitStates,
             initialRadii,
             escapeTowardTeamBlend,
             CurrentSnapshot,
@@ -211,7 +223,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
 
     private void Update()
     {
-        if (!_initialized || _battleFinished || _isTemporarilyPaused)
+        if (!autoStepInUpdate || !_initialized || _battleFinished || _isTemporarilyPaused)
             return;
 
         float scaledDeltaTime = Time.deltaTime * Mathf.Max(0f, simulationSpeedMultiplier);
@@ -220,11 +232,43 @@ public sealed class BattleSimulationManager : MonoBehaviour
         while (_tickAccumulator >= _tickInterval)
         {
             _tickAccumulator -= _tickInterval;
-            StepSimulation(_tickInterval);
+            StepSimulationTick();
 
             if (_battleFinished)
                 break;
         }
+    }
+
+    public void SetAutoStepInUpdate(bool enabled)
+    {
+        autoStepInUpdate = enabled;
+        if (!enabled)
+            _tickAccumulator = 0f;
+    }
+
+    public bool StepSimulationTick()
+    {
+        if (!_initialized || _battleFinished || _isTemporarilyPaused)
+            return false;
+
+        StepSimulation(_tickInterval);
+        return true;
+    }
+
+    public int StepSimulationTicks(int tickCount)
+    {
+        int steppedCount = 0;
+        tickCount = Mathf.Max(0, tickCount);
+
+        for (int i = 0; i < tickCount; i++)
+        {
+            if (!StepSimulationTick())
+                break;
+
+            steppedCount++;
+        }
+
+        return steppedCount;
     }
 
     public void AnimationSpeedSetting()
@@ -261,7 +305,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
 
         BattleParameterRadii radii = BattleParameterSystem.BuildRadii(aiTuning);
         CurrentSnapshot = BattleFieldSnapshot.Build(
-            _runtimeUnits,
+            _unitStates,
             radii,
             escapeTowardTeamBlend,
             CurrentSnapshot,
@@ -282,16 +326,10 @@ public sealed class BattleSimulationManager : MonoBehaviour
         _cooldownSystem.Tick(_runtimeUnits, tickDeltaTime);
 
         _parameterSystem.Compute(_runtimeUnits, radii, aiTuning, CurrentSnapshot, _tickModifierOverflowFlagsBuffer);
-        _decisionSystem.Decide(
-            _runtimeUnits,
-            aiTuning,
-            tickDeltaTime,
-            _tickDecisionBuffer,
-            _channelSystem,
-            _rosterMutationSystem
-        );
+        _builtInAiControlSource.Configure(_unitStates, aiTuning, _channelSystem, _rosterMutationSystem);
+        RefreshControlSources();
 
-        _planningSystem.Build(_runtimeUnits, CurrentSnapshot, _rosterMutationSystem);
+        _planningSystem.Build(_unitStates, CurrentSnapshot, tickDeltaTime, _rosterMutationSystem);
         _physicsSystem.Execute(_runtimeUnits, tickDeltaTime, _artifactSystem.MovementPolicy, _channelSystem);
         _positionHistory.RecordAll(_runtimeUnits, battleTime);
         _artifactSystem.TickPositionHistoryArtifacts(_positionHistory, tickContext, _effectSystem);
@@ -362,6 +400,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
             _tickUnitNumbersBuffer[i] = unit.UnitNumber;
             _tickRawParametersBuffer[i] = unit.CurrentRawParameters;
             _tickModifiedParametersBuffer[i] = unit.CurrentModifiedParameters;
+            _tickDecisionBuffer[i] = unit.CurrentActionType;
         }
 
         _tickData.Update(_battleTickCount, unitCount, _tickCombatResultBuffer.Count);
@@ -408,5 +447,25 @@ public sealed class BattleSimulationManager : MonoBehaviour
 
         CurrentSnapshot.Reset();
         CurrentSnapshot = null;
+    }
+
+    private void AssignControlSource(BattleRuntimeUnit unit)
+    {
+        if (unit == null || unit.State == null)
+            return;
+
+        // 같은 simulation tick 안에서도 유닛별 ControlMode가 다를 수 있다.
+        // State가 CurrentPlan과 ControlSource를 함께 들고, PlanningSystem/CombatSystem은 State만 참조한다.
+        IBattleUnitControlSource source =
+            unit.ControlMode == BattleUnitControlMode.AgentPolicy ? _mlAgentControlSource : _builtInAiControlSource;
+        unit.State.SetControlSource(source);
+    }
+
+    private void RefreshControlSources()
+    {
+        for (int i = 0; i < _runtimeUnits.Count; i++)
+        {
+            AssignControlSource(_runtimeUnits[i]);
+        }
     }
 }

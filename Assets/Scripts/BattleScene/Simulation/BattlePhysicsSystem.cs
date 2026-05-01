@@ -64,33 +64,41 @@ public sealed class BattlePhysicsSystem
                 continue;
             }
 
-            if (unit.IsExternallyControlled)
-            {
-                if (unit.ExternalRotationDelta != 0f)
-                    unit.Rotate(unit.ExternalRotationDelta * tickDeltaTime);
+            BattleControlPlan plan = unit.State.CurrentPlan;
+            if (plan.Turn != 0f)
+                unit.Rotate(plan.Turn * BattleRuntimeUnit.AgentTurnSpeedDegPerSec * tickDeltaTime);
 
-                if (unit.ExternalMoveDirection.sqrMagnitude > 0.0001f)
-                {
-                    BattleMoveRequest request = BattleMoveRequest.ForMover(
-                        unit,
-                        unit.ExternalMoveDirection.normalized,
-                        null,
-                        unit.MoveSpeed
-                    );
-                    _movementPolicy.ModifyMoveSpeed(ref request);
-                    unit.SetPosition(unit.Position + request.Direction * request.Speed * tickDeltaTime);
-                    unit.ClampInsideBattlefield(_battlefieldCollider);
-                    unit.State.SetMovementState(true);
-                }
-                else
-                {
+            Vector3 plannedMoveDirection = GetWorldMoveDirection(unit, plan.LocalMove);
+            if (plannedMoveDirection.sqrMagnitude > 0.0001f)
+            {
+                float inputMagnitude = Mathf.Clamp01(plannedMoveDirection.magnitude);
+                BattleMoveRequest request = BattleMoveRequest.ForMover(
+                    unit,
+                    plannedMoveDirection.normalized,
+                    null,
+                    unit.MoveSpeed * inputMagnitude
+                );
+                _movementPolicy.ModifyMoveSpeed(ref request);
+                unit.SetPosition(unit.Position + request.Direction * request.Speed * tickDeltaTime);
+                unit.ClampInsideBattlefield(_battlefieldCollider);
+                unit.State.SetMovementState(true);
+                continue;
+            }
+
+            BattleUnitCombatState targetEnemy = plan.TargetEnemy;
+            if (
+                (plan.Command == BattleCombatCommand.BasicAttack || plan.Stance == BattleControlStance.Pressure)
+                && BattleFieldSnapshot.IsValidEnemyTarget(unit.State, targetEnemy)
+            )
+            {
+                bool moved = MoveTowardsTarget(unit, targetEnemy, tickDeltaTime);
+                unit.State.SetMovementState(moved);
+                if (!moved)
                     unit.State.SetIdleState();
-                }
 
                 continue;
             }
 
-            BattleUnitCombatState targetEnemy = unit.PlannedTargetEnemy;
             if (
                 BattleFieldSnapshot.IsValidEnemyTarget(unit.State, targetEnemy)
                 && BattleFieldSnapshot.IsWithinEffectiveAttackDistance(unit.State, targetEnemy)
@@ -102,10 +110,10 @@ public sealed class BattlePhysicsSystem
                 continue;
             }
 
-            if (unit.HasPlannedDesiredPosition)
+            if (plan.HasDesiredPosition)
             {
-                unit.FaceTarget(unit.PlannedDesiredPosition);
-                bool moved = MoveTowardsPosition(unit, unit.PlannedDesiredPosition, tickDeltaTime);
+                unit.FaceTarget(plan.DesiredPosition);
+                bool moved = MoveTowardsPosition(unit, plan.DesiredPosition, tickDeltaTime);
                 unit.State.SetMovementState(moved);
                 if (!moved)
                     unit.State.SetIdleState();
@@ -115,7 +123,7 @@ public sealed class BattlePhysicsSystem
 
             if (BattleFieldSnapshot.IsValidEnemyTarget(unit.State, targetEnemy))
             {
-                unit.FaceTarget(unit.PlannedDesiredPosition);
+                unit.FaceTarget(targetEnemy.Position);
                 bool moved = MoveTowardsTarget(unit, targetEnemy, tickDeltaTime);
                 unit.State.SetMovementState(moved);
                 if (!moved)
@@ -126,6 +134,20 @@ public sealed class BattlePhysicsSystem
 
             unit.State.SetIdleState();
         }
+    }
+
+    private static Vector3 GetWorldMoveDirection(BattleRuntimeUnit unit, Vector2 localMove)
+    {
+        BattleUnitCombatState state = unit != null ? unit.State : null;
+        if (state == null)
+            return Vector3.zero;
+
+        Vector3 direction = state.RightDirection * localMove.x + state.FacingDirection * localMove.y;
+        direction.y = 0f;
+        if (direction.sqrMagnitude > 1f)
+            direction.Normalize();
+
+        return direction;
     }
 
     private bool MoveTowardsTarget(BattleRuntimeUnit mover, BattleUnitCombatState target, float tickDeltaTime)
@@ -184,10 +206,7 @@ public sealed class BattlePhysicsSystem
 
     private BattleRuntimeUnit FindRuntimeUnitForState(BattleUnitCombatState state)
     {
-        if (state == null)
-            return null;
-
-        if (_units == null)
+        if (state == null || _units == null)
             return null;
 
         for (int i = 0; i < _units.Count; i++)

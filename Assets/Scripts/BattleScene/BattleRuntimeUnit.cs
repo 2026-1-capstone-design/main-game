@@ -15,6 +15,8 @@ using UnityEngine.UI;
 [DisallowMultipleComponent]
 public sealed class BattleRuntimeUnit : MonoBehaviour
 {
+    public const float AgentTurnSpeedDegPerSec = 240f;
+
     [Header("Debug")]
     [SerializeField]
     private bool verboseLog = false;
@@ -97,36 +99,35 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     // ── 위치 (State 위임) ────────────────────────────────────────
     public Vector3 Position => State != null ? State.Position : transform.position;
 
-    // ── ML-Agents 외부 제어 ───────────────────────────────────────
-    // true면 BattleSimulationManager의 AI 파이프라인(CommitOrSwitch, BuildPlan)을 스킵한다.
-    public bool IsExternallyControlled { get; private set; }
+    // ── ML-Agents policy control ─────────────────────────────────
+    public BattleUnitControlMode ControlMode { get; private set; } = BattleUnitControlMode.BuiltInAI;
+    public bool UsesAgentPolicyControl => ControlMode == BattleUnitControlMode.AgentPolicy;
 
-    // 공격이 실제로 적에게 적중했을 때 발화한다. (target, wasKillingBlow)
-    public event Action<BattleRuntimeUnit, bool> OnAttackLanded;
+    // 공격이 실제로 적에게 적중했을 때 발화한다. (target, actualDamage, wasKillingBlow)
+    public event Action<BattleRuntimeUnit, float, bool> OnAttackLanded;
 
-    public void RaiseAttackLanded(BattleRuntimeUnit target, bool wasKill) => OnAttackLanded?.Invoke(target, wasKill);
+    public void RaiseAttackLanded(BattleRuntimeUnit target, float actualDamage, bool wasKill) =>
+        OnAttackLanded?.Invoke(target, actualDamage, wasKill);
 
     private int _lastAttackTriggerFrame = -1;
 
-    public Vector3 ExternalMoveDirection { get; private set; }
-    public float ExternalRotationDelta { get; private set; }
+    public void SetControlMode(BattleUnitControlMode mode) => ControlMode = mode;
 
-    public void SetExternallyControlled(bool value) => IsExternallyControlled = value;
+    public bool HasReadySkill() =>
+        State != null && State.GetSkill() != WeaponSkillId.None && SkillCooldownRemaining <= 0f;
 
-    public void SetExternalMovement(Vector3 worldDirection, float rotationDeltaDegPerSec)
-    {
-        ExternalMoveDirection = worldDirection;
-        ExternalRotationDelta = rotationDeltaDegPerSec;
-    }
+    public void RaiseSkillActivated() => OnSkillActivated?.Invoke();
 
-    public void SetExternalAttackTarget(BattleRuntimeUnit target)
-    {
-        State.SetPlannedTargets(target != null ? target.State : null, null);
-    }
+    public event Action OnSkillActivated;
+
+    public void RaiseSkillFailed() => OnSkillFailed?.Invoke();
+
+    public event Action OnSkillFailed;
 
     public void Rotate(float deltaAngleDeg)
     {
         transform.Rotate(0f, deltaAngleDeg, 0f, Space.World);
+        State?.SyncFacingDirection(transform.forward);
     }
 
     public void SetRuntimeRootObject(GameObject runtimeRootObject)
@@ -240,6 +241,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         State.OnAttackTriggered += HandleAttackTriggered;
 
         State.SyncPosition(transform.position);
+        State.SyncFacingDirection(transform.forward);
         State.ClearTargets();
 
         _myAnimation = transform.GetComponent<Animator>();
@@ -493,14 +495,12 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
 
     public void SetExecutionPlan(BattleActionExecutionPlan plan)
     {
-        State.SetPlannedTargets(plan.TargetEnemy, plan.TargetAlly);
-        State.SetExecutionPlanPosition(plan.DesiredPosition, plan.HasDesiredPosition);
+        State.SetCurrentPlan(BattleControlPlan.FromExecutionPlan(plan.Action, plan));
     }
 
     public void ClearExecutionPlan()
     {
-        State.ClearTargets();
-        State.ClearExecutionPlanPosition();
+        State.ClearCurrentPlan();
     }
 
     // ── 쿨다운 위임 ────────────────────────────────────────────────
@@ -541,7 +541,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     }
 
     // ── 체력 위임 ─────────────────────────────────────────────────
-    public void ApplyDamage(float damage) => State.ApplyDamage(damage);
+    public float ApplyDamage(float damage) => State.ApplyDamage(damage);
 
     public void ApplyHeal(float heal) => State.ApplyHeal(heal);
 
@@ -564,7 +564,10 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         Vector3 direction = targetPos - transform.position;
         direction.y = 0f;
         if (direction.sqrMagnitude > 0.0001f)
+        {
             transform.rotation = Quaternion.LookRotation(direction);
+            State?.SyncFacingDirection(transform.forward);
+        }
     }
 
     public void PlaceAt(Vector3 worldPos, Transform battlefield)
@@ -575,6 +578,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         transform.position = worldPos;
         transform.rotation = Quaternion.identity;
         State?.SyncPosition(transform.position);
+        State?.SyncFacingDirection(transform.forward);
     }
 
     /*

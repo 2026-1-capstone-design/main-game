@@ -2,77 +2,36 @@ using System.Collections.Generic;
 
 public sealed class BattlePlanningSystem
 {
-    private readonly Dictionary<BattleActionType, IBattleActionPlanner> _planners;
-
-    public BattlePlanningSystem()
-    {
-        _planners = BuildPlannerRegistry();
-    }
-
     public void Build(
-        IReadOnlyList<BattleRuntimeUnit> units,
+        IReadOnlyList<BattleUnitCombatState> states,
         BattleFieldSnapshot snapshot,
+        float tickDeltaTime,
         BattleRosterMutationSystem rosterMutationSystem = null
     )
     {
-        if (units == null || snapshot == null)
+        if (states == null || snapshot == null)
             return;
 
-        for (int i = 0; i < units.Count; i++)
+        for (int i = 0; i < states.Count; i++)
         {
-            BattleRuntimeUnit unit = units[i];
-            if (unit == null || unit.IsCombatDisabled)
+            BattleUnitCombatState state = states[i];
+            if (state == null || state.IsCombatDisabled)
                 continue;
 
-            if (unit.IsExternallyControlled)
+            state.ClearCurrentPlan();
+
+            if (rosterMutationSystem != null && rosterMutationSystem.IsCommandDisabled(state))
                 continue;
 
-            if (rosterMutationSystem != null && rosterMutationSystem.IsCommandDisabled(unit))
+            // CurrentPlan은 실행 대상 상태에 저장하지만, plan 생성 책임은 State가 소유한 ControlSource가 가진다.
+            IBattleUnitControlSource source = state.ControlSource;
+            if (source == null)
                 continue;
 
-            BattleActionExecutionPlan plan;
-            if (!_planners.TryGetValue(unit.CurrentActionType, out IBattleActionPlanner planner))
-            {
-                plan = _planners[BattleActionType.EngageNearest].Build(unit, snapshot);
-            }
-            else
-            {
-                plan = planner.Build(unit, snapshot);
-                if (!planner.IsUsable(unit, plan))
-                {
-                    IBattleActionPlanner engagePlanner = _planners[BattleActionType.EngageNearest];
-                    BattleActionExecutionPlan engagePlan = engagePlanner.Build(unit, snapshot);
-                    plan = engagePlanner.IsUsable(unit, engagePlan) ? engagePlan : default;
+            if (!source.TryBuildPlan(state, snapshot, tickDeltaTime, out BattleControlPlan plan))
+                continue;
 
-                    if (plan.Action == BattleActionType.None)
-                    {
-                        plan.Action = unit.CurrentActionType;
-                        plan.DesiredPosition = unit.Position;
-                    }
-                }
-            }
-
-            unit.SetExecutionPlan(plan);
+            state.SetCurrentPlan(plan);
         }
-    }
-
-    private static Dictionary<BattleActionType, IBattleActionPlanner> BuildPlannerRegistry()
-    {
-        var planners = new IBattleActionPlanner[]
-        {
-            new AssassinatePlanner(),
-            new DiveBacklinePlanner(),
-            new PeelPlanner(),
-            new EscapePlanner(),
-            new RegroupPlanner(),
-            new CollapsePlanner(),
-            new EngageNearestPlanner(),
-        };
-
-        var dictionary = new Dictionary<BattleActionType, IBattleActionPlanner>(planners.Length);
-        for (int i = 0; i < planners.Length; i++)
-            dictionary[planners[i].ActionType] = planners[i];
-
-        return dictionary;
     }
 }

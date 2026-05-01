@@ -79,12 +79,17 @@ public sealed class BattleRosterMutationSystem : IBattleRosterMutationSink
 
     public bool IsCommandDisabled(BattleRuntimeUnit unit)
     {
-        if (unit == null)
+        return IsCommandDisabled(unit != null ? unit.State : null);
+    }
+
+    public bool IsCommandDisabled(BattleUnitCombatState state)
+    {
+        if (state == null)
             return false;
 
         for (int i = 0; i < _commandBlocks.Count; i++)
         {
-            if (_commandBlocks[i].Unit == unit)
+            if (_commandBlocks[i].Unit != null && _commandBlocks[i].Unit.State == state)
                 return true;
         }
 

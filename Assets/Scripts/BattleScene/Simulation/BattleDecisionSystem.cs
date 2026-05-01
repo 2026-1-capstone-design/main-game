@@ -6,7 +6,7 @@ public sealed class BattleDecisionSystem
     private const float CommitmentEnterMultiplier = 1.2f;
 
     public void Decide(
-        IReadOnlyList<BattleRuntimeUnit> units,
+        IReadOnlyList<BattleUnitCombatState> states,
         BattleAITuningSO aiTuning,
         float tickDeltaTime,
         BattleActionType[] decisions,
@@ -14,107 +14,119 @@ public sealed class BattleDecisionSystem
         BattleRosterMutationSystem rosterMutationSystem = null
     )
     {
-        if (units == null || decisions == null)
+        if (states == null || decisions == null)
             return;
 
-        float decay = aiTuning != null ? aiTuning.commitmentDecayPerSecond : 0.5f;
-
-        for (int i = 0; i < units.Count; i++)
+        for (int i = 0; i < states.Count; i++)
         {
-            BattleRuntimeUnit unit = units[i];
-            decisions[i] = BattleActionType.None;
-
-            if (unit == null || unit.IsCombatDisabled)
-                continue;
-
-            BattleActionScoreSet scores = EvaluateScores(unit, aiTuning);
-            unit.State.SetCurrentScores(scores);
-
-            if (unit.IsExternallyControlled)
-            {
-                decisions[i] = unit.CurrentActionType;
-                continue;
-            }
-
-            if (
-                (channelSystem != null && channelSystem.IsDecisionChangeBlocked(unit))
-                || (rosterMutationSystem != null && rosterMutationSystem.IsCommandDisabled(unit))
-            )
-            {
-                unit.State.SetDecisionState(unit.KeepBehaving, unit.ActionTimer + tickDeltaTime);
-                decisions[i] = unit.CurrentActionType;
-                continue;
-            }
-
-            BattleActionType currentAction = unit.CurrentActionType;
-
-            GetBestActionRespectingEscapeLimit(
-                units,
-                unit,
-                scores,
-                BattleActionType.None,
-                out BattleActionType bestAction,
-                out float bestScore
+            BattleUnitCombatState state = states[i];
+            decisions[i] = DecideBuiltInUnit(
+                states,
+                state,
+                aiTuning,
+                tickDeltaTime,
+                channelSystem,
+                rosterMutationSystem
             );
-
-            if (currentAction == BattleActionType.None)
-            {
-                EnterAction(unit, bestAction, bestScore, aiTuning);
-                decisions[i] = unit.CurrentActionType;
-                continue;
-            }
-
-            float decayedKeepBehaving = unit.KeepBehaving - (decay * tickDeltaTime);
-            float nextActionTimer = unit.ActionTimer + tickDeltaTime;
-
-            GetBestActionRespectingEscapeLimit(
-                units,
-                unit,
-                scores,
-                currentAction,
-                out BattleActionType bestOtherAction,
-                out float bestOtherScore
-            );
-
-            if (bestOtherScore > decayedKeepBehaving)
-            {
-                EnterAction(unit, bestOtherAction, bestOtherScore, aiTuning);
-            }
-            else
-            {
-                unit.State.SetCurrentActionType(currentAction, GetActionDisplayName(currentAction, aiTuning));
-                unit.State.SetDecisionState(decayedKeepBehaving, nextActionTimer);
-            }
-
-            decisions[i] = unit.CurrentActionType;
         }
     }
 
-    private static BattleActionScoreSet EvaluateScores(BattleRuntimeUnit unit, BattleAITuningSO aiTuning)
+    public BattleActionType DecideBuiltInUnit(
+        IReadOnlyList<BattleUnitCombatState> states,
+        BattleUnitCombatState state,
+        BattleAITuningSO aiTuning,
+        float tickDeltaTime,
+        BattleSkillChannelSystem channelSystem = null,
+        BattleRosterMutationSystem rosterMutationSystem = null
+    )
     {
-        WeaponType weaponType = unit.Snapshot != null ? unit.Snapshot.WeaponType : WeaponType.None;
+        if (state == null || state.IsCombatDisabled)
+            return BattleActionType.None;
+
+        float decay = aiTuning != null ? aiTuning.commitmentDecayPerSecond : 0.5f;
+        BattleActionScoreSet scores = EvaluateScores(state, aiTuning);
+        state.SetCurrentScores(scores);
+
+        if (
+            (channelSystem != null && channelSystem.IsDecisionChangeBlocked(state))
+            || (rosterMutationSystem != null && rosterMutationSystem.IsCommandDisabled(state))
+        )
+        {
+            state.SetDecisionState(state.KeepBehaving, state.ActionTimer + tickDeltaTime);
+            return state.CurrentActionType;
+        }
+
+        BattleActionType currentAction = state.CurrentActionType;
+        IReadOnlyList<BattleUnitCombatState> decisionStates = states ?? new[] { state };
+
+        GetBestActionRespectingEscapeLimit(
+            decisionStates,
+            state,
+            scores,
+            BattleActionType.None,
+            out BattleActionType bestAction,
+            out float bestScore
+        );
+
+        if (currentAction == BattleActionType.None)
+        {
+            EnterAction(state, bestAction, bestScore, aiTuning);
+            return state.CurrentActionType;
+        }
+
+        float decayedKeepBehaving = state.KeepBehaving - (decay * tickDeltaTime);
+        float nextActionTimer = state.ActionTimer + tickDeltaTime;
+
+        GetBestActionRespectingEscapeLimit(
+            decisionStates,
+            state,
+            scores,
+            currentAction,
+            out BattleActionType bestOtherAction,
+            out float bestOtherScore
+        );
+
+        if (bestOtherScore > decayedKeepBehaving)
+        {
+            EnterAction(state, bestOtherAction, bestOtherScore, aiTuning);
+        }
+        else
+        {
+            state.SetCurrentActionType(currentAction, GetActionDisplayName(currentAction, aiTuning));
+            state.SetDecisionState(decayedKeepBehaving, nextActionTimer);
+        }
+
+        return state.CurrentActionType;
+    }
+
+    private static BattleActionScoreSet EvaluateScores(BattleUnitCombatState state, BattleAITuningSO aiTuning)
+    {
         BattleActionScoreSet scores = default;
         if (aiTuning != null && aiTuning.actionTunings != null && aiTuning.actionTunings.Count > 0)
         {
-            scores = BattleActionScorer.Evaluate(unit.CurrentModifiedParameters, weaponType, aiTuning.actionTunings);
+            scores = BattleActionScorer.Evaluate(
+                state.CurrentModifiedParameters,
+                state.WeaponType,
+                aiTuning.actionTunings
+            );
         }
 
-        return BattleActionScorer.ApplyEscapeReengageBias(unit.CurrentActionType, unit.CurrentRawParameters, scores);
+        return BattleActionScorer.ApplyEscapeReengageBias(state.CurrentActionType, state.CurrentRawParameters, scores);
     }
 
     private static void EnterAction(
-        BattleRuntimeUnit unit,
+        BattleUnitCombatState state,
         BattleActionType actionType,
         float chosenFinalScore,
         BattleAITuningSO aiTuning
     )
     {
-        if (unit == null)
+        if (state == null)
             return;
 
         float keepBehaving = chosenFinalScore * CommitmentEnterMultiplier;
-        unit.State.SetCurrentActionType(actionType, GetActionDisplayName(actionType, aiTuning));
-        unit.State.SetDecisionState(keepBehaving, 0f);
+        state.SetCurrentActionType(actionType, GetActionDisplayName(actionType, aiTuning));
+        state.SetDecisionState(keepBehaving, 0f);
     }
 
     private static string GetActionDisplayName(BattleActionType actionType, BattleAITuningSO aiTuning)
@@ -129,26 +141,30 @@ public sealed class BattleDecisionSystem
         return actionType.ToString();
     }
 
-    private static int GetLivingUnitCountForDecision(IReadOnlyList<BattleRuntimeUnit> units)
+    private static int GetLivingUnitCountForDecision(IReadOnlyList<BattleUnitCombatState> states)
     {
         int count = 0;
-        for (int i = 0; i < units.Count; i++)
+        for (int i = 0; i < states.Count; i++)
         {
-            BattleRuntimeUnit unit = units[i];
-            if (unit != null && !unit.IsCombatDisabled)
+            BattleUnitCombatState state = states[i];
+            if (state != null && !state.IsCombatDisabled)
                 count++;
         }
 
         return count;
     }
 
-    private static int GetCurrentEscapeUnitCount(IReadOnlyList<BattleRuntimeUnit> units)
+    private static int GetCurrentEscapeUnitCount(IReadOnlyList<BattleUnitCombatState> states)
     {
         int count = 0;
-        for (int i = 0; i < units.Count; i++)
+        for (int i = 0; i < states.Count; i++)
         {
-            BattleRuntimeUnit unit = units[i];
-            if (unit != null && !unit.IsCombatDisabled && unit.CurrentActionType == BattleActionType.EscapeFromPressure)
+            BattleUnitCombatState state = states[i];
+            if (
+                state != null
+                && !state.IsCombatDisabled
+                && state.CurrentActionType == BattleActionType.EscapeFromPressure
+            )
             {
                 count++;
             }
@@ -157,34 +173,34 @@ public sealed class BattleDecisionSystem
         return count;
     }
 
-    private static int GetMaxEscapeUnitCount(IReadOnlyList<BattleRuntimeUnit> units)
+    private static int GetMaxEscapeUnitCount(IReadOnlyList<BattleUnitCombatState> states)
     {
-        int livingUnitCount = GetLivingUnitCountForDecision(units);
+        int livingUnitCount = GetLivingUnitCountForDecision(states);
         int maxEscapeCount = Mathf.FloorToInt(livingUnitCount * 0.3f);
         return Mathf.Max(1, maxEscapeCount);
     }
 
-    private static bool CanEnterEscapeAction(IReadOnlyList<BattleRuntimeUnit> units, BattleRuntimeUnit unit)
+    private static bool CanEnterEscapeAction(IReadOnlyList<BattleUnitCombatState> states, BattleUnitCombatState state)
     {
-        if (unit == null || unit.IsCombatDisabled)
+        if (state == null || state.IsCombatDisabled)
             return false;
 
-        if (unit.CurrentActionType == BattleActionType.EscapeFromPressure)
+        if (state.CurrentActionType == BattleActionType.EscapeFromPressure)
             return true;
 
-        return GetCurrentEscapeUnitCount(units) < GetMaxEscapeUnitCount(units);
+        return GetCurrentEscapeUnitCount(states) < GetMaxEscapeUnitCount(states);
     }
 
     private static void GetBestActionRespectingEscapeLimit(
-        IReadOnlyList<BattleRuntimeUnit> units,
-        BattleRuntimeUnit unit,
+        IReadOnlyList<BattleUnitCombatState> states,
+        BattleUnitCombatState state,
         BattleActionScoreSet scores,
         BattleActionType excludedAction,
         out BattleActionType bestAction,
         out float bestScore
     )
     {
-        bool canEnterEscape = CanEnterEscapeAction(units, unit);
+        bool canEnterEscape = CanEnterEscapeAction(states, state);
         bestAction = BattleActionType.None;
         bestScore = float.MinValue;
 

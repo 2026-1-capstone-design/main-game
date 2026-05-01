@@ -15,6 +15,7 @@ public sealed class BattleUnitCombatState
     public BattleTeamId TeamId { get; private set; }
     public string DisplayName { get; private set; }
     public int Level { get; private set; }
+    public WeaponType WeaponType { get; private set; }
 
     // ── 체력 / 전투불능 ────────────────────────────────────────────
     public float MaxHealth { get; private set; }
@@ -50,6 +51,8 @@ public sealed class BattleUnitCombatState
     // ── 바디 반경 (분리/클램프 계산용) ────────────────────────────
     public float BodyRadius { get; private set; }
     public Vector3 Position { get; private set; }
+    public Vector3 FacingDirection { get; private set; }
+    public Vector3 RightDirection => new Vector3(FacingDirection.z, 0f, -FacingDirection.x);
 
     public void SetBodyRadius(float bodyRadius)
     {
@@ -59,6 +62,12 @@ public sealed class BattleUnitCombatState
     public void SyncPosition(Vector3 worldPosition)
     {
         Position = worldPosition;
+    }
+
+    public void SyncFacingDirection(Vector3 worldForward)
+    {
+        worldForward.y = 0f;
+        FacingDirection = worldForward.sqrMagnitude > 0.0001f ? worldForward.normalized : Vector3.forward;
     }
 
     // ── 버프 ───────────────────────────────────────────────────────
@@ -135,12 +144,12 @@ public sealed class BattleUnitCombatState
     public event Action OnRevived;
 
     // ── 체력/사망 메서드 ──────────────────────────────────────────
-    public void ApplyDamage(float damage)
+    public float ApplyDamage(float damage)
     {
         if (IsCombatDisabled)
-            return;
+            return 0f;
 
-        float actualDamage = Mathf.Max(0f, damage);
+        float actualDamage = Mathf.Min(CurrentHealth, Mathf.Max(0f, damage));
         CurrentHealth = Mathf.Max(0f, CurrentHealth - actualDamage);
         if (actualDamage > 0f)
             OnDamageTaken?.Invoke(actualDamage);
@@ -158,6 +167,8 @@ public sealed class BattleUnitCombatState
             SetIdleState();
             OnDied?.Invoke();
         }
+
+        return actualDamage;
     }
 
     public void ApplyHeal(float heal)
@@ -219,19 +230,6 @@ public sealed class BattleUnitCombatState
         OnIdleStateEntered?.Invoke();
     }
 
-    // ── 실행 플랜 위치 세터 ────────────────────────────────────────
-    public void SetExecutionPlanPosition(Vector3 desiredPosition, bool hasDesiredPosition)
-    {
-        PlannedDesiredPosition = desiredPosition;
-        HasPlannedDesiredPosition = hasDesiredPosition;
-    }
-
-    public void ClearExecutionPlanPosition()
-    {
-        PlannedDesiredPosition = Vector3.zero;
-        HasPlannedDesiredPosition = false;
-    }
-
     // ── 행동/결정 상태 이벤트 ─────────────────────────────────────
     // BattleRuntimeUnit이 구독하여 StatusText를 갱신한다.
     public event Action<BattleActionType, string> OnActionTypeChanged;
@@ -270,14 +268,19 @@ public sealed class BattleUnitCombatState
     public skillType SkillType { get; private set; }
     public float SkillCooldownRemaining { get; private set; }
 
-    // ── 실행 플랜 위치 / 이동-공격 플래그 ─────────────────────────
-    public Vector3 PlannedDesiredPosition { get; private set; }
-    public bool HasPlannedDesiredPosition { get; private set; }
+    // ── 실행 플랜 / 이동-공격 플래그 ─────────────────────────────
+    // CurrentPlan은 "이번 틱에 무엇을 할지"라는 실행 결과만 담는다.
+    // ControlSource는 이 유닛의 plan 생성과 command consume을 담당하는 제어 주체다.
+    // State가 source를 직접 들면 planning/combat 테스트가 별도 registry fixture 없이 유닛 상태만으로 구성된다.
+    public IBattleUnitControlSource ControlSource { get; private set; }
+    public BattleControlPlan CurrentPlan { get; private set; }
+    public Vector3 PlannedDesiredPosition => CurrentPlan.DesiredPosition;
+    public bool HasPlannedDesiredPosition => CurrentPlan.HasDesiredPosition;
     public bool IsMoving { get; private set; }
     public bool IsAttacking { get; private set; }
     public BattleUnitCombatState CurrentTarget { get; private set; }
-    public BattleUnitCombatState PlannedTargetEnemy { get; private set; }
-    public BattleUnitCombatState PlannedTargetAlly { get; private set; }
+    public BattleUnitCombatState PlannedTargetEnemy => CurrentPlan.TargetEnemy;
+    public BattleUnitCombatState PlannedTargetAlly => CurrentPlan.TargetAlly;
 
     // ── 생성자 ─────────────────────────────────────────────────────
     public BattleUnitCombatState(BattleUnitSnapshot snapshot, int unitNumber, BattleTeamId teamId)
@@ -287,6 +290,7 @@ public sealed class BattleUnitCombatState
 
         DisplayName = snapshot.DisplayName;
         Level = snapshot.Level;
+        WeaponType = snapshot.WeaponType;
 
         MaxHealth = snapshot.MaxHealth;
         CurrentHealth = snapshot.CurrentHealth;
@@ -319,14 +323,13 @@ public sealed class BattleUnitCombatState
         SkillType = skillType.None;
         SkillCooldownRemaining = 0f;
 
-        PlannedDesiredPosition = Vector3.zero;
-        HasPlannedDesiredPosition = false;
+        CurrentPlan = default;
+        ControlSource = null;
         IsMoving = false;
         IsAttacking = false;
         Position = Vector3.zero;
+        FacingDirection = Vector3.forward;
         CurrentTarget = null;
-        PlannedTargetEnemy = null;
-        PlannedTargetAlly = null;
     }
 
     // ── 공격 쿨다운 ────────────────────────────────────────────────
@@ -563,17 +566,42 @@ public sealed class BattleUnitCombatState
         CurrentTarget = target;
     }
 
+    public void SetCurrentPlan(BattleControlPlan plan)
+    {
+        CurrentPlan = plan;
+        CurrentTarget = plan.TargetEnemy;
+    }
+
+    public void SetControlSource(IBattleUnitControlSource source)
+    {
+        ControlSource = source;
+    }
+
+    public void ClearCurrentPlan()
+    {
+        CurrentPlan = default;
+        CurrentTarget = null;
+    }
+
     public void SetPlannedTargets(BattleUnitCombatState enemy, BattleUnitCombatState ally)
     {
-        PlannedTargetEnemy = enemy;
-        PlannedTargetAlly = ally;
-        CurrentTarget = enemy;
+        SetCurrentPlan(
+            new BattleControlPlan(
+                CurrentPlan.ActionType,
+                enemy,
+                ally,
+                CurrentPlan.DesiredPosition,
+                CurrentPlan.HasDesiredPosition,
+                CurrentPlan.LocalMove,
+                CurrentPlan.Turn,
+                CurrentPlan.Command,
+                CurrentPlan.Stance
+            )
+        );
     }
 
     public void ClearTargets()
     {
-        CurrentTarget = null;
-        PlannedTargetEnemy = null;
-        PlannedTargetAlly = null;
+        ClearCurrentPlan();
     }
 }

@@ -75,7 +75,11 @@ public sealed class BattleCombatSystem
             if (channelSystem != null && channelSystem.IsBasicAttackBlocked(attacker))
                 continue;
 
-            BattleUnitCombatState target = attacker.PlannedTargetEnemy;
+            BattleControlPlan plan = attacker.State.CurrentPlan;
+            if (plan.Command != BattleCombatCommand.BasicAttack)
+                continue;
+
+            BattleUnitCombatState target = plan.TargetEnemy;
             if (
                 artifactSystem != null
                 && artifactSystem.TryOverrideBasicAttackTarget(attacker, snapshot, out BattleRuntimeUnit overrideTarget)
@@ -100,6 +104,8 @@ public sealed class BattleCombatSystem
 
             attacker.State.SetAttackState(true);
 
+            float healthBeforeDamage = target.CurrentHealth;
+            bool wasDisabledBeforeDamage = target.IsCombatDisabled;
             BattleRuntimeUnit targetRuntime = ResolveRuntimeUnit(runtimeUnitByState, target);
             effects.DealDamage(
                 new BattleDamageRequest
@@ -115,8 +121,11 @@ public sealed class BattleCombatSystem
                 }
             );
 
-            attacker.RaiseAttackLanded(targetRuntime, target.IsCombatDisabled);
+            float actualDamage = UnityEngine.Mathf.Max(0f, healthBeforeDamage - target.CurrentHealth);
+            bool wasKill = !wasDisabledBeforeDamage && target.IsCombatDisabled;
+            attacker.RaiseAttackLanded(targetRuntime, actualDamage, wasKill);
             attacker.State.ResetAttackCooldown();
+            ConsumeCommand(attacker.State, BattleCombatCommand.BasicAttack);
         }
     }
 
@@ -135,18 +144,27 @@ public sealed class BattleCombatSystem
                 continue;
             if (_channelSystem != null && _channelSystem.IsChanneling(unit))
                 continue;
-            if (unit.IsExternallyControlled)
+
+            BattleControlPlan plan = unit.State.CurrentPlan;
+            if (plan.Command != BattleCombatCommand.Skill)
                 continue;
             if (
                 unit.State.IsSkillDisabled
                 || (_rosterMutationSystem != null && _rosterMutationSystem.IsSkillDisabled(unit))
             )
+            {
+                ConsumeCommand(unit.State, BattleCombatCommand.Skill);
                 continue;
+            }
             if (unit.SkillCooldownRemaining > 0f)
-                continue;
+            {
+                unit.RaiseSkillFailed();
+                ConsumeCommand(unit.State, BattleCombatCommand.Skill);
 
-            IBattleSkill skill = _skillRegistry.Get(unit.State.GetSkill());
-            BattleRuntimeUnit primaryTarget = ResolveRuntimeUnit(runtimeUnitByState, unit.PlannedTargetEnemy);
+                continue;
+            }
+
+            BattleRuntimeUnit primaryTarget = ResolveRuntimeUnit(runtimeUnitByState, plan.TargetEnemy);
             BattleEffectContext context = new BattleEffectContext(
                 unit,
                 primaryTarget,
@@ -156,8 +174,14 @@ public sealed class BattleCombatSystem
                 battleTick
             );
 
+            IBattleSkill skill = _skillRegistry.Get(unit.State.GetSkill());
             if (skill == null || !skill.CanActivate(context))
+            {
+                unit.RaiseSkillFailed();
+                ConsumeCommand(unit.State, BattleCombatCommand.Skill);
+
                 continue;
+            }
 
             if (skill is IChanneledBattleSkill channeledSkill)
             {
@@ -174,7 +198,14 @@ public sealed class BattleCombatSystem
 
             unit.SetSkillState(unit.GetSkillAnimationDuration());
             unit.State.ResetSkillCooldown();
+            unit.RaiseSkillActivated();
+            ConsumeCommand(unit.State, BattleCombatCommand.Skill);
         }
+    }
+
+    private static void ConsumeCommand(BattleUnitCombatState state, BattleCombatCommand command)
+    {
+        state?.ControlSource?.ConsumeCommand(state, command);
     }
 
     private static BattleRuntimeUnit ResolveRuntimeUnit(
