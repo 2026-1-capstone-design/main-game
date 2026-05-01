@@ -13,11 +13,7 @@ public sealed class GladiatorStateRosterViewTests
         BattleUnitCombatState enemy2 = CreateState(payload, BattleTeamIds.Enemy, 1, new Vector3(20f, 0f, 0f));
         BattleUnitCombatState enemy3 = CreateState(payload, BattleTeamIds.Enemy, 2, new Vector3(30f, 0f, 0f));
 
-        var view = new GladiatorStateRosterView(
-            ally2,
-            payload,
-            new[] { enemy3, ally2, enemy1, ally1, enemy2 }
-        );
+        var view = new GladiatorStateRosterView(ally2, payload, new[] { enemy3, ally2, enemy1, ally1, enemy2 });
 
         Assert.That(view.Teammates, Is.EqualTo(new[] { ally1 }));
         Assert.That(view.ResolveHostileSlot(0), Is.SameAs(enemy1));
@@ -35,11 +31,7 @@ public sealed class GladiatorStateRosterViewTests
         BattleUnitCombatState livingFarEnemy = CreateState(payload, BattleTeamIds.Enemy, 1, new Vector3(5f, 0f, 0f));
         disabledNearEnemy.ApplyDamage(disabledNearEnemy.MaxHealth);
 
-        var view = new GladiatorStateRosterView(
-            self,
-            payload,
-            new[] { livingFarEnemy, disabledNearEnemy, self }
-        );
+        var view = new GladiatorStateRosterView(self, payload, new[] { livingFarEnemy, disabledNearEnemy, self });
 
         Assert.That(view.GetDistanceToNearestHostile(self), Is.EqualTo(5f).Within(0.0001f));
     }
@@ -99,7 +91,7 @@ public sealed class GladiatorStateRosterViewTests
             gladiatorClass: null,
             trait: null,
             personality: null,
-            equippedPerk: null,
+            equippedArtifact: null,
             weaponType: WeaponType.None,
             leftWeaponPrefab: null,
             rightWeaponPrefab: null,
