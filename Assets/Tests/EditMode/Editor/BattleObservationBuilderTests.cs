@@ -47,6 +47,10 @@ public sealed class BattleObservationBuilderTests
             bodyRadius: 1f
         );
         self.ResetAttackCooldown();
+        teammate.ResetAttackCooldown();
+        teammate.TickAttackCooldown(0.75f);
+        opponent.ResetAttackCooldown();
+        opponent.TickAttackCooldown(0.9f);
         self.SetPlannedTargets(opponent, null);
 
         var sensor = new VectorSensor(GladiatorObservationSchema.TotalSize);
@@ -71,40 +75,148 @@ public sealed class BattleObservationBuilderTests
         ReadOnlyCollection<float> observations = GetObservations(sensor);
 
         Assert.That(observations.Count, Is.EqualTo(GladiatorObservationSchema.TotalSize));
-        Assert.That(SelfObservation(observations, GladiatorSelfObservationIndex.ArenaCenterLocalX), Is.EqualTo(-0.5f).Within(0.0001f));
-        Assert.That(SelfObservation(observations, GladiatorSelfObservationIndex.ArenaCenterLocalZ), Is.EqualTo(0f).Within(0.0001f));
-        Assert.That(SelfObservation(observations, GladiatorSelfObservationIndex.HealthRatio), Is.EqualTo(0.5f).Within(0.0001f));
-        Assert.That(SelfObservation(observations, GladiatorSelfObservationIndex.MaxHealthLogRatio), Is.EqualTo(0f).Within(0.0001f));
-        Assert.That(SelfObservation(observations, GladiatorSelfObservationIndex.AttackLogRatio), Is.EqualTo(0f).Within(0.0001f));
-        Assert.That(SelfObservation(observations, GladiatorSelfObservationIndex.AttackRangeRatio), Is.EqualTo(0.1f).Within(0.0001f));
-        Assert.That(SelfObservation(observations, GladiatorSelfObservationIndex.MoveSpeedRatio), Is.EqualTo(0.5f).Within(0.0001f));
-        Assert.That(SelfObservation(observations, GladiatorSelfObservationIndex.AttackCooldownRatio), Is.EqualTo(1f).Within(0.0001f));
-        Assert.That(SelfObservation(observations, GladiatorSelfObservationIndex.DamageToNearestEnemyMaxHealthRatio), Is.EqualTo(0.05f).Within(0.0001f));
-        Assert.That(SelfObservation(observations, GladiatorSelfObservationIndex.NearestEnemyDamageToSelfMaxHealthRatio), Is.EqualTo(0.2f).Within(0.0001f));
-        Assert.That(SelfObservation(observations, GladiatorSelfObservationIndex.NearestOpponentDistanceRatio), Is.EqualTo(0.25f).Within(0.0001f));
-        Assert.That(SelfObservation(observations, GladiatorSelfObservationIndex.CanHitNearestOpponent), Is.EqualTo(0f).Within(0.0001f));
-        Assert.That(SelfObservation(observations, GladiatorSelfObservationIndex.InNearestOpponentRange), Is.EqualTo(1f).Within(0.0001f));
-        Assert.That(SelfObservation(observations, GladiatorSelfObservationIndex.NearbyOpponentRatio), Is.EqualTo(1f / GladiatorObservationSchema.OpponentSlots).Within(0.0001f));
-        Assert.That(SelfObservation(observations, GladiatorSelfObservationIndex.NearbyTeammateRatio), Is.EqualTo(1f / GladiatorObservationSchema.TeammateSlots).Within(0.0001f));
-        Assert.That(SelfObservation(observations, GladiatorSelfObservationIndex.BoundaryPressure), Is.EqualTo(0.5f).Within(0.0001f));
-        Assert.That(SelfObservation(observations, GladiatorSelfObservationIndex.BattleTimeoutRemainingRatio), Is.EqualTo(0.75f).Within(0.0001f));
-        Assert.That(SelfObservation(observations, GladiatorSelfObservationIndex.AgentSmoothedLocalMoveX), Is.EqualTo(0.25f).Within(0.0001f));
-        Assert.That(SelfObservation(observations, GladiatorSelfObservationIndex.AgentSmoothedLocalMoveZ), Is.EqualTo(-0.5f).Within(0.0001f));
-        Assert.That(SelfObservation(observations, GladiatorSelfObservationIndex.AgentSmoothedTurn), Is.EqualTo(0.4f).Within(0.0001f));
-        Assert.That(SelfObservation(observations, GladiatorSelfObservationIndex.AgentPreviousRawLocalMoveX), Is.EqualTo(-0.2f).Within(0.0001f));
-        Assert.That(SelfObservation(observations, GladiatorSelfObservationIndex.AgentPreviousRawLocalMoveZ), Is.EqualTo(0.1f).Within(0.0001f));
-        Assert.That(SelfObservation(observations, GladiatorSelfObservationIndex.AgentPreviousRawTurn), Is.EqualTo(-0.3f).Within(0.0001f));
-        Assert.That(SelfObservation(observations, GladiatorSelfObservationIndex.HasReadySkill), Is.EqualTo(0f).Within(0.0001f));
-        Assert.That(SelfObservation(observations, GladiatorSelfObservationIndex.HasTarget), Is.EqualTo(1f).Within(0.0001f));
+        Assert.That(
+            SelfObservation(observations, GladiatorSelfObservationIndex.ArenaCenterLocalX),
+            Is.EqualTo(-0.5f).Within(0.0001f)
+        );
+        Assert.That(
+            SelfObservation(observations, GladiatorSelfObservationIndex.ArenaCenterLocalZ),
+            Is.EqualTo(0f).Within(0.0001f)
+        );
+        Assert.That(
+            SelfObservation(observations, GladiatorSelfObservationIndex.HealthRatio),
+            Is.EqualTo(0.5f).Within(0.0001f)
+        );
+        Assert.That(
+            SelfObservation(observations, GladiatorSelfObservationIndex.MaxHealthLogRatio),
+            Is.EqualTo(0f).Within(0.0001f)
+        );
+        Assert.That(
+            SelfObservation(observations, GladiatorSelfObservationIndex.AttackLogRatio),
+            Is.EqualTo(0f).Within(0.0001f)
+        );
+        Assert.That(
+            SelfObservation(observations, GladiatorSelfObservationIndex.AttackRangeRatio),
+            Is.EqualTo(0.1f).Within(0.0001f)
+        );
+        Assert.That(
+            SelfObservation(observations, GladiatorSelfObservationIndex.MoveSpeedRatio),
+            Is.EqualTo(0.5f).Within(0.0001f)
+        );
+        Assert.That(
+            SelfObservation(observations, GladiatorSelfObservationIndex.AttackCooldownRatio),
+            Is.EqualTo(1f).Within(0.0001f)
+        );
+        Assert.That(
+            SelfObservation(observations, GladiatorSelfObservationIndex.DamageToNearestEnemyMaxHealthRatio),
+            Is.EqualTo(0.05f).Within(0.0001f)
+        );
+        Assert.That(
+            SelfObservation(observations, GladiatorSelfObservationIndex.NearestEnemyDamageToSelfMaxHealthRatio),
+            Is.EqualTo(0.2f).Within(0.0001f)
+        );
+        Assert.That(
+            SelfObservation(observations, GladiatorSelfObservationIndex.NearestOpponentDistanceRatio),
+            Is.EqualTo(0.25f).Within(0.0001f)
+        );
+        Assert.That(
+            SelfObservation(observations, GladiatorSelfObservationIndex.CanHitNearestOpponent),
+            Is.EqualTo(0f).Within(0.0001f)
+        );
+        Assert.That(
+            SelfObservation(observations, GladiatorSelfObservationIndex.InNearestOpponentRange),
+            Is.EqualTo(1f).Within(0.0001f)
+        );
+        Assert.That(
+            SelfObservation(observations, GladiatorSelfObservationIndex.NearbyOpponentRatio),
+            Is.EqualTo(1f / GladiatorObservationSchema.OpponentSlots).Within(0.0001f)
+        );
+        Assert.That(
+            SelfObservation(observations, GladiatorSelfObservationIndex.NearbyTeammateRatio),
+            Is.EqualTo(1f / GladiatorObservationSchema.TeammateSlots).Within(0.0001f)
+        );
+        Assert.That(
+            SelfObservation(observations, GladiatorSelfObservationIndex.BoundaryPressure),
+            Is.EqualTo(0.5f).Within(0.0001f)
+        );
+        Assert.That(
+            SelfObservation(observations, GladiatorSelfObservationIndex.BattleTimeoutRemainingRatio),
+            Is.EqualTo(0.75f).Within(0.0001f)
+        );
+        Assert.That(
+            SelfObservation(observations, GladiatorSelfObservationIndex.AgentSmoothedLocalMoveX),
+            Is.EqualTo(0.25f).Within(0.0001f)
+        );
+        Assert.That(
+            SelfObservation(observations, GladiatorSelfObservationIndex.AgentSmoothedLocalMoveZ),
+            Is.EqualTo(-0.5f).Within(0.0001f)
+        );
+        Assert.That(
+            SelfObservation(observations, GladiatorSelfObservationIndex.AgentSmoothedTurn),
+            Is.EqualTo(0.4f).Within(0.0001f)
+        );
+        Assert.That(
+            SelfObservation(observations, GladiatorSelfObservationIndex.AgentPreviousRawLocalMoveX),
+            Is.EqualTo(-0.2f).Within(0.0001f)
+        );
+        Assert.That(
+            SelfObservation(observations, GladiatorSelfObservationIndex.AgentPreviousRawLocalMoveZ),
+            Is.EqualTo(0.1f).Within(0.0001f)
+        );
+        Assert.That(
+            SelfObservation(observations, GladiatorSelfObservationIndex.AgentPreviousRawTurn),
+            Is.EqualTo(-0.3f).Within(0.0001f)
+        );
+        Assert.That(
+            SelfObservation(observations, GladiatorSelfObservationIndex.HasReadySkill),
+            Is.EqualTo(0f).Within(0.0001f)
+        );
+        Assert.That(
+            SelfObservation(observations, GladiatorSelfObservationIndex.HasTarget),
+            Is.EqualTo(1f).Within(0.0001f)
+        );
 
         int teammateSlotStart = GladiatorObservationSchema.SelfSize;
-        Assert.That(UnitObservation(observations, teammateSlotStart, GladiatorUnitObservationIndex.LocalPositionX), Is.EqualTo(0f).Within(0.0001f));
-        Assert.That(UnitObservation(observations, teammateSlotStart, GladiatorUnitObservationIndex.LocalPositionZ), Is.EqualTo(-0.2f).Within(0.0001f));
-        Assert.That(UnitObservation(observations, teammateSlotStart, GladiatorUnitObservationIndex.HealthRatio), Is.EqualTo(0.5f).Within(0.0001f));
-        Assert.That(UnitObservation(observations, teammateSlotStart, GladiatorUnitObservationIndex.MaxHealthLogRatio), Is.EqualTo(Mathf.Log10(0.5f) / 3f).Within(0.0001f));
-        Assert.That(UnitObservation(observations, teammateSlotStart, GladiatorUnitObservationIndex.AttackLogRatio), Is.EqualTo(Mathf.Log10(0.5f) / 3f).Within(0.0001f));
-        Assert.That(UnitObservation(observations, teammateSlotStart, GladiatorUnitObservationIndex.AttackRangeRatio), Is.EqualTo(0.05f).Within(0.0001f));
-        Assert.That(UnitObservation(observations, teammateSlotStart, GladiatorUnitObservationIndex.MoveSpeedRatio), Is.EqualTo(0.25f).Within(0.0001f));
+        Assert.That(
+            UnitObservation(observations, teammateSlotStart, GladiatorUnitObservationIndex.LocalPositionX),
+            Is.EqualTo(0f).Within(0.0001f)
+        );
+        Assert.That(
+            UnitObservation(observations, teammateSlotStart, GladiatorUnitObservationIndex.LocalPositionZ),
+            Is.EqualTo(-0.2f).Within(0.0001f)
+        );
+        Assert.That(
+            UnitObservation(observations, teammateSlotStart, GladiatorUnitObservationIndex.HealthRatio),
+            Is.EqualTo(0.5f).Within(0.0001f)
+        );
+        Assert.That(
+            UnitObservation(observations, teammateSlotStart, GladiatorUnitObservationIndex.MaxHealthLogRatio),
+            Is.EqualTo(Mathf.Log10(0.5f) / 3f).Within(0.0001f)
+        );
+        Assert.That(
+            UnitObservation(observations, teammateSlotStart, GladiatorUnitObservationIndex.AttackLogRatio),
+            Is.EqualTo(Mathf.Log10(0.5f) / 3f).Within(0.0001f)
+        );
+        Assert.That(
+            UnitObservation(observations, teammateSlotStart, GladiatorUnitObservationIndex.AttackRangeRatio),
+            Is.EqualTo(0.05f).Within(0.0001f)
+        );
+        Assert.That(
+            UnitObservation(observations, teammateSlotStart, GladiatorUnitObservationIndex.MoveSpeedRatio),
+            Is.EqualTo(0.25f).Within(0.0001f)
+        );
+        Assert.That(
+            UnitObservation(observations, teammateSlotStart, GladiatorUnitObservationIndex.AttackCooldownRatio),
+            Is.EqualTo(0.25f).Within(0.0001f)
+        );
+
+        int opponentSlotStart =
+            GladiatorObservationSchema.SelfSize
+            + (GladiatorObservationSchema.TeammateSlots * GladiatorObservationSchema.UnitSlotSize);
+        Assert.That(
+            UnitObservation(observations, opponentSlotStart, GladiatorUnitObservationIndex.AttackCooldownRatio),
+            Is.EqualTo(0.1f).Within(0.0001f)
+        );
     }
 
     [Test]
@@ -205,10 +317,8 @@ public sealed class BattleObservationBuilderTests
         return (ReadOnlyCollection<float>)method.Invoke(sensor, null);
     }
 
-    private static float SelfObservation(
-        ReadOnlyCollection<float> observations,
-        GladiatorSelfObservationIndex index
-    ) => observations[(int)index];
+    private static float SelfObservation(ReadOnlyCollection<float> observations, GladiatorSelfObservationIndex index) =>
+        observations[(int)index];
 
     private static float UnitObservation(
         ReadOnlyCollection<float> observations,

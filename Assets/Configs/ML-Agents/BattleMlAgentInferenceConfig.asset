@@ -14,9 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   model: {fileID: 5022602860645237092, guid: 1397b8669f3911443a90494a0d60bf52, type: 3}
   behaviorName: GladiatorSmooth
-  contractVersion: 3
+  contractVersion: 4
   expectedContinuousActions: 3
-  expectedObservationSize: 102
+  expectedObservationSize: 113
   controlledSide: 3
   decisionPeriod: 1
   takeActionsBetweenDecisions: 1

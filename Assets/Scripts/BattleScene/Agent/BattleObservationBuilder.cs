@@ -105,18 +105,27 @@ public static class BattleObservationBuilder
         sensor.AddObservation(NormalizeByArenaRadius(self.AttackRange, context.ArenaRadius));
         sensor.AddObservation(NormalizePositiveByReference(self.MoveSpeed, context.Stats.MaxMoveSpeed));
         sensor.AddObservation(NormalizeAttackCooldown(self));
-        sensor.AddObservation(selfDamageToNearestEnemyMaxHp);
-        sensor.AddObservation(nearestEnemyDamageToSelfMaxHp);
-        sensor.AddObservation(NormalizeDistance(nearestOpponentDistance, context.ArenaRadius));
-        sensor.AddObservation(nearestOpponent != null && nearestOpponentDistance <= selfEffectiveRange ? 1f : 0f);
-        sensor.AddObservation(nearestOpponent != null && nearestOpponentDistance <= opponentEffectiveRange ? 1f : 0f);
-        sensor.AddObservation(
-            CountLivingWithin(self, opponents, threatRadius) / (float)GladiatorObservationSchema.OpponentSlots
-        );
-        sensor.AddObservation(
-            CountLivingWithin(self, teammates, threatRadius) / (float)GladiatorObservationSchema.TeammateSlots
-        );
-        sensor.AddObservation(boundaryPressure);
+        // sensor.AddObservation(selfDamageToNearestEnemyMaxHp);
+        // sensor.AddObservation(nearestEnemyDamageToSelfMaxHp);
+        // sensor.AddObservation(NormalizeDistance(nearestOpponentDistance, context.ArenaRadius));
+        // sensor.AddObservation(nearestOpponent != null && nearestOpponentDistance <= selfEffectiveRange ? 1f : 0f);
+        // sensor.AddObservation(nearestOpponent != null && nearestOpponentDistance <= opponentEffectiveRange ? 1f : 0f);
+        // sensor.AddObservation(
+        //     CountLivingWithin(self, opponents, threatRadius) / (float)GladiatorObservationSchema.OpponentSlots
+        // );
+        // sensor.AddObservation(
+        //     CountLivingWithin(self, teammates, threatRadius) / (float)GladiatorObservationSchema.TeammateSlots
+        // );
+        // sensor.AddObservation(boundaryPressure);
+        sensor.AddObservation(0);
+        sensor.AddObservation(0);
+        sensor.AddObservation(0);
+        sensor.AddObservation(0);
+        sensor.AddObservation(0);
+        sensor.AddObservation(0);
+        sensor.AddObservation(0);
+        sensor.AddObservation(0);
+
         sensor.AddObservation(context.BattleTimeoutRemainingRatio);
         sensor.AddObservation(context.AgentSmoothedLocalMove.x);
         sensor.AddObservation(context.AgentSmoothedLocalMove.y);
@@ -156,6 +165,7 @@ public static class BattleObservationBuilder
             sensor.AddObservation(LogCompress(unit.Attack, context.Stats.MedianAttack));
             sensor.AddObservation(NormalizeByArenaRadius(unit.AttackRange, context.ArenaRadius));
             sensor.AddObservation(NormalizePositiveByReference(unit.MoveSpeed, context.Stats.MaxMoveSpeed));
+            sensor.AddObservation(NormalizeAttackCooldown(unit));
         }
     }
 

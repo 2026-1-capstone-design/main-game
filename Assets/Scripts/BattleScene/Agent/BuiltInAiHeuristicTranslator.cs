@@ -36,6 +36,15 @@ public static class BuiltInAiHeuristicTranslator
         BattleUnitCombatState self
     )
     {
+        if (
+            BattleFieldSnapshot.IsValidEnemyTarget(self, plan.TargetEnemy)
+            && BattleFieldSnapshot.IsWithinEffectiveAttackDistance(self, plan.TargetEnemy)
+        )
+        {
+            WriteIdleMovement(continuous);
+            return;
+        }
+
         if (!plan.HasDesiredPosition || self == null)
         {
             WriteIdleMovement(continuous);

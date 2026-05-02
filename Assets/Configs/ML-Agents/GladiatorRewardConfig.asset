@@ -13,27 +13,27 @@ MonoBehaviour:
   m_Name: GladiatorRewardConfig
   m_EditorClassIdentifier: 
   step: -0.001
-  approach: 0.0005
-  retreatDistance: 0.0005
-  chaseTarget: 0.0005
-  disengaged: -0.01
-  goodRetreat: 0.001
-  badRetreat: -0.02
-  inRangeNoAttack: -0.01
-  dangerousAttack: -0.03
-  damageTaken: -0.01
+  approach: 0
+  retreatDistance: 0
+  chaseTarget: 0
+  disengaged: 0
+  goodRetreat: 0
+  badRetreat: 0
+  inRangeNoAttack: 0
+  dangerousAttack: 0
+  damageTaken: 0
   damageTakenPerPoint: -0.002
   death: -2
-  damageDealt: 0.01
+  damageDealt: 0
   attackLanded: 0.5
   kill: 10
-  boundary: -0.2
-  invalidAction: -1
-  actionDelta: -0.01
-  turnDelta: -0.005
-  idleJitter: -0.01
-  invalidSkill: -0.02
-  skillActivated: 0.02
+  boundary: 0
+  invalidAction: 0
+  actionDelta: 0
+  turnDelta: 0
+  idleJitter: 0
+  invalidSkill: 0
+  skillActivated: 0
   groupWin: 10
   groupLoss: -10
   groupTimeout: -20

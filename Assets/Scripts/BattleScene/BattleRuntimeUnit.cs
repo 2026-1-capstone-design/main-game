@@ -436,14 +436,14 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         //넣을 떄 주석 처리 필요 -> 위치 이미 할당됨
         if (Snapshot.LeftWeaponPrefab != null && leftHandSocket != null)
         {
-            Debug.Log("왼손 무기 장착");
+            // Debug.Log("왼손 무기 장착");
             _spawnedLeftWeapon = Instantiate(Snapshot.LeftWeaponPrefab, leftHandSocket);
             //_spawnedLeftWeapon.transform.localPosition = Vector3.zero;
             //_spawnedLeftWeapon.transform.localRotation = Quaternion.identity;
         }
         if (Snapshot.RightWeaponPrefab != null && rightHandSocket != null)
         {
-            Debug.Log("오른손 무기 장착");
+            // Debug.Log("오른손 무기 장착");
             _spawnedRightWeapon = Instantiate(Snapshot.RightWeaponPrefab, rightHandSocket);
             //_spawnedRightWeapon.transform.localPosition = Vector3.zero;
             //_spawnedRightWeapon.transform.localRotation = Quaternion.identity;

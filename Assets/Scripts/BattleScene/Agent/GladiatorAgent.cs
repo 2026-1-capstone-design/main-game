@@ -6,7 +6,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 
 // BehaviorParameters 설정 (Inspector):
-//   Space Size         = GladiatorObservationSchema.TotalSize (= 102)
+//   Space Size         = GladiatorObservationSchema.TotalSize (= 113)
 //   Continuous Actions = GladiatorActionSchema.ContinuousSize (= 3)
 //     0=local strafe, 1=local advance, 2=turn
 //   Discrete Branches  = 3
@@ -14,13 +14,13 @@ using UnityEngine.InputSystem;
 //     Branch 1 Size = GladiatorActionSchema.TargetBranchSize (= 6)
 //     Branch 2 Size = GladiatorActionSchema.StanceBranchSize (= 3)
 //
-// Observation (102 floats):
+// Observation (113 floats):
 //   자신      (25):     정규화된 경기장 중심 상대좌표(x,z), 체력비, 최대 체력 로그비, 공격력 로그비,
 //                       정규화된 사거리/이동속도/공격 쿨타임, 최근접 적/자신 대상 피해비, 최근접 적 거리,
 //                       공격 가능 여부, 피격 위험 여부, 근처 적/아군 비율, 경계 압박,
 //                       timeout까지 남은 시간 비율, 현재/직전 agent 입력, 스킬 가능 여부, 대상 선택 여부
-//   내 팀 동료 (5 × 7): 정규화된 상대좌표(x,z), 체력비, 최대 체력 로그비, 공격력 로그비, 사거리, 이동속도
-//   상대팀    (6 × 7): 정규화된 상대좌표(x,z), 체력비, 최대 체력 로그비, 공격력 로그비, 사거리, 이동속도
+//   내 팀 동료 (5 × 8): 정규화된 상대좌표(x,z), 체력비, 최대 체력 로그비, 공격력 로그비, 사거리, 이동속도, 공격 쿨타임
+//   상대팀    (6 × 8): 정규화된 상대좌표(x,z), 체력비, 최대 체력 로그비, 공격력 로그비, 사거리, 이동속도, 공격 쿨타임
 //
 // Action:
 //   Continuous 0/1/2:   local strafe / local advance / turn
