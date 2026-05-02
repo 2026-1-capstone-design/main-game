@@ -257,6 +257,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
 
     private void StepSimulation(float tickDeltaTime)
     {
+        _rosterMutationSystem.FlushPendingSummons();
         _battleTickCount++;
 
         BattleParameterRadii radii = BattleParameterSystem.BuildRadii(aiTuning);
