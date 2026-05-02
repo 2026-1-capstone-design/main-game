@@ -72,16 +72,12 @@ public sealed class BattleEffectSystem : IBattleEffectSink
         finalAmount *= Mathf.Max(0f, 1f - reductionPercent / 100f);
         BattleRuntimeUnit targetRuntime = ResolveRuntimeUnit(target);
 
-        if (
+        bool preventedLethalDamage =
             finalAmount >= target.CurrentHealth
             && _damageLifecycle != null
-            && _damageLifecycle.TryPreventLethalDamage(targetRuntime, ref request, this)
-        )
-        {
-            return;
-        }
+            && _damageLifecycle.TryPreventLethalDamage(targetRuntime, ref request, this);
 
-        if (resolution == BattleDamageResolution.ClampToMinimumHealth)
+        if (resolution == BattleDamageResolution.ClampToMinimumHealth || preventedLethalDamage)
             finalAmount = Mathf.Max(0f, target.CurrentHealth - 1f);
 
         target.ApplyDamage(finalAmount);
