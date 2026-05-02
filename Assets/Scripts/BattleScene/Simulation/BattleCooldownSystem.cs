@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 public sealed class BattleCooldownSystem
 {
-    public void Tick(IReadOnlyList<BattleRuntimeUnit> units, float deltaTime)
+    public void Tick(IReadOnlyList<BattleRuntimeUnit> units, float deltaTime, IBattleEffectSink effects)
     {
         if (units == null)
             return;
@@ -15,7 +15,7 @@ public sealed class BattleCooldownSystem
 
             unit.State.TickAttackCooldown(deltaTime);
             unit.State.TickSkillCooldown(deltaTime);
-            unit.State.TickBufflCooldown(deltaTime);
+            unit.State.TickBufflCooldown(deltaTime, effects);
 
             // 공격 lock 해제 시점은 tick 기반 추정값이 아니라 실제 Animator 상태를 기준으로 맞춘다.
             // 무기별 AnimatorOverrideController가 공격 clip 길이를 바꾸고, transition은 base AnimatorController에 남아 있어

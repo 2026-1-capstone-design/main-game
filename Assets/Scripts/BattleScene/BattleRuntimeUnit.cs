@@ -521,7 +521,8 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     public skillType getSkillType() => State.GetSkillType();
 
     // ── 버프 위임 ─────────────────────────────────────────────────
-    public void TickBufflCooldown(float deltaTime) => State.TickBufflCooldown(deltaTime);
+    public void TickBufflCooldown(float deltaTime, IBattleEffectSink effects) =>
+        State.TickBufflCooldown(deltaTime, effects);
 
     public void BuffApply(BuffType type, int level, float cool) => State.BuffApply(type, level, cool);
 

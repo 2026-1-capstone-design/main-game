@@ -277,10 +277,12 @@ public sealed class BattleSimulationManager : MonoBehaviour
             battleTime,
             _battleTickCount
         );
+        _tickCombatResultBuffer.Clear();
+        _effectSystem.Configure(_tickCombatResultBuffer, _runtimeUnitByState, _battlefieldCollider);
         _rosterMutationSystem.Tick(battleTime);
         _channelSystem.Tick(tickContext, _effectSystem);
         _scheduledEffectSystem.Tick(tickContext, _effectSystem);
-        _cooldownSystem.Tick(_runtimeUnits, tickDeltaTime);
+        _cooldownSystem.Tick(_runtimeUnits, tickDeltaTime, _effectSystem);
 
         _parameterSystem.Compute(_runtimeUnits, radii, aiTuning, CurrentSnapshot, _tickModifierOverflowFlagsBuffer);
         _decisionSystem.Decide(
@@ -302,7 +304,8 @@ public sealed class BattleSimulationManager : MonoBehaviour
             _tickCombatResultBuffer,
             CurrentSnapshot,
             battleTime,
-            _battleTickCount
+            _battleTickCount,
+            false
         );
 
         BattleOutcome? outcome = _victorySystem.Evaluate(

@@ -407,7 +407,7 @@ public sealed class BattleUnitCombatState
         );
     }
 
-    public void TickBufflCooldown(float deltaTime)
+    public void TickBufflCooldown(float deltaTime, IBattleEffectSink effects)
     {
         float clampedDelta = Mathf.Max(0f, deltaTime);
         for (int i = _statuses.Count - 1; i >= 0; i--)
@@ -425,19 +425,40 @@ public sealed class BattleUnitCombatState
             _statuses[i] = status;
         }
 
-        Debuff(deltaTime);
+        Debuff(effects);
     }
 
-    private void Debuff(float deltaTime)
+    private void Debuff(IBattleEffectSink effects)
     {
-        int totalBleedLevel = 0;
+        if (effects == null)
+            return;
 
-        totalBleedLevel = GetStatusLevel(BattleStatusType.Bleed);
+        int totalBleedLevel = GetStatusLevel(BattleStatusType.Bleed);
+        if (totalBleedLevel <= 0 || IsCombatDisabled)
+            return;
 
-        if (totalBleedLevel > 0 && !IsCombatDisabled)
+        effects.DealDamage(
+            new BattleDamageRequest
+            {
+                Source = GetFirstStatusSource(BattleStatusType.Bleed),
+                Target = this,
+                Amount = totalBleedLevel * 5,
+                SourceKind = BattleEffectSourceKind.Status,
+                DamageKind = BattleDamageKind.DamageOverTime,
+            }
+        );
+    }
+
+    private BattleUnitCombatState GetFirstStatusSource(BattleStatusType type)
+    {
+        for (int i = 0; i < _statuses.Count; i++)
         {
-            ApplyDamage(totalBleedLevel * 5);
+            BattleStatusInstance status = _statuses[i];
+            if (status.Type == type)
+                return status.Source;
         }
+
+        return null;
     }
 
     public int BuffNum() => _statuses.Count;

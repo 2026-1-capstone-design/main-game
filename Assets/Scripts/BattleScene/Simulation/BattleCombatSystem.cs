@@ -46,13 +46,15 @@ public sealed class BattleCombatSystem
         BattleCombatResultBuffer results,
         BattleFieldSnapshot snapshot,
         float battleTime,
-        int battleTick
+        int battleTick,
+        bool clearResults = true
     )
     {
         if (units == null || results == null || _effects == null)
             return;
 
-        results.Clear();
+        if (clearResults)
+            results.Clear();
         _effects.Configure(results, runtimeUnitByState);
         ExecuteAttackPhase(units, runtimeUnitByState, snapshot, _effects, _channelSystem, _artifactSystem);
         ExecuteSkillPhase(units, runtimeUnitByState, snapshot, battleTime, battleTick);
