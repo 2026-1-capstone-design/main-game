@@ -90,3 +90,7 @@ results/
 
 # Unity ML-Agents timer
 Assets/ML-Agents/
+
+# Unity ML-Agents Demo
+Assets/Demos/
+Assets/Demos.meta
