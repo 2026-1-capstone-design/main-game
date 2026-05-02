@@ -140,7 +140,7 @@ public sealed class BattleEffectSystem : IBattleEffectSink
                 Type = BattleUnitCombatState.ConvertBuffType(type),
                 Level = level,
                 Duration = duration,
-                IsDebuff = level < 0 || type == BuffType.BleedDamage || type == BuffType.Taunt || type == BuffType.Stun,
+                IsDebuff = BattleUnitCombatState.IsDebuff(type, level),
                 IsDispelAllowed = true,
             }
         );
