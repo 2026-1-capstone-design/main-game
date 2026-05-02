@@ -29,10 +29,13 @@ public interface IChanneledBattleSkill : IBattleSkill
 public sealed class BattleSkillChannelSystem
 {
     private readonly List<ActiveChannel> _channels = new List<ActiveChannel>();
+    private readonly Dictionary<BattleRuntimeUnit, int> _channelIndexByCaster =
+        new Dictionary<BattleRuntimeUnit, int>();
 
     public void Clear()
     {
         _channels.Clear();
+        _channelIndexByCaster.Clear();
     }
 
     public bool IsMovementBlocked(BattleRuntimeUnit unit) =>
@@ -58,6 +61,7 @@ public sealed class BattleSkillChannelSystem
 
         InterruptChannel(caster, BattleInterruptReason.NewCommand, context, effects);
         ActiveChannel channel = new ActiveChannel(caster, context.PrimaryTarget, skill, context.BattleTime);
+        _channelIndexByCaster[caster] = _channels.Count;
         _channels.Add(channel);
         skill.BeginChannel(context, effects);
     }
@@ -101,7 +105,7 @@ public sealed class BattleSkillChannelSystem
                 continue;
             }
 
-            _channels.RemoveAt(i);
+            RemoveAt(i, channel);
             channel.Skill.CompleteChannel(channelContext, effects);
         }
     }
@@ -116,14 +120,10 @@ public sealed class BattleSkillChannelSystem
         if (caster == null)
             return;
 
-        for (int i = _channels.Count - 1; i >= 0; i--)
-        {
-            ActiveChannel channel = _channels[i];
-            if (channel.Caster != caster)
-                continue;
+        if (!_channelIndexByCaster.TryGetValue(caster, out int index))
+            return;
 
-            InterruptAt(i, channel, reason, context, effects);
-        }
+        InterruptAt(index, _channels[index], reason, context, effects);
     }
 
     private void InterruptAt(
@@ -134,7 +134,7 @@ public sealed class BattleSkillChannelSystem
         IBattleEffectSink effects
     )
     {
-        _channels.RemoveAt(index);
+        RemoveAt(index, channel);
         BattleEffectContext channelContext = new BattleEffectContext(
             channel.Caster,
             channel.PrimaryTarget,
@@ -148,17 +148,32 @@ public sealed class BattleSkillChannelSystem
 
     private bool TryGetChannel(BattleRuntimeUnit unit, out ActiveChannel channel)
     {
-        for (int i = 0; i < _channels.Count; i++)
+        if (unit != null && _channelIndexByCaster.TryGetValue(unit, out int index) && index < _channels.Count)
         {
-            if (_channels[i].Caster != unit)
-                continue;
-
-            channel = _channels[i];
-            return true;
+            channel = _channels[index];
+            if (channel.Caster == unit)
+                return true;
         }
 
         channel = default;
         return false;
+    }
+
+    private void RemoveAt(int index, ActiveChannel channel)
+    {
+        if (channel.Caster != null)
+            _channelIndexByCaster.Remove(channel.Caster);
+
+        int lastIndex = _channels.Count - 1;
+        if (index != lastIndex)
+        {
+            ActiveChannel moved = _channels[lastIndex];
+            _channels[index] = moved;
+            if (moved.Caster != null)
+                _channelIndexByCaster[moved.Caster] = index;
+        }
+
+        _channels.RemoveAt(lastIndex);
     }
 
     private struct ActiveChannel
