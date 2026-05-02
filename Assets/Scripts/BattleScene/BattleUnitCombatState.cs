@@ -608,7 +608,7 @@ public sealed class BattleUnitCombatState
             case BuffType.Stun:
                 return BattleStatusType.Stun;
             default:
-                return BattleStatusType.AttackDamage;
+                throw new ArgumentOutOfRangeException(nameof(type), type, "Unhandled buff type.");
         }
     }
 
