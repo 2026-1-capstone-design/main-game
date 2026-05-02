@@ -69,7 +69,7 @@ public sealed class BattleRosterMutationSystem : IBattleRosterMutationSink
             if (change.RestoreAtBattleTime > battleTime)
                 continue;
 
-            RestoreTeam(change.Unit);
+            RestoreTeamAt(i, change);
         }
 
         for (int i = _commandBlocks.Count - 1; i >= 0; i--)
@@ -178,11 +178,21 @@ public sealed class BattleRosterMutationSystem : IBattleRosterMutationSink
             if (change.Unit != unit)
                 continue;
 
-            unit.State.SetTeamId(change.OriginalTeamId);
-            unit.ClearExecutionPlan();
-            _teamChanges.RemoveAt(i);
+            RestoreTeamAt(i, change);
             return;
         }
+    }
+
+    private void RestoreTeamAt(int index, TeamChange change)
+    {
+        BattleRuntimeUnit unit = change.Unit;
+        if (unit != null && unit.State != null)
+        {
+            unit.State.SetTeamId(change.OriginalTeamId);
+            unit.ClearExecutionPlan();
+        }
+
+        _teamChanges.RemoveAt(index);
     }
 
     public void DisableCommandAndSkill(BattleRuntimeUnit unit, float duration)
