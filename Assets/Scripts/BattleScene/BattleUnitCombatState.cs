@@ -591,7 +591,7 @@ public sealed class BattleUnitCombatState
         }
     }
 
-    private static bool IsDebuff(BuffType type, int level)
+    public static bool IsDebuff(BuffType type, int level)
     {
         if (level < 0)
             return true;
