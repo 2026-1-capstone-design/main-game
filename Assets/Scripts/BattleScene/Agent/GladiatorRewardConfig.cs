@@ -9,22 +9,32 @@ public sealed class GladiatorRewardConfig : ScriptableObject
     [FieldDescription("적에게 가까워질수록(거리 감소량 비례) 부여되는 보상. 적극적인 교전을 유도한다.")]
     public float approach = 0.0005f;
 
-    [FieldDescription("후퇴가 적절한 상황에서 거리를 벌릴수록(거리 증가량 비례) 부여되는 보상. 전략적 후퇴를 유도한다.")]
+    [FieldDescription(
+        "후퇴가 적절한 상황에서 거리를 벌릴수록(거리 증가량 비례) 부여되는 보상. 전략적 후퇴를 유도한다."
+    )]
     public float retreatDistance = 0.0005f;
 
-    [FieldDescription("공격 범위 밖에서 기본 공격을 시도할 때 부여되는 보상. 사정거리 밖에서도 공격 의지를 유지하도록 유도한다.")]
+    [FieldDescription(
+        "공격 범위 밖에서 기본 공격을 시도할 때 부여되는 보상. 사정거리 밖에서도 공격 의지를 유지하도록 유도한다."
+    )]
     public float chaseTarget = 0.0005f;
 
-    [FieldDescription("살아있는 적이 있음에도 이동·공격 없이 정지 상태일 때 부과되는 패널티. 소극적 대기 행동을 억제한다.")]
+    [FieldDescription(
+        "살아있는 적이 있음에도 이동·공격 없이 정지 상태일 때 부과되는 패널티. 소극적 대기 행동을 억제한다."
+    )]
     public float disengaged = -0.01f;
 
-    [FieldDescription("후퇴가 필요한 상황(ShouldRetreat)에서 스페이싱 이동을 취했을 때 부여되는 보상. 적절한 후퇴를 장려한다.")]
+    [FieldDescription(
+        "후퇴가 필요한 상황(ShouldRetreat)에서 스페이싱 이동을 취했을 때 부여되는 보상. 적절한 후퇴를 장려한다."
+    )]
     public float goodRetreat = 0.001f;
 
     [FieldDescription("후퇴가 불필요한 상황에서 스페이싱 이동을 취했을 때 부과되는 패널티. 불필요한 도망을 억제한다.")]
     public float badRetreat = -0.02f;
 
-    [FieldDescription("공격 가능한 사정거리 내 적이 있음에도 공격하지 않을 때 부과되는 패널티. 소극적 교전을 억제한다.")]
+    [FieldDescription(
+        "공격 가능한 사정거리 내 적이 있음에도 공격하지 않을 때 부과되는 패널티. 소극적 교전을 억제한다."
+    )]
     public float inRangeNoAttack = -0.01f;
 
     [FieldDescription("후퇴해야 하는 상황에서 기본 공격을 시도할 때 부과되는 패널티. 무리한 공격을 억제한다.")]

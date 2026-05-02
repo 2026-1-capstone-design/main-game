@@ -34,7 +34,7 @@ MonoBehaviour:
   idleJitter: -0.01
   invalidSkill: -0.02
   skillActivated: 0.02
-  groupWin: 20
-  groupLoss: -20
+  groupWin: 10
+  groupLoss: -10
   groupTimeout: -20
   groupInterrupted: -20

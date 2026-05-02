@@ -15,8 +15,10 @@ public static class BuiltInAiHeuristicTranslator
         ActionSegment<float> continuous = actionsOut.ContinuousActions;
         ActionSegment<int> discrete = actionsOut.DiscreteActions;
 
-        if (continuous.Length < GladiatorActionSchema.ContinuousSize
-            || discrete.Length < GladiatorActionSchema.DiscreteBranchCount)
+        if (
+            continuous.Length < GladiatorActionSchema.ContinuousSize
+            || discrete.Length < GladiatorActionSchema.DiscreteBranchCount
+        )
         {
             return;
         }
@@ -81,26 +83,29 @@ public static class BuiltInAiHeuristicTranslator
             return 0;
         IReadOnlyList<BattleUnitCombatState> hostiles = rosterView.Hostiles;
         for (int i = 0; i < hostiles.Count; i++)
-            if (hostiles[i] == target) return i;
+            if (hostiles[i] == target)
+                return i;
         return 0;
     }
 
-    private static int ResolveStance(BattleActionType actionType) => actionType switch
-    {
-        BattleActionType.EscapeFromPressure => GladiatorActionSchema.StanceKeepRange,
-        BattleActionType.AssassinateIsolatedEnemy => GladiatorActionSchema.StancePressure,
-        BattleActionType.DiveEnemyBackline => GladiatorActionSchema.StancePressure,
-        BattleActionType.CollapseOnCluster => GladiatorActionSchema.StancePressure,
-        _ => GladiatorActionSchema.StanceNeutral,
-    };
+    private static int ResolveStance(BattleActionType actionType) =>
+        actionType switch
+        {
+            BattleActionType.EscapeFromPressure => GladiatorActionSchema.StanceKeepRange,
+            BattleActionType.AssassinateIsolatedEnemy => GladiatorActionSchema.StancePressure,
+            BattleActionType.DiveEnemyBackline => GladiatorActionSchema.StancePressure,
+            BattleActionType.CollapseOnCluster => GladiatorActionSchema.StancePressure,
+            _ => GladiatorActionSchema.StanceNeutral,
+        };
 
-    private static bool IsCombatAction(BattleActionType actionType) => actionType switch
-    {
-        BattleActionType.EngageNearest => true,
-        BattleActionType.AssassinateIsolatedEnemy => true,
-        BattleActionType.DiveEnemyBackline => true,
-        BattleActionType.PeelForWeakAlly => true,
-        BattleActionType.CollapseOnCluster => true,
-        _ => false,
-    };
+    private static bool IsCombatAction(BattleActionType actionType) =>
+        actionType switch
+        {
+            BattleActionType.EngageNearest => true,
+            BattleActionType.AssassinateIsolatedEnemy => true,
+            BattleActionType.DiveEnemyBackline => true,
+            BattleActionType.PeelForWeakAlly => true,
+            BattleActionType.CollapseOnCluster => true,
+            _ => false,
+        };
 }

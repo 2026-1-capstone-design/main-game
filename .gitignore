@@ -90,3 +90,6 @@ results/
 
 # Unity ML-Agents timer
 Assets/ML-Agents/
+
+# Unity ML-Agents Records
+Assets/Demos/

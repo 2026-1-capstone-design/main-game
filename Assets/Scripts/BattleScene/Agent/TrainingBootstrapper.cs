@@ -46,6 +46,7 @@ public class TrainingBootstrapper : MonoBehaviour, ITrainingEnvironment
     private BattleMlControlledSide controlledSide = BattleMlControlledSide.BothTeams;
 
     [SerializeField]
+    [Tooltip("config YAML 파일에 {opponentModeEnvironmentParameter}가 설정되어 있으면 controlledSide를 덮어씌운다.")]
     private bool useCurriculumOpponentMode = true;
 
     [SerializeField]
@@ -323,8 +324,10 @@ public class TrainingBootstrapper : MonoBehaviour, ITrainingEnvironment
 
         int academyStepCount = _academyStepCoordinator != null ? _academyStepCoordinator.EnvironmentStepCount : 0;
         int battleTickCount = battleSimulationManager.BattleTickCount;
-        if (!string.Equals(label, "Episode started", System.StringComparison.Ordinal)
-            && academyStepCount % logProgressInterval != 0)
+        if (
+            !string.Equals(label, "Episode started", System.StringComparison.Ordinal)
+            && academyStepCount % logProgressInterval != 0
+        )
         {
             return;
         }
