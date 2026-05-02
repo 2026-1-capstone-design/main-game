@@ -74,6 +74,12 @@ public sealed class BattleUnitCombatState
     [SerializeField]
     private List<BattleStatusInstance> _statuses = new List<BattleStatusInstance>();
 
+    [NonSerialized]
+    private Dictionary<BattleStatusType, int> _statusLevelCache;
+
+    [NonSerialized]
+    private bool _statusLevelCacheBuilt;
+
     public bool IsStunned => GetStatusLevel(BattleStatusType.Stun) > 0;
     public bool HasTaunt => GetStatusLevel(BattleStatusType.Taunt) > 0;
     public bool IsSkillDisabled => GetStatusLevel(BattleStatusType.SkillDisabled) > 0;
@@ -411,6 +417,7 @@ public sealed class BattleUnitCombatState
 
             if (status.RemainingDuration <= 0f)
             {
+                DecreaseStatusLevel(status);
                 _statuses.RemoveAt(i);
                 continue;
             }
@@ -439,28 +446,15 @@ public sealed class BattleUnitCombatState
 
     public int GetStatusLevel(BattleStatusType type)
     {
-        int count = 0;
-        for (int i = 0; i < _statuses.Count; i++)
-        {
-            if (_statuses[i].Type == type)
-                count += _statuses[i].Level;
-        }
-        return count;
+        EnsureStatusLevelCache();
+        return _statusLevelCache.TryGetValue(type, out int level) ? level : 0;
     }
 
-    // DamageTakenPercent와 DamageReductionPercent를 한 번 순회로 읽어 반환한다.
+    // DamageTakenPercent와 DamageReductionPercent를 캐시에서 읽어 반환한다.
     public void GetDamageScaleFactors(out float takenPercent, out float reductionPercent)
     {
-        takenPercent = 0f;
-        reductionPercent = 0f;
-        for (int i = 0; i < _statuses.Count; i++)
-        {
-            BattleStatusInstance s = _statuses[i];
-            if (s.Type == BattleStatusType.DamageTakenPercent)
-                takenPercent += s.Level;
-            else if (s.Type == BattleStatusType.DamageReductionPercent)
-                reductionPercent += s.Level;
-        }
+        takenPercent = GetStatusLevel(BattleStatusType.DamageTakenPercent);
+        reductionPercent = GetStatusLevel(BattleStatusType.DamageReductionPercent);
     }
 
     public void ApplyStatus(BattleStatusRequest request)
@@ -474,17 +468,19 @@ public sealed class BattleUnitCombatState
         if (duration <= 0f)
             return;
 
-        _statuses.Add(
-            new BattleStatusInstance
-            {
-                Source = request.Source,
-                Type = request.Type,
-                Level = request.Level,
-                RemainingDuration = duration,
-                IsDebuff = request.IsDebuff,
-                IsDispelAllowed = request.IsDispelAllowed,
-            }
-        );
+        BattleStatusInstance status = new BattleStatusInstance
+        {
+            Source = request.Source,
+            Type = request.Type,
+            Level = request.Level,
+            RemainingDuration = duration,
+            IsDebuff = request.IsDebuff,
+            IsDispelAllowed = request.IsDispelAllowed,
+        };
+
+        EnsureStatusLevelCache();
+        _statuses.Add(status);
+        IncreaseStatusLevel(status);
     }
 
     public void Dispel(BattleDispelFilter filter)
@@ -496,12 +492,57 @@ public sealed class BattleUnitCombatState
                 continue;
             if (status.IsDebuff && filter.RemoveDebuffs)
             {
+                DecreaseStatusLevel(status);
                 _statuses.RemoveAt(i);
                 continue;
             }
             if (!status.IsDebuff && filter.RemoveBuffs)
+            {
+                DecreaseStatusLevel(status);
                 _statuses.RemoveAt(i);
+            }
         }
+    }
+
+    private void EnsureStatusLevelCache()
+    {
+        if (_statusLevelCache == null)
+            _statusLevelCache = new Dictionary<BattleStatusType, int>();
+        if (_statusLevelCacheBuilt)
+            return;
+
+        _statusLevelCache.Clear();
+        for (int i = 0; i < _statuses.Count; i++)
+        {
+            BattleStatusInstance status = _statuses[i];
+            if (_statusLevelCache.TryGetValue(status.Type, out int level))
+                _statusLevelCache[status.Type] = level + status.Level;
+            else
+                _statusLevelCache.Add(status.Type, status.Level);
+        }
+        _statusLevelCacheBuilt = true;
+    }
+
+    private void IncreaseStatusLevel(BattleStatusInstance status)
+    {
+        EnsureStatusLevelCache();
+        if (_statusLevelCache.TryGetValue(status.Type, out int level))
+            _statusLevelCache[status.Type] = level + status.Level;
+        else
+            _statusLevelCache.Add(status.Type, status.Level);
+    }
+
+    private void DecreaseStatusLevel(BattleStatusInstance status)
+    {
+        EnsureStatusLevelCache();
+        if (!_statusLevelCache.TryGetValue(status.Type, out int level))
+            return;
+
+        int nextLevel = level - status.Level;
+        if (nextLevel == 0)
+            _statusLevelCache.Remove(status.Type);
+        else
+            _statusLevelCache[status.Type] = nextLevel;
     }
 
     public void RefreshStatuses(BattleStatusFilter filter, float duration)
