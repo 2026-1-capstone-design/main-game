@@ -26,6 +26,7 @@ public sealed class BattleRosterMutationSystem : IBattleRosterMutationSink
 {
     private readonly List<TeamChange> _teamChanges = new List<TeamChange>();
     private readonly List<TimedUnitBlock> _commandBlocks = new List<TimedUnitBlock>();
+    private readonly List<PendingSummon> _pendingSummons = new List<PendingSummon>();
     private List<BattleRuntimeUnit> _runtimeUnits;
     private List<BattleUnitCombatState> _unitStates;
     private Dictionary<BattleUnitCombatState, BattleRuntimeUnit> _runtimeUnitByState;
@@ -51,6 +52,7 @@ public sealed class BattleRosterMutationSystem : IBattleRosterMutationSink
 
     public void Clear()
     {
+        DestroyPendingSummons();
         _teamChanges.Clear();
         _commandBlocks.Clear();
         _battleTime = 0f;
@@ -123,15 +125,31 @@ public sealed class BattleRosterMutationSystem : IBattleRosterMutationSink
         runtimeUnit.PlaceAt(request.SpawnPosition, parent);
         runtimeUnit.ClampInsideBattlefield(_battlefieldCollider);
 
-        _runtimeUnits.Add(runtimeUnit);
-        _unitStates?.Add(runtimeUnit.State);
-        if (_runtimeUnitByState != null)
-            _runtimeUnitByState[runtimeUnit.State] = runtimeUnit;
-
+        _pendingSummons.Add(new PendingSummon(runtimeUnit));
         if (request.Duration > 0f)
             DisableCommandAndSkill(runtimeUnit, request.Duration);
 
         return runtimeUnit;
+    }
+
+    public void FlushPendingSummons()
+    {
+        if (_pendingSummons.Count == 0 || _runtimeUnits == null)
+            return;
+
+        for (int i = 0; i < _pendingSummons.Count; i++)
+        {
+            BattleRuntimeUnit runtimeUnit = _pendingSummons[i].RuntimeUnit;
+            if (runtimeUnit == null || runtimeUnit.State == null)
+                continue;
+
+            _runtimeUnits.Add(runtimeUnit);
+            _unitStates?.Add(runtimeUnit.State);
+            if (_runtimeUnitByState != null)
+                _runtimeUnitByState[runtimeUnit.State] = runtimeUnit;
+        }
+
+        _pendingSummons.Clear();
     }
 
     public void ChangeTeam(BattleRuntimeUnit unit, BattleTeamId newTeamId, float duration)
@@ -199,5 +217,30 @@ public sealed class BattleRosterMutationSystem : IBattleRosterMutationSink
             Unit = unit;
             UntilBattleTime = untilBattleTime;
         }
+    }
+
+    // 소환 생성물은 현재 순회 중인 런타임 로스터를 건드리지 않도록 다음 틱 시작까지 대기한다.
+    private readonly struct PendingSummon
+    {
+        public BattleRuntimeUnit RuntimeUnit { get; }
+
+        public PendingSummon(BattleRuntimeUnit runtimeUnit)
+        {
+            RuntimeUnit = runtimeUnit;
+        }
+    }
+
+    private void DestroyPendingSummons()
+    {
+        for (int i = 0; i < _pendingSummons.Count; i++)
+        {
+            BattleRuntimeUnit runtimeUnit = _pendingSummons[i].RuntimeUnit;
+            if (runtimeUnit == null || runtimeUnit.RuntimeRootObject == null)
+                continue;
+
+            Object.Destroy(runtimeUnit.RuntimeRootObject);
+        }
+
+        _pendingSummons.Clear();
     }
 }
