@@ -9,7 +9,9 @@ public sealed class BattleDecisionSystem
         IReadOnlyList<BattleRuntimeUnit> units,
         BattleAITuningSO aiTuning,
         float tickDeltaTime,
-        BattleActionType[] decisions
+        BattleActionType[] decisions,
+        BattleSkillChannelSystem channelSystem = null,
+        BattleRosterMutationSystem rosterMutationSystem = null
     )
     {
         if (units == null || decisions == null)
@@ -30,6 +32,16 @@ public sealed class BattleDecisionSystem
 
             if (unit.IsExternallyControlled)
             {
+                decisions[i] = unit.CurrentActionType;
+                continue;
+            }
+
+            if (
+                (channelSystem != null && channelSystem.IsDecisionChangeBlocked(unit))
+                || (rosterMutationSystem != null && rosterMutationSystem.IsCommandDisabled(unit))
+            )
+            {
+                unit.State.SetDecisionState(unit.KeepBehaving, unit.ActionTimer + tickDeltaTime);
                 decisions[i] = unit.CurrentActionType;
                 continue;
             }

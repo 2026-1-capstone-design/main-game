@@ -39,8 +39,10 @@ public sealed class ContentDatabaseProvider : SingletonBehaviour<ContentDatabase
             ? contentDatabase.synergies
             : Array.Empty<SynergySO>();
 
-    public IReadOnlyList<PerkSO> Perks =>
-        contentDatabase != null && contentDatabase.perks != null ? contentDatabase.perks : Array.Empty<PerkSO>();
+    public IReadOnlyList<ArtifactSO> Artifacts =>
+        contentDatabase != null && contentDatabase.artifacts != null
+            ? contentDatabase.artifacts
+            : Array.Empty<ArtifactSO>();
 
     public IReadOnlyList<PersonalitySO> Personalities =>
         contentDatabase != null && contentDatabase.personalities != null

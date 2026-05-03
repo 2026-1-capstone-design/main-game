@@ -76,7 +76,7 @@ public sealed class ContentDatabaseDumpOnMainEnter : MonoBehaviour
         AppendScriptableObjectListDump(sb, "Weapons", provider.Weapons);
         AppendScriptableObjectListDump(sb, "Traits", provider.Traits);
         AppendScriptableObjectListDump(sb, "Synergies", provider.Synergies);
-        AppendScriptableObjectListDump(sb, "Perks", provider.Perks);
+        AppendScriptableObjectListDump(sb, "Artifacts", provider.Artifacts);
         AppendScriptableObjectListDump(sb, "Personalities", provider.Personalities);
 
         sb.AppendLine("==================================================");

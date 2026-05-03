@@ -9,7 +9,11 @@ public sealed class BattlePlanningSystem
         _planners = BuildPlannerRegistry();
     }
 
-    public void Build(IReadOnlyList<BattleRuntimeUnit> units, BattleFieldSnapshot snapshot)
+    public void Build(
+        IReadOnlyList<BattleRuntimeUnit> units,
+        BattleFieldSnapshot snapshot,
+        BattleRosterMutationSystem rosterMutationSystem = null
+    )
     {
         if (units == null || snapshot == null)
             return;
@@ -21,6 +25,9 @@ public sealed class BattlePlanningSystem
                 continue;
 
             if (unit.IsExternallyControlled)
+                continue;
+
+            if (rosterMutationSystem != null && rosterMutationSystem.IsCommandDisabled(unit))
                 continue;
 
             BattleActionExecutionPlan plan;

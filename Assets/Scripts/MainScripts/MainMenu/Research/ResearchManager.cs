@@ -7,10 +7,10 @@ public sealed class ResearchManager : MonoBehaviour
     [SerializeField]
     private bool verboseLog = true;
 
-    private readonly List<PerkSO> _unlockedPerks = new List<PerkSO>();
+    private readonly List<ArtifactSO> _unlockedArtifacts = new List<ArtifactSO>();
     private bool _initialized;
 
-    public IReadOnlyList<PerkSO> UnlockedPerks => _unlockedPerks;
+    public IReadOnlyList<ArtifactSO> UnlockedArtifacts => _unlockedArtifacts;
 
     public void Initialize(ContentDatabaseProvider contentDatabaseProvider)
     {
@@ -25,15 +25,15 @@ public sealed class ResearchManager : MonoBehaviour
             return;
         }
 
-        _unlockedPerks.Clear();
+        _unlockedArtifacts.Clear();
 
-        IReadOnlyList<PerkSO> perks = contentDatabaseProvider.Perks;
-        for (int i = 0; i < perks.Count; i++)
+        IReadOnlyList<ArtifactSO> artifacts = contentDatabaseProvider.Artifacts;
+        for (int i = 0; i < artifacts.Count; i++)
         {
-            PerkSO perk = perks[i];
-            if (perk != null)
+            ArtifactSO artifact = artifacts[i];
+            if (artifact != null)
             {
-                _unlockedPerks.Add(perk);
+                _unlockedArtifacts.Add(artifact);
             }
         }
 
@@ -41,13 +41,13 @@ public sealed class ResearchManager : MonoBehaviour
 
         if (verboseLog)
         {
-            Debug.Log($"[ResearchManager] Initialized. UnlockedPerkCount={_unlockedPerks.Count}", this);
+            Debug.Log($"[ResearchManager] Initialized. UnlockedArtifactCount={_unlockedArtifacts.Count}", this);
         }
     }
 
-    public int GetUnlockedPerkCount()
+    public int GetUnlockedArtifactCount()
     {
-        return _unlockedPerks.Count;
+        return _unlockedArtifacts.Count;
     }
 
     public void RestoreUnlockedPerksForLoad(List<PerkSO> unlockedPerks)

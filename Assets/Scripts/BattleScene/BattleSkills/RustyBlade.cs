@@ -6,14 +6,31 @@ public sealed class RustyBladeSkill : IBattleSkill
     public WeaponSkillId SkillId => WeaponSkillId.RustyBlade;
     public skillType SkillCategory => skillType.attack;
     public IReadOnlyList<WeaponType> CompatibleWeaponTypes { get; } = new[] { WeaponType.dagger };
+    public BattleSkillTargetPolicy TargetPolicy => BattleSkillTargetPolicy.PlannedEnemy;
+    public float CastRange => 0f;
+    public float AreaRadius => 0f;
 
-    public bool CanActivate(BattleRuntimeUnit caster) =>
-        caster.PlannedTargetEnemy != null
-        && BattleFieldSnapshot.IsWithinEffectiveAttackDistance(caster.State, caster.PlannedTargetEnemy);
+    public bool CanActivate(in BattleEffectContext context) =>
+        context.Actor != null
+        && context.Actor.PlannedTargetEnemy != null
+        && BattleFieldSnapshot.IsWithinEffectiveAttackDistance(context.Actor.State, context.Actor.PlannedTargetEnemy);
 
-    public void Apply(BattleRuntimeUnit caster, ISkillEffectApplier applier)
+    public void Activate(in BattleEffectContext context, IBattleEffectSink effects)
     {
-        applier.ApplyDamage(caster.PlannedTargetEnemy, caster.Attack);
-        applier.ApplyBuff(caster.PlannedTargetEnemy, BuffType.BleedDamage, 1, 5f);
+        BattleUnitCombatState caster = context.Actor != null ? context.Actor.State : null;
+        BattleUnitCombatState target = context.PrimaryTarget != null ? context.PrimaryTarget.State : null;
+        effects.DealDamage(
+            new BattleDamageRequest
+            {
+                Source = caster,
+                Target = target,
+                Amount = caster.Attack,
+                SourceKind = BattleEffectSourceKind.Skill,
+                DamageKind = BattleDamageKind.Direct,
+                SkillId = SkillId,
+                IsSkill = true,
+            }
+        );
+        effects.ApplyBuff(caster, target, BuffType.BleedDamage, 1, 5f);
     }
 }

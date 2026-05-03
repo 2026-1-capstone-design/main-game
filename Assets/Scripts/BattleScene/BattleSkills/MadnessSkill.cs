@@ -7,11 +7,15 @@ public sealed class MadnessSkill : IBattleSkill
     public skillType SkillCategory => skillType.enhance;
 
     public IReadOnlyList<WeaponType> CompatibleWeaponTypes { get; } = new WeaponType[0];
+    public BattleSkillTargetPolicy TargetPolicy => BattleSkillTargetPolicy.Self;
+    public float CastRange => 0f;
+    public float AreaRadius => 0f;
 
-    public bool CanActivate(BattleRuntimeUnit caster) => true;
+    public bool CanActivate(in BattleEffectContext context) => context.Actor != null;
 
-    public void Apply(BattleRuntimeUnit caster, ISkillEffectApplier applier)
+    public void Activate(in BattleEffectContext context, IBattleEffectSink effects)
     {
-        applier.ApplyBuff(caster.State, BuffType.AttackSpeed, 2, 20f);
+        BattleUnitCombatState caster = context.Actor != null ? context.Actor.State : null;
+        effects.ApplyBuff(caster, caster, BuffType.AttackSpeed, 2, 20f);
     }
 }

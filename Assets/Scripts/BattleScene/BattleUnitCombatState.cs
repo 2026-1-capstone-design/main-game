@@ -5,6 +5,8 @@ using UnityEngine;
 // BattleUnitCombatState: 순수 전투 상태 컨테이너 (MonoBehaviour 없음, Unity 씬 의존 없음)
 // BattleRuntimeUnit이 소유하며, BattleSimulationManager가 이 객체를 통해 전투 상태를 읽고 쓴다.
 // Animator, UI, Transform 등 비주얼 관련 로직은 포함하지 않는다.
+// TODO: 더 짧고 문맥에 맞는 이름으로 BattleUnitState를 검토한다. BattleScene 문맥상 Combat은
+// 중복에 가깝고, 이 타입의 핵심 책임은 HP/쿨다운/버프/타겟/행동 같은 계산 상태 보유다.
 [Serializable]
 public sealed class BattleUnitCombatState
 {
@@ -69,8 +71,23 @@ public sealed class BattleUnitCombatState
     [SerializeField]
     private List<float> _buffCooldownRemaining = new List<float>();
 
-    public bool IsStunned => GetBuffLevel(BuffType.Stun) > 0;
-    public bool HasTaunt => GetBuffLevel(BuffType.Taunt) > 0;
+    [SerializeField]
+    private List<BattleStatusInstance> _statuses = new List<BattleStatusInstance>();
+
+    [NonSerialized]
+    private Dictionary<BattleStatusType, int> _statusLevelCache;
+
+    [NonSerialized]
+    private bool _statusLevelCacheBuilt;
+
+    public bool IsStunned => GetStatusLevel(BattleStatusType.Stun) > 0;
+    public bool HasTaunt => GetStatusLevel(BattleStatusType.Taunt) > 0;
+    public bool IsSkillDisabled => GetStatusLevel(BattleStatusType.SkillDisabled) > 0;
+
+    public void SetTeamId(BattleTeamId teamId)
+    {
+        TeamId = teamId;
+    }
 
     // ── 넉백 ───────────────────────────────────────────────────────
     public Vector3 CurrentKnockback { get; private set; }
@@ -121,6 +138,7 @@ public sealed class BattleUnitCombatState
     public event Action<float> OnHealthChanged; // float = newHealth
     public event Action<float> OnDamageTaken; // float = damage amount (ML-Agents 보상용)
     public event Action OnDied;
+    public event Action OnRevived;
 
     // ── 체력/사망 메서드 ──────────────────────────────────────────
     public void ApplyDamage(float damage)
@@ -155,6 +173,20 @@ public sealed class BattleUnitCombatState
 
         CurrentHealth = Mathf.Clamp(CurrentHealth + Mathf.Max(0f, heal), 0f, MaxHealth);
         OnHealthChanged?.Invoke(CurrentHealth);
+    }
+
+    public void Revive(float health)
+    {
+        if (!IsCombatDisabled)
+            return;
+
+        IsCombatDisabled = false;
+        CurrentHealth = Mathf.Clamp(health, 1f, MaxHealth);
+        CurrentAction = "Idle";
+        CurrentActionType = BattleActionType.None;
+        SetIdleState();
+        OnHealthChanged?.Invoke(CurrentHealth);
+        OnRevived?.Invoke();
     }
 
     // ── 이동/공격 플래그 이벤트 ──────────────────────────────────
@@ -361,51 +393,231 @@ public sealed class BattleUnitCombatState
     // ── 버프 시스템 ────────────────────────────────────────────────
     public void BuffApply(BuffType type, int level, float cool)
     {
-        _buffs.Add(type);
-        _buffLevel.Add(level);
-        _buffCooldownRemaining.Add(cool);
+        ApplyStatus(
+            new BattleStatusRequest
+            {
+                Source = null,
+                Target = this,
+                Type = ConvertBuffType(type),
+                Level = level,
+                Duration = cool,
+                IsDebuff = IsDebuff(type, level),
+                IsDispelAllowed = true,
+            }
+        );
     }
 
-    public void TickBufflCooldown(float deltaTime)
+    public void TickBufflCooldown(float deltaTime, IBattleEffectSink effects)
     {
-        for (int i = _buffs.Count - 1; i >= 0; i--)
+        float clampedDelta = Mathf.Max(0f, deltaTime);
+        for (int i = _statuses.Count - 1; i >= 0; i--)
         {
-            _buffCooldownRemaining[i] = Mathf.Max(0f, _buffCooldownRemaining[i] - Mathf.Max(0f, deltaTime));
+            BattleStatusInstance status = _statuses[i];
+            status.RemainingDuration = Mathf.Max(0f, status.RemainingDuration - clampedDelta);
 
-            if (_buffCooldownRemaining[i] <= 0f)
+            if (status.RemainingDuration <= 0f)
             {
-                _buffs.RemoveAt(i);
-                _buffLevel.RemoveAt(i);
-                _buffCooldownRemaining.RemoveAt(i);
+                DecreaseStatusLevel(status);
+                _statuses.RemoveAt(i);
+                continue;
+            }
+
+            _statuses[i] = status;
+        }
+
+        Debuff(effects);
+    }
+
+    private void Debuff(IBattleEffectSink effects)
+    {
+        if (effects == null)
+            return;
+
+        int totalBleedLevel = GetStatusLevel(BattleStatusType.Bleed);
+        if (totalBleedLevel <= 0 || IsCombatDisabled)
+            return;
+
+        effects.DealDamage(
+            new BattleDamageRequest
+            {
+                Source = GetFirstStatusSource(BattleStatusType.Bleed),
+                Target = this,
+                Amount = totalBleedLevel * 5,
+                SourceKind = BattleEffectSourceKind.Status,
+                DamageKind = BattleDamageKind.DamageOverTime,
+            }
+        );
+    }
+
+    private BattleUnitCombatState GetFirstStatusSource(BattleStatusType type)
+    {
+        for (int i = 0; i < _statuses.Count; i++)
+        {
+            BattleStatusInstance status = _statuses[i];
+            if (status.Type == type)
+                return status.Source;
+        }
+
+        return null;
+    }
+
+    public int BuffNum() => _statuses.Count;
+
+    public int GetBuffLevel(BuffType type) => GetStatusLevel(ConvertBuffType(type));
+
+    public int GetStatusLevel(BattleStatusType type)
+    {
+        EnsureStatusLevelCache();
+        return _statusLevelCache.TryGetValue(type, out int level) ? level : 0;
+    }
+
+    // DamageTakenPercent와 DamageReductionPercent를 캐시에서 읽어 반환한다.
+    public void GetDamageScaleFactors(out float takenPercent, out float reductionPercent)
+    {
+        takenPercent = GetStatusLevel(BattleStatusType.DamageTakenPercent);
+        reductionPercent = GetStatusLevel(BattleStatusType.DamageReductionPercent);
+    }
+
+    public void ApplyStatus(BattleStatusRequest request)
+    {
+        if (request.Target != null && request.Target != this)
+            return;
+        if (IsCombatDisabled)
+            return;
+
+        float duration = Mathf.Max(0f, request.Duration);
+        if (duration <= 0f)
+            return;
+
+        BattleStatusInstance status = new BattleStatusInstance
+        {
+            Source = request.Source,
+            Type = request.Type,
+            Level = request.Level,
+            RemainingDuration = duration,
+            IsDebuff = request.IsDebuff,
+            IsDispelAllowed = request.IsDispelAllowed,
+        };
+
+        EnsureStatusLevelCache();
+        _statuses.Add(status);
+        IncreaseStatusLevel(status);
+    }
+
+    public void Dispel(BattleDispelFilter filter)
+    {
+        for (int i = _statuses.Count - 1; i >= 0; i--)
+        {
+            BattleStatusInstance status = _statuses[i];
+            if (filter.DispelOnlyAllowed && !status.IsDispelAllowed)
+                continue;
+            if (status.IsDebuff && filter.RemoveDebuffs)
+            {
+                DecreaseStatusLevel(status);
+                _statuses.RemoveAt(i);
+                continue;
+            }
+            if (!status.IsDebuff && filter.RemoveBuffs)
+            {
+                DecreaseStatusLevel(status);
+                _statuses.RemoveAt(i);
             }
         }
-
-        Debuff(deltaTime);
     }
 
-    private void Debuff(float deltaTime)
+    private void EnsureStatusLevelCache()
     {
-        int totalBleedLevel = 0;
+        if (_statusLevelCache == null)
+            _statusLevelCache = new Dictionary<BattleStatusType, int>();
+        if (_statusLevelCacheBuilt)
+            return;
 
-        totalBleedLevel = GetBuffLevel(BuffType.BleedDamage);
-
-        if (totalBleedLevel > 0 && !IsCombatDisabled)
+        _statusLevelCache.Clear();
+        for (int i = 0; i < _statuses.Count; i++)
         {
-            ApplyDamage(totalBleedLevel * 5);
+            BattleStatusInstance status = _statuses[i];
+            if (_statusLevelCache.TryGetValue(status.Type, out int level))
+                _statusLevelCache[status.Type] = level + status.Level;
+            else
+                _statusLevelCache.Add(status.Type, status.Level);
+        }
+        _statusLevelCacheBuilt = true;
+    }
+
+    private void IncreaseStatusLevel(BattleStatusInstance status)
+    {
+        EnsureStatusLevelCache();
+        if (_statusLevelCache.TryGetValue(status.Type, out int level))
+            _statusLevelCache[status.Type] = level + status.Level;
+        else
+            _statusLevelCache.Add(status.Type, status.Level);
+    }
+
+    private void DecreaseStatusLevel(BattleStatusInstance status)
+    {
+        EnsureStatusLevelCache();
+        if (!_statusLevelCache.TryGetValue(status.Type, out int level))
+            return;
+
+        int nextLevel = level - status.Level;
+        if (nextLevel == 0)
+            _statusLevelCache.Remove(status.Type);
+        else
+            _statusLevelCache[status.Type] = nextLevel;
+    }
+
+    public void RefreshStatuses(BattleStatusFilter filter, float duration)
+    {
+        float refreshedDuration = Mathf.Max(0f, duration);
+        if (refreshedDuration <= 0f)
+            return;
+
+        for (int i = 0; i < _statuses.Count; i++)
+        {
+            BattleStatusInstance status = _statuses[i];
+            if (status.IsDebuff && !filter.IncludeDebuffs)
+                continue;
+            if (!status.IsDebuff && !filter.IncludeBuffs)
+                continue;
+            if (filter.Type.HasValue && status.Type != filter.Type.Value)
+                continue;
+
+            status.RemainingDuration = refreshedDuration;
+            _statuses[i] = status;
         }
     }
 
-    public int BuffNum() => _buffs.Count;
-
-    public int GetBuffLevel(BuffType type)
+    public static BattleStatusType ConvertBuffType(BuffType type)
     {
-        int count = 0;
-        for (int i = 0; i < _buffs.Count; i++)
+        switch (type)
         {
-            if (_buffs[i] == type)
-                count += _buffLevel[i];
+            case BuffType.MoveSpeed:
+                return BattleStatusType.MoveSpeed;
+            case BuffType.AttackRange:
+                return BattleStatusType.AttackRange;
+            case BuffType.AttackSpeed:
+                return BattleStatusType.AttackSpeed;
+            case BuffType.AttackDamage:
+                return BattleStatusType.AttackDamage;
+            case BuffType.RedudeDamage:
+                return BattleStatusType.DamageReductionPercent;
+            case BuffType.BleedDamage:
+                return BattleStatusType.Bleed;
+            case BuffType.Taunt:
+                return BattleStatusType.Taunt;
+            case BuffType.Stun:
+                return BattleStatusType.Stun;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(type), type, "Unhandled buff type.");
         }
-        return count;
+    }
+
+    public static bool IsDebuff(BuffType type, int level)
+    {
+        if (level < 0)
+            return true;
+
+        return type == BuffType.BleedDamage || type == BuffType.Taunt || type == BuffType.Stun;
     }
 
     public void SetCurrentTarget(BattleUnitCombatState target)
