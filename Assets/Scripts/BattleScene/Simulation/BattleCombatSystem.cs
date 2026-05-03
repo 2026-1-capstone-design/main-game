@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnityEngine;
 
 public sealed class BattleCombatSystem
 {
@@ -103,10 +104,10 @@ public sealed class BattleCombatSystem
             attacker.State.SetAttackState(true);
 
             BattleRuntimeUnit targetRuntime = ResolveRuntimeUnit(runtimeUnitByState, target);
-            effects.DealDamage(
-                new BattleDamageRequest
-                {
-                    Source = attacker.State,
+
+            BattleDamageRequest damageRequest = new BattleDamageRequest
+            {
+                Source = attacker.State,
                     Target = target,
                     Amount = attacker.Attack,
                     SourceKind = BattleEffectSourceKind.BasicAttack,
@@ -114,9 +115,24 @@ public sealed class BattleCombatSystem
                     SkillId = WeaponSkillId.None,
                     ArtifactId = ArtifactId.None,
                     IsBasicAttack = true,
-                }
-            );
+            };
 
+            bool isProjectile = attacker.Snapshot.UseProjectile;
+            if (isProjectile)
+            {
+                Vector3 startPos = attacker.Position + Vector3.up;
+                Vector3 fireDirection = target.Position - startPos;
+                fireDirection.y = 0f;
+
+                float windUpDelay = attacker.Snapshot.WeaponType == WeaponType.bow ? 1.0f : 0.5f;
+
+                // 평타 전용 발사 API 호출
+                BattleSimulationManager.Instance.LaunchBasicProjectile(damageRequest, startPos, fireDirection, attacker.Snapshot.WeaponType, windUpDelay);
+            }
+            else
+            {
+                effects.DealDamage(damageRequest);
+            }
             attacker.RaiseAttackLanded(targetRuntime, target.IsCombatDisabled);
             attacker.State.ResetAttackCooldown();
         }

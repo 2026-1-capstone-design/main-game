@@ -34,6 +34,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
 
     [SerializeField]
     private Image HPbar;
+    public BattleUnitCoolBar attackCoolBar;
 
     [SerializeField]
     private Sprite AllybarSprite;
@@ -256,6 +257,10 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
             HPbar.sprite = AllybarSprite;
 
         RefreshHPbar();
+        if (attackCoolBar != null)
+        {
+            attackCoolBar.Setup(State);
+        }
 
         string runtimeName = $"{(isPlayerOwned ? "Player" : "Hostile")}_{UnitNumber}_{DisplayName}";
         if (RuntimeRootObject != null)

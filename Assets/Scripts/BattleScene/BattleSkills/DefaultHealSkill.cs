@@ -12,8 +12,10 @@ public sealed class DefaultHealSkill : IBattleSkill
     public float CastRange => 0f;
     public float AreaRadius => 0f;
 
+    //현재 사용 가능 한지 상태 판단
     public bool CanActivate(in BattleEffectContext context) => context.Actor != null;
 
+    //사용할 떄 어떤 효과를 적용할 지 조건과 변수와 결과를 담아서 전달.
     public void Activate(in BattleEffectContext context, IBattleEffectSink effects)
     {
         effects.Heal(
