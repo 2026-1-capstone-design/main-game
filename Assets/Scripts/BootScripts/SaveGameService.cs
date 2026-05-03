@@ -958,7 +958,7 @@ public static class SaveGameService
 
         return new BattleUnitSnapshot(
             savedUnit.sourceRuntimeId,
-            true,
+            BattleTeamIds.Enemy,
             savedUnit.displayName,
             savedUnit.level,
             savedUnit.loyalty,
