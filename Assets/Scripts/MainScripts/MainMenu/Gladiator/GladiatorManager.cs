@@ -68,6 +68,32 @@ public sealed class GladiatorManager : SingletonBehaviour<GladiatorManager>
         return _ownedGladiators.Count;
     }
 
+    public void RestoreOwnedGladiatorsForLoad(List<OwnedGladiatorData> restoredGladiators, int nextRuntimeId)
+    {
+        if (!_initialized)
+        {
+            Debug.LogError("[GladiatorManager] RestoreOwnedGladiatorsForLoad called before Initialize.", this);
+            return;
+        }
+
+        _ownedGladiators.Clear();
+
+        if (restoredGladiators != null)
+        {
+            _ownedGladiators.AddRange(restoredGladiators);
+        }
+
+        _nextRuntimeId = Mathf.Max(1, nextRuntimeId);
+
+        if (verboseLog)
+        {
+            Debug.Log(
+                $"[GladiatorManager] Owned gladiators restored from save. Count={_ownedGladiators.Count}, NextRuntimeId={_nextRuntimeId}",
+                this
+            );
+        }
+    }
+
     // 보유 검투사를 목록에서 제거함.
     // 제거 전에 장착 무기를 자동 해제해서 장착 참조가 남지 않게 한다.
     public bool RemoveOwnedGladiator(OwnedGladiatorData gladiator)

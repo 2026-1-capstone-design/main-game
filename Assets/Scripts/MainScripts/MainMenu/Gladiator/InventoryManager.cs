@@ -67,6 +67,32 @@ public sealed class InventoryManager : SingletonBehaviour<InventoryManager>
         return _ownedWeapons.Count;
     }
 
+    public void RestoreOwnedWeaponsForLoad(List<OwnedWeaponData> restoredWeapons, int nextRuntimeId)
+    {
+        if (!_initialized)
+        {
+            Debug.LogError("[InventoryManager] RestoreOwnedWeaponsForLoad called before Initialize.", this);
+            return;
+        }
+
+        _ownedWeapons.Clear();
+
+        if (restoredWeapons != null)
+        {
+            _ownedWeapons.AddRange(restoredWeapons);
+        }
+
+        _nextRuntimeId = Mathf.Max(1, nextRuntimeId);
+
+        if (verboseLog)
+        {
+            Debug.Log(
+                $"[InventoryManager] Owned weapons restored from save. Count={_ownedWeapons.Count}, NextRuntimeId={_nextRuntimeId}",
+                this
+            );
+        }
+    }
+
     public bool AddPurchasedWeaponFromMarketPreview(OwnedWeaponData marketPreview)
     {
         return TryAddOwnedWeaponFromPreview(marketPreview, out _);

@@ -81,6 +81,9 @@ public sealed class SceneLoader : SingletonBehaviour<SceneLoader>
             yield return null;
         }
 
+        // 씬 전환 뒤에도 밝기 설정이 유지되도록 다시 적용한다.
+        GameSettings.ApplyBrightnessToCurrentScene();
+
         _isLoading = false;
 
         if (verboseLog)

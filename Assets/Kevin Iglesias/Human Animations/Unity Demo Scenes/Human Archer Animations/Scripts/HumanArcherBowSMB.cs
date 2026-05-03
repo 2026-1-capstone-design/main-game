@@ -13,14 +13,14 @@ namespace KevinIglesias
     public enum BowConditions
     {
         OnEnter,
-        OnExit
+        OnExit,
     }
 
     public enum BowActions
     {
         Pull,
         Release,
-        Cancel
+        Cancel,
     }
 
     public class HumanArcherBowSMB : StateMachineBehaviour
@@ -36,7 +36,7 @@ namespace KevinIglesias
         private HumanArcherController hAC;
 
         // OnStateEnter is called when a transition starts and the state machine starts to evaluate this state
-        override public void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
+        public override void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
         {
             if (condition == BowConditions.OnEnter)
             {
@@ -57,7 +57,7 @@ namespace KevinIglesias
         }
 
         // OnStateExit is called on each Update frame between OnStateEnter and OnStateExit callbacks
-        override public void OnStateExit(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
+        public override void OnStateExit(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
         {
             if (condition == BowConditions.OnExit)
             {
