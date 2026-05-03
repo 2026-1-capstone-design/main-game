@@ -64,6 +64,12 @@ public sealed class BattleSimulationManager : MonoBehaviour
     private readonly BattlePositionHistory _positionHistory = new BattlePositionHistory();
     private readonly BattleDamageLifecycle _damageLifecycle = new BattleDamageLifecycle();
     private readonly BattleRosterMutationSystem _rosterMutationSystem = new BattleRosterMutationSystem();
+
+
+    public BattleProjectileManager projectileManager;
+    private readonly BattleProjectileSystem _projectileSystem = new BattleProjectileSystem();   //투사체 시스템
+
+
     private BattleEffectSystem _effectSystem;
     private BattleCombatSystem _combatSystem;
     private readonly BattleVictorySystem _victorySystem = new BattleVictorySystem();
@@ -134,6 +140,13 @@ public sealed class BattleSimulationManager : MonoBehaviour
             _physicsSystem.Configure(_battlefieldCollider, desiredPositionStopDistance);
     }
 
+    public static BattleSimulationManager Instance { get; private set; }
+
+    private void Awake()
+    {
+        Instance = this;
+    }
+
     public void Initialize(
         IReadOnlyList<BattleRuntimeUnit> runtimeUnits,
         SphereCollider battlefieldCollider,
@@ -157,6 +170,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
         _positionHistory.Clear();
         _damageLifecycle.Clear();
         _rosterMutationSystem.Clear();
+        _projectileSystem.Clear();
         _battlefieldCollider = battlefieldCollider;
 
         for (int i = 0; i < runtimeUnits.Count; i++)
@@ -180,6 +194,12 @@ public sealed class BattleSimulationManager : MonoBehaviour
 
         ReleaseSnapshot();
         EnsureCombatSystems();
+
+        if (projectileManager != null)
+        {
+            _projectileSystem.Configure(_effectSystem, projectileManager.ProjectileRoot);
+        }
+
         _rosterMutationSystem.Configure(
             _runtimeUnits,
             _unitStates,
@@ -283,6 +303,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
         _channelSystem.Tick(tickContext, _effectSystem);
         _scheduledEffectSystem.Tick(tickContext, _effectSystem);
         _cooldownSystem.Tick(_runtimeUnits, tickDeltaTime, _effectSystem);
+        _projectileSystem.Tick(tickDeltaTime);
 
         _parameterSystem.Compute(_runtimeUnits, radii, aiTuning, CurrentSnapshot, _tickModifierOverflowFlagsBuffer);
         _decisionSystem.Decide(
@@ -413,4 +434,30 @@ public sealed class BattleSimulationManager : MonoBehaviour
         CurrentSnapshot.Reset();
         CurrentSnapshot = null;
     }
+
+
+    // 평타 전용
+    public void LaunchBasicProjectile(BattleDamageRequest request, Vector3 startPos, Vector3 direction, WeaponType weaponType, float delay = 0f)
+    {
+        if (projectileManager == null) return;
+
+        GameObject prefab = (weaponType == WeaponType.staff)
+            ? projectileManager.NormalMagicPrefab
+            : projectileManager.NormalArrowPrefab;
+
+        _projectileSystem.Launch(request, startPos, direction, 10f, prefab, delay);
+    }
+
+    // 스킬 전용 (string ID 사용)
+    public void LaunchCustomProjectile(BattleDamageRequest request, Vector3 startPos, Vector3 direction, float speed, string projectileId, float delay = 0f, Action<BattleUnitCombatState, Vector3, IBattleEffectSink> onHit = null)
+    {
+        if (projectileManager == null) return;
+
+        GameObject customPrefab = projectileManager.GetCustomPrefab(projectileId);
+        if (customPrefab != null)
+        {
+            _projectileSystem.Launch(request, startPos, direction, speed, customPrefab, delay, onHit);
+        }
+    }
+
 }
