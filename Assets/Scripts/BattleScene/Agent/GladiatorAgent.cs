@@ -225,7 +225,10 @@ public class GladiatorAgent : Agent
         _actionSink?.Apply(evaluation.EffectiveAction, effectiveTarget);
     }
 
-    private GladiatorAgentTacticalContext CreateTacticalContext(GladiatorAgentAction action, BattleUnitCombatState target)
+    private GladiatorAgentTacticalContext CreateTacticalContext(
+        GladiatorAgentAction action,
+        BattleUnitCombatState target
+    )
     {
         float playableRadius = _arenaExtentsMin - _selfState.BodyRadius;
         float distanceFromCenter = GetDistanceFromArenaCenter();

@@ -1,3 +1,5 @@
+using UnityEngine;
+
 public interface IGladiatorAgentActionSink
 {
     void Apply(GladiatorAgentAction action, BattleUnitCombatState target);
@@ -28,9 +30,10 @@ public sealed class RuntimeUnitAgentActionSink : IGladiatorAgentActionSink
             return;
         }
 
+        Vector2 worldMove = BattleCanonicalFrame.ToWorld(_unit.TeamId, action.WorldMove);
         BattleRuntimeUnit targetRuntime = _runtimeResolver != null ? _runtimeResolver.Resolve(target) : null;
-        _controlBuffer?.SetRawInput(_unit.State, action.WorldMove, action.Command, action.Stance, target);
-        _unit.SetAgentControlInput(action.WorldMove, 0f, action.Command, action.Stance, targetRuntime);
+        _controlBuffer?.SetRawInput(_unit.State, worldMove, action.Command, action.Stance, target);
+        _unit.SetAgentControlInput(worldMove, 0f, action.Command, action.Stance, targetRuntime);
     }
 
     public void Clear()

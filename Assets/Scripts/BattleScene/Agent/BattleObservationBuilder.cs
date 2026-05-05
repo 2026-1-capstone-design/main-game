@@ -72,7 +72,7 @@ public static class BattleObservationBuilder
             return;
         }
 
-        Vector2 arenaDelta = WorldToObservationAxes(context.ArenaCenter - self.Position);
+        Vector2 arenaDelta = WorldToObservationAxes(self.TeamId, context.ArenaCenter - self.Position);
         IReadOnlyList<BattleUnitCombatState> teammates = context.Teammates;
         IReadOnlyList<BattleUnitCombatState> opponents = context.Opponents;
         BattleUnitCombatState nearestOpponent = FindNearestLiving(self, opponents, out float nearestOpponentDistance);
@@ -113,10 +113,15 @@ public static class BattleObservationBuilder
         sensor.AddObservation(boundaryPressure);
 
         sensor.AddObservation(context.BattleTimeoutRemainingRatio);
-        sensor.AddObservation(context.AgentSmoothedWorldMove.x);
-        sensor.AddObservation(context.AgentSmoothedWorldMove.y);
-        sensor.AddObservation(context.AgentPreviousRawWorldMove.x);
-        sensor.AddObservation(context.AgentPreviousRawWorldMove.y);
+        Vector2 canonicalSmoothedMove = BattleCanonicalFrame.ToCanonical(self.TeamId, context.AgentSmoothedWorldMove);
+        Vector2 canonicalPreviousMove = BattleCanonicalFrame.ToCanonical(
+            self.TeamId,
+            context.AgentPreviousRawWorldMove
+        );
+        sensor.AddObservation(canonicalSmoothedMove.x);
+        sensor.AddObservation(canonicalSmoothedMove.y);
+        sensor.AddObservation(canonicalPreviousMove.x);
+        sensor.AddObservation(canonicalPreviousMove.y);
         sensor.AddObservation(self.CurrentTarget != null && !self.CurrentTarget.IsCombatDisabled ? 1f : 0f);
         AddCurrentTargetSlotOneHot(sensor, self.CurrentTarget, opponents);
         AddCurrentStanceOneHot(sensor, context.CurrentStance);
@@ -142,7 +147,7 @@ public static class BattleObservationBuilder
                 continue;
             }
 
-            Vector2 relativePos = WorldToObservationAxes(unit.Position - self.Position);
+            Vector2 relativePos = WorldToObservationAxes(self.TeamId, unit.Position - self.Position);
             sensor.AddObservation(NormalizeSignedByArenaRadius(relativePos.x, context.ArenaRadius));
             sensor.AddObservation(NormalizeSignedByArenaRadius(relativePos.y, context.ArenaRadius));
             sensor.AddObservation(unit.MaxHealth > 0f ? Mathf.Clamp01(unit.CurrentHealth / unit.MaxHealth) : 1f);
@@ -171,7 +176,7 @@ public static class BattleObservationBuilder
                 continue;
             }
 
-            Vector2 relativePos = WorldToObservationAxes(unit.Position - self.Position);
+            Vector2 relativePos = WorldToObservationAxes(self.TeamId, unit.Position - self.Position);
             sensor.AddObservation(NormalizeSignedByArenaRadius(relativePos.x, context.ArenaRadius));
             sensor.AddObservation(NormalizeSignedByArenaRadius(relativePos.y, context.ArenaRadius));
             sensor.AddObservation(unit.MaxHealth > 0f ? Mathf.Clamp01(unit.CurrentHealth / unit.MaxHealth) : 1f);
@@ -182,8 +187,7 @@ public static class BattleObservationBuilder
             sensor.AddObservation(NormalizeAttackCooldown(unit));
 
             bool isTargetingMeAggressively =
-                unit.PlannedTargetEnemy == self
-                && unit.AgentStance != GladiatorActionSchema.StanceKeepRange;
+                unit.PlannedTargetEnemy == self && unit.AgentStance != GladiatorActionSchema.StanceKeepRange;
             sensor.AddObservation(isTargetingMeAggressively ? 1f : 0f);
         }
     }
@@ -218,9 +222,9 @@ public static class BattleObservationBuilder
         }
     }
 
-    private static Vector2 WorldToObservationAxes(Vector3 worldDelta)
+    private static Vector2 WorldToObservationAxes(BattleTeamId selfTeamId, Vector3 worldDelta)
     {
-        return new Vector2(worldDelta.x, worldDelta.z);
+        return BattleCanonicalFrame.ToCanonical(selfTeamId, new Vector2(worldDelta.x, worldDelta.z));
     }
 
     private static BattleUnitCombatState FindNearestLiving(

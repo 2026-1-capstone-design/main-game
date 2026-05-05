@@ -106,9 +106,7 @@ public sealed class TrainingAgentBinder
 
         float timeoutReward = _settings.GroupLossReward * maxMultiplier * _settings.TimeoutPenaltyScale;
         float interruptionReward =
-            reason == TrainingEpisodeEndReason.Timeout
-                ? timeoutReward
-                : _settings.GroupInterruptedReward;
+            reason == TrainingEpisodeEndReason.Timeout ? timeoutReward : _settings.GroupInterruptedReward;
         _allyGroup.AddGroupReward(interruptionReward);
         _enemyGroup.AddGroupReward(interruptionReward);
         _allyGroup.GroupEpisodeInterrupted();

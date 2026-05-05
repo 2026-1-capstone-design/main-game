@@ -73,10 +73,11 @@ public sealed class BattlePhysicsSystem
                     unit.State.SetMovementState(true);
                 }
                 else if (
-                    (plan.Command == BattleCombatCommand.BasicAttack
+                    (
+                        plan.Command == BattleCombatCommand.BasicAttack
                         || plan.Stance == BattleControlStance.Pressure
-                        || plan.Stance == BattleControlStance.Neutral)
-                    && BattleFieldSnapshot.IsValidEnemyTarget(unit.State, plan.TargetEnemy)
+                        || plan.Stance == BattleControlStance.Neutral
+                    ) && BattleFieldSnapshot.IsValidEnemyTarget(unit.State, plan.TargetEnemy)
                 )
                 {
                     unit.FaceTarget(plan.TargetEnemy.Position);

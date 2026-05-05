@@ -55,6 +55,7 @@ public enum GladiatorUnitObservationIndex
     AttackRangeRatio = 5,
     MoveSpeedRatio = 6,
     AttackCooldownRatio = 7,
+
     // 적군 슬롯(OpponentSlotSize)에만 존재. 이 유닛이 자신을 타겟으로 하고 Neutral/Pressure 태세일 때 1.
     IsTargetingMeAggressively = 8,
 }

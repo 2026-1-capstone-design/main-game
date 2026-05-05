@@ -1,6 +1,6 @@
 public static class GladiatorActionSchema
 {
-    public const int ContractVersion = 7;
+    public const int ContractVersion = 8;
 
     public const int ContinuousWorldMoveX = 0;
     public const int ContinuousWorldMoveZ = 1;

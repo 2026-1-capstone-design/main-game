@@ -33,15 +33,15 @@ behaviors:
 environment_parameters:
   team_size:
     curriculum:
-      - name: TeamSize_1v1_MlOpponent
-        completion_criteria:
-          measure: progress
-          behavior: GladiatorSmooth
-          signal_smoothing: true
-          min_lesson_length: 1000
-          threshold: 0.16
-          require_reset: true
-        value: 1.0
+      # - name: TeamSize_1v1_MlOpponent
+      #   completion_criteria:
+      #     measure: progress
+      #     behavior: GladiatorSmooth
+      #     signal_smoothing: true
+      #     min_lesson_length: 1000
+      #     threshold: 0.16
+      #     require_reset: true
+      #   value: 1.0
       - name: TeamSize_2v2_MlOpponent
         completion_criteria:
           measure: progress
