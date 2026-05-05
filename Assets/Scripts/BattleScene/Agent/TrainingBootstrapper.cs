@@ -293,7 +293,8 @@ public class TrainingBootstrapper : MonoBehaviour, ITrainingEnvironment
             rewardConfig != null ? rewardConfig.groupInterrupted : 0f,
             rewardConfig != null ? rewardConfig.winSpeedBonus : 0.5f,
             rewardConfig != null ? rewardConfig.winHpBonus : 0.5f,
-            rewardConfig != null ? rewardConfig.timeoutPenaltyScale : 1.2f
+            rewardConfig != null ? rewardConfig.timeoutMultiplier : 1.2f,
+            rewardConfig != null ? rewardConfig.timeoutHpRatioMultiplierMax : 1.5f
         );
     }
 

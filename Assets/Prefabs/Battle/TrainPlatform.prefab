@@ -338,10 +338,7 @@ MonoBehaviour:
   teamSizeEnvironmentParameter: team_size
   defaultTeamSize: 1
   randomClassPool:
-  - {fileID: 11400000, guid: 9b166f98acf232240b7db9c0d858014f, type: 2}
-  - {fileID: 11400000, guid: c396e2b3c4b9eb44a9757c589726c481, type: 2}
-  - {fileID: 11400000, guid: d1920f5a5213a2a4794d273884a924e4, type: 2}
-  - {fileID: 11400000, guid: 9c5a947b78105224cbc9b38d27daa7fa, type: 2}
+  - {fileID: 11400000, guid: 6846407ed22928941b371aab2d355ecf, type: 2}
   randomWeaponPool:
   - {fileID: 11400000, guid: 1125cefdf7e96c04cb5c836ceef728b5, type: 2}
   - {fileID: 11400000, guid: 8f15a2a951e32fa44914883dd11d291f, type: 2}
@@ -357,7 +354,7 @@ MonoBehaviour:
   enemyStatMultiplierEnvironmentParameter: enemy_stat_multiplier
   defaultAllyStatMultiplier: 1
   defaultEnemyStatMultiplier: 1
-  timeScale: 100
+  timeScale: 1
   logTrainingProgress: 0
   logProgressInterval: 100
   controlledSide: 3
@@ -1875,7 +1872,7 @@ SphereCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 28
+  m_Radius: 20
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &6942123338890071125
 GameObject:
@@ -2136,7 +2133,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 5.6, y: 1, z: 5.6}
+  m_LocalScale: {x: 4, y: 1, z: 4}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 2570755887975235016}

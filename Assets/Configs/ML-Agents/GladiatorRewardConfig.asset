@@ -13,18 +13,16 @@ MonoBehaviour:
   m_Name: GladiatorRewardConfig
   m_EditorClassIdentifier: 
   step: -0.0005
-  targetApproach: 0.01
+  targetApproach: 0.02
   targetDrift: -0.005
-  targetFacing: 0.004
   attackIntentReward: 0.05
   outOfRangeAttackPenalty: -0.06
+  neutralTooClosePenalty: -0.01
+  pressureTooClosePenalty: -0.01
   attackBlockedPenalty: -0.005
   inRangeNoAttack: -0.12
-  targetSwitchPenalty: -0.01
-  targetSwitchCooldownSteps: 8
-  targetSwitchAttackRatio: 1.25
-  targetSwitchKillHealthMultiplier: 1.5
-  staleTargetRangeMultiplier: 2.5
+  targetSwitchPenalty: -0.007
+  stanceSwitchPenalty: -0.007
   damageDealtRatio: 1
   damageTakenRatio: -1
   attackLanded: 0.05
@@ -33,9 +31,10 @@ MonoBehaviour:
   boundary: -0.2
   invalidAction: -1
   actionDelta: -0.001
-  turnDelta: -0.0005
-  idleJitter: -0.001
   groupWin: 10
   groupLoss: -10
-  groupTimeout: -10
   groupInterrupted: -10
+  winSpeedBonus: 1.5
+  winHpBonus: 1.5
+  timeoutMultiplier: 1.2
+  timeoutHpRatioMultiplierMax: 1.5

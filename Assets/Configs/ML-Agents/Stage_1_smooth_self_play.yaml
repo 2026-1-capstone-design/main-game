@@ -27,105 +27,58 @@ behaviors:
         gamma: 0.995
         strength: 1.0
     keep_checkpoints: 5
-    max_steps: 10000000
+    max_steps: 20000000
     time_horizon: 512
-    summary_freq: 10000
+    summary_freq: 8192
 environment_parameters:
   team_size:
-    curriculum:
-      # - name: TeamSize_1v1_MlOpponent
-      #   completion_criteria:
-      #     measure: progress
-      #     behavior: GladiatorSmooth
-      #     signal_smoothing: true
-      #     min_lesson_length: 1000
-      #     threshold: 0.16
-      #     require_reset: true
-      #   value: 1.0
-      - name: TeamSize_2v2_MlOpponent
-        completion_criteria:
-          measure: progress
-          behavior: GladiatorSmooth
-          signal_smoothing: true
-          min_lesson_length: 1000
-          threshold: 0.32
-          require_reset: true
-        value: 2.0
-      - name: TeamSize_3v3_MlOpponent
-        completion_criteria:
-          measure: progress
-          behavior: GladiatorSmooth
-          signal_smoothing: true
-          min_lesson_length: 1000
-          threshold: 0.48
-          require_reset: true
-        value: 3.0
-      - name: TeamSize_4v4_MlOpponent
-        completion_criteria:
-          measure: progress
-          behavior: GladiatorSmooth
-          signal_smoothing: true
-          min_lesson_length: 1000
-          threshold: 0.64
-          require_reset: true
-        value: 4.0
-      - name: TeamSize_5v5_MlOpponent
-        completion_criteria:
-          measure: progress
-          behavior: GladiatorSmooth
-          signal_smoothing: true
-          min_lesson_length: 1000
-          threshold: 0.80
-          require_reset: true
-        value: 5.0
-      - name: TeamSize_6v6_MlOpponent
-        value: 6.0
-  opponent_mode:
-    curriculum:
-      - name: Opponent_1v1_MlOpponent
-        completion_criteria:
-          measure: progress
-          behavior: GladiatorSmooth
-          signal_smoothing: true
-          min_lesson_length: 1000
-          threshold: 0.16
-          require_reset: true
-        value: 1.0
-      - name: Opponent_2v2_MlOpponent
-        completion_criteria:
-          measure: progress
-          behavior: GladiatorSmooth
-          signal_smoothing: true
-          min_lesson_length: 1000
-          threshold: 0.32
-          require_reset: true
-        value: 1.0
-      - name: Opponent_3v3_MlOpponent
-        completion_criteria:
-          measure: progress
-          behavior: GladiatorSmooth
-          signal_smoothing: true
-          min_lesson_length: 1000
-          threshold: 0.48
-          require_reset: true
-        value: 1.0
-      - name: Opponent_4v4_MlOpponent
-        completion_criteria:
-          measure: progress
-          behavior: GladiatorSmooth
-          signal_smoothing: true
-          min_lesson_length: 1000
-          threshold: 0.64
-          require_reset: true
-        value: 1.0
-      - name: Opponent_5v5_MlOpponent
-        completion_criteria:
-          measure: progress
-          behavior: GladiatorSmooth
-          signal_smoothing: true
-          min_lesson_length: 1000
-          threshold: 0.80
-          require_reset: true
-        value: 1.0
-      - name: Opponent_6v6_MlOpponent
-        value: 1.0
+    6.0
+    # curriculum:
+    # - name: TeamSize_1v1_MlOpponent
+    #   completion_criteria:
+    #     measure: progress
+    #     behavior: GladiatorSmooth
+    #     signal_smoothing: true
+    #     min_lesson_length: 1000
+    #     threshold: 0.16
+    #     require_reset: true
+    #   value: 1.0
+    # - name: TeamSize_2v2_MlOpponent
+    #   completion_criteria:
+    #     measure: progress
+    #     behavior: GladiatorSmooth
+    #     signal_smoothing: true
+    #     min_lesson_length: 1000
+    #     threshold: 0.32
+    #     require_reset: true
+    #   value: 2.0
+    # - name: TeamSize_3v3_MlOpponent
+    #   completion_criteria:
+    #     measure: progress
+    #     behavior: GladiatorSmooth
+    #     signal_smoothing: true
+    #     min_lesson_length: 1000
+    #     threshold: 0.48
+    #     require_reset: true
+    #   value: 3.0
+    # - name: TeamSize_4v4_MlOpponent
+    #   completion_criteria:
+    #     measure: progress
+    #     behavior: GladiatorSmooth
+    #     signal_smoothing: true
+    #     min_lesson_length: 1000
+    #     threshold: 0.64
+    #     require_reset: true
+    #   value: 4.0
+    # - name: TeamSize_5v5_MlOpponent
+    #   completion_criteria:
+    #     measure: progress
+    #     behavior: GladiatorSmooth
+    #     signal_smoothing: true
+    #     min_lesson_length: 1000
+    #     threshold: 0.80
+    #     require_reset: true
+    #   value: 5.0
+    # - name: TeamSize_6v6_MlOpponent
+    #   value: 6.0
+  opponent_mode: 1.0

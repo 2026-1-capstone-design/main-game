@@ -105,7 +105,17 @@ public sealed class TrainingEpisodeController
             reason == TrainingEpisodeEndReason.BattleFinished ? _lastOutcome?.WinnerTeamId : null;
         float timeRemainingRatio = ComputeTimeRemainingRatio();
         float winnerHpRatio = winnerTeamId.HasValue ? ComputeTeamHpRatio(winnerTeamId.Value) : 0f;
-        _agentBinder.EndTrainingGroups(reason, winnerTeamId, isTimeout, timeRemainingRatio, winnerHpRatio);
+        float allyHpRatio = ComputeTeamHpRatio(BattleTeamIds.Player);
+        float enemyHpRatio = ComputeTeamHpRatio(BattleTeamIds.Enemy);
+        _agentBinder.EndTrainingGroups(
+            reason,
+            winnerTeamId,
+            isTimeout,
+            timeRemainingRatio,
+            winnerHpRatio,
+            allyHpRatio,
+            enemyHpRatio
+        );
 
         if (!BootstrapEpisode())
         {

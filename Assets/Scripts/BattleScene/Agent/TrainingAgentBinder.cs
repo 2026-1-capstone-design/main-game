@@ -73,7 +73,9 @@ public sealed class TrainingAgentBinder
         BattleTeamId? winnerTeamId,
         bool isTimeout,
         float timeRemainingRatio = 0f,
-        float winnerHpRatio = 0f
+        float winnerHpRatio = 0f,
+        float allyHpRatio = 0f,
+        float enemyHpRatio = 0f
     )
     {
         ForEachControlledAgent(agent => agent.FlushEpisodeMetrics());
@@ -84,8 +86,6 @@ public sealed class TrainingAgentBinder
             ForEachControlledAgent(agent => agent.EndEpisode());
             return;
         }
-
-        float maxMultiplier = _settings.WinSpeedBonus * _settings.WinHpBonus;
 
         if (reason == TrainingEpisodeEndReason.BattleFinished && winnerTeamId.HasValue)
         {
@@ -104,7 +104,12 @@ public sealed class TrainingAgentBinder
             return;
         }
 
-        float timeoutReward = _settings.GroupLossReward * maxMultiplier * _settings.TimeoutPenaltyScale;
+        float timeoutReward =
+            _settings.GroupLossReward
+            * _settings.WinSpeedBonus
+            * _settings.WinHpBonus
+            * _settings.TimeoutMultiplier
+            * ComputeTimeoutHpMultiplier(enemyHpRatio);
         float interruptionReward =
             reason == TrainingEpisodeEndReason.Timeout ? timeoutReward : _settings.GroupInterruptedReward;
         _allyGroup.AddGroupReward(interruptionReward);
@@ -259,6 +264,12 @@ public sealed class TrainingAgentBinder
         side == BattleMlControlledSide.HostileTeam || side == BattleMlControlledSide.BothTeams;
 
     private static int GetAgentCount(GladiatorAgent[] agents) => agents != null ? agents.Length : 0;
+
+    private float ComputeTimeoutHpMultiplier(float enemyHpRatio)
+    {
+        float t = Mathf.Clamp01(enemyHpRatio);
+        return 1f + (_settings.TimeoutHpRatioMultiplierMax - 1f) * t;
+    }
 
     private static bool IsActiveControlledAgent(GladiatorAgent agent) =>
         agent != null && agent.gameObject.activeInHierarchy && agent.HasControlledUnit;

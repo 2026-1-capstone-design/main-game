@@ -79,6 +79,12 @@ public sealed class GladiatorRewardConfig : ScriptableObject
     [FieldDescription("승리 팀 HP가 100%일 때 적용되는 최대 배율. 배율 = 1 + (winHpBonus - 1) * hpRatio.")]
     public float winHpBonus = 1.5f;
 
-    [FieldDescription("타임아웃 패널티 = groupLoss * 최대배율 * timeoutPenaltyScale.")]
-    public float timeoutPenaltyScale = 1.2f;
+    [FieldDescription("타임아웃 기본 보상 = groupLoss * timeoutMultiplier.")]
+    public float timeoutMultiplier = 1.2f;
+
+    [FieldDescription(
+        "타임아웃 HP 배율의 최대값. 최종 HP 배율 = 1 + (timeoutHpRatioMultiplierMax - 1) * enemyHpRatio. "
+            + "적군 HP 비율이 0%이면 1, 100%이면 timeoutHpRatioMultiplierMax."
+    )]
+    public float timeoutHpRatioMultiplierMax = 1.5f;
 }

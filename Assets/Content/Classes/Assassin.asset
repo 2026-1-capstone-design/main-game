@@ -14,10 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   icon: {fileID: 0}
   className: Assassin
-  baseHealth: 750
+  baseHealth: 1000
   healthGrowthPerLevel: 75
-  baseAttack: 30
+  baseAttack: 200
   attackGrowthPerLevel: 2
-  attackSpeed: 1
+  attackSpeed: 2
   moveSpeed: 5
   attackRange: 2

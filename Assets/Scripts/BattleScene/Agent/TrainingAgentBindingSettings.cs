@@ -11,7 +11,8 @@ public readonly struct TrainingAgentBindingSettings
     public readonly float GroupInterruptedReward;
     public readonly float WinSpeedBonus;
     public readonly float WinHpBonus;
-    public readonly float TimeoutPenaltyScale;
+    public readonly float TimeoutMultiplier;
+    public readonly float TimeoutHpRatioMultiplierMax;
 
     public TrainingAgentBindingSettings(
         BattleMlControlledSide controlledSide,
@@ -25,7 +26,8 @@ public readonly struct TrainingAgentBindingSettings
         float groupInterruptedReward,
         float winSpeedBonus,
         float winHpBonus,
-        float timeoutPenaltyScale
+        float timeoutMultiplier,
+        float timeoutHpRatioMultiplierMax
     )
     {
         ControlledSide = controlledSide;
@@ -39,6 +41,7 @@ public readonly struct TrainingAgentBindingSettings
         GroupInterruptedReward = groupInterruptedReward;
         WinSpeedBonus = winSpeedBonus;
         WinHpBonus = winHpBonus;
-        TimeoutPenaltyScale = timeoutPenaltyScale;
+        TimeoutMultiplier = timeoutMultiplier;
+        TimeoutHpRatioMultiplierMax = timeoutHpRatioMultiplierMax;
     }
 }

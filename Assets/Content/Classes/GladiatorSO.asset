@@ -16,7 +16,7 @@ MonoBehaviour:
   className: Gladiator
   baseHealth: 1000
   healthGrowthPerLevel: 100
-  baseAttack: 20
+  baseAttack: 50
   attackGrowthPerLevel: 2
   attackSpeed: 1
   moveSpeed: 1.5
