@@ -35,45 +35,14 @@ public sealed class GladiatorStateRosterView
         return slotIndex < _hostiles.Count ? _hostiles[slotIndex] : null;
     }
 
-    public float GetDistanceToNearestHostile(BattleUnitCombatState self)
+    public BattleUnitCombatState ResolveTeammateSlot(int slotIndex)
     {
-        BattleUnitCombatState nearest = GetNearestHostile(self);
-        if (nearest == null || self == null)
-        {
-            return float.MaxValue;
-        }
-
-        Vector3 delta = nearest.Position - self.Position;
-        delta.y = 0f;
-        return delta.magnitude;
-    }
-
-    private BattleUnitCombatState GetNearestHostile(BattleUnitCombatState self)
-    {
-        if (self == null)
+        if (slotIndex < 0)
         {
             return null;
         }
 
-        BattleUnitCombatState nearest = null;
-        float minSqrDistance = float.MaxValue;
-        for (int i = 0; i < _hostiles.Count; i++)
-        {
-            BattleUnitCombatState hostile = _hostiles[i];
-            if (hostile == null || hostile.IsCombatDisabled)
-            {
-                continue;
-            }
-
-            float sqrDistance = (hostile.Position - self.Position).sqrMagnitude;
-            if (sqrDistance < minSqrDistance)
-            {
-                minSqrDistance = sqrDistance;
-                nearest = hostile;
-            }
-        }
-
-        return nearest;
+        return slotIndex < _teammates.Count ? _teammates[slotIndex] : null;
     }
 
     private List<BattleUnitCombatState> GetSortedStates(

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Unity.MLAgents;
 using Unity.MLAgents.Actuators;
+using Unity.MLAgents.Policies;
 using Unity.MLAgents.Sensors;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -8,11 +9,13 @@ using UnityEngine.InputSystem;
 // BehaviorParameters 설정 (Inspector):
 //   Space Size         = GladiatorObservationSchema.TotalSize (= 125)
 //   Continuous Actions = GladiatorActionSchema.ContinuousSize (= 2)
-//     0=world X, 1=world Z
-//   Discrete Branches  = 3
+//     0=anchor strafe, 1=anchor forward
+//   Discrete Branches  = 5
 //     Branch 0 Size = GladiatorActionSchema.CommandBranchSize (= 2)
-//     Branch 1 Size = GladiatorActionSchema.TargetBranchSize (= 6)
-//     Branch 2 Size = GladiatorActionSchema.StanceBranchSize (= 3)
+//     Branch 1 Size = GladiatorActionSchema.StanceBranchSize (= 3)
+//     Branch 2 Size = GladiatorActionSchema.PathModeBranchSize (= 4)
+//     Branch 3 Size = GladiatorActionSchema.AnchorKindBranchSize (= 3)
+//     Branch 4 Size = GladiatorActionSchema.AnchorSlotBranchSize (= 6)
 //
 // Observation (125 floats):
 //   자신      (31):     월드 좌표축 기준 정규화된 경기장 중심 상대좌표(x,z), 체력비, 최대 체력 로그비, 공격력 로그비,
@@ -23,10 +26,12 @@ using UnityEngine.InputSystem;
 //   상대팀    (6 × 9): 위 동일 + 자신을 Neutral/Pressure 태세로 노리고 있는지 여부
 //
 // Action:
-//   Continuous 0/1:     world X / world Z 이동
+//   Continuous 0/1:     anchor strafe / anchor forward
 //   Branch 0 (명령):     0=없음  1=기본공격
-//   Branch 1 (대상):     0~5=상대팀 고정 슬롯
-//   Branch 2 (태세):     0=중립  1=압박  2=거리유지
+//   Branch 1 (태세):     0=중립  1=압박  2=거리유지
+//   Branch 2 (경로):     0=직접  1=좌측 우회  2=우측 우회  3=합류
+//   Branch 3 (anchor):   0=적  1=아군  2=팀 중심
+//   Branch 4 (slot):     0~5=anchor 슬롯
 public class GladiatorAgent : Agent
 {
     private const float HardBoundaryRadiusMultiplier = 1.25f;
@@ -151,24 +156,7 @@ public class GladiatorAgent : Agent
 
     public override void CollectObservations(VectorSensor sensor)
     {
-        float arenaRadius = _selfUnit != null ? _arenaExtentsMin - _selfUnit.BodyRadius : float.MaxValue;
-        BattleAgentControlInput controlInput =
-            _agentControlBuffer != null ? _agentControlBuffer.GetInputSnapshot(_selfState) : default;
-        BattleObservationBuilder.Write(
-            sensor,
-            new GladiatorObservationContext(
-                _selfState,
-                _rosterView != null ? _rosterView.Teammates : null,
-                _rosterView != null ? _rosterView.Hostiles : null,
-                _observationStats,
-                _arenaCenter,
-                arenaRadius,
-                _trainingBootstrapper != null ? _trainingBootstrapper.BattleTimeoutRemainingRatio : 1f,
-                controlInput.SmoothedLocalMove,
-                controlInput.PreviousRawLocalMove,
-                _previousStance
-            )
-        );
+        BattleObservationBuilder.Write(sensor, CreateObservationContext());
     }
 
     public override void WriteDiscreteActionMask(IDiscreteActionMask actionMask)
@@ -178,20 +166,17 @@ public class GladiatorAgent : Agent
             return;
         }
 
-        if (!HasLivingOpponent())
+        BehaviorParameters behaviorParameters = GetComponent<BehaviorParameters>();
+        int[] branchSizes = behaviorParameters != null ? behaviorParameters.BrainParameters.ActionSpec.BranchSizes : null;
+        if (branchSizes == null)
         {
             return;
         }
 
-        for (int i = 0; i < GladiatorObservationSchema.OpponentSlots; i++)
-        {
-            BattleUnitCombatState target = ResolveOpponentSlot(i);
-            bool invalid = target == null || target.IsCombatDisabled;
-            if (invalid)
-            {
-                actionMask.SetActionEnabled(GladiatorActionSchema.TargetBranch, i, false);
-            }
-        }
+        int tacticMode = _trainingBootstrapper != null ? _trainingBootstrapper.CurrentTacticMode : 0;
+        ApplyAnchorSlotMask(actionMask, branchSizes, tacticMode);
+        ApplyPathModeMask(actionMask, branchSizes, tacticMode);
+        ApplyAnchorKindMask(actionMask, branchSizes, tacticMode);
     }
 
     public override void OnActionReceived(ActionBuffers actions)
@@ -201,11 +186,12 @@ public class GladiatorAgent : Agent
             return;
         }
 
-        GladiatorAgentAction action = GladiatorAgentActionParser.Parse(actions);
-        BattleUnitCombatState target = ResolveOpponentSlot(action.TargetSlot);
+        GladiatorPolicyAction action = GladiatorAgentActionParser.Parse(actions);
+        BattleUnitCombatState target = ResolveAnchorTarget(action);
         GladiatorAgentTacticalContext tacticalContext = CreateTacticalContext(action, target);
         _episodeMetrics.RecordAction(action, tacticalContext);
-        GladiatorRewardEvaluation evaluation = _rewardEvaluator.EvaluateActionStep(action, tacticalContext);
+        GladiatorTacticalFeatures features = BattleObservationBuilder.BuildTacticalFeatures(CreateObservationContext());
+        GladiatorRewardEvaluation evaluation = _rewardEvaluator.EvaluateActionStep(action, tacticalContext, features);
         AddReward(evaluation.Reward);
         if (evaluation.RequestsBoundaryReset)
         {
@@ -214,19 +200,16 @@ public class GladiatorAgent : Agent
             return;
         }
 
-        if (evaluation.UpdatesTargetDistance)
-        {
-            _previousTargetSlot = action.TargetSlot;
-            _previousStance = action.Stance;
-            _prevTargetDistance = evaluation.TargetDistance;
-        }
+        _previousTargetSlot = action.AnchorSlot;
+        _previousStance = action.Stance;
+        _prevTargetDistance = tacticalContext.TargetDistance;
 
         BattleUnitCombatState effectiveTarget = tacticalContext.HasValidTarget ? target : null;
         _actionSink?.Apply(evaluation.EffectiveAction, effectiveTarget);
     }
 
     private GladiatorAgentTacticalContext CreateTacticalContext(
-        GladiatorAgentAction action,
+        GladiatorPolicyAction action,
         BattleUnitCombatState target
     )
     {
@@ -236,13 +219,13 @@ public class GladiatorAgent : Agent
         bool hasValidTarget = target != null && !target.IsCombatDisabled;
         float targetDistance = GetDistanceToTarget(target);
         float previousTargetDistance =
-            _previousTargetSlot == action.TargetSlot && _prevTargetDistance < float.MaxValue
+            _previousTargetSlot == action.AnchorSlot && _prevTargetDistance < float.MaxValue
                 ? _prevTargetDistance
                 : targetDistance;
         float targetEffectiveRange = GetEffectiveAttackRange(_selfState, target);
         return new GladiatorAgentTacticalContext(
             _previousTargetSlot,
-            action.TargetSlot,
+            action.AnchorSlot,
             _previousStance,
             action.Stance,
             previousTargetDistance,
@@ -301,9 +284,9 @@ public class GladiatorAgent : Agent
 
         if (continuous.Length >= GladiatorActionSchema.ContinuousSize)
         {
-            continuous[GladiatorActionSchema.ContinuousWorldMoveX] =
+            continuous[GladiatorActionSchema.ContinuousAnchorStrafe] =
                 (kb.dKey.isPressed ? 1f : 0f) + (kb.aKey.isPressed ? -1f : 0f);
-            continuous[GladiatorActionSchema.ContinuousWorldMoveZ] =
+            continuous[GladiatorActionSchema.ContinuousAnchorForward] =
                 (kb.wKey.isPressed ? 1f : 0f) + (kb.sKey.isPressed ? -1f : 0f);
         }
 
@@ -318,19 +301,19 @@ public class GladiatorAgent : Agent
             discrete[GladiatorActionSchema.CommandBranch] = GladiatorActionSchema.CommandNone;
 
         if (kb.digit1Key.isPressed)
-            discrete[GladiatorActionSchema.TargetBranch] = 0;
+            discrete[GladiatorActionSchema.AnchorSlotBranch] = 0;
         else if (kb.digit2Key.isPressed)
-            discrete[GladiatorActionSchema.TargetBranch] = 1;
+            discrete[GladiatorActionSchema.AnchorSlotBranch] = 1;
         else if (kb.digit3Key.isPressed)
-            discrete[GladiatorActionSchema.TargetBranch] = 2;
+            discrete[GladiatorActionSchema.AnchorSlotBranch] = 2;
         else if (kb.digit4Key.isPressed)
-            discrete[GladiatorActionSchema.TargetBranch] = 3;
+            discrete[GladiatorActionSchema.AnchorSlotBranch] = 3;
         else if (kb.digit5Key.isPressed)
-            discrete[GladiatorActionSchema.TargetBranch] = 4;
+            discrete[GladiatorActionSchema.AnchorSlotBranch] = 4;
         else if (kb.digit6Key.isPressed)
-            discrete[GladiatorActionSchema.TargetBranch] = 5;
+            discrete[GladiatorActionSchema.AnchorSlotBranch] = 5;
         else
-            discrete[GladiatorActionSchema.TargetBranch] = 0;
+            discrete[GladiatorActionSchema.AnchorSlotBranch] = 0;
 
         if (kb.leftShiftKey.isPressed || kb.rightShiftKey.isPressed)
             discrete[GladiatorActionSchema.StanceBranch] = GladiatorActionSchema.StancePressure;
@@ -338,6 +321,15 @@ public class GladiatorAgent : Agent
             discrete[GladiatorActionSchema.StanceBranch] = GladiatorActionSchema.StanceKeepRange;
         else
             discrete[GladiatorActionSchema.StanceBranch] = GladiatorActionSchema.StanceNeutral;
+
+        discrete[GladiatorActionSchema.PathModeBranch] = kb.qKey.isPressed
+            ? GladiatorActionSchema.PathModeFlankLeft
+            : kb.eKey.isPressed
+                ? GladiatorActionSchema.PathModeFlankRight
+                : kb.rKey.isPressed
+                    ? GladiatorActionSchema.PathModeRegroup
+                    : GladiatorActionSchema.PathModeDirect;
+        discrete[GladiatorActionSchema.AnchorKindBranch] = GladiatorActionSchema.AnchorKindEnemy;
     }
 
     private float GetAverageOpponentHealthRatio()
@@ -401,6 +393,123 @@ public class GladiatorAgent : Agent
 
     private BattleUnitCombatState ResolveOpponentSlot(int slotIndex) =>
         _rosterView != null ? _rosterView.ResolveHostileSlot(slotIndex) : null;
+
+    private BattleUnitCombatState ResolveTeammateSlot(int slotIndex) =>
+        _rosterView != null ? _rosterView.ResolveTeammateSlot(slotIndex) : null;
+
+    private BattleUnitCombatState ResolveAnchorTarget(GladiatorPolicyAction action) =>
+        action.AnchorKind switch
+        {
+            GladiatorActionSchema.AnchorKindAlly => ResolveTeammateSlot(action.AnchorSlot),
+            GladiatorActionSchema.AnchorKindTeamCenter => null,
+            _ => ResolveOpponentSlot(action.AnchorSlot),
+        };
+
+    private GladiatorObservationContext CreateObservationContext()
+    {
+        float arenaRadius = _selfUnit != null ? _arenaExtentsMin - _selfUnit.BodyRadius : float.MaxValue;
+        BattleAgentControlInput controlInput =
+            _agentControlBuffer != null ? _agentControlBuffer.GetInputSnapshot(_selfState) : default;
+        BattleUnitCombatState currentAnchor = controlInput.AnchorTarget;
+        if (currentAnchor == null)
+        {
+            currentAnchor =
+                controlInput.AnchorKind == GladiatorActionSchema.AnchorKindAlly
+                    ? ResolveTeammateSlot(controlInput.AnchorSlot)
+                    : ResolveOpponentSlot(controlInput.AnchorSlot);
+        }
+
+        return new GladiatorObservationContext(
+            _selfState,
+            _rosterView != null ? _rosterView.Teammates : null,
+            _rosterView != null ? _rosterView.Hostiles : null,
+            _observationStats,
+            _arenaCenter,
+            arenaRadius,
+            _trainingBootstrapper != null ? _trainingBootstrapper.BattleTimeoutRemainingRatio : 1f,
+            controlInput.SmoothedLocalMove,
+            controlInput.PreviousRawLocalMove,
+            controlInput.AnchorKind,
+            controlInput.PathMode,
+            currentAnchor
+        );
+    }
+
+    private void ApplyAnchorSlotMask(IDiscreteActionMask actionMask, int[] branchSizes, int tacticMode)
+    {
+        if (branchSizes.Length <= GladiatorActionSchema.AnchorSlotBranch)
+        {
+            return;
+        }
+
+        if (tacticMode >= 2)
+        {
+            return;
+        }
+
+        int slotBranchSize = branchSizes[GladiatorActionSchema.AnchorSlotBranch];
+        int enemySlotCount = Mathf.Min(GladiatorObservationSchema.OpponentSlots, slotBranchSize);
+        for (int i = 0; i < enemySlotCount; i++)
+        {
+            BattleUnitCombatState target = ResolveOpponentSlot(i);
+            bool invalid = target == null || target.IsCombatDisabled;
+            if (invalid)
+            {
+                actionMask.SetActionEnabled(GladiatorActionSchema.AnchorSlotBranch, i, false);
+            }
+        }
+    }
+
+    private static void ApplyPathModeMask(IDiscreteActionMask actionMask, int[] branchSizes, int tacticMode)
+    {
+        if (branchSizes.Length <= GladiatorActionSchema.PathModeBranch)
+        {
+            return;
+        }
+
+        int branchSize = branchSizes[GladiatorActionSchema.PathModeBranch];
+        if (tacticMode <= 0)
+        {
+            for (int i = 0; i < branchSize; i++)
+            {
+                if (i != GladiatorActionSchema.PathModeDirect)
+                {
+                    actionMask.SetActionEnabled(GladiatorActionSchema.PathModeBranch, i, false);
+                }
+            }
+
+            return;
+        }
+
+        if (tacticMode == 1 && branchSize > GladiatorActionSchema.PathModeRegroup)
+        {
+            actionMask.SetActionEnabled(
+                GladiatorActionSchema.PathModeBranch,
+                GladiatorActionSchema.PathModeRegroup,
+                false
+            );
+        }
+    }
+
+    private static void ApplyAnchorKindMask(IDiscreteActionMask actionMask, int[] branchSizes, int tacticMode)
+    {
+        if (branchSizes.Length <= GladiatorActionSchema.AnchorKindBranch)
+        {
+            return;
+        }
+
+        int branchSize = branchSizes[GladiatorActionSchema.AnchorKindBranch];
+        if (tacticMode < 2)
+        {
+            for (int i = 0; i < branchSize; i++)
+            {
+                if (i != GladiatorActionSchema.AnchorKindEnemy)
+                {
+                    actionMask.SetActionEnabled(GladiatorActionSchema.AnchorKindBranch, i, false);
+                }
+            }
+        }
+    }
 
     private bool HasAttackableOpponent()
     {

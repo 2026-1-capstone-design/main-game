@@ -24,8 +24,10 @@ public static class BuiltInAiHeuristicTranslator
 
         WriteMovement(continuous, plan, selfState);
         discrete[GladiatorActionSchema.CommandBranch] = ResolveCommand(plan, selfState);
-        discrete[GladiatorActionSchema.TargetBranch] = ResolveTargetSlot(plan.TargetEnemy, rosterView);
+        discrete[GladiatorActionSchema.AnchorSlotBranch] = ResolveTargetSlot(plan.TargetEnemy, rosterView);
         discrete[GladiatorActionSchema.StanceBranch] = ResolveStance(plan.ActionType);
+        discrete[GladiatorActionSchema.PathModeBranch] = ResolvePathMode(plan.ActionType);
+        discrete[GladiatorActionSchema.AnchorKindBranch] = GladiatorActionSchema.AnchorKindEnemy;
     }
 
     private static void WriteMovement(
@@ -59,14 +61,15 @@ public static class BuiltInAiHeuristicTranslator
         }
 
         Vector3 dir = toTarget / dist;
-        continuous[GladiatorActionSchema.ContinuousWorldMoveX] = Mathf.Clamp(dir.x, -1f, 1f);
-        continuous[GladiatorActionSchema.ContinuousWorldMoveZ] = Mathf.Clamp(dir.z, -1f, 1f);
+        Vector2 canonical = BattleCanonicalFrame.ToCanonical(self.TeamId, new Vector2(dir.x, dir.z));
+        continuous[GladiatorActionSchema.ContinuousAnchorStrafe] = Mathf.Clamp(canonical.x, -1f, 1f);
+        continuous[GladiatorActionSchema.ContinuousAnchorForward] = Mathf.Clamp(canonical.y, -1f, 1f);
     }
 
     private static void WriteIdleMovement(ActionSegment<float> continuous)
     {
-        continuous[GladiatorActionSchema.ContinuousWorldMoveX] = 0f;
-        continuous[GladiatorActionSchema.ContinuousWorldMoveZ] = 0f;
+        continuous[GladiatorActionSchema.ContinuousAnchorStrafe] = 0f;
+        continuous[GladiatorActionSchema.ContinuousAnchorForward] = 0f;
     }
 
     private static int ResolveCommand(BattleControlPlan plan, BattleUnitCombatState self)
@@ -105,6 +108,15 @@ public static class BuiltInAiHeuristicTranslator
             BattleActionType.DiveEnemyBackline => GladiatorActionSchema.StancePressure,
             BattleActionType.CollapseOnCluster => GladiatorActionSchema.StancePressure,
             _ => GladiatorActionSchema.StanceNeutral,
+        };
+
+    private static int ResolvePathMode(BattleActionType actionType) =>
+        actionType switch
+        {
+            BattleActionType.DiveEnemyBackline => GladiatorActionSchema.PathModeFlankLeft,
+            BattleActionType.AssassinateIsolatedEnemy => GladiatorActionSchema.PathModeFlankRight,
+            BattleActionType.PeelForWeakAlly => GladiatorActionSchema.PathModeRegroup,
+            _ => GladiatorActionSchema.PathModeDirect,
         };
 
     private static bool IsCombatAction(BattleActionType actionType) =>

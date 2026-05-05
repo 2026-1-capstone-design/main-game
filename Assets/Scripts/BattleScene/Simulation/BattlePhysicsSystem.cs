@@ -53,7 +53,7 @@ public sealed class BattlePhysicsSystem
 
             if (plan.UsesExplicitCombatCommands)
             {
-                Vector3 explicitMoveDirection = GetWorldMoveDirection(plan.LocalMove);
+                Vector3 explicitMoveDirection = BuildMoveDirection(plan.TacticalCommand, unit);
                 if (explicitMoveDirection.sqrMagnitude > 0.0001f)
                 {
                     if (
@@ -136,16 +136,68 @@ public sealed class BattlePhysicsSystem
         }
     }
 
-    private static Vector3 GetWorldMoveDirection(Vector2 localMove)
+    private Vector3 BuildMoveDirection(BattleTacticalCommand command, BattleRuntimeUnit unit)
     {
-        Vector3 direction = new Vector3(localMove.x, 0f, localMove.y);
-        direction.y = 0f;
+        if (unit == null)
+        {
+            return Vector3.zero;
+        }
+
+        Vector3 anchorForward = ResolveAnchorForward(command.Anchor, unit);
+        if (anchorForward.sqrMagnitude <= 0.0001f)
+        {
+            anchorForward = unit.transform.forward;
+        }
+
+        Vector3 anchorRight = Vector3.Cross(Vector3.up, anchorForward).normalized;
+        Vector3 direction = (anchorForward * command.RelativeMove.y) + (anchorRight * command.RelativeMove.x);
+        direction += ResolveFlankBias(command.PathMode, unit, command.Anchor, anchorRight);
         if (direction.sqrMagnitude > 1f)
         {
             direction.Normalize();
         }
 
         return direction;
+    }
+
+    private Vector3 ResolveAnchorForward(BattleAnchor anchor, BattleRuntimeUnit unit)
+    {
+        Vector3 anchorPosition = anchor.HasUnit ? anchor.Unit.Position : anchor.Position;
+        if (anchor.Kind == BattleAnchorKind.TeamCenter && _battlefieldCollider != null)
+        {
+            anchorPosition = _battlefieldCollider.bounds.center;
+        }
+
+        Vector3 toAnchor = anchorPosition - unit.Position;
+        toAnchor.y = 0f;
+        return toAnchor.sqrMagnitude > 0.0001f ? toAnchor.normalized : Vector3.zero;
+    }
+
+    private static Vector3 ResolveFlankBias(
+        BattlePathMode pathMode,
+        BattleRuntimeUnit unit,
+        BattleAnchor anchor,
+        Vector3 anchorRight
+    )
+    {
+        switch (pathMode)
+        {
+            case BattlePathMode.FlankLeft:
+                return -anchorRight * 0.35f;
+            case BattlePathMode.FlankRight:
+                return anchorRight * 0.35f;
+            case BattlePathMode.Regroup:
+                if (anchor.Kind == BattleAnchorKind.TeamCenter)
+                {
+                    Vector3 regroup = -unit.transform.forward;
+                    regroup.y = 0f;
+                    return regroup.normalized * 0.25f;
+                }
+
+                return Vector3.zero;
+            default:
+                return Vector3.zero;
+        }
     }
 
     private bool MoveTowardsTarget(BattleRuntimeUnit mover, BattleUnitCombatState target, float tickDeltaTime)

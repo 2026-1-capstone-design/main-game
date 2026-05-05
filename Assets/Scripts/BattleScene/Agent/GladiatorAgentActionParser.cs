@@ -3,23 +3,33 @@ using UnityEngine;
 
 public static class GladiatorAgentActionParser
 {
-    public static GladiatorAgentAction Parse(ActionBuffers actions)
+    public static GladiatorPolicyAction Parse(ActionBuffers actions)
     {
-        Vector2 worldMove = ReadMove(actions.ContinuousActions);
+        Vector2 relativeMove = ReadMove(actions.ContinuousActions);
         int command = ReadDiscrete(
             actions.DiscreteActions,
             GladiatorActionSchema.CommandBranch,
             GladiatorActionSchema.CommandNone
         );
         command = Mathf.Clamp(command, 0, GladiatorActionSchema.CommandBranchSize - 1);
-        int targetSlot = ReadDiscrete(actions.DiscreteActions, GladiatorActionSchema.TargetBranch, 0);
         int stance = ReadDiscrete(
             actions.DiscreteActions,
             GladiatorActionSchema.StanceBranch,
             GladiatorActionSchema.StanceNeutral
         );
+        int pathMode = ReadDiscrete(
+            actions.DiscreteActions,
+            GladiatorActionSchema.PathModeBranch,
+            GladiatorActionSchema.PathModeDirect
+        );
+        int anchorKind = ReadDiscrete(
+            actions.DiscreteActions,
+            GladiatorActionSchema.AnchorKindBranch,
+            GladiatorActionSchema.AnchorKindEnemy
+        );
+        int anchorSlot = ReadDiscrete(actions.DiscreteActions, GladiatorActionSchema.AnchorSlotBranch, 0);
 
-        return new GladiatorAgentAction(worldMove, command, targetSlot, stance);
+        return new GladiatorPolicyAction(relativeMove, anchorKind, anchorSlot, pathMode, command, stance);
     }
 
     private static Vector2 ReadMove(ActionSegment<float> continuousActions)
@@ -30,8 +40,8 @@ public static class GladiatorAgentActionParser
         }
 
         var worldMove = new Vector2(
-            Mathf.Clamp(continuousActions[GladiatorActionSchema.ContinuousWorldMoveX], -1f, 1f),
-            Mathf.Clamp(continuousActions[GladiatorActionSchema.ContinuousWorldMoveZ], -1f, 1f)
+            Mathf.Clamp(continuousActions[GladiatorActionSchema.ContinuousAnchorStrafe], -1f, 1f),
+            Mathf.Clamp(continuousActions[GladiatorActionSchema.ContinuousAnchorForward], -1f, 1f)
         );
         if (worldMove.sqrMagnitude > 1f)
         {

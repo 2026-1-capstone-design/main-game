@@ -10,7 +10,10 @@ public sealed class BattleAgentControlBuffer
 
     public void SetRawInput(
         BattleUnitCombatState self,
-        Vector2 rawWorldMove,
+        Vector2 rawRelativeMove,
+        int anchorKind,
+        int anchorSlot,
+        int pathMode,
         int command,
         int stance,
         BattleUnitCombatState target
@@ -21,23 +24,27 @@ public sealed class BattleAgentControlBuffer
             return;
         }
 
-        if (rawWorldMove.sqrMagnitude > 1f)
+        if (rawRelativeMove.sqrMagnitude > 1f)
         {
-            rawWorldMove.Normalize();
+            rawRelativeMove.Normalize();
         }
 
         _inputs.TryGetValue(self, out BattleAgentControlInput input);
         input.PreviousRawLocalMove = input.RawLocalMove;
-        input.RawLocalMove = rawWorldMove;
+        input.RawLocalMove = rawRelativeMove;
+        input.AnchorKind = anchorKind;
+        input.AnchorSlot = anchorSlot;
+        input.PathMode = pathMode;
         input.Command = ToCommand(command);
         input.Stance = ToStance(stance);
 
         bool hasValidTarget = BattleFieldSnapshot.IsValidEnemyTarget(self, target);
+        input.AnchorTarget = target;
         input.Target = hasValidTarget ? target : null;
         input.WantsBasicAttack = input.Command == BattleCombatCommand.BasicAttack && hasValidTarget;
 
         _inputs[self] = input;
-        self.SetPlannedTargets(input.Target, null);
+        self.SetPlannedTargets(input.Target, input.AnchorKind == GladiatorActionSchema.AnchorKindAlly ? input.AnchorTarget : null);
     }
 
     public BattleAgentControlInput GetSmoothedInput(BattleUnitCombatState self, float tickDeltaTime)

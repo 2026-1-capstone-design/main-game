@@ -6,30 +6,6 @@ public sealed class GladiatorRewardConfig : ScriptableObject
     [FieldDescription("매 스텝마다 부과되는 기본 패널티.")]
     public float step = -0.0005f;
 
-    [FieldDescription("선택 타겟이 사거리 밖일 때 거리 감소량에 비례해 부여되는 보상.")]
-    public float targetApproach = 0.005f;
-
-    [FieldDescription("선택 타겟이 사거리 밖일 때 멀어지는 거리 증가량에 비례해 부과되는 패널티.")]
-    public float targetDrift = -0.005f;
-
-    [FieldDescription("선택 타겟이 사거리 안이고 공격 가능할 때 기본 공격 입력에 부여되는 보상.")]
-    public float attackIntentReward = 0.02f;
-
-    [FieldDescription("선택 타겟이 사거리 밖일 때 기본 공격 입력에 부과되는 패널티.")]
-    public float outOfRangeAttackPenalty = -0.02f;
-
-    [FieldDescription("Neutral 태세일 때 타겟이 유효 사거리의 0.75 내에 있으면, 침투 비율에 비례해 부과되는 패널티.")]
-    public float neutralTooClosePenalty = -0.02f;
-
-    [FieldDescription("Pressure 태세일 때 타겟이 유효 사거리의 0.5 내에 있으면, 침투 비율에 비례해 부과되는 패널티.")]
-    public float pressureTooClosePenalty = -0.02f;
-
-    [FieldDescription("공격 쿨타임 또는 공격 중 기본 공격 입력에 부과되는 패널티.")]
-    public float attackBlockedPenalty = -0.005f;
-
-    [FieldDescription("선택 타겟이 사거리 안이고 공격 가능할 때 공격하지 않으면 부과되는 패널티.")]
-    public float inRangeNoAttack = -0.05f;
-
     [FieldDescription("타겟 전환 시 부과되는 패널티.")]
     public float targetSwitchPenalty = -0.01f;
 

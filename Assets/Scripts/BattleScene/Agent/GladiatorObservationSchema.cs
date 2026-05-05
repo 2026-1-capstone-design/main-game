@@ -1,7 +1,5 @@
 public static class GladiatorObservationSchema
 {
-    public const int CurrentTargetSlotObservationSize = BattleTeamConstants.MaxUnitsPerTeam;
-    public const int CurrentStanceObservationSize = GladiatorActionSchema.StanceBranchSize;
     public const int SelfSize = 31;
     public const int TeammateSlotSize = 8;
     public const int OpponentSlotSize = 9; // +1 for IsTargetingMeAggressively
@@ -20,29 +18,29 @@ public enum GladiatorSelfObservationIndex
     AttackRangeRatio = 5,
     MoveSpeedRatio = 6,
     AttackCooldownRatio = 7,
-    DamageToNearestEnemyMaxHealthRatio = 8,
-    NearestEnemyDamageToSelfMaxHealthRatio = 9,
-    NearestOpponentDistanceRatio = 10,
-    CanHitNearestOpponent = 11,
-    InNearestOpponentRange = 12,
-    NearbyOpponentRatio = 13,
-    NearbyTeammateRatio = 14,
-    BoundaryPressure = 15,
-    BattleTimeoutRemainingRatio = 16,
-    AgentSmoothedWorldMoveX = 17,
-    AgentSmoothedWorldMoveZ = 18,
-    AgentPreviousRawWorldMoveX = 19,
-    AgentPreviousRawWorldMoveZ = 20,
-    HasTarget = 21,
-    CurrentTargetSlot0 = 22,
-    CurrentTargetSlot1 = 23,
-    CurrentTargetSlot2 = 24,
-    CurrentTargetSlot3 = 25,
-    CurrentTargetSlot4 = 26,
-    CurrentTargetSlot5 = 27,
-    CurrentStanceNeutral = 28,
-    CurrentStancePressure = 29,
-    CurrentStanceKeepRange = 30,
+    AnchorDistanceRatio = 8,
+    AnchorVisibility = 9,
+    AnchorThreatToSelfRatio = 10,
+    SelfThreatToAnchorRatio = 11,
+    AnchorInSelfRange = 12,
+    SelfInAnchorRange = 13,
+    LeftLaneFreeRatio = 14,
+    RightLaneFreeRatio = 15,
+    AllyUnderFocusRatio = 16,
+    EnemyClusterPressure = 17,
+    BoundaryPressure = 18,
+    BattleTimeoutRemainingRatio = 19,
+    AgentSmoothedWorldMoveX = 20,
+    AgentSmoothedWorldMoveZ = 21,
+    AgentPreviousRawWorldMoveX = 22,
+    AgentPreviousRawWorldMoveZ = 23,
+    AnchorKindEnemy = 24,
+    AnchorKindAlly = 25,
+    AnchorKindTeamCenter = 26,
+    PathModeDirect = 27,
+    PathModeFlankLeft = 28,
+    PathModeFlankRight = 29,
+    PathModeRegroup = 30,
 }
 
 public enum GladiatorUnitObservationIndex

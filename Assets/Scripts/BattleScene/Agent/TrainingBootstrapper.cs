@@ -1,4 +1,5 @@
 using BattleTest;
+using Unity.MLAgents;
 using UnityEngine;
 
 public class TrainingBootstrapper : MonoBehaviour, ITrainingEnvironment
@@ -66,6 +67,9 @@ public class TrainingBootstrapper : MonoBehaviour, ITrainingEnvironment
     private string opponentModeEnvironmentParameter = "opponent_mode";
 
     [SerializeField]
+    private string tacticModeEnvironmentParameter = "tactic_mode";
+
+    [SerializeField]
     private GladiatorAgent[] allyAgents;
 
     [SerializeField]
@@ -115,6 +119,9 @@ public class TrainingBootstrapper : MonoBehaviour, ITrainingEnvironment
             );
         }
     }
+
+    public int CurrentTacticMode =>
+        Mathf.RoundToInt(Academy.Instance.EnvironmentParameters.GetWithDefault(tacticModeEnvironmentParameter, 0f));
 
     private void OnValidate()
     {

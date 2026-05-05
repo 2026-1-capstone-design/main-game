@@ -1,9 +1,20 @@
 using System.Collections.Generic;
 using Unity.MLAgents;
+using Unity.MLAgents.Actuators;
+using Unity.MLAgents.Policies;
 using UnityEngine;
 
 public sealed class TrainingAgentBinder
 {
+    private static readonly int[] ExpectedDiscreteBranches =
+    {
+        GladiatorActionSchema.CommandBranchSize,
+        GladiatorActionSchema.StanceBranchSize,
+        GladiatorActionSchema.PathModeBranchSize,
+        GladiatorActionSchema.AnchorKindBranchSize,
+        GladiatorActionSchema.AnchorSlotBranchSize,
+    };
+
     private readonly BattleSceneFlowManager _flowManager;
     private readonly TrainingBootstrapper _trainingBootstrapper;
     private readonly Object _logContext;
@@ -216,14 +227,40 @@ public sealed class TrainingAgentBinder
                 continue;
             }
 
-            if (!agent.gameObject.activeSelf)
+            if (agent.gameObject.activeSelf)
             {
-                agent.gameObject.SetActive(true);
+                agent.gameObject.SetActive(false);
             }
-
+            ConfigureAgentContract(agent, unit, i);
+            agent.gameObject.SetActive(true);
             agent.Initialize(unit, _flowManager, _trainingBootstrapper);
             group.RegisterAgent(agent);
         }
+    }
+
+    private static void ConfigureAgentContract(GladiatorAgent agent, BattleRuntimeUnit unit, int agentIndex)
+    {
+        if (agent == null)
+        {
+            return;
+        }
+
+        BehaviorParameters behaviorParameters = agent.GetComponent<BehaviorParameters>();
+        DecisionRequester decisionRequester = agent.GetComponent<DecisionRequester>();
+        if (behaviorParameters == null || decisionRequester == null)
+        {
+            return;
+        }
+
+        behaviorParameters.BrainParameters.VectorObservationSize = GladiatorObservationSchema.TotalSize;
+        behaviorParameters.BrainParameters.ActionSpec = new ActionSpec(
+            GladiatorActionSchema.ContinuousSize,
+            (int[])ExpectedDiscreteBranches.Clone()
+        );
+        behaviorParameters.TeamId = unit != null ? unit.TeamId.GetHashCode() : 0;
+
+        decisionRequester.DecisionPeriod = Mathf.Max(1, decisionRequester.DecisionPeriod);
+        decisionRequester.DecisionStep = agentIndex % decisionRequester.DecisionPeriod;
     }
 
     private static void ApplyControlMode(IReadOnlyList<BattleRuntimeUnit> units, bool usesAgentPolicyControl)

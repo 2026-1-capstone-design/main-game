@@ -10,9 +10,6 @@ public sealed class GladiatorAgentEpisodeMetrics
     private int _attackLandedCount;
     private int _attackOpportunityCount;
     private int _attackOpportunityUsedCount;
-    private int _inRangeNoAttackCount;
-    private int _outOfRangeAttackCount;
-    private int _invalidTargetAttackCount;
     private int _targetSwitchCount;
     private float _finalSelfHealthRatio;
     private float _finalEnemyHealthRatio;
@@ -29,9 +26,6 @@ public sealed class GladiatorAgentEpisodeMetrics
         _attackLandedCount = 0;
         _attackOpportunityCount = 0;
         _attackOpportunityUsedCount = 0;
-        _inRangeNoAttackCount = 0;
-        _outOfRangeAttackCount = 0;
-        _invalidTargetAttackCount = 0;
         _targetSwitchCount = 0;
         _finalSelfHealthRatio = 0f;
         _finalEnemyHealthRatio = 0f;
@@ -54,7 +48,7 @@ public sealed class GladiatorAgentEpisodeMetrics
         _attackLandedCount++;
     }
 
-    public void RecordAction(GladiatorAgentAction action, GladiatorAgentTacticalContext context)
+    public void RecordAction(GladiatorPolicyAction action, GladiatorAgentTacticalContext context)
     {
         if (context.HasValidTarget && context.TargetDistance < float.MaxValue)
         {
@@ -71,8 +65,7 @@ public sealed class GladiatorAgentEpisodeMetrics
             _targetSwitchCount++;
         }
 
-        bool hasAttackOpportunity =
-            context.HasValidTarget && !context.IsTargetOutOfAttackRange && !context.IsAttackBlocked;
+        bool hasAttackOpportunity = context.HasValidTarget && !context.IsAttackBlocked;
 
         if (hasAttackOpportunity)
         {
@@ -83,29 +76,7 @@ public sealed class GladiatorAgentEpisodeMetrics
             }
         }
 
-        if (!action.WantsBasicAttack)
-        {
-            if (hasAttackOpportunity)
-            {
-                _inRangeNoAttackCount++;
-            }
-
-            return;
-        }
-
-        if (!context.HasValidTarget)
-        {
-            _invalidTargetAttackCount++;
-            return;
-        }
-
-        if (context.IsTargetOutOfAttackRange)
-        {
-            _outOfRangeAttackCount++;
-            return;
-        }
-
-        if (!context.IsAttackBlocked)
+        if (action.WantsBasicAttack && !context.IsAttackBlocked)
         {
             _attackIntentCount++;
         }
@@ -147,12 +118,6 @@ public sealed class GladiatorAgentEpisodeMetrics
             );
         }
 
-        // 기본공격을 할 수 있었는데도 공격하지 않은 횟수
-        recorder.Add("Combat/InRangeNoAttack", _inRangeNoAttackCount, StatAggregationMethod.Average);
-        // 적이 사거리 밖에 있는데 기본공격을 선택한 횟수
-        recorder.Add("Combat/OutOfRangeAttack", _outOfRangeAttackCount, StatAggregationMethod.Average);
-        // 공격할 수 있는 적이 없는데 기본공격을 선택한 횟수
-        recorder.Add("Combat/InvalidTargetAttack", _invalidTargetAttackCount, StatAggregationMethod.Average);
         // 한 경기 안에서 선택한 적 타겟을 바꾼 횟수
         recorder.Add("Combat/TargetSwitch", _targetSwitchCount, StatAggregationMethod.Average);
         if (_hasFinalHealthRatios)

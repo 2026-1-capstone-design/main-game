@@ -212,7 +212,7 @@ MonoBehaviour:
     NumStackedVectorObservations: 1
     m_ActionSpec:
       m_NumContinuousActions: 2
-      BranchSizes: 020000000600000003000000
+      BranchSizes: 0200000003000000040000000300000006000000
     VectorActionSize: 
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
@@ -354,12 +354,13 @@ MonoBehaviour:
   enemyStatMultiplierEnvironmentParameter: enemy_stat_multiplier
   defaultAllyStatMultiplier: 1
   defaultEnemyStatMultiplier: 1
-  timeScale: 1
+  timeScale: 20
   logTrainingProgress: 0
   logProgressInterval: 100
   controlledSide: 3
   useCurriculumOpponentMode: 1
   opponentModeEnvironmentParameter: opponent_mode
+  tacticModeEnvironmentParameter: tactic_mode
   allyAgents:
   - {fileID: 7369524932478691754}
   - {fileID: 6005745504054656703}
@@ -430,7 +431,7 @@ MonoBehaviour:
     NumStackedVectorObservations: 1
     m_ActionSpec:
       m_NumContinuousActions: 2
-      BranchSizes: 020000000600000003000000
+      BranchSizes: 0200000003000000040000000300000006000000
     VectorActionSize: 
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
@@ -598,7 +599,7 @@ MonoBehaviour:
     NumStackedVectorObservations: 1
     m_ActionSpec:
       m_NumContinuousActions: 2
-      BranchSizes: 020000000600000003000000
+      BranchSizes: 0200000003000000040000000300000006000000
     VectorActionSize: 
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
@@ -749,7 +750,7 @@ MonoBehaviour:
     NumStackedVectorObservations: 1
     m_ActionSpec:
       m_NumContinuousActions: 2
-      BranchSizes: 020000000600000003000000
+      BranchSizes: 0200000003000000040000000300000006000000
     VectorActionSize: 
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
@@ -895,7 +896,7 @@ MonoBehaviour:
     NumStackedVectorObservations: 1
     m_ActionSpec:
       m_NumContinuousActions: 2
-      BranchSizes: 020000000600000003000000
+      BranchSizes: 0200000003000000040000000300000006000000
     VectorActionSize: 
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
@@ -1179,7 +1180,7 @@ MonoBehaviour:
     NumStackedVectorObservations: 1
     m_ActionSpec:
       m_NumContinuousActions: 2
-      BranchSizes: 020000000600000003000000
+      BranchSizes: 0200000003000000040000000300000006000000
     VectorActionSize: 
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
@@ -1387,7 +1388,7 @@ MonoBehaviour:
     NumStackedVectorObservations: 1
     m_ActionSpec:
       m_NumContinuousActions: 2
-      BranchSizes: 020000000600000003000000
+      BranchSizes: 0200000003000000040000000300000006000000
     VectorActionSize: 
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
@@ -1533,7 +1534,7 @@ MonoBehaviour:
     NumStackedVectorObservations: 1
     m_ActionSpec:
       m_NumContinuousActions: 2
-      BranchSizes: 020000000600000003000000
+      BranchSizes: 0200000003000000040000000300000006000000
     VectorActionSize: 
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
@@ -1679,7 +1680,7 @@ MonoBehaviour:
     NumStackedVectorObservations: 1
     m_ActionSpec:
       m_NumContinuousActions: 2
-      BranchSizes: 020000000600000003000000
+      BranchSizes: 0200000003000000040000000300000006000000
     VectorActionSize: 
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
@@ -1926,7 +1927,7 @@ MonoBehaviour:
     NumStackedVectorObservations: 1
     m_ActionSpec:
       m_NumContinuousActions: 2
-      BranchSizes: 020000000600000003000000
+      BranchSizes: 0200000003000000040000000300000006000000
     VectorActionSize: 
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
@@ -2041,7 +2042,7 @@ MonoBehaviour:
     NumStackedVectorObservations: 1
     m_ActionSpec:
       m_NumContinuousActions: 2
-      BranchSizes: 020000000600000003000000
+      BranchSizes: 0200000003000000040000000300000006000000
     VectorActionSize: 
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
@@ -2296,7 +2297,7 @@ MonoBehaviour:
     NumStackedVectorObservations: 1
     m_ActionSpec:
       m_NumContinuousActions: 2
-      BranchSizes: 020000000600000003000000
+      BranchSizes: 0200000003000000040000000300000006000000
     VectorActionSize: 
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
