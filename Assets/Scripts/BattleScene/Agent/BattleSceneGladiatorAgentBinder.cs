@@ -5,7 +5,7 @@ using Unity.MLAgents.Policies;
 using UnityEngine;
 
 [DisallowMultipleComponent]
-public sealed class BattleSceneMlAgentBinder : MonoBehaviour
+public sealed class BattleSceneGladiatorAgentBinder : MonoBehaviour
 {
     private static readonly int[] ExpectedDiscreteBranches =
     {
@@ -20,7 +20,7 @@ public sealed class BattleSceneMlAgentBinder : MonoBehaviour
     private BattleSceneFlowManager flowManager;
 
     [SerializeField]
-    private BattleMlAgentInferenceConfig config;
+    private GladiatorAgentInferenceConfig config;
 
     [SerializeField]
     private GladiatorAgent agentPrefab;
@@ -92,7 +92,7 @@ public sealed class BattleSceneMlAgentBinder : MonoBehaviour
         BattleStartPayload payload = flowManager.CurrentPayload;
         if (payload == null)
         {
-            Debug.LogError("[BattleSceneMlAgentBinder] Cannot bind agents. Battle payload is missing.", this);
+            Debug.LogError("[BattleSceneGladiatorAgentBinder] Cannot bind agents. Battle payload is missing.", this);
             DeactivateSurplusAgents(0);
             return;
         }
@@ -130,13 +130,13 @@ public sealed class BattleSceneMlAgentBinder : MonoBehaviour
         DecisionRequester decisionRequester = agent.GetComponent<DecisionRequester>();
         if (behaviorParameters == null)
         {
-            Debug.LogError("[BattleSceneMlAgentBinder] Agent host is missing BehaviorParameters.", agent);
+            Debug.LogError("[BattleSceneGladiatorAgentBinder] Agent host is missing BehaviorParameters.", agent);
             return false;
         }
 
         if (decisionRequester == null)
         {
-            Debug.LogError("[BattleSceneMlAgentBinder] Agent host is missing DecisionRequester.", agent);
+            Debug.LogError("[BattleSceneGladiatorAgentBinder] Agent host is missing DecisionRequester.", agent);
             return false;
         }
 
@@ -167,51 +167,51 @@ public sealed class BattleSceneMlAgentBinder : MonoBehaviour
         if (config == null)
         {
             Debug.LogWarning(
-                "[BattleSceneMlAgentBinder] Inference config is not assigned. ML agent binding skipped.",
+                "[BattleSceneGladiatorAgentBinder] Inference config is not assigned. ML agent binding skipped.",
                 this
             );
             return false;
         }
 
-        if (config.controlledSide == BattleMlControlledSide.None)
+        if (config.controlledSide == GladiatorControlledSide.None)
         {
             return false;
         }
 
         if (config.model == null)
         {
-            Debug.LogError("[BattleSceneMlAgentBinder] Inference config model is not assigned.", config);
+            Debug.LogError("[BattleSceneGladiatorAgentBinder] Inference config model is not assigned.", config);
             return false;
         }
 
         if (agentPrefab == null)
         {
-            Debug.LogError("[BattleSceneMlAgentBinder] Agent prefab is not assigned.", this);
+            Debug.LogError("[BattleSceneGladiatorAgentBinder] Agent prefab is not assigned.", this);
             return false;
         }
 
         if (flowManager == null)
         {
-            Debug.LogError("[BattleSceneMlAgentBinder] BattleSceneFlowManager is not assigned.", this);
+            Debug.LogError("[BattleSceneGladiatorAgentBinder] BattleSceneFlowManager is not assigned.", this);
             return false;
         }
 
         if (string.IsNullOrWhiteSpace(config.behaviorName))
         {
-            Debug.LogError("[BattleSceneMlAgentBinder] Behavior name is empty.", config);
+            Debug.LogError("[BattleSceneGladiatorAgentBinder] Behavior name is empty.", config);
             return false;
         }
 
         if (config.decisionPeriod < 1)
         {
-            Debug.LogError("[BattleSceneMlAgentBinder] Decision period must be >= 1.", config);
+            Debug.LogError("[BattleSceneGladiatorAgentBinder] Decision period must be >= 1.", config);
             return false;
         }
 
         if (config.contractVersion != GladiatorActionSchema.ContractVersion)
         {
             Debug.LogError(
-                $"[BattleSceneMlAgentBinder] Contract version mismatch. Expected {GladiatorActionSchema.ContractVersion}, actual {config.contractVersion}.",
+                $"[BattleSceneGladiatorAgentBinder] Contract version mismatch. Expected {GladiatorActionSchema.ContractVersion}, actual {config.contractVersion}.",
                 config
             );
             return false;
@@ -222,7 +222,10 @@ public sealed class BattleSceneMlAgentBinder : MonoBehaviour
             || config.expectedObservationSize != GladiatorObservationSchema.TotalSize
         )
         {
-            Debug.LogError("[BattleSceneMlAgentBinder] Inference config action/observation counts are stale.", config);
+            Debug.LogError(
+                "[BattleSceneGladiatorAgentBinder] Inference config action/observation counts are stale.",
+                config
+            );
             return false;
         }
 
@@ -237,14 +240,14 @@ public sealed class BattleSceneMlAgentBinder : MonoBehaviour
     {
         if (behaviorParameters.BehaviorName != config.behaviorName)
         {
-            Debug.LogError("[BattleSceneMlAgentBinder] Behavior name does not match inference config.", agent);
+            Debug.LogError("[BattleSceneGladiatorAgentBinder] Behavior name does not match inference config.", agent);
             return false;
         }
 
         if (behaviorParameters.BrainParameters.VectorObservationSize != GladiatorObservationSchema.TotalSize)
         {
             Debug.LogError(
-                $"[BattleSceneMlAgentBinder] Observation size mismatch. Expected {GladiatorObservationSchema.TotalSize}, actual {behaviorParameters.BrainParameters.VectorObservationSize}.",
+                $"[BattleSceneGladiatorAgentBinder] Observation size mismatch. Expected {GladiatorObservationSchema.TotalSize}, actual {behaviorParameters.BrainParameters.VectorObservationSize}.",
                 agent
             );
             return false;
@@ -254,7 +257,7 @@ public sealed class BattleSceneMlAgentBinder : MonoBehaviour
         if (actionSpec.NumContinuousActions != GladiatorActionSchema.ContinuousSize)
         {
             Debug.LogError(
-                $"[BattleSceneMlAgentBinder] Continuous action count mismatch. Expected {GladiatorActionSchema.ContinuousSize}, actual {actionSpec.NumContinuousActions}.",
+                $"[BattleSceneGladiatorAgentBinder] Continuous action count mismatch. Expected {GladiatorActionSchema.ContinuousSize}, actual {actionSpec.NumContinuousActions}.",
                 agent
             );
             return false;
@@ -263,7 +266,7 @@ public sealed class BattleSceneMlAgentBinder : MonoBehaviour
         if (!MatchesExpectedBranches(actionSpec.BranchSizes))
         {
             Debug.LogError(
-                "[BattleSceneMlAgentBinder] Discrete action branches do not match GladiatorActionSchema.",
+                "[BattleSceneGladiatorAgentBinder] Discrete action branches do not match GladiatorActionSchema.",
                 agent
             );
             return false;
@@ -271,13 +274,13 @@ public sealed class BattleSceneMlAgentBinder : MonoBehaviour
 
         if (behaviorParameters.Model == null)
         {
-            Debug.LogError("[BattleSceneMlAgentBinder] BehaviorParameters model is missing.", agent);
+            Debug.LogError("[BattleSceneGladiatorAgentBinder] BehaviorParameters model is missing.", agent);
             return false;
         }
 
         if (decisionRequester.DecisionPeriod < 1)
         {
-            Debug.LogError("[BattleSceneMlAgentBinder] DecisionRequester.DecisionPeriod must be >= 1.", agent);
+            Debug.LogError("[BattleSceneGladiatorAgentBinder] DecisionRequester.DecisionPeriod must be >= 1.", agent);
             return false;
         }
 
@@ -292,12 +295,12 @@ public sealed class BattleSceneMlAgentBinder : MonoBehaviour
         var controlledUnits = new List<BattleRuntimeUnit>();
 
         if (
-            config.controlledSide == BattleMlControlledSide.PlayerTeam
-            || config.controlledSide == BattleMlControlledSide.BothTeams
+            config.controlledSide == GladiatorControlledSide.PlayerTeam
+            || config.controlledSide == GladiatorControlledSide.BothTeams
         )
         {
             controlledUnits.AddRange(
-                BattleMlUnitSelection.GetSortedUnitsForTeam(
+                GladiatorUnitSelection.GetSortedUnitsForTeam(
                     flowManager.RuntimeUnits,
                     payload.GetPlayerTeam().TeamId,
                     projection
@@ -306,12 +309,12 @@ public sealed class BattleSceneMlAgentBinder : MonoBehaviour
         }
 
         if (
-            config.controlledSide == BattleMlControlledSide.HostileTeam
-            || config.controlledSide == BattleMlControlledSide.BothTeams
+            config.controlledSide == GladiatorControlledSide.HostileTeam
+            || config.controlledSide == GladiatorControlledSide.BothTeams
         )
         {
             controlledUnits.AddRange(
-                BattleMlUnitSelection.GetSortedUnitsForTeam(
+                GladiatorUnitSelection.GetSortedUnitsForTeam(
                     flowManager.RuntimeUnits,
                     payload.GetHostileTeam().TeamId,
                     projection

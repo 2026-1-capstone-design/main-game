@@ -3,14 +3,14 @@ using Unity.MLAgents.Policies;
 using UnityEngine;
 
 [CreateAssetMenu(menuName = "Battle/ML-Agents/Battle Inference Config")]
-public sealed class BattleMlAgentInferenceConfig : ScriptableObject
+public sealed class GladiatorAgentInferenceConfig : ScriptableObject
 {
     public ModelAsset model;
     public string behaviorName = "GladiatorSmooth";
     public int contractVersion = GladiatorActionSchema.ContractVersion;
     public int expectedContinuousActions = GladiatorActionSchema.ContinuousSize;
     public int expectedObservationSize = GladiatorObservationSchema.TotalSize;
-    public BattleMlControlledSide controlledSide = BattleMlControlledSide.HostileTeam;
+    public GladiatorControlledSide controlledSide = GladiatorControlledSide.HostileTeam;
     public int decisionPeriod = 1;
     public bool takeActionsBetweenDecisions = true;
     public InferenceDevice inferenceDevice = InferenceDevice.Default;

@@ -1,25 +1,19 @@
-using UnityEngine;
+using System.Collections.Generic;
 
-public interface IGladiatorAgentActionSink
-{
-    void Apply(GladiatorPolicyAction action, BattleUnitCombatState target);
-    void Clear();
-}
-
-public sealed class RuntimeUnitAgentActionSink : IGladiatorAgentActionSink
+public sealed class RuntimeUnitAgentActionSink
 {
     private readonly BattleRuntimeUnit _unit;
-    private readonly IBattleRuntimeUnitResolver _runtimeResolver;
+    private readonly BattleRuntimeUnitResolver _runtimeResolver;
     private readonly BattleAgentControlBuffer _controlBuffer;
 
     public RuntimeUnitAgentActionSink(
         BattleRuntimeUnit unit,
-        IBattleRuntimeUnitResolver runtimeResolver,
+        IReadOnlyList<BattleRuntimeUnit> runtimeUnits,
         BattleAgentControlBuffer controlBuffer = null
     )
     {
         _unit = unit;
-        _runtimeResolver = runtimeResolver;
+        _runtimeResolver = new BattleRuntimeUnitResolver(runtimeUnits);
         _controlBuffer = controlBuffer;
     }
 

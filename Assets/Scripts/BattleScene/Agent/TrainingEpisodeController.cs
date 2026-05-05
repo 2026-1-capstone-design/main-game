@@ -1,6 +1,13 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+public enum TrainingEpisodeEndReason
+{
+    BattleFinished,
+    Timeout,
+    Requested,
+}
+
 public sealed class TrainingEpisodeController
 {
     private readonly BattleSceneFlowManager _flowManager;

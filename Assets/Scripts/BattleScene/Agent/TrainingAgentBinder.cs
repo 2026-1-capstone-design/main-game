@@ -4,6 +4,54 @@ using Unity.MLAgents.Actuators;
 using Unity.MLAgents.Policies;
 using UnityEngine;
 
+public readonly struct TrainingAgentBindingSettings
+{
+    public readonly GladiatorControlledSide ControlledSide;
+    public readonly bool UseCurriculumOpponentMode;
+    public readonly string OpponentModeEnvironmentParameter;
+    public readonly GladiatorAgent[] AllyAgents;
+    public readonly GladiatorAgent[] EnemyAgents;
+    public readonly bool UsePocaGroupRewards;
+    public readonly float GroupWinReward;
+    public readonly float GroupLossReward;
+    public readonly float GroupInterruptedReward;
+    public readonly float WinSpeedBonus;
+    public readonly float WinHpBonus;
+    public readonly float TimeoutMultiplier;
+    public readonly float TimeoutHpRatioMultiplierMax;
+
+    public TrainingAgentBindingSettings(
+        GladiatorControlledSide controlledSide,
+        bool useCurriculumOpponentMode,
+        string opponentModeEnvironmentParameter,
+        GladiatorAgent[] allyAgents,
+        GladiatorAgent[] enemyAgents,
+        bool usePocaGroupRewards,
+        float groupWinReward,
+        float groupLossReward,
+        float groupInterruptedReward,
+        float winSpeedBonus,
+        float winHpBonus,
+        float timeoutMultiplier,
+        float timeoutHpRatioMultiplierMax
+    )
+    {
+        ControlledSide = controlledSide;
+        UseCurriculumOpponentMode = useCurriculumOpponentMode;
+        OpponentModeEnvironmentParameter = opponentModeEnvironmentParameter;
+        AllyAgents = allyAgents;
+        EnemyAgents = enemyAgents;
+        UsePocaGroupRewards = usePocaGroupRewards;
+        GroupWinReward = groupWinReward;
+        GroupLossReward = groupLossReward;
+        GroupInterruptedReward = groupInterruptedReward;
+        WinSpeedBonus = winSpeedBonus;
+        WinHpBonus = winHpBonus;
+        TimeoutMultiplier = timeoutMultiplier;
+        TimeoutHpRatioMultiplierMax = timeoutHpRatioMultiplierMax;
+    }
+}
+
 public sealed class TrainingAgentBinder
 {
     private static readonly int[] ExpectedDiscreteBranches =
@@ -50,17 +98,17 @@ public sealed class TrainingAgentBinder
         }
 
         BattleRosterProjection projection = new BattleRosterProjection(payload);
-        List<BattleRuntimeUnit> playerUnits = BattleMlUnitSelection.GetSortedUnitsForTeam(
+        List<BattleRuntimeUnit> playerUnits = GladiatorUnitSelection.GetSortedUnitsForTeam(
             _flowManager.RuntimeUnits,
             payload.GetPlayerTeam().TeamId,
             projection
         );
-        List<BattleRuntimeUnit> hostileUnits = BattleMlUnitSelection.GetSortedUnitsForTeam(
+        List<BattleRuntimeUnit> hostileUnits = GladiatorUnitSelection.GetSortedUnitsForTeam(
             _flowManager.RuntimeUnits,
             payload.GetHostileTeam().TeamId,
             projection
         );
-        BattleMlControlledSide resolvedControlledSide = ResolveControlledSide(settings);
+        GladiatorControlledSide resolvedControlledSide = ResolveControlledSide(settings);
         bool controlsPlayerTeam = ControlsPlayerTeam(resolvedControlledSide);
         bool controlsHostileTeam = ControlsHostileTeam(resolvedControlledSide);
 
@@ -279,7 +327,7 @@ public sealed class TrainingAgentBinder
         }
     }
 
-    private static BattleMlControlledSide ResolveControlledSide(TrainingAgentBindingSettings settings)
+    private static GladiatorControlledSide ResolveControlledSide(TrainingAgentBindingSettings settings)
     {
         if (!settings.UseCurriculumOpponentMode || string.IsNullOrWhiteSpace(settings.OpponentModeEnvironmentParameter))
         {
@@ -288,17 +336,17 @@ public sealed class TrainingAgentBinder
 
         float opponentMode = Academy.Instance.EnvironmentParameters.GetWithDefault(
             settings.OpponentModeEnvironmentParameter,
-            settings.ControlledSide == BattleMlControlledSide.BothTeams ? 1f : 0f
+            settings.ControlledSide == GladiatorControlledSide.BothTeams ? 1f : 0f
         );
 
-        return opponentMode >= 0.5f ? BattleMlControlledSide.BothTeams : BattleMlControlledSide.PlayerTeam;
+        return opponentMode >= 0.5f ? GladiatorControlledSide.BothTeams : GladiatorControlledSide.PlayerTeam;
     }
 
-    private static bool ControlsPlayerTeam(BattleMlControlledSide side) =>
-        side == BattleMlControlledSide.PlayerTeam || side == BattleMlControlledSide.BothTeams;
+    private static bool ControlsPlayerTeam(GladiatorControlledSide side) =>
+        side == GladiatorControlledSide.PlayerTeam || side == GladiatorControlledSide.BothTeams;
 
-    private static bool ControlsHostileTeam(BattleMlControlledSide side) =>
-        side == BattleMlControlledSide.HostileTeam || side == BattleMlControlledSide.BothTeams;
+    private static bool ControlsHostileTeam(GladiatorControlledSide side) =>
+        side == GladiatorControlledSide.HostileTeam || side == GladiatorControlledSide.BothTeams;
 
     private static int GetAgentCount(GladiatorAgent[] agents) => agents != null ? agents.Length : 0;
 

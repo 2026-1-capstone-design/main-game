@@ -50,14 +50,13 @@ public class GladiatorAgent : Agent
     private float _arenaExtentsMin;
     private BattleUnitCombatState _selfState;
     private GladiatorStateRosterView _rosterView;
-    private IBattleRuntimeUnitResolver _runtimeResolver;
     private GladiatorObservationStats _observationStats;
     private float _prevTargetDistance;
     private int _previousTargetSlot = -1;
     private int _previousStance = -1;
     private bool _boundaryResetRequested;
     private GladiatorRewardEvaluator _rewardEvaluator;
-    private IGladiatorAgentActionSink _actionSink;
+    private RuntimeUnitAgentActionSink _actionSink;
     private BattleAgentControlBuffer _agentControlBuffer;
     private BuiltInAiControlSource _aiHeuristic;
     private readonly GladiatorAgentEpisodeMetrics _episodeMetrics = new GladiatorAgentEpisodeMetrics();
@@ -88,7 +87,6 @@ public class GladiatorAgent : Agent
         SphereCollider col = flowManager?.battlefieldCollider;
         _arenaCenter = col != null ? col.bounds.center : Vector3.zero;
         _arenaExtentsMin = col != null ? Mathf.Min(col.bounds.extents.x, col.bounds.extents.z) : float.MaxValue;
-        _runtimeResolver = new BattleRuntimeUnitResolver(_flowManager != null ? _flowManager.RuntimeUnits : null);
         _rosterView = CreateRosterView();
         _rewardEvaluator = new GladiatorRewardEvaluator(rewardConfig, HardBoundaryRadiusMultiplier);
         _rewardEvaluator.Reset();
@@ -96,7 +94,11 @@ public class GladiatorAgent : Agent
             _flowManager != null && _flowManager.BattleSimulationManager != null
                 ? _flowManager.BattleSimulationManager.AgentControlBuffer
                 : null;
-        _actionSink = new RuntimeUnitAgentActionSink(_selfUnit, _runtimeResolver, _agentControlBuffer);
+        _actionSink = new RuntimeUnitAgentActionSink(
+            _selfUnit,
+            _flowManager != null ? _flowManager.RuntimeUnits : null,
+            _agentControlBuffer
+        );
         _observationStats = ComputeInitialObservationStats();
 
         if (_selfUnit != null)
@@ -156,7 +158,7 @@ public class GladiatorAgent : Agent
 
     public override void CollectObservations(VectorSensor sensor)
     {
-        BattleObservationBuilder.Write(sensor, CreateObservationContext());
+        GladiatorObservationBuilder.Write(sensor, CreateObservationContext());
     }
 
     public override void WriteDiscreteActionMask(IDiscreteActionMask actionMask)
@@ -167,7 +169,8 @@ public class GladiatorAgent : Agent
         }
 
         BehaviorParameters behaviorParameters = GetComponent<BehaviorParameters>();
-        int[] branchSizes = behaviorParameters != null ? behaviorParameters.BrainParameters.ActionSpec.BranchSizes : null;
+        int[] branchSizes =
+            behaviorParameters != null ? behaviorParameters.BrainParameters.ActionSpec.BranchSizes : null;
         if (branchSizes == null)
         {
             return;
@@ -190,7 +193,9 @@ public class GladiatorAgent : Agent
         BattleUnitCombatState target = ResolveAnchorTarget(action);
         GladiatorAgentTacticalContext tacticalContext = CreateTacticalContext(action, target);
         _episodeMetrics.RecordAction(action, tacticalContext);
-        GladiatorTacticalFeatures features = BattleObservationBuilder.BuildTacticalFeatures(CreateObservationContext());
+        GladiatorTacticalFeatures features = GladiatorObservationBuilder.BuildTacticalFeatures(
+            CreateObservationContext()
+        );
         GladiatorRewardEvaluation evaluation = _rewardEvaluator.EvaluateActionStep(action, tacticalContext, features);
         AddReward(evaluation.Reward);
         if (evaluation.RequestsBoundaryReset)
@@ -322,13 +327,11 @@ public class GladiatorAgent : Agent
         else
             discrete[GladiatorActionSchema.StanceBranch] = GladiatorActionSchema.StanceNeutral;
 
-        discrete[GladiatorActionSchema.PathModeBranch] = kb.qKey.isPressed
-            ? GladiatorActionSchema.PathModeFlankLeft
-            : kb.eKey.isPressed
-                ? GladiatorActionSchema.PathModeFlankRight
-                : kb.rKey.isPressed
-                    ? GladiatorActionSchema.PathModeRegroup
-                    : GladiatorActionSchema.PathModeDirect;
+        discrete[GladiatorActionSchema.PathModeBranch] =
+            kb.qKey.isPressed ? GladiatorActionSchema.PathModeFlankLeft
+            : kb.eKey.isPressed ? GladiatorActionSchema.PathModeFlankRight
+            : kb.rKey.isPressed ? GladiatorActionSchema.PathModeRegroup
+            : GladiatorActionSchema.PathModeDirect;
         discrete[GladiatorActionSchema.AnchorKindBranch] = GladiatorActionSchema.AnchorKindEnemy;
     }
 

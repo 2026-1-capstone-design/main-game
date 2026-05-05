@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-public sealed class BattleRuntimeUnitResolver : IBattleRuntimeUnitResolver
+public sealed class BattleRuntimeUnitResolver
 {
     private readonly IReadOnlyList<BattleRuntimeUnit> _runtimeUnits;
 

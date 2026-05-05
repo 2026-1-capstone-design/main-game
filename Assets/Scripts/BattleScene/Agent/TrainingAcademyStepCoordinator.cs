@@ -1,6 +1,15 @@
 using System.Collections.Generic;
 using Unity.MLAgents;
 
+public interface ITrainingEnvironment
+{
+    bool IsTrainingEnvironmentActive { get; }
+    bool IsEpisodeEnding { get; }
+
+    void StepTrainingEnvironment();
+    void TryResetFinishedOrTimedOutEpisode();
+}
+
 public sealed class TrainingAcademyStepCoordinator
 {
     private static readonly TrainingAcademyStepCoordinator Shared = new TrainingAcademyStepCoordinator();

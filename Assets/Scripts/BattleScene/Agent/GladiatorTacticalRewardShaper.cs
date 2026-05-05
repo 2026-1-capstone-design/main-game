@@ -37,8 +37,10 @@ public sealed class GladiatorTacticalRewardShaper
         }
 
         if (
-            (action.PathMode == GladiatorActionSchema.PathModeFlankLeft
-                || action.PathMode == GladiatorActionSchema.PathModeFlankRight)
+            (
+                action.PathMode == GladiatorActionSchema.PathModeFlankLeft
+                || action.PathMode == GladiatorActionSchema.PathModeFlankRight
+            )
             && Mathf.Abs(action.RelativeMove.x) > 0.1f
         )
         {

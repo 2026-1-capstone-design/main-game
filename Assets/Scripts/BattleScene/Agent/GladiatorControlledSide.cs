@@ -1,4 +1,4 @@
-public enum BattleMlControlledSide
+public enum GladiatorControlledSide
 {
     None = 0,
     PlayerTeam = 1,

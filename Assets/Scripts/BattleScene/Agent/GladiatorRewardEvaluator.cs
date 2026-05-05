@@ -6,11 +6,7 @@ public readonly struct GladiatorRewardEvaluation
     public readonly bool RequestsBoundaryReset;
     public readonly GladiatorPolicyAction EffectiveAction;
 
-    public GladiatorRewardEvaluation(
-        float reward,
-        bool requestsBoundaryReset,
-        GladiatorPolicyAction effectiveAction
-    )
+    public GladiatorRewardEvaluation(float reward, bool requestsBoundaryReset, GladiatorPolicyAction effectiveAction)
     {
         Reward = reward;
         RequestsBoundaryReset = requestsBoundaryReset;
@@ -70,11 +66,7 @@ public sealed class GladiatorRewardEvaluator
         reward += EvaluateStanceSwitch(context);
         reward += _tacticalRewardShaper.Evaluate(context, action, features);
 
-        return new GladiatorRewardEvaluation(
-            reward,
-            requestsBoundaryReset: false,
-            effectiveAction
-        );
+        return new GladiatorRewardEvaluation(reward, requestsBoundaryReset: false, effectiveAction);
     }
 
     private float EvaluateSmoothness(GladiatorPolicyAction action)
@@ -114,5 +106,4 @@ public sealed class GladiatorRewardEvaluator
 
         return _config.stanceSwitchPenalty;
     }
-
 }

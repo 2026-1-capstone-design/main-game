@@ -44,7 +44,10 @@ public sealed class BattleAgentControlBuffer
         input.WantsBasicAttack = input.Command == BattleCombatCommand.BasicAttack && hasValidTarget;
 
         _inputs[self] = input;
-        self.SetPlannedTargets(input.Target, input.AnchorKind == GladiatorActionSchema.AnchorKindAlly ? input.AnchorTarget : null);
+        self.SetPlannedTargets(
+            input.Target,
+            input.AnchorKind == GladiatorActionSchema.AnchorKindAlly ? input.AnchorTarget : null
+        );
     }
 
     public BattleAgentControlInput GetSmoothedInput(BattleUnitCombatState self, float tickDeltaTime)

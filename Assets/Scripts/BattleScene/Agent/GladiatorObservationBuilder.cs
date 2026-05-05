@@ -64,7 +64,7 @@ public readonly struct GladiatorObservationStats
     }
 }
 
-public static class BattleObservationBuilder
+public static class GladiatorObservationBuilder
 {
     private const float Epsilon = 1e-6f;
     private const float LogCompressDecadeWindow = 3f;
@@ -249,7 +249,13 @@ public static class BattleObservationBuilder
         return BattleCanonicalFrame.ToCanonical(selfTeamId, new Vector2(worldDelta.x, worldDelta.z));
     }
 
-    private static float SampleLaneFreeRatio(BattleUnitCombatState self, IReadOnlyList<BattleUnitCombatState> opponents, Vector2 forward, float laneSign, float arenaRadius)
+    private static float SampleLaneFreeRatio(
+        BattleUnitCombatState self,
+        IReadOnlyList<BattleUnitCombatState> opponents,
+        Vector2 forward,
+        float laneSign,
+        float arenaRadius
+    )
     {
         if (arenaRadius <= Epsilon)
         {
@@ -284,7 +290,10 @@ public static class BattleObservationBuilder
         return samples > 0 ? Mathf.Clamp01(1f - blockers / (float)samples) : 1f;
     }
 
-    private static float ComputeAllyUnderFocusRatio(IReadOnlyList<BattleUnitCombatState> teammates, IReadOnlyList<BattleUnitCombatState> opponents)
+    private static float ComputeAllyUnderFocusRatio(
+        IReadOnlyList<BattleUnitCombatState> teammates,
+        IReadOnlyList<BattleUnitCombatState> opponents
+    )
     {
         int allyCount = 0;
         int focusedCount = 0;
@@ -311,7 +320,11 @@ public static class BattleObservationBuilder
         return allyCount > 0 ? Mathf.Clamp01(focusedCount / (float)allyCount) : 0f;
     }
 
-    private static float ComputeEnemyClusterPressure(BattleUnitCombatState self, IReadOnlyList<BattleUnitCombatState> opponents, float arenaRadius)
+    private static float ComputeEnemyClusterPressure(
+        BattleUnitCombatState self,
+        IReadOnlyList<BattleUnitCombatState> opponents,
+        float arenaRadius
+    )
     {
         float total = 0f;
         int count = 0;

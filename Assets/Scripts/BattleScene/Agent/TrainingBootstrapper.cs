@@ -57,7 +57,7 @@ public class TrainingBootstrapper : MonoBehaviour, ITrainingEnvironment
 
     [Header("Agent Control")]
     [SerializeField]
-    private BattleMlControlledSide controlledSide = BattleMlControlledSide.BothTeams;
+    private GladiatorControlledSide controlledSide = GladiatorControlledSide.BothTeams;
 
     [SerializeField]
     [Tooltip("config YAML 파일에 {opponentModeEnvironmentParameter}가 설정되어 있으면 controlledSide를 덮어씌운다.")]

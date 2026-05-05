@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-public static class BattleMlUnitSelection
+public static class GladiatorUnitSelection
 {
     public static List<BattleRuntimeUnit> GetSortedUnitsForTeam(
         IReadOnlyList<BattleRuntimeUnit> runtimeUnits,
