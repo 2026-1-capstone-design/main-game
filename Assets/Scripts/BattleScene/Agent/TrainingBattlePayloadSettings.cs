@@ -10,6 +10,10 @@ public readonly struct TrainingBattlePayloadSettings
     public readonly WeaponSO[] RandomWeaponPool;
     public readonly int DefaultUnitLevel;
     public readonly float DefaultStatMultiplier;
+    public readonly string AllyStatMultiplierEnvironmentParameter;
+    public readonly string EnemyStatMultiplierEnvironmentParameter;
+    public readonly float DefaultAllyStatMultiplier;
+    public readonly float DefaultEnemyStatMultiplier;
 
     public TrainingBattlePayloadSettings(
         BattleTestPresetSO preset,
@@ -19,7 +23,11 @@ public readonly struct TrainingBattlePayloadSettings
         GladiatorClassSO[] randomClassPool,
         WeaponSO[] randomWeaponPool,
         int defaultUnitLevel,
-        float defaultStatMultiplier
+        float defaultStatMultiplier,
+        string allyStatMultiplierEnvironmentParameter,
+        string enemyStatMultiplierEnvironmentParameter,
+        float defaultAllyStatMultiplier,
+        float defaultEnemyStatMultiplier
     )
     {
         Preset = preset;
@@ -30,5 +38,9 @@ public readonly struct TrainingBattlePayloadSettings
         RandomWeaponPool = randomWeaponPool;
         DefaultUnitLevel = defaultUnitLevel;
         DefaultStatMultiplier = defaultStatMultiplier;
+        AllyStatMultiplierEnvironmentParameter = allyStatMultiplierEnvironmentParameter;
+        EnemyStatMultiplierEnvironmentParameter = enemyStatMultiplierEnvironmentParameter;
+        DefaultAllyStatMultiplier = defaultAllyStatMultiplier;
+        DefaultEnemyStatMultiplier = defaultEnemyStatMultiplier;
     }
 }

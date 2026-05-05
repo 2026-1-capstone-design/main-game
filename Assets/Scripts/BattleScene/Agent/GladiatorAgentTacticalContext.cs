@@ -1,41 +1,50 @@
 public readonly struct GladiatorAgentTacticalContext
 {
-    public readonly float PreviousNearestOpponentDistance;
-    public readonly float NearestOpponentDistance;
+    public readonly int PreviousTargetSlot;
+    public readonly int TargetSlot;
+    public readonly int PreviousStance;
+    public readonly int Stance;
+    public readonly float PreviousTargetDistance;
+    public readonly float TargetDistance;
+    public readonly float TargetEffectiveRange;
     public readonly float DistanceFromCenter;
     public readonly float PlayableRadius;
-    public readonly bool ShouldRetreat;
     public readonly bool HasLivingOpponent;
     public readonly bool HasAttackableOpponent;
     public readonly bool HasValidTarget;
     public readonly bool IsTargetOutOfAttackRange;
     public readonly bool IsAttackBlocked;
-    public readonly bool CanRequestSkill;
 
     public GladiatorAgentTacticalContext(
-        float previousNearestOpponentDistance,
-        float nearestOpponentDistance,
+        int previousTargetSlot,
+        int targetSlot,
+        int previousStance,
+        int stance,
+        float previousTargetDistance,
+        float targetDistance,
+        float targetEffectiveRange,
         float distanceFromCenter,
         float playableRadius,
-        bool shouldRetreat,
         bool hasLivingOpponent,
         bool hasAttackableOpponent,
         bool hasValidTarget,
         bool isTargetOutOfAttackRange,
-        bool isAttackBlocked,
-        bool canRequestSkill
+        bool isAttackBlocked
     )
     {
-        PreviousNearestOpponentDistance = previousNearestOpponentDistance;
-        NearestOpponentDistance = nearestOpponentDistance;
+        PreviousTargetSlot = previousTargetSlot;
+        TargetSlot = targetSlot;
+        PreviousStance = previousStance;
+        Stance = stance;
+        PreviousTargetDistance = previousTargetDistance;
+        TargetDistance = targetDistance;
+        TargetEffectiveRange = targetEffectiveRange;
         DistanceFromCenter = distanceFromCenter;
         PlayableRadius = playableRadius;
-        ShouldRetreat = shouldRetreat;
         HasLivingOpponent = hasLivingOpponent;
         HasAttackableOpponent = hasAttackableOpponent;
         HasValidTarget = hasValidTarget;
         IsTargetOutOfAttackRange = isTargetOutOfAttackRange;
         IsAttackBlocked = isAttackBlocked;
-        CanRequestSkill = canRequestSkill;
     }
 }

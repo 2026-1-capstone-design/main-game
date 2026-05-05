@@ -254,6 +254,7 @@ public sealed class BattleUnitCombatState
     public BattleUnitCombatState CurrentTarget { get; private set; }
     public BattleUnitCombatState PlannedTargetEnemy { get; private set; }
     public BattleUnitCombatState PlannedTargetAlly { get; private set; }
+    public int AgentStance { get; private set; }
 
     // ── 생성자 ─────────────────────────────────────────────────────
     public BattleUnitCombatState(BattleUnitSnapshot snapshot, int unitNumber, BattleTeamId teamId)
@@ -408,6 +409,11 @@ public sealed class BattleUnitCombatState
                 count += _buffLevel[i];
         }
         return count;
+    }
+
+    public void SetAgentStance(int stance)
+    {
+        AgentStance = stance;
     }
 
     public void SetCurrentTarget(BattleUnitCombatState target)

@@ -6,25 +6,25 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 
 // BehaviorParameters 설정 (Inspector):
-//   Space Size         = GladiatorObservationSchema.TotalSize (= 113)
-//   Continuous Actions = GladiatorActionSchema.ContinuousSize (= 3)
-//     0=local strafe, 1=local advance, 2=turn
+//   Space Size         = GladiatorObservationSchema.TotalSize (= 125)
+//   Continuous Actions = GladiatorActionSchema.ContinuousSize (= 2)
+//     0=world X, 1=world Z
 //   Discrete Branches  = 3
-//     Branch 0 Size = GladiatorActionSchema.CommandBranchSize (= 3)
+//     Branch 0 Size = GladiatorActionSchema.CommandBranchSize (= 2)
 //     Branch 1 Size = GladiatorActionSchema.TargetBranchSize (= 6)
 //     Branch 2 Size = GladiatorActionSchema.StanceBranchSize (= 3)
 //
-// Observation (113 floats):
-//   자신      (25):     정규화된 경기장 중심 상대좌표(x,z), 체력비, 최대 체력 로그비, 공격력 로그비,
+// Observation (125 floats):
+//   자신      (31):     월드 좌표축 기준 정규화된 경기장 중심 상대좌표(x,z), 체력비, 최대 체력 로그비, 공격력 로그비,
 //                       정규화된 사거리/이동속도/공격 쿨타임, 최근접 적/자신 대상 피해비, 최근접 적 거리,
 //                       공격 가능 여부, 피격 위험 여부, 근처 적/아군 비율, 경계 압박,
-//                       timeout까지 남은 시간 비율, 현재/직전 agent 입력, 스킬 가능 여부, 대상 선택 여부
-//   내 팀 동료 (5 × 8): 정규화된 상대좌표(x,z), 체력비, 최대 체력 로그비, 공격력 로그비, 사거리, 이동속도, 공격 쿨타임
-//   상대팀    (6 × 8): 정규화된 상대좌표(x,z), 체력비, 최대 체력 로그비, 공격력 로그비, 사거리, 이동속도, 공격 쿨타임
+//                       timeout까지 남은 시간 비율, 현재/직전 agent 월드 이동 입력, 대상 선택 여부, 대상 슬롯 one-hot
+//   내 팀 동료 (5 × 8): 월드 좌표축 기준 정규화된 상대좌표(x,z), 체력비, 최대 체력 로그비, 공격력 로그비, 사거리, 이동속도, 공격 쿨타임
+//   상대팀    (6 × 9): 위 동일 + 자신을 Neutral/Pressure 태세로 노리고 있는지 여부
 //
 // Action:
-//   Continuous 0/1/2:   local strafe / local advance / turn
-//   Branch 0 (명령):     0=없음  1=기본공격  2=스킬
+//   Continuous 0/1:     world X / world Z 이동
+//   Branch 0 (명령):     0=없음  1=기본공격
 //   Branch 1 (대상):     0~5=상대팀 고정 슬롯
 //   Branch 2 (태세):     0=중립  1=압박  2=거리유지
 public class GladiatorAgent : Agent
@@ -46,14 +46,16 @@ public class GladiatorAgent : Agent
     private BattleUnitCombatState _selfState;
     private GladiatorStateRosterView _rosterView;
     private IBattleRuntimeUnitResolver _runtimeResolver;
-    private IBattleUnitPoseProvider _poseProvider;
     private GladiatorObservationStats _observationStats;
-    private float _prevDistToNearestEnemy;
+    private float _prevTargetDistance;
+    private int _previousTargetSlot = -1;
+    private int _previousStance = -1;
     private bool _boundaryResetRequested;
     private GladiatorRewardEvaluator _rewardEvaluator;
     private IGladiatorAgentActionSink _actionSink;
     private BattleAgentControlBuffer _agentControlBuffer;
     private BuiltInAiControlSource _aiHeuristic;
+    private readonly GladiatorAgentEpisodeMetrics _episodeMetrics = new GladiatorAgentEpisodeMetrics();
 
     public bool HasControlledUnit => _selfUnit != null;
 
@@ -82,7 +84,6 @@ public class GladiatorAgent : Agent
         _arenaCenter = col != null ? col.bounds.center : Vector3.zero;
         _arenaExtentsMin = col != null ? Mathf.Min(col.bounds.extents.x, col.bounds.extents.z) : float.MaxValue;
         _runtimeResolver = new BattleRuntimeUnitResolver(_flowManager != null ? _flowManager.RuntimeUnits : null);
-        _poseProvider = new RuntimeBattleUnitPoseProvider(_selfUnit);
         _rosterView = CreateRosterView();
         _rewardEvaluator = new GladiatorRewardEvaluator(rewardConfig, HardBoundaryRadiusMultiplier);
         _rewardEvaluator.Reset();
@@ -99,11 +100,12 @@ public class GladiatorAgent : Agent
             _selfUnit.State.OnDamageTaken += HandleDamageTaken;
             _selfUnit.State.OnDied += HandleSelfDied;
             _selfUnit.OnAttackLanded += HandleAttackLanded;
-            _selfUnit.OnSkillActivated += HandleSkillActivated;
-            _selfUnit.OnSkillFailed += HandleSkillFailed;
         }
 
-        _prevDistToNearestEnemy = GetDistToNearestOpponent();
+        _prevTargetDistance = float.MaxValue;
+        _previousTargetSlot = -1;
+        _previousStance = -1;
+        _episodeMetrics.Reset();
 
         if (useBuiltInAiHeuristic)
         {
@@ -120,8 +122,10 @@ public class GladiatorAgent : Agent
 
     private void HandleDamageTaken(float damage)
     {
-        AddReward(rewardConfig.damageTaken);
-        AddReward(Mathf.Max(0f, damage) * rewardConfig.damageTakenPerPoint);
+        float ratio =
+            _selfState != null && _selfState.MaxHealth > 0f ? Mathf.Max(0f, damage) / _selfState.MaxHealth : 0f;
+        _episodeMetrics.AddDamageTakenRatio(ratio);
+        AddReward(ratio * rewardConfig.damageTakenRatio);
     }
 
     private void HandleSelfDied()
@@ -132,21 +136,17 @@ public class GladiatorAgent : Agent
     private void HandleAttackLanded(BattleRuntimeUnit target, float actualDamage, bool wasKill)
     {
         AddReward(rewardConfig.attackLanded);
-        AddReward(actualDamage * rewardConfig.damageDealt);
+        float ratio =
+            target != null && target.State != null && target.State.MaxHealth > 0f
+                ? Mathf.Max(0f, actualDamage) / target.State.MaxHealth
+                : 0f;
+        _episodeMetrics.AddDamageDealtRatio(ratio);
+        _episodeMetrics.RecordAttackLanded();
+        AddReward(ratio * rewardConfig.damageDealtRatio);
         if (wasKill)
         {
             AddReward(rewardConfig.kill);
         }
-    }
-
-    private void HandleSkillActivated()
-    {
-        AddReward(rewardConfig.skillActivated);
-    }
-
-    private void HandleSkillFailed()
-    {
-        AddReward(rewardConfig.invalidSkill);
     }
 
     public override void CollectObservations(VectorSensor sensor)
@@ -161,14 +161,12 @@ public class GladiatorAgent : Agent
                 _rosterView != null ? _rosterView.Teammates : null,
                 _rosterView != null ? _rosterView.Hostiles : null,
                 _observationStats,
-                _poseProvider != null ? _poseProvider.CurrentPose : BattleUnitPose.Default,
                 _arenaCenter,
                 arenaRadius,
                 _trainingBootstrapper != null ? _trainingBootstrapper.BattleTimeoutRemainingRatio : 1f,
                 controlInput.SmoothedLocalMove,
-                controlInput.SmoothedTurn,
                 controlInput.PreviousRawLocalMove,
-                controlInput.PreviousRawTurn
+                _previousStance
             )
         );
     }
@@ -180,13 +178,9 @@ public class GladiatorAgent : Agent
             return;
         }
 
-        bool hasValidTarget = HasLivingOpponent();
-        if (!hasValidTarget)
-            return;
-
-        if (!CanRequestSkill())
+        if (!HasLivingOpponent())
         {
-            actionMask.SetActionEnabled(GladiatorActionSchema.CommandBranch, GladiatorActionSchema.CommandSkill, false);
+            return;
         }
 
         for (int i = 0; i < GladiatorObservationSchema.OpponentSlots; i++)
@@ -209,7 +203,8 @@ public class GladiatorAgent : Agent
 
         GladiatorAgentAction action = GladiatorAgentActionParser.Parse(actions);
         BattleUnitCombatState target = ResolveOpponentSlot(action.TargetSlot);
-        GladiatorAgentTacticalContext tacticalContext = CreateTacticalContext(target);
+        GladiatorAgentTacticalContext tacticalContext = CreateTacticalContext(action, target);
+        _episodeMetrics.RecordAction(action, tacticalContext);
         GladiatorRewardEvaluation evaluation = _rewardEvaluator.EvaluateActionStep(action, tacticalContext);
         AddReward(evaluation.Reward);
         if (evaluation.RequestsBoundaryReset)
@@ -219,44 +214,62 @@ public class GladiatorAgent : Agent
             return;
         }
 
-        if (evaluation.UpdatesNearestOpponentDistance)
+        if (evaluation.UpdatesTargetDistance)
         {
-            _prevDistToNearestEnemy = evaluation.NearestOpponentDistance;
+            _previousTargetSlot = action.TargetSlot;
+            _previousStance = action.Stance;
+            _prevTargetDistance = evaluation.TargetDistance;
         }
 
         BattleUnitCombatState effectiveTarget = tacticalContext.HasValidTarget ? target : null;
         _actionSink?.Apply(evaluation.EffectiveAction, effectiveTarget);
     }
 
-    private GladiatorAgentTacticalContext CreateTacticalContext(BattleUnitCombatState target)
+    private GladiatorAgentTacticalContext CreateTacticalContext(GladiatorAgentAction action, BattleUnitCombatState target)
     {
         float playableRadius = _arenaExtentsMin - _selfState.BodyRadius;
         float distanceFromCenter = GetDistanceFromArenaCenter();
-        float nearestDist = GetDistToNearestOpponent();
-        bool shouldRetreat = ShouldRetreat(nearestDist);
         bool attackBlocked = _selfState.AttackCooldownRemaining > 0f || _selfState.IsAttacking;
         bool hasValidTarget = target != null && !target.IsCombatDisabled;
+        float targetDistance = GetDistanceToTarget(target);
+        float previousTargetDistance =
+            _previousTargetSlot == action.TargetSlot && _prevTargetDistance < float.MaxValue
+                ? _prevTargetDistance
+                : targetDistance;
+        float targetEffectiveRange = GetEffectiveAttackRange(_selfState, target);
         return new GladiatorAgentTacticalContext(
-            _prevDistToNearestEnemy,
-            nearestDist,
+            _previousTargetSlot,
+            action.TargetSlot,
+            _previousStance,
+            action.Stance,
+            previousTargetDistance,
+            targetDistance,
+            targetEffectiveRange,
             distanceFromCenter,
             playableRadius,
-            shouldRetreat,
             HasLivingOpponent(),
             HasAttackableOpponent(),
             hasValidTarget,
-            IsOutOfAttackRange(target),
-            attackBlocked,
-            CanRequestSkill()
+            !hasValidTarget || targetDistance > targetEffectiveRange,
+            attackBlocked
         );
     }
 
     public override void OnEpisodeBegin()
     {
         _boundaryResetRequested = false;
-        _prevDistToNearestEnemy = GetDistToNearestOpponent();
+        _prevTargetDistance = float.MaxValue;
+        _previousTargetSlot = -1;
+        _previousStance = -1;
         _rewardEvaluator?.Reset();
         _actionSink?.Clear();
+        _episodeMetrics.Reset();
+    }
+
+    public void FlushEpisodeMetrics()
+    {
+        _episodeMetrics.RecordFinalHealthRatios(GetHealthRatio(_selfState), GetAverageOpponentHealthRatio());
+        _episodeMetrics.Flush();
     }
 
     public override void Heuristic(in ActionBuffers actionsOut)
@@ -270,8 +283,7 @@ public class GladiatorAgent : Agent
                     : 1f / 15f;
             if (_aiHeuristic.TryBuildPlan(_selfState, snapshot, tickDelta, out BattleControlPlan plan))
             {
-                BattleUnitPose pose = _poseProvider != null ? _poseProvider.CurrentPose : BattleUnitPose.Default;
-                BuiltInAiHeuristicTranslator.Write(actionsOut, plan, pose, _selfState, _rosterView);
+                BuiltInAiHeuristicTranslator.Write(actionsOut, plan, _selfState, _rosterView);
                 return;
             }
         }
@@ -286,12 +298,10 @@ public class GladiatorAgent : Agent
 
         if (continuous.Length >= GladiatorActionSchema.ContinuousSize)
         {
-            continuous[GladiatorActionSchema.ContinuousMoveX] =
+            continuous[GladiatorActionSchema.ContinuousWorldMoveX] =
                 (kb.dKey.isPressed ? 1f : 0f) + (kb.aKey.isPressed ? -1f : 0f);
-            continuous[GladiatorActionSchema.ContinuousMoveZ] =
+            continuous[GladiatorActionSchema.ContinuousWorldMoveZ] =
                 (kb.wKey.isPressed ? 1f : 0f) + (kb.sKey.isPressed ? -1f : 0f);
-            continuous[GladiatorActionSchema.ContinuousTurn] =
-                (kb.eKey.isPressed ? 1f : 0f) + (kb.qKey.isPressed ? -1f : 0f);
         }
 
         if (discrete.Length < GladiatorActionSchema.DiscreteBranchCount)
@@ -299,9 +309,7 @@ public class GladiatorAgent : Agent
             return;
         }
 
-        if (kb.kKey.isPressed)
-            discrete[GladiatorActionSchema.CommandBranch] = GladiatorActionSchema.CommandSkill;
-        else if (kb.jKey.isPressed)
+        if (kb.jKey.isPressed)
             discrete[GladiatorActionSchema.CommandBranch] = GladiatorActionSchema.CommandBasicAttack;
         else
             discrete[GladiatorActionSchema.CommandBranch] = GladiatorActionSchema.CommandNone;
@@ -329,21 +337,64 @@ public class GladiatorAgent : Agent
             discrete[GladiatorActionSchema.StanceBranch] = GladiatorActionSchema.StanceNeutral;
     }
 
-    private bool IsOutOfAttackRange(BattleUnitCombatState target)
+    private float GetAverageOpponentHealthRatio()
+    {
+        if (_rosterView == null)
+        {
+            return 0f;
+        }
+
+        IReadOnlyList<BattleUnitCombatState> hostiles = _rosterView.Hostiles;
+        if (hostiles == null || hostiles.Count == 0)
+        {
+            return 0f;
+        }
+
+        float sum = 0f;
+        int count = 0;
+        for (int i = 0; i < hostiles.Count; i++)
+        {
+            BattleUnitCombatState hostile = hostiles[i];
+            if (hostile == null)
+            {
+                continue;
+            }
+
+            sum += GetHealthRatio(hostile);
+            count++;
+        }
+
+        return count > 0 ? sum / count : 0f;
+    }
+
+    private static float GetHealthRatio(BattleUnitCombatState state)
+    {
+        return state != null && state.MaxHealth > 0f
+            ? Mathf.Clamp01(Mathf.Max(0f, state.CurrentHealth) / state.MaxHealth)
+            : 0f;
+    }
+
+    private float GetDistanceToTarget(BattleUnitCombatState target)
     {
         if (target == null || _selfState == null)
         {
-            return true;
+            return float.MaxValue;
         }
 
         Vector3 delta = target.Position - _selfState.Position;
         delta.y = 0f;
-        float effectiveRange = _selfState.BodyRadius + target.BodyRadius + _selfState.AttackRange + 0.05f;
-        return delta.magnitude > effectiveRange;
+        return delta.magnitude;
     }
 
-    private float GetDistToNearestOpponent() =>
-        _rosterView != null ? _rosterView.GetDistanceToNearestHostile(_selfState) : float.MaxValue;
+    private static float GetEffectiveAttackRange(BattleUnitCombatState attacker, BattleUnitCombatState target)
+    {
+        if (attacker == null || target == null)
+        {
+            return 0f;
+        }
+
+        return attacker.BodyRadius + target.BodyRadius + Mathf.Max(0f, attacker.AttackRange) + 0.05f;
+    }
 
     private BattleUnitCombatState ResolveOpponentSlot(int slotIndex) =>
         _rosterView != null ? _rosterView.ResolveHostileSlot(slotIndex) : null;
@@ -353,7 +404,11 @@ public class GladiatorAgent : Agent
         for (int i = 0; i < GladiatorObservationSchema.OpponentSlots; i++)
         {
             BattleUnitCombatState target = ResolveOpponentSlot(i);
-            if (target != null && !target.IsCombatDisabled && !IsOutOfAttackRange(target))
+            if (
+                target != null
+                && !target.IsCombatDisabled
+                && GetDistanceToTarget(target) <= GetEffectiveAttackRange(_selfState, target)
+            )
             {
                 return true;
             }
@@ -376,141 +431,11 @@ public class GladiatorAgent : Agent
         return false;
     }
 
-    private bool CanRequestSkill()
-    {
-        return _selfState != null
-            && _selfState.GetSkill() != WeaponSkillId.None
-            && _selfState.SkillCooldownRemaining <= 0f;
-    }
-
     private float GetDistanceFromArenaCenter()
     {
         Vector3 flatPos = new Vector3(_selfState.Position.x, 0f, _selfState.Position.z);
         Vector3 flatCenter = new Vector3(_arenaCenter.x, 0f, _arenaCenter.z);
         return Vector3.Distance(flatPos, flatCenter);
-    }
-
-    private BattleUnitCombatState ResolveNearestOpponent()
-    {
-        BattleUnitCombatState nearest = null;
-        float nearestSqrDistance = float.MaxValue;
-        for (int i = 0; i < GladiatorObservationSchema.OpponentSlots; i++)
-        {
-            BattleUnitCombatState target = ResolveOpponentSlot(i);
-            if (target == null || target.IsCombatDisabled)
-            {
-                continue;
-            }
-
-            Vector3 delta = target.Position - _selfState.Position;
-            delta.y = 0f;
-            float sqrDistance = delta.sqrMagnitude;
-            if (sqrDistance < nearestSqrDistance)
-            {
-                nearestSqrDistance = sqrDistance;
-                nearest = target;
-            }
-        }
-
-        return nearest;
-    }
-
-    private bool ShouldRetreat(float nearestDist)
-    {
-        if (_selfState == null || nearestDist >= float.MaxValue)
-            return false;
-
-        BattleUnitCombatState nearestOpponent = ResolveNearestOpponent();
-        if (nearestOpponent == null)
-            return false;
-
-        float healthRatio = _selfState.MaxHealth > 0f ? _selfState.CurrentHealth / _selfState.MaxHealth : 1f;
-        float selfEffectiveRange = _selfState.BodyRadius + nearestOpponent.BodyRadius + _selfState.AttackRange + 0.05f;
-        float opponentEffectiveRange =
-            nearestOpponent.BodyRadius + _selfState.BodyRadius + nearestOpponent.AttackRange + 0.05f;
-        bool insideEnemyRange = nearestDist <= opponentEffectiveRange;
-        bool closeToEnemy = nearestDist <= Mathf.Max(selfEffectiveRange, opponentEffectiveRange) * 1.15f;
-        bool lowHealthAndThreatened = healthRatio <= 0.45f && (insideEnemyRange || closeToEnemy);
-        bool criticalHealthNearEnemy = healthRatio <= 0.3f && closeToEnemy;
-        bool cooldownSpacing = _selfState.AttackCooldownRemaining > 0f && insideEnemyRange;
-        bool rangedTooClose = _selfState.AttackRange >= 3f && nearestDist <= selfEffectiveRange * 0.45f;
-        bool outnumberedNearby =
-            CountNearbyOpponents(opponentEffectiveRange * 1.25f)
-            > CountNearbyTeammates(opponentEffectiveRange * 1.25f) + 1;
-        bool lowSupportThreat = healthRatio <= 0.6f && outnumberedNearby && closeToEnemy;
-        bool boundaryThreat = IsNearBattlefieldBoundary() && closeToEnemy;
-
-        return lowHealthAndThreatened
-            || criticalHealthNearEnemy
-            || cooldownSpacing
-            || rangedTooClose
-            || lowSupportThreat
-            || boundaryThreat;
-    }
-
-    private int CountNearbyOpponents(float radius)
-    {
-        int count = 0;
-        float sqrRadius = radius * radius;
-        for (int i = 0; i < GladiatorObservationSchema.OpponentSlots; i++)
-        {
-            BattleUnitCombatState target = ResolveOpponentSlot(i);
-            if (target == null || target.IsCombatDisabled)
-            {
-                continue;
-            }
-
-            Vector3 delta = target.Position - _selfState.Position;
-            delta.y = 0f;
-            if (delta.sqrMagnitude <= sqrRadius)
-            {
-                count++;
-            }
-        }
-
-        return count;
-    }
-
-    private int CountNearbyTeammates(float radius)
-    {
-        if (_rosterView == null)
-        {
-            return 0;
-        }
-
-        int count = 0;
-        float sqrRadius = radius * radius;
-        IReadOnlyList<BattleUnitCombatState> teammates = _rosterView.Teammates;
-        for (int i = 0; i < teammates.Count; i++)
-        {
-            BattleUnitCombatState teammate = teammates[i];
-            if (teammate == null || teammate.IsCombatDisabled)
-            {
-                continue;
-            }
-
-            Vector3 delta = teammate.Position - _selfState.Position;
-            delta.y = 0f;
-            if (delta.sqrMagnitude <= sqrRadius)
-            {
-                count++;
-            }
-        }
-
-        return count;
-    }
-
-    private bool IsNearBattlefieldBoundary()
-    {
-        float playableRadius = _arenaExtentsMin - _selfState.BodyRadius;
-        if (playableRadius <= 0f || playableRadius >= float.MaxValue)
-        {
-            return false;
-        }
-
-        Vector3 flatPos = new Vector3(_selfState.Position.x, 0f, _selfState.Position.z);
-        Vector3 flatCenter = new Vector3(_arenaCenter.x, 0f, _arenaCenter.z);
-        return Vector3.Distance(flatPos, flatCenter) >= playableRadius * 0.85f;
     }
 
     private void OnDestroy()
@@ -532,8 +457,6 @@ public class GladiatorAgent : Agent
         }
 
         _selfUnit.OnAttackLanded -= HandleAttackLanded;
-        _selfUnit.OnSkillActivated -= HandleSkillActivated;
-        _selfUnit.OnSkillFailed -= HandleSkillFailed;
     }
 
     private void RequestBoundaryReset()

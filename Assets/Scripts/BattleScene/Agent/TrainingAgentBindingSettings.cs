@@ -8,8 +8,10 @@ public readonly struct TrainingAgentBindingSettings
     public readonly bool UsePocaGroupRewards;
     public readonly float GroupWinReward;
     public readonly float GroupLossReward;
-    public readonly float GroupTimeoutReward;
     public readonly float GroupInterruptedReward;
+    public readonly float WinSpeedBonus;
+    public readonly float WinHpBonus;
+    public readonly float TimeoutPenaltyScale;
 
     public TrainingAgentBindingSettings(
         BattleMlControlledSide controlledSide,
@@ -20,8 +22,10 @@ public readonly struct TrainingAgentBindingSettings
         bool usePocaGroupRewards,
         float groupWinReward,
         float groupLossReward,
-        float groupTimeoutReward,
-        float groupInterruptedReward
+        float groupInterruptedReward,
+        float winSpeedBonus,
+        float winHpBonus,
+        float timeoutPenaltyScale
     )
     {
         ControlledSide = controlledSide;
@@ -32,7 +36,9 @@ public readonly struct TrainingAgentBindingSettings
         UsePocaGroupRewards = usePocaGroupRewards;
         GroupWinReward = groupWinReward;
         GroupLossReward = groupLossReward;
-        GroupTimeoutReward = groupTimeoutReward;
         GroupInterruptedReward = groupInterruptedReward;
+        WinSpeedBonus = winSpeedBonus;
+        WinHpBonus = winHpBonus;
+        TimeoutPenaltyScale = timeoutPenaltyScale;
     }
 }

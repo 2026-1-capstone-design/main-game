@@ -47,12 +47,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_BrainParameters:
-    VectorObservationSize: 113
+    VectorObservationSize: 116
     NumStackedVectorObservations: 1
     m_ActionSpec:
-      m_NumContinuousActions: 3
-      BranchSizes: 030000000600000003000000
-    VectorActionSize: 030000000600000003000000
+      m_NumContinuousActions: 2
+      BranchSizes: 020000000600000003000000
+    VectorActionSize: 020000000600000003000000
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
     hasUpgradedBrainParametersWithActionSpec: 1

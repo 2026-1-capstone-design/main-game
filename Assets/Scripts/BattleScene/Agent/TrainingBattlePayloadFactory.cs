@@ -17,6 +17,14 @@ public sealed class TrainingBattlePayloadFactory
         var allySnapshots = new List<BattleUnitSnapshot>();
         var enemySnapshots = new List<BattleUnitSnapshot>();
         int teamSize = ResolveTeamSize(settings);
+        float allyStatMultiplier = ResolveTeamStatMultiplier(
+            settings.AllyStatMultiplierEnvironmentParameter,
+            settings.DefaultAllyStatMultiplier
+        );
+        float enemyStatMultiplier = ResolveTeamStatMultiplier(
+            settings.EnemyStatMultiplierEnvironmentParameter,
+            settings.DefaultEnemyStatMultiplier
+        );
 
         for (int i = 0; i < teamSize; i++)
         {
@@ -26,7 +34,14 @@ public sealed class TrainingBattlePayloadFactory
             }
 
             allySnapshots.Add(
-                CreateSnapshot(i + 1, BattleTeamIds.Player, "Ally", entry, PickRandomClass(entry.classSO, settings))
+                CreateSnapshot(
+                    i + 1,
+                    BattleTeamIds.Player,
+                    "Ally",
+                    entry,
+                    PickRandomClass(entry.classSO, settings),
+                    allyStatMultiplier
+                )
             );
         }
 
@@ -38,7 +53,14 @@ public sealed class TrainingBattlePayloadFactory
             }
 
             enemySnapshots.Add(
-                CreateSnapshot(i + 1, BattleTeamIds.Enemy, "Enemy", entry, PickRandomClass(entry.classSO, settings))
+                CreateSnapshot(
+                    i + 1,
+                    BattleTeamIds.Enemy,
+                    "Enemy",
+                    entry,
+                    PickRandomClass(entry.classSO, settings),
+                    enemyStatMultiplier
+                )
             );
         }
 
@@ -70,6 +92,20 @@ public sealed class TrainingBattlePayloadFactory
         }
 
         return Mathf.Clamp(Mathf.RoundToInt(requestedTeamSize), 1, BattleTeamConstants.MaxUnitsPerTeam);
+    }
+
+    private static float ResolveTeamStatMultiplier(string environmentParameter, float fallback)
+    {
+        float requestedMultiplier = Mathf.Max(0f, fallback);
+        if (!string.IsNullOrWhiteSpace(environmentParameter))
+        {
+            requestedMultiplier = Academy.Instance.EnvironmentParameters.GetWithDefault(
+                environmentParameter,
+                requestedMultiplier
+            );
+        }
+
+        return Mathf.Max(0f, requestedMultiplier);
     }
 
     private bool TryGetTrainingUnitConfig(
@@ -189,7 +225,8 @@ public sealed class TrainingBattlePayloadFactory
         BattleTeamId teamId,
         string displayPrefix,
         BattleTestUnitConfig entry,
-        GladiatorClassSO classOverride
+        GladiatorClassSO classOverride,
+        float teamStatMultiplier
     )
     {
         GladiatorClassSO classSO = classOverride != null ? classOverride : entry.classSO;
@@ -203,7 +240,8 @@ public sealed class TrainingBattlePayloadFactory
         }
 
         int lv = Mathf.Max(1, entry.level);
-        float mult = entry.statMultiplier <= 0 ? 1f : entry.statMultiplier;
+        float entryMultiplier = entry.statMultiplier <= 0 ? 1f : entry.statMultiplier;
+        float mult = entryMultiplier * Mathf.Max(0f, teamStatMultiplier);
 
         float baseHp = classSO.baseHealth + classSO.healthGrowthPerLevel * (lv - 1);
         float baseAtk = classSO.baseAttack + classSO.attackGrowthPerLevel * (lv - 1);

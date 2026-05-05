@@ -1,16 +1,19 @@
 public static class GladiatorObservationSchema
 {
-    public const int SelfSize = 25;
-    public const int UnitSlotSize = 8;
+    public const int CurrentTargetSlotObservationSize = BattleTeamConstants.MaxUnitsPerTeam;
+    public const int CurrentStanceObservationSize = GladiatorActionSchema.StanceBranchSize;
+    public const int SelfSize = 31;
+    public const int TeammateSlotSize = 8;
+    public const int OpponentSlotSize = 9; // +1 for IsTargetingMeAggressively
     public const int TeammateSlots = BattleTeamConstants.MaxUnitsPerTeam - 1;
     public const int OpponentSlots = BattleTeamConstants.MaxUnitsPerTeam;
-    public const int TotalSize = SelfSize + (TeammateSlots * UnitSlotSize) + (OpponentSlots * UnitSlotSize);
+    public const int TotalSize = SelfSize + (TeammateSlots * TeammateSlotSize) + (OpponentSlots * OpponentSlotSize);
 }
 
 public enum GladiatorSelfObservationIndex
 {
-    ArenaCenterLocalX = 0,
-    ArenaCenterLocalZ = 1,
+    ArenaCenterWorldDeltaX = 0,
+    ArenaCenterWorldDeltaZ = 1,
     HealthRatio = 2,
     MaxHealthLogRatio = 3,
     AttackLogRatio = 4,
@@ -26,24 +29,32 @@ public enum GladiatorSelfObservationIndex
     NearbyTeammateRatio = 14,
     BoundaryPressure = 15,
     BattleTimeoutRemainingRatio = 16,
-    AgentSmoothedLocalMoveX = 17,
-    AgentSmoothedLocalMoveZ = 18,
-    AgentSmoothedTurn = 19,
-    AgentPreviousRawLocalMoveX = 20,
-    AgentPreviousRawLocalMoveZ = 21,
-    AgentPreviousRawTurn = 22,
-    HasReadySkill = 23,
-    HasTarget = 24,
+    AgentSmoothedWorldMoveX = 17,
+    AgentSmoothedWorldMoveZ = 18,
+    AgentPreviousRawWorldMoveX = 19,
+    AgentPreviousRawWorldMoveZ = 20,
+    HasTarget = 21,
+    CurrentTargetSlot0 = 22,
+    CurrentTargetSlot1 = 23,
+    CurrentTargetSlot2 = 24,
+    CurrentTargetSlot3 = 25,
+    CurrentTargetSlot4 = 26,
+    CurrentTargetSlot5 = 27,
+    CurrentStanceNeutral = 28,
+    CurrentStancePressure = 29,
+    CurrentStanceKeepRange = 30,
 }
 
 public enum GladiatorUnitObservationIndex
 {
-    LocalPositionX = 0,
-    LocalPositionZ = 1,
+    WorldRelativePositionX = 0,
+    WorldRelativePositionZ = 1,
     HealthRatio = 2,
     MaxHealthLogRatio = 3,
     AttackLogRatio = 4,
     AttackRangeRatio = 5,
     MoveSpeedRatio = 6,
     AttackCooldownRatio = 7,
+    // 적군 슬롯(OpponentSlotSize)에만 존재. 이 유닛이 자신을 타겟으로 하고 Neutral/Pressure 태세일 때 1.
+    IsTargetingMeAggressively = 8,
 }

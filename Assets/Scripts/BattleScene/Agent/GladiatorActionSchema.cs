@@ -1,11 +1,10 @@
 public static class GladiatorActionSchema
 {
-    public const int ContractVersion = 4;
+    public const int ContractVersion = 7;
 
-    public const int ContinuousMoveX = 0;
-    public const int ContinuousMoveZ = 1;
-    public const int ContinuousTurn = 2;
-    public const int ContinuousSize = 3;
+    public const int ContinuousWorldMoveX = 0;
+    public const int ContinuousWorldMoveZ = 1;
+    public const int ContinuousSize = 2;
 
     public const int CommandBranch = 0;
     public const int TargetBranch = 1;
@@ -14,8 +13,7 @@ public static class GladiatorActionSchema
 
     public const int CommandNone = 0;
     public const int CommandBasicAttack = 1;
-    public const int CommandSkill = 2;
-    public const int CommandBranchSize = 3;
+    public const int CommandBranchSize = 2;
 
     public const int TargetBranchSize = BattleTeamConstants.MaxUnitsPerTeam;
 

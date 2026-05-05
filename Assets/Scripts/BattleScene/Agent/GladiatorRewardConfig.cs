@@ -3,92 +3,82 @@ using UnityEngine;
 [CreateAssetMenu(menuName = "Battle/Training/Gladiator Reward Config")]
 public sealed class GladiatorRewardConfig : ScriptableObject
 {
-    [FieldDescription("매 스텝마다 부과되는 기본 패널티. 에이전트가 불필요하게 시간을 끌지 않도록 유도한다.")]
-    public float step = -0.001f;
+    [FieldDescription("매 스텝마다 부과되는 기본 패널티.")]
+    public float step = -0.0005f;
 
-    [FieldDescription("적에게 가까워질수록(거리 감소량 비례) 부여되는 보상. 적극적인 교전을 유도한다.")]
-    public float approach = 0.0005f;
+    [FieldDescription("선택 타겟이 사거리 밖일 때 거리 감소량에 비례해 부여되는 보상.")]
+    public float targetApproach = 0.005f;
 
-    [FieldDescription(
-        "후퇴가 적절한 상황에서 거리를 벌릴수록(거리 증가량 비례) 부여되는 보상. 전략적 후퇴를 유도한다."
-    )]
-    public float retreatDistance = 0.0005f;
+    [FieldDescription("선택 타겟이 사거리 밖일 때 멀어지는 거리 증가량에 비례해 부과되는 패널티.")]
+    public float targetDrift = -0.005f;
 
-    [FieldDescription(
-        "공격 범위 밖에서 기본 공격을 시도할 때 부여되는 보상. 사정거리 밖에서도 공격 의지를 유지하도록 유도한다."
-    )]
-    public float chaseTarget = 0.0005f;
+    [FieldDescription("선택 타겟이 사거리 안이고 공격 가능할 때 기본 공격 입력에 부여되는 보상.")]
+    public float attackIntentReward = 0.02f;
 
-    [FieldDescription(
-        "살아있는 적이 있음에도 이동·공격 없이 정지 상태일 때 부과되는 패널티. 소극적 대기 행동을 억제한다."
-    )]
-    public float disengaged = -0.01f;
+    [FieldDescription("선택 타겟이 사거리 밖일 때 기본 공격 입력에 부과되는 패널티.")]
+    public float outOfRangeAttackPenalty = -0.02f;
 
-    [FieldDescription(
-        "후퇴가 필요한 상황(ShouldRetreat)에서 스페이싱 이동을 취했을 때 부여되는 보상. 적절한 후퇴를 장려한다."
-    )]
-    public float goodRetreat = 0.001f;
+    [FieldDescription("Neutral 태세일 때 타겟이 유효 사거리의 0.75 내에 있으면, 침투 비율에 비례해 부과되는 패널티.")]
+    public float neutralTooClosePenalty = -0.02f;
 
-    [FieldDescription("후퇴가 불필요한 상황에서 스페이싱 이동을 취했을 때 부과되는 패널티. 불필요한 도망을 억제한다.")]
-    public float badRetreat = -0.02f;
+    [FieldDescription("Pressure 태세일 때 타겟이 유효 사거리의 0.5 내에 있으면, 침투 비율에 비례해 부과되는 패널티.")]
+    public float pressureTooClosePenalty = -0.02f;
 
-    [FieldDescription(
-        "공격 가능한 사정거리 내 적이 있음에도 공격하지 않을 때 부과되는 패널티. 소극적 교전을 억제한다."
-    )]
-    public float inRangeNoAttack = -0.01f;
+    [FieldDescription("공격 쿨타임 또는 공격 중 기본 공격 입력에 부과되는 패널티.")]
+    public float attackBlockedPenalty = -0.005f;
 
-    [FieldDescription("후퇴해야 하는 상황에서 기본 공격을 시도할 때 부과되는 패널티. 무리한 공격을 억제한다.")]
-    public float dangerousAttack = -0.03f;
+    [FieldDescription("선택 타겟이 사거리 안이고 공격 가능할 때 공격하지 않으면 부과되는 패널티.")]
+    public float inRangeNoAttack = -0.05f;
 
-    [FieldDescription("피해를 받을 때마다 부과되는 기본 패널티.")]
-    public float damageTaken = -0.01f;
+    [FieldDescription("타겟 전환 시 부과되는 패널티.")]
+    public float targetSwitchPenalty = -0.01f;
 
-    [FieldDescription("받은 피해량 1포인트당 추가로 부과되는 패널티. 피해 규모에 비례한 추가 억제 효과.")]
-    public float damageTakenPerPoint = -0.002f;
+    [FieldDescription("태세 전환 시 부과되는 패널티.")]
+    public float stanceSwitchPenalty = -0.01f;
 
-    [FieldDescription("사망 시 부과되는 패널티.")]
-    public float death = -2f;
+    [FieldDescription("입힌 피해를 대상 최대 체력 대비 비율로 환산해 부여하는 보상.")]
+    public float damageDealtRatio = 1f;
 
-    [FieldDescription("적에게 피해를 입힐 때 부여되는 보상.")]
-    public float damageDealt = 0.01f;
+    [FieldDescription("받은 피해를 자기 최대 체력 대비 비율로 환산해 부과하는 패널티.")]
+    public float damageTakenRatio = -1f;
 
     [FieldDescription("공격이 적에게 명중했을 때 부여되는 보상.")]
     public float attackLanded = 0.05f;
 
     [FieldDescription("적을 처치했을 때 부여되는 보상.")]
-    public float kill = 10f;
+    public float kill = 3f;
 
-    [FieldDescription("플레이어블 영역 경계를 벗어났을 때 매 스텝 부과되는 패널티. 아레나 이탈을 억제한다.")]
+    [FieldDescription("사망 시 부과되는 패널티.")]
+    public float death = -3f;
+
+    [FieldDescription("플레이어블 영역 경계를 벗어났을 때 매 스텝 부과되는 패널티.")]
     public float boundary = -0.2f;
 
-    [FieldDescription("유효한 타겟 없이 공격 커맨드를 입력했을 때 부과되는 패널티. 헛된 행동을 억제한다.")]
+    [FieldDescription("유효한 타겟 없이 공격 커맨드를 입력했을 때 부과되는 패널티.")]
     public float invalidAction = -1f;
 
-    [FieldDescription("직전 스텝 대비 이동 입력 변화량에 비례하는 패널티. 움직임의 부드러움을 유도한다.")]
+    [FieldDescription("직전 스텝 대비 이동 입력 변화량에 비례하는 패널티.")]
     public float actionDelta = -0.001f;
-
-    [FieldDescription("직전 스텝 대비 회전 입력 변화량에 비례하는 패널티. 회전의 부드러움을 유도한다.")]
-    public float turnDelta = -0.0005f;
-
-    [FieldDescription("정지 상태에서 회전만 과도하게 할 때(idle jitter) 부과되는 패널티. 제자리 회전 반복을 억제한다.")]
-    public float idleJitter = -0.001f;
-
-    [FieldDescription("스킬을 사용할 수 없는 상황에서 스킬 커맨드를 입력했을 때 부과되는 패널티.")]
-    public float invalidSkill = -0.02f;
-
-    [FieldDescription("스킬이 정상적으로 발동되었을 때 부여되는 보상.")]
-    public float skillActivated = 0.02f;
 
     [Header("MA-POCA 팀 리워드")]
     [FieldDescription("팀이 전투에서 승리했을 때 팀 전체에 부여되는 그룹 보상.")]
-    public float groupWin = 20f;
+    public float groupWin = 10f;
 
     [FieldDescription("팀이 전투에서 패배했을 때 팀 전체에 부과되는 그룹 패널티.")]
-    public float groupLoss = -20f;
-
-    [FieldDescription("제한 시간 내에 전투가 끝나지 않았을 때 팀 전체에 부과되는 그룹 패널티.")]
-    public float groupTimeout = -20f;
+    public float groupLoss = -10f;
 
     [FieldDescription("전투가 외부 요인으로 중단되었을 때 팀 전체에 부과되는 그룹 패널티.")]
-    public float groupInterrupted = -20f;
+    public float groupInterrupted = -10f;
+
+    [Header("승리 보상 배율")]
+    [FieldDescription(
+        "남은 경기 시간이 100%일 때 적용되는 최대 배율. 배율 = 1 + (winSpeedBonus - 1) * timeRemainingRatio."
+    )]
+    public float winSpeedBonus = 1.5f;
+
+    [FieldDescription("승리 팀 HP가 100%일 때 적용되는 최대 배율. 배율 = 1 + (winHpBonus - 1) * hpRatio.")]
+    public float winHpBonus = 1.5f;
+
+    [FieldDescription("타임아웃 패널티 = groupLoss * 최대배율 * timeoutPenaltyScale.")]
+    public float timeoutPenaltyScale = 1.2f;
 }

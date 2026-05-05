@@ -1,0 +1,46 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6d1e5538de34e1a4d89097cdbe7490f0, type: 3}
+  m_Name: Stage_1_1
+  m_EditorClassIdentifier: 
+  scenarioName: Test Scenario
+  allyTeam:
+  - classSO: {fileID: 11400000, guid: 9b166f98acf232240b7db9c0d858014f, type: 2}
+    level: 0
+    weaponData: {fileID: 11400000, guid: 72083519813a3ab4098ce19d38d566cd, type: 2}
+    weaponSkillId: 0
+    healthOverride: 0
+    attackOverride: 0
+    attackSpeedOverride: 0
+    moveSpeedOverride: 0
+    attackRangeOverride: 0
+    overrideWeaponSettings: 0
+    isRanged: 0
+    useProjectile: 0
+    statMultiplier: 0
+  enemyTeam:
+  - classSO: {fileID: 11400000, guid: 9b166f98acf232240b7db9c0d858014f, type: 2}
+    level: 0
+    weaponData: {fileID: 11400000, guid: 72083519813a3ab4098ce19d38d566cd, type: 2}
+    weaponSkillId: 0
+    healthOverride: 0
+    attackOverride: 0
+    attackSpeedOverride: 0
+    moveSpeedOverride: 0
+    attackRangeOverride: 0
+    overrideWeaponSettings: 0
+    isRanged: 0
+    useProjectile: 0
+    statMultiplier: 0
+  battleSeed: 12345
+  enemyAverageLevel: 1
+  previewRewardGold: 100

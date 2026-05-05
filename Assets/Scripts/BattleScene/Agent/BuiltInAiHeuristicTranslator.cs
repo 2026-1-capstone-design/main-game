@@ -7,7 +7,6 @@ public static class BuiltInAiHeuristicTranslator
     public static void Write(
         ActionBuffers actionsOut,
         BattleControlPlan plan,
-        BattleUnitPose selfPose,
         BattleUnitCombatState selfState,
         GladiatorStateRosterView rosterView
     )
@@ -23,7 +22,7 @@ public static class BuiltInAiHeuristicTranslator
             return;
         }
 
-        WriteMovement(continuous, plan, selfPose, selfState);
+        WriteMovement(continuous, plan, selfState);
         discrete[GladiatorActionSchema.CommandBranch] = ResolveCommand(plan, selfState);
         discrete[GladiatorActionSchema.TargetBranch] = ResolveTargetSlot(plan.TargetEnemy, rosterView);
         discrete[GladiatorActionSchema.StanceBranch] = ResolveStance(plan.ActionType);
@@ -32,7 +31,6 @@ public static class BuiltInAiHeuristicTranslator
     private static void WriteMovement(
         ActionSegment<float> continuous,
         BattleControlPlan plan,
-        BattleUnitPose pose,
         BattleUnitCombatState self
     )
     {
@@ -61,18 +59,14 @@ public static class BuiltInAiHeuristicTranslator
         }
 
         Vector3 dir = toTarget / dist;
-        continuous[GladiatorActionSchema.ContinuousMoveX] = Mathf.Clamp(Vector3.Dot(dir, pose.Right), -1f, 1f);
-        continuous[GladiatorActionSchema.ContinuousMoveZ] = Mathf.Clamp(Vector3.Dot(dir, pose.Forward), -1f, 1f);
-        float cross = pose.Forward.x * dir.z - pose.Forward.z * dir.x;
-        float dot = pose.Forward.x * dir.x + pose.Forward.z * dir.z;
-        continuous[GladiatorActionSchema.ContinuousTurn] = Mathf.Clamp(-Mathf.Atan2(cross, dot) / Mathf.PI, -1f, 1f);
+        continuous[GladiatorActionSchema.ContinuousWorldMoveX] = Mathf.Clamp(dir.x, -1f, 1f);
+        continuous[GladiatorActionSchema.ContinuousWorldMoveZ] = Mathf.Clamp(dir.z, -1f, 1f);
     }
 
     private static void WriteIdleMovement(ActionSegment<float> continuous)
     {
-        continuous[GladiatorActionSchema.ContinuousMoveX] = 0f;
-        continuous[GladiatorActionSchema.ContinuousMoveZ] = 0f;
-        continuous[GladiatorActionSchema.ContinuousTurn] = 0f;
+        continuous[GladiatorActionSchema.ContinuousWorldMoveX] = 0f;
+        continuous[GladiatorActionSchema.ContinuousWorldMoveZ] = 0f;
     }
 
     private static int ResolveCommand(BattleControlPlan plan, BattleUnitCombatState self)
@@ -88,12 +82,18 @@ public static class BuiltInAiHeuristicTranslator
 
     private static int ResolveTargetSlot(BattleUnitCombatState target, GladiatorStateRosterView rosterView)
     {
-        if (target == null || rosterView == null)
+        if (rosterView == null)
             return 0;
+
         IReadOnlyList<BattleUnitCombatState> hostiles = rosterView.Hostiles;
         for (int i = 0; i < hostiles.Count; i++)
             if (hostiles[i] == target)
                 return i;
+
+        for (int i = 0; i < hostiles.Count; i++)
+            if (hostiles[i] != null && !hostiles[i].IsCombatDisabled)
+                return i;
+
         return 0;
     }
 

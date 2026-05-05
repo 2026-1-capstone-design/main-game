@@ -16,6 +16,7 @@ public sealed class TrainingEpisodeController
     private bool _episodeEnding;
     private bool _episodeResetRequested;
     private BattleOutcome? _lastOutcome;
+    private int _battleTimeoutTicks;
 
     public TrainingEpisodeController(
         BattleSceneFlowManager flowManager,
@@ -70,6 +71,8 @@ public sealed class TrainingEpisodeController
         if (_episodeEnding || _simulationManager == null)
             return;
 
+        _battleTimeoutTicks = battleTimeoutTicks;
+
         if (_episodeResetRequested)
         {
             ResetEpisode(TrainingEpisodeEndReason.Requested);
@@ -100,7 +103,9 @@ public sealed class TrainingEpisodeController
         bool isTimeout = reason == TrainingEpisodeEndReason.Timeout;
         BattleTeamId? winnerTeamId =
             reason == TrainingEpisodeEndReason.BattleFinished ? _lastOutcome?.WinnerTeamId : null;
-        _agentBinder.EndTrainingGroups(reason, winnerTeamId, isTimeout);
+        float timeRemainingRatio = ComputeTimeRemainingRatio();
+        float winnerHpRatio = winnerTeamId.HasValue ? ComputeTeamHpRatio(winnerTeamId.Value) : 0f;
+        _agentBinder.EndTrainingGroups(reason, winnerTeamId, isTimeout, timeRemainingRatio, winnerHpRatio);
 
         if (!BootstrapEpisode())
         {
@@ -110,6 +115,31 @@ public sealed class TrainingEpisodeController
 
         _lastOutcome = null;
         _episodeEnding = false;
+    }
+
+    private float ComputeTimeRemainingRatio()
+    {
+        if (_simulationManager == null || _battleTimeoutTicks <= 0)
+            return 0f;
+        return UnityEngine.Mathf.Clamp01(1f - _simulationManager.BattleTickCount / (float)_battleTimeoutTicks);
+    }
+
+    private float ComputeTeamHpRatio(BattleTeamId teamId)
+    {
+        if (_flowManager == null)
+            return 0f;
+
+        float totalMax = 0f;
+        float totalCurrent = 0f;
+        foreach (BattleRuntimeUnit unit in _flowManager.RuntimeUnits)
+        {
+            if (unit == null || unit.TeamId != teamId)
+                continue;
+            totalMax += unit.MaxHealth;
+            totalCurrent += unit.CurrentHealth;
+        }
+
+        return totalMax > 0f ? UnityEngine.Mathf.Clamp01(totalCurrent / totalMax) : 0f;
     }
 
     private bool BootstrapEpisode()

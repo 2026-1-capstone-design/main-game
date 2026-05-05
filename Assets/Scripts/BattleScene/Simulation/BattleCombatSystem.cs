@@ -102,15 +102,12 @@ public sealed class BattleCombatSystem
 
             BattleControlPlan plan = controlPlans != null && i < controlPlans.Length ? controlPlans[i] : default;
             bool explicitSkillCommand = plan.UsesExplicitCombatCommands && plan.Command == BattleCombatCommand.Skill;
-            if (plan.UsesExplicitCombatCommands && !explicitSkillCommand)
+            if (!explicitSkillCommand)
                 continue;
             if (unit.SkillCooldownRemaining > 0f)
             {
-                if (explicitSkillCommand)
-                {
-                    unit.RaiseSkillFailed();
-                    ConsumeCommand(controlSources, unit.State, BattleCombatCommand.Skill);
-                }
+                unit.RaiseSkillFailed();
+                ConsumeCommand(controlSources, unit.State, BattleCombatCommand.Skill);
 
                 continue;
             }
@@ -118,11 +115,8 @@ public sealed class BattleCombatSystem
             IBattleSkill skill = _skillRegistry.Get(unit.State.GetSkill());
             if (skill == null || !skill.CanActivate(unit))
             {
-                if (explicitSkillCommand)
-                {
-                    unit.RaiseSkillFailed();
-                    ConsumeCommand(controlSources, unit.State, BattleCombatCommand.Skill);
-                }
+                unit.RaiseSkillFailed();
+                ConsumeCommand(controlSources, unit.State, BattleCombatCommand.Skill);
 
                 continue;
             }

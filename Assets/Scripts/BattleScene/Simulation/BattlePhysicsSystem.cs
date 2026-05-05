@@ -53,22 +53,33 @@ public sealed class BattlePhysicsSystem
 
             if (plan.UsesExplicitCombatCommands)
             {
-                float rotationDelta = plan.Turn * BattleRuntimeUnit.AgentTurnSpeedDegPerSec;
-                if (rotationDelta != 0f)
-                    unit.Rotate(rotationDelta * tickDeltaTime);
-
-                Vector3 explicitMoveDirection = GetWorldMoveDirection(unit, plan.LocalMove);
+                Vector3 explicitMoveDirection = GetWorldMoveDirection(plan.LocalMove);
                 if (explicitMoveDirection.sqrMagnitude > 0.0001f)
                 {
+                    if (
+                        plan.Command == BattleCombatCommand.BasicAttack
+                        && BattleFieldSnapshot.IsValidEnemyTarget(unit.State, plan.TargetEnemy)
+                    )
+                    {
+                        unit.FaceTarget(plan.TargetEnemy.Position);
+                    }
+                    else
+                    {
+                        unit.FaceTarget(unit.Position + explicitMoveDirection);
+                    }
+
                     unit.SetPosition(unit.Position + explicitMoveDirection * unit.MoveSpeed * tickDeltaTime);
                     unit.ClampInsideBattlefield(_battlefieldCollider);
                     unit.State.SetMovementState(true);
                 }
                 else if (
-                    (plan.Command == BattleCombatCommand.BasicAttack || plan.Stance == BattleControlStance.Pressure)
+                    (plan.Command == BattleCombatCommand.BasicAttack
+                        || plan.Stance == BattleControlStance.Pressure
+                        || plan.Stance == BattleControlStance.Neutral)
                     && BattleFieldSnapshot.IsValidEnemyTarget(unit.State, plan.TargetEnemy)
                 )
                 {
+                    unit.FaceTarget(plan.TargetEnemy.Position);
                     bool moved = MoveTowardsTarget(unit, plan.TargetEnemy, tickDeltaTime);
                     unit.State.SetMovementState(moved);
                     if (!moved)
@@ -76,6 +87,9 @@ public sealed class BattlePhysicsSystem
                 }
                 else
                 {
+                    if (BattleFieldSnapshot.IsValidEnemyTarget(unit.State, plan.TargetEnemy))
+                        unit.FaceTarget(plan.TargetEnemy.Position);
+
                     unit.State.SetIdleState();
                 }
 
@@ -121,12 +135,9 @@ public sealed class BattlePhysicsSystem
         }
     }
 
-    private static Vector3 GetWorldMoveDirection(BattleRuntimeUnit unit, Vector2 localMove)
+    private static Vector3 GetWorldMoveDirection(Vector2 localMove)
     {
-        if (unit == null)
-            return Vector3.zero;
-
-        Vector3 direction = unit.transform.right * localMove.x + unit.transform.forward * localMove.y;
+        Vector3 direction = new Vector3(localMove.x, 0f, localMove.y);
         direction.y = 0f;
         if (direction.sqrMagnitude > 1f)
         {

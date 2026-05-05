@@ -5,13 +5,13 @@ public static class GladiatorAgentActionParser
 {
     public static GladiatorAgentAction Parse(ActionBuffers actions)
     {
-        Vector2 localMove = ReadMove(actions.ContinuousActions);
-        float turn = ReadTurn(actions.ContinuousActions);
+        Vector2 worldMove = ReadMove(actions.ContinuousActions);
         int command = ReadDiscrete(
             actions.DiscreteActions,
             GladiatorActionSchema.CommandBranch,
             GladiatorActionSchema.CommandNone
         );
+        command = Mathf.Clamp(command, 0, GladiatorActionSchema.CommandBranchSize - 1);
         int targetSlot = ReadDiscrete(actions.DiscreteActions, GladiatorActionSchema.TargetBranch, 0);
         int stance = ReadDiscrete(
             actions.DiscreteActions,
@@ -19,7 +19,7 @@ public static class GladiatorAgentActionParser
             GladiatorActionSchema.StanceNeutral
         );
 
-        return new GladiatorAgentAction(localMove, turn, command, targetSlot, stance);
+        return new GladiatorAgentAction(worldMove, command, targetSlot, stance);
     }
 
     private static Vector2 ReadMove(ActionSegment<float> continuousActions)
@@ -29,22 +29,17 @@ public static class GladiatorAgentActionParser
             return Vector2.zero;
         }
 
-        var localMove = new Vector2(
-            Mathf.Clamp(continuousActions[GladiatorActionSchema.ContinuousMoveX], -1f, 1f),
-            Mathf.Clamp(continuousActions[GladiatorActionSchema.ContinuousMoveZ], -1f, 1f)
+        var worldMove = new Vector2(
+            Mathf.Clamp(continuousActions[GladiatorActionSchema.ContinuousWorldMoveX], -1f, 1f),
+            Mathf.Clamp(continuousActions[GladiatorActionSchema.ContinuousWorldMoveZ], -1f, 1f)
         );
-        if (localMove.sqrMagnitude > 1f)
+        if (worldMove.sqrMagnitude > 1f)
         {
-            localMove.Normalize();
+            worldMove.Normalize();
         }
 
-        return localMove;
+        return worldMove;
     }
-
-    private static float ReadTurn(ActionSegment<float> continuousActions) =>
-        continuousActions.Length > GladiatorActionSchema.ContinuousTurn
-            ? Mathf.Clamp(continuousActions[GladiatorActionSchema.ContinuousTurn], -1f, 1f)
-            : 0f;
 
     private static int ReadDiscrete(ActionSegment<int> discreteActions, int branch, int fallback) =>
         discreteActions.Length > branch ? discreteActions[branch] : fallback;

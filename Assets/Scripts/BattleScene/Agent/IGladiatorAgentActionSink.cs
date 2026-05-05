@@ -29,8 +29,8 @@ public sealed class RuntimeUnitAgentActionSink : IGladiatorAgentActionSink
         }
 
         BattleRuntimeUnit targetRuntime = _runtimeResolver != null ? _runtimeResolver.Resolve(target) : null;
-        _controlBuffer?.SetRawInput(_unit.State, action.LocalMove, action.Turn, action.Command, action.Stance, target);
-        _unit.SetAgentControlInput(action.LocalMove, action.Turn, action.Command, action.Stance, targetRuntime);
+        _controlBuffer?.SetRawInput(_unit.State, action.WorldMove, action.Command, action.Stance, target);
+        _unit.SetAgentControlInput(action.WorldMove, 0f, action.Command, action.Stance, targetRuntime);
     }
 
     public void Clear()

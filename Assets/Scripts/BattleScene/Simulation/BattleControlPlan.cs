@@ -62,7 +62,7 @@ public readonly struct BattleControlPlan
             target != null ? target.Position : Vector3.zero,
             false,
             input.SmoothedLocalMove,
-            input.SmoothedTurn,
+            0f,
             input.Command,
             input.Stance,
             usesExplicitCombatCommands: true

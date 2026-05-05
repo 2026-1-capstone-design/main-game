@@ -68,32 +68,71 @@ public sealed class TrainingAgentBinder
         BindAgentsToUnits(settings.EnemyAgents, hostileUnits, _enemyGroup, controlsHostileTeam);
     }
 
-    public void EndTrainingGroups(TrainingEpisodeEndReason reason, BattleTeamId? winnerTeamId, bool isTimeout)
+    public void EndTrainingGroups(
+        TrainingEpisodeEndReason reason,
+        BattleTeamId? winnerTeamId,
+        bool isTimeout,
+        float timeRemainingRatio = 0f,
+        float winnerHpRatio = 0f
+    )
     {
+        ForEachControlledAgent(agent => agent.FlushEpisodeMetrics());
+        RecordEpisodeOutcome(reason, winnerTeamId, isTimeout);
+
         if (!_settings.UsePocaGroupRewards || _allyGroup == null || _enemyGroup == null)
         {
             ForEachControlledAgent(agent => agent.EndEpisode());
             return;
         }
 
+        float maxMultiplier = _settings.WinSpeedBonus * _settings.WinHpBonus;
+
         if (reason == TrainingEpisodeEndReason.BattleFinished && winnerTeamId.HasValue)
         {
             bool allyWon = winnerTeamId.Value == BattleTeamIds.Player;
-            _allyGroup.AddGroupReward(allyWon ? _settings.GroupWinReward : _settings.GroupLossReward);
-            _enemyGroup.AddGroupReward(allyWon ? _settings.GroupLossReward : _settings.GroupWinReward);
+            float speedMultiplier = 1f + (_settings.WinSpeedBonus - 1f) * timeRemainingRatio;
+            float hpMultiplier = 1f + (_settings.WinHpBonus - 1f) * winnerHpRatio;
+            float combinedMultiplier = speedMultiplier * hpMultiplier;
+            _allyGroup.AddGroupReward(
+                (allyWon ? _settings.GroupWinReward : _settings.GroupLossReward) * combinedMultiplier
+            );
+            _enemyGroup.AddGroupReward(
+                (allyWon ? _settings.GroupLossReward : _settings.GroupWinReward) * combinedMultiplier
+            );
             _allyGroup.EndGroupEpisode();
             _enemyGroup.EndGroupEpisode();
             return;
         }
 
+        float timeoutReward = _settings.GroupLossReward * maxMultiplier * _settings.TimeoutPenaltyScale;
         float interruptionReward =
             reason == TrainingEpisodeEndReason.Timeout
-                ? _settings.GroupTimeoutReward
+                ? timeoutReward
                 : _settings.GroupInterruptedReward;
         _allyGroup.AddGroupReward(interruptionReward);
         _enemyGroup.AddGroupReward(interruptionReward);
         _allyGroup.GroupEpisodeInterrupted();
         _enemyGroup.GroupEpisodeInterrupted();
+    }
+
+    private static void RecordEpisodeOutcome(
+        TrainingEpisodeEndReason reason,
+        BattleTeamId? winnerTeamId,
+        bool isTimeout
+    )
+    {
+        var recorder = Academy.Instance.StatsRecorder;
+        bool battleFinished = reason == TrainingEpisodeEndReason.BattleFinished && winnerTeamId.HasValue;
+        recorder.Add("Combat/BattleFinished", battleFinished ? 1f : 0f, StatAggregationMethod.Average);
+        recorder.Add("Combat/Timeout", isTimeout ? 1f : 0f, StatAggregationMethod.Average);
+        if (battleFinished)
+        {
+            recorder.Add(
+                "Combat/AllyWin",
+                winnerTeamId.Value == BattleTeamIds.Player ? 1f : 0f,
+                StatAggregationMethod.Average
+            );
+        }
     }
 
     public void Dispose()

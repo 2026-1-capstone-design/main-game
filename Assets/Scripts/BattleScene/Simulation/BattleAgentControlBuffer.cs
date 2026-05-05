@@ -4,15 +4,13 @@ using UnityEngine;
 public sealed class BattleAgentControlBuffer
 {
     private const float MoveInputChangePerSecond = 8f;
-    private const float TurnInputChangePerSecond = 8f;
 
     private readonly Dictionary<BattleUnitCombatState, BattleAgentControlInput> _inputs =
         new Dictionary<BattleUnitCombatState, BattleAgentControlInput>();
 
     public void SetRawInput(
         BattleUnitCombatState self,
-        Vector2 rawLocalMove,
-        float rawTurn,
+        Vector2 rawWorldMove,
         int command,
         int stance,
         BattleUnitCombatState target
@@ -23,23 +21,20 @@ public sealed class BattleAgentControlBuffer
             return;
         }
 
-        if (rawLocalMove.sqrMagnitude > 1f)
+        if (rawWorldMove.sqrMagnitude > 1f)
         {
-            rawLocalMove.Normalize();
+            rawWorldMove.Normalize();
         }
 
         _inputs.TryGetValue(self, out BattleAgentControlInput input);
         input.PreviousRawLocalMove = input.RawLocalMove;
-        input.PreviousRawTurn = input.RawTurn;
-        input.RawLocalMove = rawLocalMove;
-        input.RawTurn = Mathf.Clamp(rawTurn, -1f, 1f);
+        input.RawLocalMove = rawWorldMove;
         input.Command = ToCommand(command);
         input.Stance = ToStance(stance);
 
         bool hasValidTarget = BattleFieldSnapshot.IsValidEnemyTarget(self, target);
         input.Target = hasValidTarget ? target : null;
         input.WantsBasicAttack = input.Command == BattleCombatCommand.BasicAttack && hasValidTarget;
-        input.WantsSkill = input.Command == BattleCombatCommand.Skill && hasValidTarget;
 
         _inputs[self] = input;
         self.SetPlannedTargets(input.Target, null);
@@ -54,7 +49,6 @@ public sealed class BattleAgentControlBuffer
 
         _inputs.TryGetValue(self, out BattleAgentControlInput input);
         float moveStep = MoveInputChangePerSecond * Mathf.Max(0f, tickDeltaTime);
-        float turnStep = TurnInputChangePerSecond * Mathf.Max(0f, tickDeltaTime);
 
         Vector2 smoothed = input.SmoothedLocalMove;
         smoothed.x = Mathf.MoveTowards(smoothed.x, input.RawLocalMove.x, moveStep);
@@ -65,7 +59,6 @@ public sealed class BattleAgentControlBuffer
         }
 
         input.SmoothedLocalMove = smoothed;
-        input.SmoothedTurn = Mathf.MoveTowards(input.SmoothedTurn, input.RawTurn, turnStep);
         _inputs[self] = input;
         return input;
     }
@@ -86,11 +79,6 @@ public sealed class BattleAgentControlBuffer
         {
             input.WantsBasicAttack = false;
         }
-        else if (command == BattleCombatCommand.Skill)
-        {
-            input.WantsSkill = false;
-        }
-
         if (input.Command == command)
         {
             input.Command = BattleCombatCommand.None;
@@ -121,8 +109,6 @@ public sealed class BattleAgentControlBuffer
         {
             case GladiatorActionSchema.CommandBasicAttack:
                 return BattleCombatCommand.BasicAttack;
-            case GladiatorActionSchema.CommandSkill:
-                return BattleCombatCommand.Skill;
             default:
                 return BattleCombatCommand.None;
         }

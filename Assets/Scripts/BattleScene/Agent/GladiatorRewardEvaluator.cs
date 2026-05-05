@@ -5,22 +5,22 @@ public readonly struct GladiatorRewardEvaluation
     public readonly float Reward;
     public readonly bool RequestsBoundaryReset;
     public readonly GladiatorAgentAction EffectiveAction;
-    public readonly bool UpdatesNearestOpponentDistance;
-    public readonly float NearestOpponentDistance;
+    public readonly bool UpdatesTargetDistance;
+    public readonly float TargetDistance;
 
     public GladiatorRewardEvaluation(
         float reward,
         bool requestsBoundaryReset,
         GladiatorAgentAction effectiveAction,
-        bool updatesNearestOpponentDistance,
-        float nearestOpponentDistance
+        bool updatesTargetDistance,
+        float targetDistance
     )
     {
         Reward = reward;
         RequestsBoundaryReset = requestsBoundaryReset;
         EffectiveAction = effectiveAction;
-        UpdatesNearestOpponentDistance = updatesNearestOpponentDistance;
-        NearestOpponentDistance = nearestOpponentDistance;
+        UpdatesTargetDistance = updatesTargetDistance;
+        TargetDistance = targetDistance;
     }
 }
 
@@ -29,7 +29,6 @@ public sealed class GladiatorRewardEvaluator
     private readonly GladiatorRewardConfig _config;
     private readonly float _hardBoundaryRadiusMultiplier;
     private Vector2 _previousRawMove;
-    private float _previousRawTurn;
     private bool _hasPreviousRawAction;
 
     public GladiatorRewardEvaluator(GladiatorRewardConfig config, float hardBoundaryRadiusMultiplier)
@@ -41,7 +40,6 @@ public sealed class GladiatorRewardEvaluator
     public void Reset()
     {
         _previousRawMove = Vector2.zero;
-        _previousRawTurn = 0f;
         _hasPreviousRawAction = false;
     }
 
@@ -62,56 +60,28 @@ public sealed class GladiatorRewardEvaluator
                     reward,
                     requestsBoundaryReset: true,
                     action.WithCommand(GladiatorActionSchema.CommandNone),
-                    updatesNearestOpponentDistance: false,
-                    context.NearestOpponentDistance
+                    updatesTargetDistance: false,
+                    context.TargetDistance
                 );
             }
         }
 
-        reward += EvaluateEngagement(action, context);
-
         GladiatorAgentAction effectiveAction = action;
         if (action.Command != GladiatorActionSchema.CommandNone && !context.HasValidTarget)
         {
-            reward += _config.invalidAction;
             effectiveAction = effectiveAction.WithCommand(GladiatorActionSchema.CommandNone);
         }
 
-        if (action.IsSpacingMove)
-        {
-            reward += context.ShouldRetreat ? _config.goodRetreat : _config.badRetreat;
-        }
-
-        if (effectiveAction.WantsBasicAttack)
-        {
-            if (context.ShouldRetreat)
-            {
-                reward += _config.dangerousAttack;
-            }
-
-            if (context.IsTargetOutOfAttackRange)
-            {
-                reward += _config.chaseTarget;
-            }
-
-            if (context.IsAttackBlocked)
-            {
-                reward += _config.invalidSkill * 0.25f;
-            }
-        }
-
-        if (effectiveAction.WantsSkill && !context.CanRequestSkill)
-        {
-            reward += _config.invalidSkill;
-            effectiveAction = effectiveAction.WithCommand(GladiatorActionSchema.CommandNone);
-        }
+        reward += EvaluateTargetSwitch(context);
+        reward += EvaluateStanceSwitch(context);
+        reward += EvaluateTargetEngagement(action, context, ref effectiveAction);
 
         return new GladiatorRewardEvaluation(
             reward,
             requestsBoundaryReset: false,
             effectiveAction,
-            updatesNearestOpponentDistance: true,
-            context.NearestOpponentDistance
+            updatesTargetDistance: true,
+            context.TargetDistance
         );
     }
 
@@ -120,59 +90,100 @@ public sealed class GladiatorRewardEvaluator
         float reward = 0f;
         if (_hasPreviousRawAction)
         {
-            float moveDelta = Vector2.Distance(_previousRawMove, action.LocalMove);
-            float turnDelta = Mathf.Abs(_previousRawTurn - action.Turn);
+            float moveDelta = Vector2.Distance(_previousRawMove, action.WorldMove);
             reward += moveDelta * _config.actionDelta;
-            reward += turnDelta * _config.turnDelta;
-
-            if (action.LocalMove.sqrMagnitude <= 0.0001f && Mathf.Abs(action.Turn) > 0.1f)
-            {
-                reward += Mathf.Abs(action.Turn) * _config.idleJitter;
-            }
         }
 
-        _previousRawMove = action.LocalMove;
-        _previousRawTurn = action.Turn;
+        _previousRawMove = action.WorldMove;
         _hasPreviousRawAction = true;
         return reward;
     }
 
-    private float EvaluateEngagement(GladiatorAgentAction action, GladiatorAgentTacticalContext context)
+    private float EvaluateTargetSwitch(GladiatorAgentTacticalContext context)
     {
+        if (
+            !context.HasValidTarget
+            || context.PreviousTargetSlot < 0
+            || context.TargetSlot == context.PreviousTargetSlot
+        )
+        {
+            return 0f;
+        }
+
+        return _config.targetSwitchPenalty;
+    }
+
+    private float EvaluateStanceSwitch(GladiatorAgentTacticalContext context)
+    {
+        if (context.PreviousStance < 0 || context.Stance == context.PreviousStance)
+        {
+            return 0f;
+        }
+
+        return _config.stanceSwitchPenalty;
+    }
+
+    private float EvaluateTargetEngagement(
+        GladiatorAgentAction action,
+        GladiatorAgentTacticalContext context,
+        ref GladiatorAgentAction effectiveAction
+    )
+    {
+        if (!context.HasValidTarget)
+        {
+            return action.WantsBasicAttack ? _config.invalidAction : 0f;
+        }
+
         float reward = 0f;
-        if (
-            context.PreviousNearestOpponentDistance < float.MaxValue
-            && context.NearestOpponentDistance < float.MaxValue
-        )
+        if (context.IsTargetOutOfAttackRange)
         {
-            float approachDelta = context.PreviousNearestOpponentDistance - context.NearestOpponentDistance;
-            if (Mathf.Abs(approachDelta) > 0.0001f)
+            float delta = context.PreviousTargetDistance - context.TargetDistance;
+            reward += delta >= 0f ? delta * _config.targetApproach : -delta * _config.targetDrift;
+
+            if (action.WantsBasicAttack)
             {
-                reward +=
-                    approachDelta < 0f && context.ShouldRetreat
-                        ? -approachDelta * _config.retreatDistance
-                        : approachDelta * _config.approach;
+                reward += _config.outOfRangeAttackPenalty;
+                effectiveAction = effectiveAction.WithCommand(GladiatorActionSchema.CommandNone);
             }
+
+            return reward;
         }
 
-        if (
-            !context.IsAttackBlocked
-            && !action.IsSpacingMove
-            && !action.WantsBasicAttack
-            && context.HasAttackableOpponent
-        )
+        bool keepRangeStance = context.Stance == GladiatorActionSchema.StanceKeepRange;
+
+        if (!context.IsAttackBlocked)
         {
-            reward += _config.inRangeNoAttack;
+            if (action.WantsBasicAttack)
+                reward += _config.attackIntentReward;
+            else if (!keepRangeStance)
+                reward += _config.inRangeNoAttack;
+        }
+        else if (context.IsAttackBlocked && action.WantsBasicAttack)
+        {
+            reward += _config.attackBlockedPenalty;
         }
 
-        if (
-            !context.IsAttackBlocked
-            && action.LocalMove.sqrMagnitude <= 0.0001f
-            && action.Command == GladiatorActionSchema.CommandNone
-            && context.HasLivingOpponent
-        )
+        if (!keepRangeStance && context.TargetEffectiveRange > 0f)
         {
-            reward += _config.disengaged;
+            float distanceRatio = context.TargetDistance / context.TargetEffectiveRange;
+            if (context.Stance == GladiatorActionSchema.StanceNeutral)
+            {
+                const float neutralThreshold = 0.75f;
+                if (distanceRatio < neutralThreshold)
+                {
+                    float penetration = (neutralThreshold - distanceRatio) / neutralThreshold;
+                    reward += penetration * _config.neutralTooClosePenalty;
+                }
+            }
+            else if (context.Stance == GladiatorActionSchema.StancePressure)
+            {
+                const float pressureThreshold = 0.5f;
+                if (distanceRatio < pressureThreshold)
+                {
+                    float penetration = (pressureThreshold - distanceRatio) / pressureThreshold;
+                    reward += penetration * _config.pressureTooClosePenalty;
+                }
+            }
         }
 
         return reward;

@@ -208,11 +208,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_BrainParameters:
-    VectorObservationSize: 113
+    VectorObservationSize: 125
     NumStackedVectorObservations: 1
     m_ActionSpec:
-      m_NumContinuousActions: 3
-      BranchSizes: 030000000600000003000000
+      m_NumContinuousActions: 2
+      BranchSizes: 020000000600000003000000
     VectorActionSize: 
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
@@ -273,7 +273,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Record: 0
   NumStepsToRecord: 50000
-  DemonstrationName: GladiatorBuiltInAI
+  DemonstrationName: GladiatorBuiltInAI_v5
   DemonstrationDirectory: Assets/Demos/
 --- !u!1 &727805991372161259
 GameObject:
@@ -333,16 +333,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   battleSceneFlowManager: {fileID: 2294310619055349884}
   battleSimulationManager: {fileID: 8950524180265300232}
-  preset: {fileID: 11400000, guid: 0ee19b80213f78a42b9dd2a69a3168b7, type: 2}
+  preset: {fileID: 0}
   useCurriculumTeamSize: 1
   teamSizeEnvironmentParameter: team_size
-  defaultTeamSize: 4
+  defaultTeamSize: 1
   randomClassPool:
-  - {fileID: 11400000, guid: 9c5a947b78105224cbc9b38d27daa7fa, type: 2}
-  - {fileID: 11400000, guid: d1920f5a5213a2a4794d273884a924e4, type: 2}
-  - {fileID: 11400000, guid: 6846407ed22928941b371aab2d355ecf, type: 2}
-  - {fileID: 11400000, guid: c396e2b3c4b9eb44a9757c589726c481, type: 2}
   - {fileID: 11400000, guid: 9b166f98acf232240b7db9c0d858014f, type: 2}
+  - {fileID: 11400000, guid: c396e2b3c4b9eb44a9757c589726c481, type: 2}
+  - {fileID: 11400000, guid: d1920f5a5213a2a4794d273884a924e4, type: 2}
+  - {fileID: 11400000, guid: 9c5a947b78105224cbc9b38d27daa7fa, type: 2}
   randomWeaponPool:
   - {fileID: 11400000, guid: 1125cefdf7e96c04cb5c836ceef728b5, type: 2}
   - {fileID: 11400000, guid: 8f15a2a951e32fa44914883dd11d291f, type: 2}
@@ -354,7 +353,11 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 3da7b72ba791cd940915b68cc3d6a124, type: 2}
   defaultUnitLevel: 1
   defaultStatMultiplier: 1
-  timeScale: 20
+  allyStatMultiplierEnvironmentParameter: ally_stat_multiplier
+  enemyStatMultiplierEnvironmentParameter: enemy_stat_multiplier
+  defaultAllyStatMultiplier: 1
+  defaultEnemyStatMultiplier: 1
+  timeScale: 100
   logTrainingProgress: 0
   logProgressInterval: 100
   controlledSide: 3
@@ -426,11 +429,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_BrainParameters:
-    VectorObservationSize: 113
+    VectorObservationSize: 125
     NumStackedVectorObservations: 1
     m_ActionSpec:
-      m_NumContinuousActions: 3
-      BranchSizes: 030000000600000003000000
+      m_NumContinuousActions: 2
+      BranchSizes: 020000000600000003000000
     VectorActionSize: 
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
@@ -491,7 +494,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Record: 0
   NumStepsToRecord: 50000
-  DemonstrationName: GladiatorBuiltInAI
+  DemonstrationName: GladiatorBuiltInAI_v5
   DemonstrationDirectory: Assets/Demos/
 --- !u!1 &1294615182731558386
 GameObject:
@@ -594,11 +597,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_BrainParameters:
-    VectorObservationSize: 113
+    VectorObservationSize: 125
     NumStackedVectorObservations: 1
     m_ActionSpec:
-      m_NumContinuousActions: 3
-      BranchSizes: 030000000600000003000000
+      m_NumContinuousActions: 2
+      BranchSizes: 020000000600000003000000
     VectorActionSize: 
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
@@ -659,7 +662,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Record: 0
   NumStepsToRecord: 50000
-  DemonstrationName: GladiatorBuiltInAI
+  DemonstrationName: GladiatorBuiltInAI_v5
   DemonstrationDirectory: Assets/Demos/
 --- !u!1 &1786558444409426790
 GameObject:
@@ -745,11 +748,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_BrainParameters:
-    VectorObservationSize: 113
+    VectorObservationSize: 125
     NumStackedVectorObservations: 1
     m_ActionSpec:
-      m_NumContinuousActions: 3
-      BranchSizes: 030000000600000003000000
+      m_NumContinuousActions: 2
+      BranchSizes: 020000000600000003000000
     VectorActionSize: 
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
@@ -810,7 +813,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Record: 0
   NumStepsToRecord: 50000
-  DemonstrationName: GladiatorBuiltInAI
+  DemonstrationName: GladiatorBuiltInAI_v5
   DemonstrationDirectory: Assets/Demos/
 --- !u!1 &2280261313500207195
 GameObject:
@@ -891,11 +894,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_BrainParameters:
-    VectorObservationSize: 113
+    VectorObservationSize: 125
     NumStackedVectorObservations: 1
     m_ActionSpec:
-      m_NumContinuousActions: 3
-      BranchSizes: 030000000600000003000000
+      m_NumContinuousActions: 2
+      BranchSizes: 020000000600000003000000
     VectorActionSize: 
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
@@ -956,7 +959,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Record: 0
   NumStepsToRecord: 50000
-  DemonstrationName: GladiatorBuiltInAI
+  DemonstrationName: GladiatorBuiltInAI_v5
   DemonstrationDirectory: Assets/Demos/
 --- !u!1 &3102902499247393385
 GameObject:
@@ -1175,11 +1178,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_BrainParameters:
-    VectorObservationSize: 113
+    VectorObservationSize: 125
     NumStackedVectorObservations: 1
     m_ActionSpec:
-      m_NumContinuousActions: 3
-      BranchSizes: 030000000600000003000000
+      m_NumContinuousActions: 2
+      BranchSizes: 020000000600000003000000
     VectorActionSize: 
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
@@ -1240,7 +1243,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Record: 0
   NumStepsToRecord: 50000
-  DemonstrationName: GladiatorBuiltInAI
+  DemonstrationName: GladiatorBuiltInAI_v5
   DemonstrationDirectory: Assets/Demos/
 --- !u!1 &4927676676062553517
 GameObject:
@@ -1383,11 +1386,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_BrainParameters:
-    VectorObservationSize: 113
+    VectorObservationSize: 125
     NumStackedVectorObservations: 1
     m_ActionSpec:
-      m_NumContinuousActions: 3
-      BranchSizes: 030000000600000003000000
+      m_NumContinuousActions: 2
+      BranchSizes: 020000000600000003000000
     VectorActionSize: 
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
@@ -1448,7 +1451,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Record: 0
   NumStepsToRecord: 50000
-  DemonstrationName: GladiatorBuiltInAI
+  DemonstrationName: GladiatorBuiltInAI_v5
   DemonstrationDirectory: Assets/Demos/
 --- !u!1 &5789388154663900899
 GameObject:
@@ -1529,11 +1532,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_BrainParameters:
-    VectorObservationSize: 113
+    VectorObservationSize: 125
     NumStackedVectorObservations: 1
     m_ActionSpec:
-      m_NumContinuousActions: 3
-      BranchSizes: 030000000600000003000000
+      m_NumContinuousActions: 2
+      BranchSizes: 020000000600000003000000
     VectorActionSize: 
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
@@ -1594,7 +1597,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Record: 0
   NumStepsToRecord: 50000
-  DemonstrationName: GladiatorBuiltInAI
+  DemonstrationName: GladiatorBuiltInAI_v5
   DemonstrationDirectory: Assets/Demos/
 --- !u!1 &6006521931640313327
 GameObject:
@@ -1675,11 +1678,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_BrainParameters:
-    VectorObservationSize: 113
+    VectorObservationSize: 125
     NumStackedVectorObservations: 1
     m_ActionSpec:
-      m_NumContinuousActions: 3
-      BranchSizes: 030000000600000003000000
+      m_NumContinuousActions: 2
+      BranchSizes: 020000000600000003000000
     VectorActionSize: 
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
@@ -1740,7 +1743,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Record: 0
   NumStepsToRecord: 50000
-  DemonstrationName: GladiatorBuiltInAI
+  DemonstrationName: GladiatorBuiltInAI_v5
   DemonstrationDirectory: Assets/Demos/
 --- !u!1 &6868675751469248894
 GameObject:
@@ -1922,11 +1925,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_BrainParameters:
-    VectorObservationSize: 113
+    VectorObservationSize: 125
     NumStackedVectorObservations: 1
     m_ActionSpec:
-      m_NumContinuousActions: 3
-      BranchSizes: 030000000600000003000000
+      m_NumContinuousActions: 2
+      BranchSizes: 020000000600000003000000
     VectorActionSize: 
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
@@ -1987,7 +1990,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Record: 0
   NumStepsToRecord: 50000
-  DemonstrationName: GladiatorBuiltInAI
+  DemonstrationName: GladiatorBuiltInAI_v5
   DemonstrationDirectory: Assets/Demos/
 --- !u!1 &7216970115798326793
 GameObject:
@@ -2037,11 +2040,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_BrainParameters:
-    VectorObservationSize: 113
+    VectorObservationSize: 125
     NumStackedVectorObservations: 1
     m_ActionSpec:
-      m_NumContinuousActions: 3
-      BranchSizes: 030000000600000003000000
+      m_NumContinuousActions: 2
+      BranchSizes: 020000000600000003000000
     VectorActionSize: 
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
@@ -2102,7 +2105,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Record: 0
   NumStepsToRecord: 50000
-  DemonstrationName: GladiatorBuiltInAI
+  DemonstrationName: GladiatorBuiltInAI_v5
   DemonstrationDirectory: Assets/Demos/
 --- !u!1 &7272724059980600470
 GameObject:
@@ -2292,11 +2295,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_BrainParameters:
-    VectorObservationSize: 113
+    VectorObservationSize: 125
     NumStackedVectorObservations: 1
     m_ActionSpec:
-      m_NumContinuousActions: 3
-      BranchSizes: 030000000600000003000000
+      m_NumContinuousActions: 2
+      BranchSizes: 020000000600000003000000
     VectorActionSize: 
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
@@ -2357,7 +2360,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Record: 0
   NumStepsToRecord: 50000
-  DemonstrationName: GladiatorBuiltInAI
+  DemonstrationName: GladiatorBuiltInAI_v5
   DemonstrationDirectory: Assets/Demos/
 --- !u!1001 &3773519622630849861
 PrefabInstance:

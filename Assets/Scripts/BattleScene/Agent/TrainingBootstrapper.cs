@@ -31,6 +31,19 @@ public class TrainingBootstrapper : MonoBehaviour, ITrainingEnvironment
     [SerializeField]
     private float defaultStatMultiplier = 1f;
 
+    [Header("Training Stat Advantage")]
+    [SerializeField]
+    private string allyStatMultiplierEnvironmentParameter = "ally_stat_multiplier";
+
+    [SerializeField]
+    private string enemyStatMultiplierEnvironmentParameter = "enemy_stat_multiplier";
+
+    [SerializeField]
+    private float defaultAllyStatMultiplier = 1.15f;
+
+    [SerializeField]
+    private float defaultEnemyStatMultiplier = 1f;
+
     [Header("Editor Playback")]
     [SerializeField]
     private float timeScale = 1f;
@@ -110,6 +123,8 @@ public class TrainingBootstrapper : MonoBehaviour, ITrainingEnvironment
         defaultTeamSize = Mathf.Clamp(defaultTeamSize, 1, BattleTeamConstants.MaxUnitsPerTeam);
         defaultUnitLevel = Mathf.Max(1, defaultUnitLevel);
         defaultStatMultiplier = Mathf.Max(0f, defaultStatMultiplier);
+        defaultAllyStatMultiplier = Mathf.Max(0f, defaultAllyStatMultiplier);
+        defaultEnemyStatMultiplier = Mathf.Max(0f, defaultEnemyStatMultiplier);
     }
 
     private void OnEnable()
@@ -256,7 +271,11 @@ public class TrainingBootstrapper : MonoBehaviour, ITrainingEnvironment
             randomClassPool,
             randomWeaponPool,
             defaultUnitLevel,
-            defaultStatMultiplier
+            defaultStatMultiplier,
+            allyStatMultiplierEnvironmentParameter,
+            enemyStatMultiplierEnvironmentParameter,
+            defaultAllyStatMultiplier,
+            defaultEnemyStatMultiplier
         );
     }
 
@@ -271,8 +290,10 @@ public class TrainingBootstrapper : MonoBehaviour, ITrainingEnvironment
             usePocaGroupRewards,
             rewardConfig != null ? rewardConfig.groupWin : 0f,
             rewardConfig != null ? rewardConfig.groupLoss : 0f,
-            rewardConfig != null ? rewardConfig.groupTimeout : 0f,
-            rewardConfig != null ? rewardConfig.groupInterrupted : 0f
+            rewardConfig != null ? rewardConfig.groupInterrupted : 0f,
+            rewardConfig != null ? rewardConfig.winSpeedBonus : 0.5f,
+            rewardConfig != null ? rewardConfig.winHpBonus : 0.5f,
+            rewardConfig != null ? rewardConfig.timeoutPenaltyScale : 1.2f
         );
     }
 

@@ -8,13 +8,10 @@ public struct BattleRuntimeAgentControlInput
 {
     public Vector2 RawLocalMove;
     public Vector2 SmoothedLocalMove;
-    public float RawTurn;
-    public float SmoothedTurn;
     public int Command;
     public int Stance;
     public BattleRuntimeUnit Target;
     public bool WantsBasicAttack;
-    public bool WantsSkill;
 }
 
 // BattleRuntimeUnit은 전투 중 비주얼 렌더러다.
@@ -123,24 +120,18 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     private int _lastAttackTriggerFrame = -1;
 
     private const float AgentMoveInputChangePerSecond = 8f;
-    private const float AgentTurnInputChangePerSecond = 8f;
 
     private BattleRuntimeAgentControlInput _agentControlInput;
     private Vector2 _previousRawAgentLocalMove;
-    private float _previousRawAgentTurn;
 
     public BattleRuntimeAgentControlInput AgentControlInput => _agentControlInput;
     public Vector2 AgentRawLocalMove => _agentControlInput.RawLocalMove;
     public Vector2 AgentSmoothedLocalMove => _agentControlInput.SmoothedLocalMove;
     public Vector2 AgentPreviousRawLocalMove => _previousRawAgentLocalMove;
-    public float AgentRawTurn => _agentControlInput.RawTurn;
-    public float AgentSmoothedTurn => _agentControlInput.SmoothedTurn;
-    public float AgentPreviousRawTurn => _previousRawAgentTurn;
     public int AgentCommand => _agentControlInput.Command;
     public int AgentStance => _agentControlInput.Stance;
     public BattleRuntimeUnit AgentControlTarget => _agentControlInput.Target;
     public bool HasAgentAttackCommand => _agentControlInput.WantsBasicAttack;
-    public bool HasAgentSkillCommand => _agentControlInput.WantsSkill;
 
     public void SetControlMode(BattleUnitControlMode mode)
     {
@@ -155,7 +146,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     {
         _agentControlInput = default;
         _previousRawAgentLocalMove = Vector2.zero;
-        _previousRawAgentTurn = 0f;
+        State?.SetAgentStance(GladiatorActionSchema.StanceNeutral);
         SetAgentAttackTarget(null);
     }
 
@@ -168,11 +159,10 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
             flat.Normalize();
         }
 
-        Vector2 localMove = new Vector2(Vector3.Dot(flat, transform.right), Vector3.Dot(flat, transform.forward));
-        float turn = Mathf.Clamp(rotationDeltaDegPerSec / Mathf.Max(0.0001f, AgentTurnSpeedDegPerSec), -1f, 1f);
+        Vector2 worldMove = new Vector2(flat.x, flat.z);
         SetAgentControlInput(
-            localMove,
-            turn,
+            worldMove,
+            0f,
             GladiatorActionSchema.CommandNone,
             GladiatorActionSchema.StanceNeutral,
             null
@@ -188,7 +178,6 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     )
     {
         _previousRawAgentLocalMove = _agentControlInput.RawLocalMove;
-        _previousRawAgentTurn = _agentControlInput.RawTurn;
 
         if (rawLocalMove.sqrMagnitude > 1f)
         {
@@ -197,23 +186,20 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
 
         bool hasValidTarget = target != null && !target.IsCombatDisabled;
         bool wantsBasicAttack = command == GladiatorActionSchema.CommandBasicAttack && hasValidTarget;
-        bool wantsSkill = command == GladiatorActionSchema.CommandSkill && hasValidTarget;
 
         _agentControlInput.RawLocalMove = rawLocalMove;
-        _agentControlInput.RawTurn = Mathf.Clamp(rawTurn, -1f, 1f);
         _agentControlInput.Command = command;
         _agentControlInput.Stance = stance;
         _agentControlInput.Target = hasValidTarget ? target : null;
         _agentControlInput.WantsBasicAttack = wantsBasicAttack;
-        _agentControlInput.WantsSkill = wantsSkill;
 
+        State?.SetAgentStance(stance);
         State?.SetPlannedTargets(hasValidTarget ? target.State : null, null);
     }
 
     public void TickAgentControlInput(float tickDeltaTime)
     {
         float moveStep = AgentMoveInputChangePerSecond * Mathf.Max(0f, tickDeltaTime);
-        float turnStep = AgentTurnInputChangePerSecond * Mathf.Max(0f, tickDeltaTime);
 
         Vector2 smoothed = _agentControlInput.SmoothedLocalMove;
         smoothed.x = Mathf.MoveTowards(smoothed.x, _agentControlInput.RawLocalMove.x, moveStep);
@@ -224,18 +210,15 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         }
 
         _agentControlInput.SmoothedLocalMove = smoothed;
-        _agentControlInput.SmoothedTurn = Mathf.MoveTowards(
-            _agentControlInput.SmoothedTurn,
-            _agentControlInput.RawTurn,
-            turnStep
-        );
     }
 
     public Vector3 GetSmoothedAgentWorldMoveDirection()
     {
-        Vector3 direction =
-            transform.right * _agentControlInput.SmoothedLocalMove.x
-            + transform.forward * _agentControlInput.SmoothedLocalMove.y;
+        Vector3 direction = new Vector3(
+            _agentControlInput.SmoothedLocalMove.x,
+            0f,
+            _agentControlInput.SmoothedLocalMove.y
+        );
         direction.y = 0f;
         if (direction.sqrMagnitude > 1f)
         {
@@ -260,15 +243,6 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     {
         _agentControlInput.WantsBasicAttack = false;
         if (_agentControlInput.Command == GladiatorActionSchema.CommandBasicAttack)
-        {
-            _agentControlInput.Command = GladiatorActionSchema.CommandNone;
-        }
-    }
-
-    public void ClearAgentSkillCommand()
-    {
-        _agentControlInput.WantsSkill = false;
-        if (_agentControlInput.Command == GladiatorActionSchema.CommandSkill)
         {
             _agentControlInput.Command = GladiatorActionSchema.CommandNone;
         }
