@@ -176,6 +176,14 @@ public interface IBattleEffectSink
         System.Action<BattleEffectContext, IBattleEffectSink> execute
     );
 
+    // 지정된 시간 동안 임시 장신구를 부여합니다.
+    void GrantTemporaryArtifact(
+        BattleRuntimeUnit target,
+        IBattleArtifact artifact,
+        float duration,
+        in BattleEffectContext context
+    );
+
     // 소환, 임시 팀 변경 등 전투 중 로스터 변경을 요청하는 sink다.
     IBattleRosterMutationSink RosterMutations { get; }
 }

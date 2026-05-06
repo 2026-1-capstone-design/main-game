@@ -315,6 +315,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
 
     private void EquipSkillFromSnapShot(IAnimationProvider provider)
     {
+
         if (Snapshot == null)
             return;
 
@@ -335,6 +336,10 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         if (_myAnimation != null && skillAnimation != null)
         {
             RuntimeAnimatorController current = _myAnimation.runtimeAnimatorController;
+        }
+        if (_myAnimation != null && skillAnimation != null)
+        {
+            RuntimeAnimatorController current = _myAnimation.runtimeAnimatorController;
             AnimatorOverrideController local = new AnimatorOverrideController(current);
 
             if (current is AnimatorOverrideController existingOverride)
@@ -348,6 +353,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
             _myAnimation.runtimeAnimatorController = local;
         }
     }
+
 
     // ── 커스터마이즈 ─────────────────────────
     private void EquipSkinFromSnapshot()

@@ -16,30 +16,47 @@ public sealed class LightningSkill : IBattleSkill
 
     public void Activate(in BattleEffectContext context, IBattleEffectSink effects)
     {
-        BattleUnitCombatState caster = context.Actor != null ? context.Actor.State : null;
-        BattleUnitCombatState target = context.PrimaryTarget != null ? context.PrimaryTarget.State : null;
-        if (target == null)
+        BattleRuntimeUnit casterRuntime = context.Actor;
+        BattleUnitCombatState casterState = casterRuntime != null ? casterRuntime.State : null;
+        BattleUnitCombatState targetState = context.PrimaryTarget != null ? context.PrimaryTarget.State : null;
+
+        if (casterRuntime == null || targetState == null)
             return;
 
         foreach (BattleRuntimeUnit unitView in context.Units)
         {
-            BattleUnitCombatState unit = unitView != null ? unitView.State : null;
-            if (!BattleFieldSnapshot.IsValidEnemyTarget(caster, unit))
+            BattleUnitCombatState unitState = unitView != null ? unitView.State : null;
+
+            if (!BattleFieldSnapshot.IsValidEnemyTarget(casterState, unitState))
                 continue;
 
-            if (Vector3.Distance(target.Position, unit.Position) <= 40f)
+            if (Vector3.Distance(targetState.Position, unitState.Position) <= 40f)
             {
-                effects.DealDamage(
-                    new BattleDamageRequest
+                effects.ScheduleEffect(
+                    0.5f,
+                    casterRuntime,
+                    unitView,
+                    context,
+                    (delayedContext, delayedSink) =>
                     {
-                        Source = caster,
-                        Target = unit,
-                        Amount = caster.Attack * 1.5f,
-                        SourceKind = BattleEffectSourceKind.Skill,
-                        DamageKind = BattleDamageKind.Area,
-                        SkillId = SkillId,
-                        IsSkill = true,
-                        IsArea = true,
+                        if (unitState == null || unitState.IsCombatDisabled)
+                            return;
+
+                        delayedSink?.DealDamage(
+                            new BattleDamageRequest
+                            {
+                                Source = casterState,
+                                Target = unitState,
+                                Amount = casterState.Attack * 1.5f,
+                                SourceKind = BattleEffectSourceKind.Skill,
+                                DamageKind = BattleDamageKind.Area,
+                                SkillId = SkillId,
+                                IsSkill = true,
+                                IsArea = true,
+                            }
+                        );
+
+                        VFXManager.Instance.PlayEffect("LightningHit", unitState.Position + (Vector3.up * 1.5f));
                     }
                 );
             }

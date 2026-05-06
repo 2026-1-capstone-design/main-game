@@ -12,7 +12,7 @@ public sealed class BattleUnitCombatState
 {
     // ── 유닛 정체성 ────────────────────────────────────────────────
     public int UnitNumber { get; private set; }
-    public BattleTeamId TeamId { get; private set; }
+    public BattleTeamId TeamId { get; set; }
     public string DisplayName { get; private set; }
     public int Level { get; private set; }
 
