@@ -11,6 +11,9 @@ public sealed class GladiatorAgentEpisodeMetrics
     private int _attackOpportunityCount;
     private int _attackOpportunityUsedCount;
     private int _targetSwitchCount;
+    private readonly int[] _roleSelections = new int[GladiatorActionSchema.RoleBranchSize];
+    private readonly int[] _roleCompletions = new int[GladiatorActionSchema.RoleBranchSize];
+    private readonly int[] _roleAborts = new int[GladiatorActionSchema.RoleBranchSize];
     private float _finalSelfHealthRatio;
     private float _finalEnemyHealthRatio;
     private bool _hasFinalHealthRatios;
@@ -27,6 +30,12 @@ public sealed class GladiatorAgentEpisodeMetrics
         _attackOpportunityCount = 0;
         _attackOpportunityUsedCount = 0;
         _targetSwitchCount = 0;
+        for (int i = 0; i < GladiatorActionSchema.RoleBranchSize; i++)
+        {
+            _roleSelections[i] = 0;
+            _roleCompletions[i] = 0;
+            _roleAborts[i] = 0;
+        }
         _finalSelfHealthRatio = 0f;
         _finalEnemyHealthRatio = 0f;
         _hasFinalHealthRatios = false;
@@ -50,6 +59,20 @@ public sealed class GladiatorAgentEpisodeMetrics
 
     public void RecordAction(GladiatorPolicyAction action, GladiatorAgentTacticalContext context)
     {
+        if (action.Role >= 0 && action.Role < GladiatorActionSchema.RoleBranchSize)
+        {
+            _roleSelections[action.Role]++;
+            if (context.CompletedRoleWindow)
+            {
+                _roleCompletions[action.Role]++;
+            }
+
+            if (context.BrokeCommitmentEarly)
+            {
+                _roleAborts[action.Role]++;
+            }
+        }
+
         if (context.HasValidTarget && context.TargetDistance < float.MaxValue)
         {
             _targetDistanceSum += context.TargetDistance;
@@ -134,6 +157,31 @@ public sealed class GladiatorAgentEpisodeMetrics
             recorder.Add(
                 "Combat/MeanTargetDistance",
                 _targetDistanceSum / _targetDistanceSamples,
+                StatAggregationMethod.Average
+            );
+        }
+
+        FlushRoleMetric(recorder, "Engage", GladiatorActionSchema.RoleEngage);
+        FlushRoleMetric(recorder, "Peel", GladiatorActionSchema.RolePeel);
+        FlushRoleMetric(recorder, "Assassinate", GladiatorActionSchema.RoleAssassinate);
+        FlushRoleMetric(recorder, "Regroup", GladiatorActionSchema.RoleRegroup);
+    }
+
+    private void FlushRoleMetric(StatsRecorder recorder, string roleName, int role)
+    {
+        recorder.Add($"Combat/Role{roleName}Selections", _roleSelections[role], StatAggregationMethod.Average);
+        recorder.Add($"Combat/Role{roleName}Completions", _roleCompletions[role], StatAggregationMethod.Average);
+        recorder.Add($"Combat/Role{roleName}Aborts", _roleAborts[role], StatAggregationMethod.Average);
+        if (_roleSelections[role] > 0)
+        {
+            recorder.Add(
+                $"Combat/Role{roleName}CompletionRate",
+                (float)_roleCompletions[role] / _roleSelections[role],
+                StatAggregationMethod.Average
+            );
+            recorder.Add(
+                $"Combat/Role{roleName}AbortRate",
+                (float)_roleAborts[role] / _roleSelections[role],
                 StatAggregationMethod.Average
             );
         }

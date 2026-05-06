@@ -31,6 +31,21 @@ MonoBehaviour:
   boundary: -0.2
   invalidAction: -1
   actionDelta: -0.001
+  anchorCommitmentReward: 0.005
+  roleCommitmentReward: 0.005
+  commitmentAbortPenalty: -0.02
+  engageApproachReward: 0.01
+  engageOpportunityReward: 0.01
+  engageReacquireReward: 0.01
+  peelFocusReward: 0.03
+  peelSupportReward: 0.01
+  assassinateApproachReward: 0.012
+  assassinateIsolationReward: 0.015
+  assassinateRetreatReward: 0.012
+  assassinateFinishReward: 0.08
+  regroupSafetyReward: 0.02
+  regroupOverstayPenalty: -0.02
+  regroupWindowSteps: 8
   groupWin: 10
   groupLoss: -10
   groupInterrupted: -10

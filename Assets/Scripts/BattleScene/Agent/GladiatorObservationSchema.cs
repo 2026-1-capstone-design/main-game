@@ -1,6 +1,6 @@
 public static class GladiatorObservationSchema
 {
-    public const int SelfSize = 31;
+    public const int SelfSize = 41;
     public const int TeammateSlotSize = 8;
     public const int OpponentSlotSize = 9; // +1 for IsTargetingMeAggressively
     public const int TeammateSlots = BattleTeamConstants.MaxUnitsPerTeam - 1;
@@ -41,6 +41,16 @@ public enum GladiatorSelfObservationIndex
     PathModeFlankLeft = 28,
     PathModeFlankRight = 29,
     PathModeRegroup = 30,
+    RoleEngage = 31,
+    RolePeel = 32,
+    RoleAssassinate = 33,
+    RoleRegroup = 34,
+    AnchorCommitmentRatio = 35,
+    RoleCommitmentRatio = 36,
+    AnchorAllySupportPressure = 37,
+    AnchorEnemyFocusPressure = 38,
+    AnchorEnemyIsolation = 39,
+    AnchorEnemyRetreatSignal = 40,
 }
 
 public enum GladiatorUnitObservationIndex

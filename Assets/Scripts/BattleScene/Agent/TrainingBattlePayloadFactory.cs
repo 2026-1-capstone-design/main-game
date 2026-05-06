@@ -59,6 +59,13 @@ public sealed class TrainingBattlePayloadFactory
 
     public BattleStartPayload Create(TrainingBattlePayloadSettings settings)
     {
+        GladiatorLessonMode lessonMode = GladiatorLessonMode.ChaseTarget;
+        if (Academy.Instance != null)
+        {
+            lessonMode = (GladiatorLessonMode)
+                Mathf.RoundToInt(Academy.Instance.EnvironmentParameters.GetWithDefault("lesson_mode", 0f));
+        }
+
         var allySnapshots = new List<BattleUnitSnapshot>();
         var enemySnapshots = new List<BattleUnitSnapshot>();
         int teamSize = ResolveTeamSize(settings);
@@ -115,7 +122,7 @@ public sealed class TrainingBattlePayloadFactory
         BattleTeamEntry playerTeam = new BattleTeamEntry(BattleTeamIds.Player, isPlayerOwned: true, allySnapshots);
         BattleTeamEntry hostileTeam = new BattleTeamEntry(BattleTeamIds.Enemy, isPlayerOwned: false, enemySnapshots);
 
-        return new BattleStartPayload(
+        BattleStartPayload payload = new BattleStartPayload(
             new[] { playerTeam, hostileTeam },
             BattleTeamIds.Player,
             selectedEncounterIndex: 0,
@@ -123,6 +130,8 @@ public sealed class TrainingBattlePayloadFactory
             previewRewardGold: settings.Preset != null ? settings.Preset.previewRewardGold : 0,
             battleSeed: Random.Range(1, 1000000)
         );
+
+        return GladiatorLessonScenarioBuilder.Build(lessonMode, payload);
     }
 
     private static int ResolveTeamSize(TrainingBattlePayloadSettings settings)

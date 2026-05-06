@@ -16,6 +16,9 @@ public readonly struct GladiatorObservationContext
     public readonly Vector2 AgentPreviousRawWorldMove;
     public readonly int AnchorKind;
     public readonly int PathMode;
+    public readonly int CurrentRole;
+    public readonly int AnchorCommitmentSteps;
+    public readonly int RoleCommitmentSteps;
     public readonly BattleUnitCombatState CurrentAnchor;
 
     public GladiatorObservationContext(
@@ -30,6 +33,9 @@ public readonly struct GladiatorObservationContext
         Vector2 agentPreviousRawWorldMove,
         int anchorKind,
         int pathMode,
+        int currentRole,
+        int anchorCommitmentSteps,
+        int roleCommitmentSteps,
         BattleUnitCombatState currentAnchor
     )
     {
@@ -44,6 +50,9 @@ public readonly struct GladiatorObservationContext
         AgentPreviousRawWorldMove = Vector2.ClampMagnitude(agentPreviousRawWorldMove, 1f);
         AnchorKind = anchorKind;
         PathMode = pathMode;
+        CurrentRole = currentRole;
+        AnchorCommitmentSteps = Mathf.Max(0, anchorCommitmentSteps);
+        RoleCommitmentSteps = Mathf.Max(0, roleCommitmentSteps);
         CurrentAnchor = currentAnchor;
     }
 }
@@ -75,7 +84,7 @@ public static class GladiatorObservationBuilder
         BattleUnitCombatState anchor = context.CurrentAnchor;
         if (self == null || anchor == null || anchor.IsCombatDisabled)
         {
-            return new GladiatorTacticalFeatures(0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f);
+            return new GladiatorTacticalFeatures(0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f);
         }
 
         float distance = Distance2D(self.Position, anchor.Position);
@@ -83,6 +92,14 @@ public static class GladiatorObservationBuilder
         float anchorRange = GetEffectiveRange(anchor, self, anchor.AttackRange);
         Vector2 toAnchor = WorldToObservationAxes(self.TeamId, anchor.Position - self.Position);
         Vector2 forward = toAnchor.sqrMagnitude > Epsilon ? toAnchor.normalized : Vector2.up;
+
+        GladiatorAnchorRelationFeatures relations = GladiatorAnchorRelationFeatureBuilder.Build(
+            self,
+            anchor,
+            context.Teammates,
+            context.Opponents,
+            context.ArenaRadius
+        );
 
         return new GladiatorTacticalFeatures(
             NormalizeDistance(distance, context.ArenaRadius),
@@ -94,7 +111,11 @@ public static class GladiatorObservationBuilder
             SampleLaneFreeRatio(self, context.Opponents, forward, -1f, context.ArenaRadius),
             SampleLaneFreeRatio(self, context.Opponents, forward, 1f, context.ArenaRadius),
             ComputeAllyUnderFocusRatio(context.Teammates, context.Opponents),
-            ComputeEnemyClusterPressure(self, context.Opponents, context.ArenaRadius)
+            ComputeEnemyClusterPressure(self, context.Opponents, context.ArenaRadius),
+            relations.AllySupportPressure,
+            relations.EnemyFocusPressure,
+            relations.EnemyIsolation,
+            relations.EnemyRetreatSignal
         );
     }
 
@@ -153,6 +174,13 @@ public static class GladiatorObservationBuilder
         sensor.AddObservation(canonicalPreviousMove.y);
         AddAnchorKindOneHot(sensor, context.AnchorKind);
         AddPathModeOneHot(sensor, context.PathMode);
+        AddRoleOneHot(sensor, context.CurrentRole);
+        sensor.AddObservation(NormalizeCommitment(context.AnchorCommitmentSteps));
+        sensor.AddObservation(NormalizeCommitment(context.RoleCommitmentSteps));
+        sensor.AddObservation(features.AnchorAllySupportPressure);
+        sensor.AddObservation(features.AnchorEnemyFocusPressure);
+        sensor.AddObservation(features.AnchorEnemyIsolation);
+        sensor.AddObservation(features.AnchorEnemyRetreatSignal);
 
         AddTeammateSlotObservations(sensor, self, teammates, GladiatorObservationSchema.TeammateSlots, context);
         AddOpponentSlotObservations(sensor, self, opponents, GladiatorObservationSchema.OpponentSlots, context);
@@ -241,6 +269,14 @@ public static class GladiatorObservationBuilder
         for (int i = 0; i < GladiatorActionSchema.PathModeBranchSize; i++)
         {
             sensor.AddObservation(pathMode == i ? 1f : 0f);
+        }
+    }
+
+    private static void AddRoleOneHot(VectorSensor sensor, int role)
+    {
+        for (int i = 0; i < GladiatorActionSchema.RoleBranchSize; i++)
+        {
+            sensor.AddObservation(role == i ? 1f : 0f);
         }
     }
 
@@ -426,5 +462,10 @@ public static class GladiatorObservationBuilder
     private static bool IsValidReference(float value)
     {
         return value > Epsilon && value < float.MaxValue;
+    }
+
+    private static float NormalizeCommitment(int steps)
+    {
+        return Mathf.Clamp01(steps / 12f);
     }
 }

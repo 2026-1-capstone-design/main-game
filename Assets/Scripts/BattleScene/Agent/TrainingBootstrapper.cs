@@ -70,6 +70,9 @@ public class TrainingBootstrapper : MonoBehaviour, ITrainingEnvironment
     private string tacticModeEnvironmentParameter = "tactic_mode";
 
     [SerializeField]
+    private string lessonModeEnvironmentParameter = "lesson_mode";
+
+    [SerializeField]
     private GladiatorAgent[] allyAgents;
 
     [SerializeField]
@@ -122,6 +125,10 @@ public class TrainingBootstrapper : MonoBehaviour, ITrainingEnvironment
 
     public int CurrentTacticMode =>
         Mathf.RoundToInt(Academy.Instance.EnvironmentParameters.GetWithDefault(tacticModeEnvironmentParameter, 0f));
+
+    public GladiatorLessonMode CurrentLessonMode =>
+        (GladiatorLessonMode)
+            Mathf.RoundToInt(Academy.Instance.EnvironmentParameters.GetWithDefault(lessonModeEnvironmentParameter, 0f));
 
     private void OnValidate()
     {

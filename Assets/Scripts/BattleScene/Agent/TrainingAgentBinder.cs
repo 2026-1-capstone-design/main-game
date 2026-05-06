@@ -57,6 +57,7 @@ public sealed class TrainingAgentBinder
     private static readonly int[] ExpectedDiscreteBranches =
     {
         GladiatorActionSchema.CommandBranchSize,
+        GladiatorActionSchema.RoleBranchSize,
         GladiatorActionSchema.StanceBranchSize,
         GladiatorActionSchema.PathModeBranchSize,
         GladiatorActionSchema.AnchorKindBranchSize,

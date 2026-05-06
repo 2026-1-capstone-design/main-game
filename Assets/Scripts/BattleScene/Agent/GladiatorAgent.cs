@@ -7,34 +7,37 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 
 // BehaviorParameters 설정 (Inspector):
-//   Space Size         = GladiatorObservationSchema.TotalSize (= 125)
+//   Space Size         = GladiatorObservationSchema.TotalSize (= 135)
 //   Continuous Actions = GladiatorActionSchema.ContinuousSize (= 2)
 //     0=anchor strafe, 1=anchor forward
-//   Discrete Branches  = 5
+//   Discrete Branches  = 6
 //     Branch 0 Size = GladiatorActionSchema.CommandBranchSize (= 2)
-//     Branch 1 Size = GladiatorActionSchema.StanceBranchSize (= 3)
-//     Branch 2 Size = GladiatorActionSchema.PathModeBranchSize (= 4)
-//     Branch 3 Size = GladiatorActionSchema.AnchorKindBranchSize (= 3)
-//     Branch 4 Size = GladiatorActionSchema.AnchorSlotBranchSize (= 6)
+//     Branch 1 Size = GladiatorActionSchema.RoleBranchSize (= 4)
+//     Branch 2 Size = GladiatorActionSchema.StanceBranchSize (= 3)
+//     Branch 3 Size = GladiatorActionSchema.PathModeBranchSize (= 4)
+//     Branch 4 Size = GladiatorActionSchema.AnchorKindBranchSize (= 3)
+//     Branch 5 Size = GladiatorActionSchema.AnchorSlotBranchSize (= 6)
 //
-// Observation (125 floats):
-//   자신      (31):     월드 좌표축 기준 정규화된 경기장 중심 상대좌표(x,z), 체력비, 최대 체력 로그비, 공격력 로그비,
+// Observation (135 floats):
+//   자신      (41):     월드 좌표축 기준 정규화된 경기장 중심 상대좌표(x,z), 체력비, 최대 체력 로그비, 공격력 로그비,
 //                       정규화된 사거리/이동속도/공격 쿨타임, 최근접 적/자신 대상 피해비, 최근접 적 거리,
-//                       공격 가능 여부, 피격 위험 여부, 근처 적/아군 비율, 경계 압박,
-//                       timeout까지 남은 시간 비율, 현재/직전 agent 월드 이동 입력, 대상 선택 여부, 대상 슬롯 one-hot
+//                       공격 가능 여부, 피격 위험 여부, 근처 적/아군 비율, 경계 압박, role/commitment/anchor relation 요약,
+//                       timeout까지 남은 시간 비율, 현재/직전 agent 월드 이동 입력, anchor/path/role one-hot
 //   내 팀 동료 (5 × 8): 월드 좌표축 기준 정규화된 상대좌표(x,z), 체력비, 최대 체력 로그비, 공격력 로그비, 사거리, 이동속도, 공격 쿨타임
 //   상대팀    (6 × 9): 위 동일 + 자신을 Neutral/Pressure 태세로 노리고 있는지 여부
 //
 // Action:
 //   Continuous 0/1:     anchor strafe / anchor forward
 //   Branch 0 (명령):     0=없음  1=기본공격
-//   Branch 1 (태세):     0=중립  1=압박  2=거리유지
-//   Branch 2 (경로):     0=직접  1=좌측 우회  2=우측 우회  3=합류
-//   Branch 3 (anchor):   0=적  1=아군  2=팀 중심
-//   Branch 4 (slot):     0~5=anchor 슬롯
+//   Branch 1 (역할):     0=engage  1=peel  2=assassinate  3=regroup
+//   Branch 2 (태세):     0=중립  1=압박  2=거리유지
+//   Branch 3 (경로):     0=직접  1=좌측 우회  2=우측 우회  3=합류
+//   Branch 4 (anchor):   0=적  1=아군  2=팀 중심
+//   Branch 5 (slot):     0~5=anchor 슬롯
 public class GladiatorAgent : Agent
 {
     private const float HardBoundaryRadiusMultiplier = 1.25f;
+    private const int CommitmentWindowSteps = 8;
 
     [SerializeField]
     private GladiatorRewardConfig rewardConfig;
@@ -52,8 +55,12 @@ public class GladiatorAgent : Agent
     private GladiatorStateRosterView _rosterView;
     private GladiatorObservationStats _observationStats;
     private float _prevTargetDistance;
+    private int _previousRole = -1;
+    private int _previousAnchorKind = -1;
     private int _previousTargetSlot = -1;
     private int _previousStance = -1;
+    private int _anchorCommitmentSteps;
+    private int _roleCommitmentSteps;
     private bool _boundaryResetRequested;
     private GladiatorRewardEvaluator _rewardEvaluator;
     private RuntimeUnitAgentActionSink _actionSink;
@@ -110,8 +117,12 @@ public class GladiatorAgent : Agent
         }
 
         _prevTargetDistance = float.MaxValue;
+        _previousRole = -1;
+        _previousAnchorKind = -1;
         _previousTargetSlot = -1;
         _previousStance = -1;
+        _anchorCommitmentSteps = 0;
+        _roleCommitmentSteps = 0;
         _episodeMetrics.Reset();
 
         if (useBuiltInAiHeuristic)
@@ -180,6 +191,7 @@ public class GladiatorAgent : Agent
         ApplyAnchorSlotMask(actionMask, branchSizes, tacticMode);
         ApplyPathModeMask(actionMask, branchSizes, tacticMode);
         ApplyAnchorKindMask(actionMask, branchSizes, tacticMode);
+        ApplyRoleMask(actionMask, branchSizes, tacticMode);
     }
 
     public override void OnActionReceived(ActionBuffers actions)
@@ -205,6 +217,9 @@ public class GladiatorAgent : Agent
             return;
         }
 
+        UpdateCommitmentState(action, tacticalContext);
+        _previousRole = action.Role;
+        _previousAnchorKind = action.AnchorKind;
         _previousTargetSlot = action.AnchorSlot;
         _previousStance = action.Stance;
         _prevTargetDistance = tacticalContext.TargetDistance;
@@ -224,15 +239,22 @@ public class GladiatorAgent : Agent
         bool hasValidTarget = target != null && !target.IsCombatDisabled;
         float targetDistance = GetDistanceToTarget(target);
         float previousTargetDistance =
-            _previousTargetSlot == action.AnchorSlot && _prevTargetDistance < float.MaxValue
+            _previousTargetSlot == action.AnchorSlot
+            && _previousAnchorKind == action.AnchorKind
+            && _prevTargetDistance < float.MaxValue
                 ? _prevTargetDistance
                 : targetDistance;
         float targetEffectiveRange = GetEffectiveAttackRange(_selfState, target);
         return new GladiatorAgentTacticalContext(
+            _previousRole,
+            action.Role,
+            action.AnchorKind,
             _previousTargetSlot,
             action.AnchorSlot,
             _previousStance,
             action.Stance,
+            ComputeAnchorCommitmentSteps(action),
+            ComputeRoleCommitmentSteps(action),
             previousTargetDistance,
             targetDistance,
             targetEffectiveRange,
@@ -242,7 +264,10 @@ public class GladiatorAgent : Agent
             HasAttackableOpponent(),
             hasValidTarget,
             !hasValidTarget || targetDistance > targetEffectiveRange,
-            attackBlocked
+            attackBlocked,
+            BrokeCommitmentEarly(action),
+            CompletedRoleWindow(action),
+            CompletedAnchorWindow(action)
         );
     }
 
@@ -250,8 +275,12 @@ public class GladiatorAgent : Agent
     {
         _boundaryResetRequested = false;
         _prevTargetDistance = float.MaxValue;
+        _previousRole = -1;
+        _previousAnchorKind = -1;
         _previousTargetSlot = -1;
         _previousStance = -1;
+        _anchorCommitmentSteps = 0;
+        _roleCommitmentSteps = 0;
         _rewardEvaluator?.Reset();
         _actionSink?.Clear();
         _episodeMetrics.Reset();
@@ -304,6 +333,12 @@ public class GladiatorAgent : Agent
             discrete[GladiatorActionSchema.CommandBranch] = GladiatorActionSchema.CommandBasicAttack;
         else
             discrete[GladiatorActionSchema.CommandBranch] = GladiatorActionSchema.CommandNone;
+
+        discrete[GladiatorActionSchema.RoleBranch] =
+            kb.rKey.isPressed ? GladiatorActionSchema.RoleRegroup
+            : kb.fKey.isPressed ? GladiatorActionSchema.RolePeel
+            : kb.cKey.isPressed ? GladiatorActionSchema.RoleAssassinate
+            : GladiatorActionSchema.RoleEngage;
 
         if (kb.digit1Key.isPressed)
             discrete[GladiatorActionSchema.AnchorSlotBranch] = 0;
@@ -434,6 +469,9 @@ public class GladiatorAgent : Agent
             controlInput.PreviousRawLocalMove,
             controlInput.AnchorKind,
             controlInput.PathMode,
+            controlInput.Role,
+            _anchorCommitmentSteps,
+            _roleCommitmentSteps,
             currentAnchor
         );
     }
@@ -445,17 +483,10 @@ public class GladiatorAgent : Agent
             return;
         }
 
-        if (tacticMode >= 2)
-        {
-            return;
-        }
-
         int slotBranchSize = branchSizes[GladiatorActionSchema.AnchorSlotBranch];
-        int enemySlotCount = Mathf.Min(GladiatorObservationSchema.OpponentSlots, slotBranchSize);
-        for (int i = 0; i < enemySlotCount; i++)
+        for (int i = 0; i < slotBranchSize; i++)
         {
-            BattleUnitCombatState target = ResolveOpponentSlot(i);
-            bool invalid = target == null || target.IsCombatDisabled;
+            bool invalid = !IsValidAnchorSlotForCurrentRole(i, tacticMode);
             if (invalid)
             {
                 actionMask.SetActionEnabled(GladiatorActionSchema.AnchorSlotBranch, i, false);
@@ -514,6 +545,28 @@ public class GladiatorAgent : Agent
         }
     }
 
+    private static void ApplyRoleMask(IDiscreteActionMask actionMask, int[] branchSizes, int tacticMode)
+    {
+        if (branchSizes.Length <= GladiatorActionSchema.RoleBranch)
+        {
+            return;
+        }
+
+        if (tacticMode <= 0)
+        {
+            actionMask.SetActionEnabled(GladiatorActionSchema.RoleBranch, GladiatorActionSchema.RolePeel, false);
+            actionMask.SetActionEnabled(GladiatorActionSchema.RoleBranch, GladiatorActionSchema.RoleAssassinate, false);
+            actionMask.SetActionEnabled(GladiatorActionSchema.RoleBranch, GladiatorActionSchema.RoleRegroup, false);
+            return;
+        }
+
+        if (tacticMode == 1)
+        {
+            actionMask.SetActionEnabled(GladiatorActionSchema.RoleBranch, GladiatorActionSchema.RolePeel, false);
+            actionMask.SetActionEnabled(GladiatorActionSchema.RoleBranch, GladiatorActionSchema.RoleRegroup, false);
+        }
+    }
+
     private bool HasAttackableOpponent()
     {
         for (int i = 0; i < GladiatorObservationSchema.OpponentSlots; i++)
@@ -551,6 +604,130 @@ public class GladiatorAgent : Agent
         Vector3 flatPos = new Vector3(_selfState.Position.x, 0f, _selfState.Position.z);
         Vector3 flatCenter = new Vector3(_arenaCenter.x, 0f, _arenaCenter.z);
         return Vector3.Distance(flatPos, flatCenter);
+    }
+
+    private bool IsValidAnchorSlotForCurrentRole(int slot, int tacticMode)
+    {
+        if (tacticMode >= 2)
+        {
+            return IsValidEnemySlot(slot);
+        }
+
+        BattleAgentControlInput controlInput =
+            _agentControlBuffer != null ? _agentControlBuffer.GetInputSnapshot(_selfState) : default;
+
+        switch (controlInput.Role)
+        {
+            case GladiatorActionSchema.RolePeel:
+            {
+                BattleUnitCombatState teammate = ResolveTeammateSlot(slot);
+                return teammate != null && !teammate.IsCombatDisabled && IsTeammateUnderFocus(teammate);
+            }
+            case GladiatorActionSchema.RoleAssassinate:
+            {
+                BattleUnitCombatState opponent = ResolveOpponentSlot(slot);
+                return opponent != null
+                    && !opponent.IsCombatDisabled
+                    && (GetHealthRatio(opponent) <= 0.5f || IsIsolatedTarget(opponent));
+            }
+            case GladiatorActionSchema.RoleRegroup:
+                return slot == 0;
+            default:
+                return IsValidEnemySlot(slot);
+        }
+    }
+
+    private bool IsValidEnemySlot(int slot)
+    {
+        BattleUnitCombatState target = ResolveOpponentSlot(slot);
+        return target != null && !target.IsCombatDisabled;
+    }
+
+    private bool IsTeammateUnderFocus(BattleUnitCombatState teammate)
+    {
+        if (teammate == null || _rosterView == null)
+        {
+            return false;
+        }
+
+        IReadOnlyList<BattleUnitCombatState> hostiles = _rosterView.Hostiles;
+        for (int i = 0; i < hostiles.Count; i++)
+        {
+            BattleUnitCombatState hostile = hostiles[i];
+            if (hostile != null && !hostile.IsCombatDisabled && hostile.PlannedTargetEnemy == teammate)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private bool IsIsolatedTarget(BattleUnitCombatState opponent)
+    {
+        if (opponent == null || _rosterView == null)
+        {
+            return false;
+        }
+
+        int nearbyOpponents = 0;
+        IReadOnlyList<BattleUnitCombatState> hostiles = _rosterView.Hostiles;
+        for (int i = 0; i < hostiles.Count; i++)
+        {
+            BattleUnitCombatState hostile = hostiles[i];
+            if (hostile == null || hostile.IsCombatDisabled || hostile == opponent)
+            {
+                continue;
+            }
+
+            Vector3 delta = hostile.Position - opponent.Position;
+            delta.y = 0f;
+            if (delta.magnitude <= _arenaExtentsMin * 0.35f)
+            {
+                nearbyOpponents++;
+            }
+        }
+
+        return nearbyOpponents <= 1;
+    }
+
+    private int ComputeAnchorCommitmentSteps(GladiatorPolicyAction action)
+    {
+        bool keptSameAnchor = _previousTargetSlot == action.AnchorSlot && _previousAnchorKind == action.AnchorKind;
+        return keptSameAnchor ? _anchorCommitmentSteps + 1 : 0;
+    }
+
+    private int ComputeRoleCommitmentSteps(GladiatorPolicyAction action)
+    {
+        return _previousRole == action.Role ? _roleCommitmentSteps + 1 : 0;
+    }
+
+    private bool BrokeCommitmentEarly(GladiatorPolicyAction action)
+    {
+        bool switchedAnchor =
+            _previousTargetSlot >= 0
+            && (_previousTargetSlot != action.AnchorSlot || _previousAnchorKind != action.AnchorKind);
+        bool switchedRole = _previousRole >= 0 && _previousRole != action.Role;
+        return (switchedAnchor && _anchorCommitmentSteps < CommitmentWindowSteps)
+            || (switchedRole && _roleCommitmentSteps < CommitmentWindowSteps);
+    }
+
+    private bool CompletedRoleWindow(GladiatorPolicyAction action)
+    {
+        return _previousRole == action.Role && _roleCommitmentSteps + 1 >= CommitmentWindowSteps;
+    }
+
+    private bool CompletedAnchorWindow(GladiatorPolicyAction action)
+    {
+        return _previousTargetSlot == action.AnchorSlot
+            && _previousAnchorKind == action.AnchorKind
+            && _anchorCommitmentSteps + 1 >= CommitmentWindowSteps;
+    }
+
+    private void UpdateCommitmentState(GladiatorPolicyAction action, GladiatorAgentTacticalContext context)
+    {
+        _anchorCommitmentSteps = context.AnchorCommitmentSteps;
+        _roleCommitmentSteps = context.RoleCommitmentSteps;
     }
 
     private void OnDestroy()

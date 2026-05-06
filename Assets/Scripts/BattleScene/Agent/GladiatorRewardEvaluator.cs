@@ -18,7 +18,7 @@ public sealed class GladiatorRewardEvaluator
 {
     private readonly GladiatorRewardConfig _config;
     private readonly float _hardBoundaryRadiusMultiplier;
-    private readonly GladiatorTacticalRewardShaper _tacticalRewardShaper = new GladiatorTacticalRewardShaper();
+    private readonly GladiatorTacticalRewardShaper _tacticalRewardShaper;
     private Vector2 _previousRawMove;
     private bool _hasPreviousRawAction;
 
@@ -26,6 +26,7 @@ public sealed class GladiatorRewardEvaluator
     {
         _config = config;
         _hardBoundaryRadiusMultiplier = hardBoundaryRadiusMultiplier;
+        _tacticalRewardShaper = new GladiatorTacticalRewardShaper(config);
     }
 
     public void Reset()
@@ -64,6 +65,7 @@ public sealed class GladiatorRewardEvaluator
 
         reward += EvaluateTargetSwitch(context);
         reward += EvaluateStanceSwitch(context);
+        reward += EvaluateCommitment(context);
         reward += _tacticalRewardShaper.Evaluate(context, action, features);
 
         return new GladiatorRewardEvaluation(reward, requestsBoundaryReset: false, effectiveAction);
@@ -105,5 +107,26 @@ public sealed class GladiatorRewardEvaluator
         }
 
         return _config.stanceSwitchPenalty;
+    }
+
+    private float EvaluateCommitment(GladiatorAgentTacticalContext context)
+    {
+        float reward = 0f;
+        if (context.BrokeCommitmentEarly)
+        {
+            reward += _config.commitmentAbortPenalty;
+        }
+
+        if (context.CompletedAnchorWindow)
+        {
+            reward += _config.anchorCommitmentReward;
+        }
+
+        if (context.CompletedRoleWindow)
+        {
+            reward += _config.roleCommitmentReward;
+        }
+
+        return reward;
     }
 }

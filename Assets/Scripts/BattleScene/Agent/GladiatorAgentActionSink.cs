@@ -28,6 +28,7 @@ public sealed class RuntimeUnitAgentActionSink
         _controlBuffer?.SetRawInput(
             _unit.State,
             action.RelativeMove,
+            action.Role,
             action.AnchorKind,
             action.AnchorSlot,
             action.PathMode,

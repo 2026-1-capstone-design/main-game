@@ -12,6 +12,12 @@ public static class GladiatorAgentActionParser
             GladiatorActionSchema.CommandNone
         );
         command = Mathf.Clamp(command, 0, GladiatorActionSchema.CommandBranchSize - 1);
+        int role = ReadDiscrete(
+            actions.DiscreteActions,
+            GladiatorActionSchema.RoleBranch,
+            GladiatorActionSchema.RoleEngage
+        );
+        role = Mathf.Clamp(role, 0, GladiatorActionSchema.RoleBranchSize - 1);
         int stance = ReadDiscrete(
             actions.DiscreteActions,
             GladiatorActionSchema.StanceBranch,
@@ -29,7 +35,7 @@ public static class GladiatorAgentActionParser
         );
         int anchorSlot = ReadDiscrete(actions.DiscreteActions, GladiatorActionSchema.AnchorSlotBranch, 0);
 
-        return new GladiatorPolicyAction(relativeMove, anchorKind, anchorSlot, pathMode, command, stance);
+        return new GladiatorPolicyAction(relativeMove, role, anchorKind, anchorSlot, pathMode, command, stance);
     }
 
     private static Vector2 ReadMove(ActionSegment<float> continuousActions)

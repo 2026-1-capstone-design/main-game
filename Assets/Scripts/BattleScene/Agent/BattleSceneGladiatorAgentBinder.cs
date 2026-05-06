@@ -10,6 +10,7 @@ public sealed class BattleSceneGladiatorAgentBinder : MonoBehaviour
     private static readonly int[] ExpectedDiscreteBranches =
     {
         GladiatorActionSchema.CommandBranchSize,
+        GladiatorActionSchema.RoleBranchSize,
         GladiatorActionSchema.StanceBranchSize,
         GladiatorActionSchema.PathModeBranchSize,
         GladiatorActionSchema.AnchorKindBranchSize,

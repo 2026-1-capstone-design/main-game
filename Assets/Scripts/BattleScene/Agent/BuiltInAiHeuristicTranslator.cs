@@ -24,6 +24,7 @@ public static class BuiltInAiHeuristicTranslator
 
         WriteMovement(continuous, plan, selfState);
         discrete[GladiatorActionSchema.CommandBranch] = ResolveCommand(plan, selfState);
+        discrete[GladiatorActionSchema.RoleBranch] = ResolveRole(plan.ActionType);
         discrete[GladiatorActionSchema.AnchorSlotBranch] = ResolveTargetSlot(plan.TargetEnemy, rosterView);
         discrete[GladiatorActionSchema.StanceBranch] = ResolveStance(plan.ActionType);
         discrete[GladiatorActionSchema.PathModeBranch] = ResolvePathMode(plan.ActionType);
@@ -117,6 +118,15 @@ public static class BuiltInAiHeuristicTranslator
             BattleActionType.AssassinateIsolatedEnemy => GladiatorActionSchema.PathModeFlankRight,
             BattleActionType.PeelForWeakAlly => GladiatorActionSchema.PathModeRegroup,
             _ => GladiatorActionSchema.PathModeDirect,
+        };
+
+    private static int ResolveRole(BattleActionType actionType) =>
+        actionType switch
+        {
+            BattleActionType.PeelForWeakAlly => GladiatorActionSchema.RolePeel,
+            BattleActionType.AssassinateIsolatedEnemy => GladiatorActionSchema.RoleAssassinate,
+            BattleActionType.EscapeFromPressure => GladiatorActionSchema.RoleRegroup,
+            _ => GladiatorActionSchema.RoleEngage,
         };
 
     private static bool IsCombatAction(BattleActionType actionType) =>

@@ -27,16 +27,16 @@ behaviors:
         gamma: 0.995
         strength: 1.0
     keep_checkpoints: 5
-    max_steps: 20000000
+    max_steps: 40000000
     time_horizon: 512
     summary_freq: 8192
 environment_parameters:
   team_size:
     1.0
   opponent_mode: 1.0
-  tactic_mode:
+  lesson_mode:
     curriculum:
-      - name: ChaseOnly
+      - name: ChaseTarget
         completion_criteria:
           measure: progress
           behavior: GladiatorSmooth
@@ -45,7 +45,7 @@ environment_parameters:
           threshold: 0.4
           require_reset: true
         value: 0.0
-      - name: ChaseAndFlank
+      - name: FinishLowHp
         completion_criteria:
           measure: progress
           behavior: GladiatorSmooth
@@ -54,5 +54,16 @@ environment_parameters:
           threshold: 0.7
           require_reset: true
         value: 1.0
-      - name: ChaseFlankAndPeel
+      - name: PeelFocusedAlly
+        completion_criteria:
+          measure: progress
+          behavior: GladiatorSmooth
+          signal_smoothing: true
+          min_lesson_length: 4000
+          threshold: 0.8
+          require_reset: true
         value: 2.0
+      - name: SplitPressure3v3
+        value: 3.0
+  tactic_mode: 2.0
+  team_size: 3.0

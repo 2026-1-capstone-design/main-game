@@ -10,6 +10,10 @@ public readonly struct GladiatorTacticalFeatures
     public readonly float RightLaneFreeRatio;
     public readonly float AllyUnderFocusRatio;
     public readonly float EnemyClusterPressure;
+    public readonly float AnchorAllySupportPressure;
+    public readonly float AnchorEnemyFocusPressure;
+    public readonly float AnchorEnemyIsolation;
+    public readonly float AnchorEnemyRetreatSignal;
 
     public GladiatorTacticalFeatures(
         float anchorDistanceRatio,
@@ -21,7 +25,11 @@ public readonly struct GladiatorTacticalFeatures
         float leftLaneFreeRatio,
         float rightLaneFreeRatio,
         float allyUnderFocusRatio,
-        float enemyClusterPressure
+        float enemyClusterPressure,
+        float anchorAllySupportPressure,
+        float anchorEnemyFocusPressure,
+        float anchorEnemyIsolation,
+        float anchorEnemyRetreatSignal
     )
     {
         AnchorDistanceRatio = anchorDistanceRatio;
@@ -34,5 +42,9 @@ public readonly struct GladiatorTacticalFeatures
         RightLaneFreeRatio = rightLaneFreeRatio;
         AllyUnderFocusRatio = allyUnderFocusRatio;
         EnemyClusterPressure = enemyClusterPressure;
+        AnchorAllySupportPressure = anchorAllySupportPressure;
+        AnchorEnemyFocusPressure = anchorEnemyFocusPressure;
+        AnchorEnemyIsolation = anchorEnemyIsolation;
+        AnchorEnemyRetreatSignal = anchorEnemyRetreatSignal;
     }
 }

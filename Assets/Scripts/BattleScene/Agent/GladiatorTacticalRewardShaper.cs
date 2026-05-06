@@ -1,12 +1,15 @@
-using UnityEngine;
-
 public sealed class GladiatorTacticalRewardShaper
 {
-    private const float AnchorApproachReward = 0.01f;
-    private const float AnchorVisibilityReward = 0.002f;
-    private const float ReacquireReward = 0.01f;
-    private const float FlankReward = 0.004f;
-    private const float PeelReward = 0.004f;
+    private readonly IGladiatorRoleRewardRule[] _roleRules;
+
+    public GladiatorTacticalRewardShaper(GladiatorRewardConfig config)
+    {
+        _roleRules = new IGladiatorRoleRewardRule[GladiatorActionSchema.RoleBranchSize];
+        _roleRules[GladiatorActionSchema.RoleEngage] = new GladiatorEngageRewardRule(config);
+        _roleRules[GladiatorActionSchema.RolePeel] = new GladiatorPeelRewardRule(config);
+        _roleRules[GladiatorActionSchema.RoleAssassinate] = new GladiatorAssassinateRewardRule(config);
+        _roleRules[GladiatorActionSchema.RoleRegroup] = new GladiatorRegroupRewardRule(config);
+    }
 
     public float Evaluate(
         GladiatorAgentTacticalContext context,
@@ -14,44 +17,12 @@ public sealed class GladiatorTacticalRewardShaper
         GladiatorTacticalFeatures features
     )
     {
-        if (!context.HasValidTarget)
+        if (action.Role < 0 || action.Role >= _roleRules.Length)
         {
             return 0f;
         }
 
-        float reward = 0f;
-        float approachDelta = context.PreviousTargetDistance - context.TargetDistance;
-        if (approachDelta > 0f)
-        {
-            reward += approachDelta * AnchorApproachReward;
-        }
-
-        if (features.AnchorVisibility > 0.5f)
-        {
-            reward += AnchorVisibilityReward;
-        }
-
-        if (context.PreviousTargetDistance >= float.MaxValue * 0.5f && context.TargetDistance < float.MaxValue * 0.5f)
-        {
-            reward += ReacquireReward;
-        }
-
-        if (
-            (
-                action.PathMode == GladiatorActionSchema.PathModeFlankLeft
-                || action.PathMode == GladiatorActionSchema.PathModeFlankRight
-            )
-            && Mathf.Abs(action.RelativeMove.x) > 0.1f
-        )
-        {
-            reward += FlankReward * Mathf.Clamp01(1f - features.EnemyClusterPressure);
-        }
-
-        if (action.AnchorKind == GladiatorActionSchema.AnchorKindAlly && features.AllyUnderFocusRatio > 0f)
-        {
-            reward += PeelReward * features.AllyUnderFocusRatio;
-        }
-
-        return reward;
+        IGladiatorRoleRewardRule rule = _roleRules[action.Role];
+        return rule != null ? rule.Evaluate(context, action, features) : 0f;
     }
 }

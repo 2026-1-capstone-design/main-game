@@ -36,6 +36,25 @@ public sealed class GladiatorRewardConfig : ScriptableObject
     [FieldDescription("직전 스텝 대비 이동 입력 변화량에 비례하는 패널티.")]
     public float actionDelta = -0.001f;
 
+    [Header("Commitment")]
+    public float anchorCommitmentReward = 0.005f;
+    public float roleCommitmentReward = 0.005f;
+    public float commitmentAbortPenalty = -0.02f;
+
+    [Header("Role Rewards")]
+    public float engageApproachReward = 0.01f;
+    public float engageOpportunityReward = 0.01f;
+    public float engageReacquireReward = 0.01f;
+    public float peelFocusReward = 0.03f;
+    public float peelSupportReward = 0.01f;
+    public float assassinateApproachReward = 0.012f;
+    public float assassinateIsolationReward = 0.015f;
+    public float assassinateRetreatReward = 0.012f;
+    public float assassinateFinishReward = 0.08f;
+    public float regroupSafetyReward = 0.02f;
+    public float regroupOverstayPenalty = -0.02f;
+    public int regroupWindowSteps = 8;
+
     [Header("MA-POCA 팀 리워드")]
     [FieldDescription("팀이 전투에서 승리했을 때 팀 전체에 부여되는 그룹 보상.")]
     public float groupWin = 10f;

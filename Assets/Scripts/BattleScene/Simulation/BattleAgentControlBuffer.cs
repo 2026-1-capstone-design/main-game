@@ -11,6 +11,7 @@ public sealed class BattleAgentControlBuffer
     public void SetRawInput(
         BattleUnitCombatState self,
         Vector2 rawRelativeMove,
+        int role,
         int anchorKind,
         int anchorSlot,
         int pathMode,
@@ -32,6 +33,7 @@ public sealed class BattleAgentControlBuffer
         _inputs.TryGetValue(self, out BattleAgentControlInput input);
         input.PreviousRawLocalMove = input.RawLocalMove;
         input.RawLocalMove = rawRelativeMove;
+        input.Role = role;
         input.AnchorKind = anchorKind;
         input.AnchorSlot = anchorSlot;
         input.PathMode = pathMode;
