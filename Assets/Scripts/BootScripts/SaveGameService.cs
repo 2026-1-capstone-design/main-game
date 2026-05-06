@@ -500,11 +500,7 @@ public static class SaveGameService
 
     private static SaveMarketArtifactOfferData[] BuildMarketArtifactOffersSnapshot(MarketManager marketManager)
     {
-        if (
-            marketManager == null
-            || marketManager.ArtifactOffers == null
-            || marketManager.ArtifactOffers.Count == 0
-        )
+        if (marketManager == null || marketManager.ArtifactOffers == null || marketManager.ArtifactOffers.Count == 0)
         {
             return Array.Empty<SaveMarketArtifactOfferData>();
         }

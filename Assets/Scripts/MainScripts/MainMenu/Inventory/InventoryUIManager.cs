@@ -158,11 +158,7 @@ public sealed class InventoryUIManager : MonoBehaviour
                     continue;
                 }
 
-                _weaponViewBuffer.Add(new OwnedItemViewData(
-                    weapon.Weapon?.icon,
-                    weapon.DisplayName,
-                    weapon
-                ));
+                _weaponViewBuffer.Add(new OwnedItemViewData(weapon.Weapon?.icon, weapon.DisplayName, weapon));
             }
         }
 
@@ -274,9 +270,7 @@ public sealed class InventoryUIManager : MonoBehaviour
 
         if (detailDescriptionText != null)
         {
-            detailDescriptionText.text = string.IsNullOrWhiteSpace(artifact.description)
-                ? "-"
-                : artifact.description;
+            detailDescriptionText.text = string.IsNullOrWhiteSpace(artifact.description) ? "-" : artifact.description;
         }
 
         SetDetailPanelActive(true);
