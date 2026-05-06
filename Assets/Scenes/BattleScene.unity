@@ -1500,10 +1500,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   projectileRoot: {fileID: 457637514}
   normalArrowPrefab: {fileID: 7974726225172897559, guid: bd604beffa46bad488ba449960bb0586, type: 3}
-  normalMagicPrefab: {fileID: 9027514048236820045, guid: 3e01a65a0c3a5994b8b2723d4442cf31, type: 3}
+  normalMagicPrefab: {fileID: 2811141292315180248, guid: d5f0f1cb13a08b345ad01044a38f9a60, type: 3}
   customProjectiles:
   - projectileId: fireball
     prefab: {fileID: 1206498299807332555, guid: 6749e7a8cdf826a4583df5dfe9d6a7d9, type: 3}
+  - projectileId: heartAttackArrow
+    prefab: {fileID: 7974726225172897559, guid: 3b46485bee256c342b2c82dbd5895f92, type: 3}
 --- !u!4 &273018759
 Transform:
   m_ObjectHideFlags: 0
@@ -2939,6 +2941,18 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: -7918335002988649766, guid: 48831db3cfb35ce44899e8cf59c9cd77, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 69746eaad8c7a2140846f6e9d76f11a9, type: 2}
+    - target: {fileID: -4292154010595695564, guid: 48831db3cfb35ce44899e8cf59c9cd77, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 3000
+      objectReference: {fileID: 0}
+    - target: {fileID: -4292154010595695564, guid: 48831db3cfb35ce44899e8cf59c9cd77, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 3000
+      objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 48831db3cfb35ce44899e8cf59c9cd77, type: 3}
       propertyPath: m_Name
       value: calloseum
@@ -3790,8 +3804,16 @@ MonoBehaviour:
   bowController: {fileID: 22100000, guid: ce06285c78c5a0f438effc2a5cdc7616, type: 2}
   DefaultSkill: {fileID: 8973767263969007744, guid: 2035f8d45874b4e47a2c15ea2fa026fb, type: 3}
   DefaultCool: 5
-  HeartAttack: {fileID: 3094330708855449807, guid: 5277e5180e302184fb73653674a14c85, type: 3}
-  HeartAttackCool: 10
+  DefaultSkillType: 0
+  skillDatabase:
+  - skillId: 9
+    clip: {fileID: -203655887218126122, guid: 5608af2c99b9a5d4cbc1a05b6ac21e52, type: 3}
+    cooltime: 20
+    type: 1
+  - skillId: 5
+    clip: {fileID: 0}
+    cooltime: 20
+    type: 1
 --- !u!1 &957281080
 GameObject:
   m_ObjectHideFlags: 0
@@ -4298,7 +4320,7 @@ Light:
   serializedVersion: 11
   m_Type: 1
   m_Color: {r: 1, g: 0.95686275, b: 0.8392157, a: 1}
-  m_Intensity: 1
+  m_Intensity: 0.8
   m_Range: 10
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.80208
@@ -4360,13 +4382,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1037988956}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.95619726, y: -0.21982235, z: -0.13662162, w: 0.13674624}
+  m_LocalRotation: {x: 0.7071068, y: 0, z: 0, w: 0.7071068}
   m_LocalPosition: {x: 0, y: 3, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 11.622, y: -160.845, z: -152.139}
+  m_LocalEulerAnglesHint: {x: 90, y: 0, z: 0}
 --- !u!114 &1037988959
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9523,6 +9545,10 @@ MonoBehaviour:
   effects:
   - effectId: fire_explosion
     prefab: {fileID: 2433282508537954060, guid: 3ef3ae421f71c5c4e97fe12dc2fc6312, type: 3}
+  - effectId: Critical Effect
+    prefab: {fileID: 4021103657954561961, guid: 5c755f9bc5253ea418e919994537dcc7, type: 3}
+  - effectId: LightningHit
+    prefab: {fileID: 1141330259687333427, guid: 6718dc24203da53468af9ada8fef7d6d, type: 3}
 --- !u!1 &2089464883
 GameObject:
   m_ObjectHideFlags: 0

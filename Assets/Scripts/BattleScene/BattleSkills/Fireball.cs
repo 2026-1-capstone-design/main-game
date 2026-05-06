@@ -30,7 +30,7 @@ public sealed class FireballSkill : IBattleSkill
         Vector3 direction = targetState.Position - startPos;
         direction.y = 0f;
 
-        // 적중했을 때 실행할 구체적인 효과
+        // 적중시 효과
         Action<BattleUnitCombatState, Vector3, IBattleEffectSink> onHitEffect = (hitTarget, hitPos, sink) =>
         {
             if (hitTarget == null || hitTarget.IsCombatDisabled) return;
@@ -49,13 +49,15 @@ public sealed class FireballSkill : IBattleSkill
                     IsSkill = true,
                 }
             );
-
+            //터질 때 모션
             VFXManager.Instance.PlayEffect("fire_explosion", hitPos);
         };
 
 
         float windUpDelay = casterRuntime.GetSkillAnimationDuration() * 0.5f; // 애니메이션 길이에 비례한 선딜레이 설정
 
+
+        //만든 효과를 담아서 발사.
         BattleSimulationManager.Instance.LaunchCustomProjectile(
             new BattleDamageRequest { Target = targetState }, // 타겟 추적용 Request
             startPos,

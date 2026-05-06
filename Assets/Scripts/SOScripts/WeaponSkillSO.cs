@@ -19,6 +19,41 @@ public enum WeaponSkillId
     ShieldBash = 14,
     HeadStrike = 15,
     SpiralSlash = 16,
+    Parrying = 18,
+    ContinuousSlash = 18,
+    HighHeal = 20,
+    OminousStar = 21,
+    DarkShroud = 22,
+    Consecration = 23,
+    HuntStart = 24,
+    WarCommander = 25,
+    Submersion = 26,
+    LeapOfFaith = 27,
+    HookThrow = 28,
+    ManaCollapse = 29,
+    HolyBarrier = 30,
+    Fear = 31,
+    UnstoppableForce = 32,
+    Juggernaut = 33,
+    Harvest = 34,
+    HolyRevive = 35,
+    DeathWhirlpool = 36,
+    Retribution = 37,
+    Surge = 38,
+
+    MagicExplosion = 39,
+
+    Curse = 40,
+    GlyphOfCounterattack = 41,
+
+    NobleSacrifice = 42,
+    Duel = 43,
+    Freeze = 44,
+    MindControl = 45,
+    Oblivion = 46,
+    Respite = 47,
+    MoonlightDance = 48,
+    FanaticalObsession = 49
 }
 
 public enum skillType

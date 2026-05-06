@@ -103,7 +103,7 @@ public sealed class BattleSceneTester : MonoBehaviour
             );
             if (weaponMotion != null && animator.runtimeAnimatorController != weaponMotion)
             {
-                animator.runtimeAnimatorController = weaponMotion;
+                //animator.runtimeAnimatorController = weaponMotion;
                 Debug.Log($"[BattleSceneTester] Force-applied {unit.Snapshot.WeaponType} animation to {unit.name}");
             }
         }

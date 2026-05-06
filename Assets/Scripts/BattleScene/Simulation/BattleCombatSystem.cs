@@ -37,6 +37,33 @@ public sealed class BattleCombatSystem
                 new StimpackSkill(),
                 new ThroatSlitSkill(),
                 new WarcrySkill(),
+                new HighHealSkill(),
+                new DarkShroudSkill(),
+                new OminousStarSkill(),
+                new ConsecrationSkill(),
+                new WarCommanderSkill(),
+                new HuntStartSkill(),
+                new LeapOfFaithSkill(),
+                new HookThrowSkill(),
+                new ContinuousSlashSkill(),
+                new ParryingSkill(),
+                new ManaCollapseSkill(),
+                new HolyBarrierSkill(),
+                new FearSkill(),
+                new MagicExplosionSkill(),
+                new RetributionSkill(),
+                new SubmersionSkill(),
+
+                new CurseSkill(),
+                new GlyphOfCounterattackSkill(),
+                new NobleSacrificeSkill(),
+                new DuelSkill(),
+                //new FreezeSkill(),
+                //new MindControlSkill(),
+                new OblivionSkill(),
+                //new RespiteSkill(),
+                new MoonlightDanceSkill(),
+                //new FanaticalObsessionSkill()
             }
         );
     }
@@ -108,13 +135,13 @@ public sealed class BattleCombatSystem
             BattleDamageRequest damageRequest = new BattleDamageRequest
             {
                 Source = attacker.State,
-                    Target = target,
-                    Amount = attacker.Attack,
-                    SourceKind = BattleEffectSourceKind.BasicAttack,
-                    DamageKind = BattleDamageKind.Direct,
-                    SkillId = WeaponSkillId.None,
-                    ArtifactId = ArtifactId.None,
-                    IsBasicAttack = true,
+                Target = target,
+                Amount = attacker.Attack,
+                SourceKind = BattleEffectSourceKind.BasicAttack,
+                DamageKind = BattleDamageKind.Direct,
+                SkillId = WeaponSkillId.None,
+                ArtifactId = ArtifactId.None,
+                IsBasicAttack = true,
             };
 
             bool isProjectile = attacker.Snapshot.UseProjectile;

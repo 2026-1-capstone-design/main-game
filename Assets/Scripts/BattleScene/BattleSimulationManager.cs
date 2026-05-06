@@ -9,7 +9,7 @@ public enum BuffType
     AttackSpeed = 2,
     AttackDamage = 3,
     RedudeDamage = 4,
-
+    Untargetable,       //지정 불가
     //부정 버프
     BleedDamage,
     Taunt,
