@@ -223,7 +223,7 @@ public sealed class MarketUIManager : MonoBehaviour
     private OwnedWeaponData _pendingSellWeapon;
     private int _pendingSellWeaponPrice;
 
-    private PerkSO _pendingSellArtifact;
+    private ArtifactSO _pendingSellArtifact;
     private int _pendingSellArtifactPrice;
 
     public void Initialize(
@@ -785,7 +785,7 @@ public sealed class MarketUIManager : MonoBehaviour
                 continue;
             }
 
-            PerkSO artifact = offer.Artifact;
+            ArtifactSO artifact = offer.Artifact;
 
             if (buyArtifactSlotIcons != null && i < buyArtifactSlotIcons.Length && buyArtifactSlotIcons[i] != null)
             {
@@ -824,16 +824,16 @@ public sealed class MarketUIManager : MonoBehaviour
 
         if (_researchManager != null)
         {
-            IReadOnlyList<PerkSO> ownedArtifacts = _researchManager.UnlockedPerks;
+            IReadOnlyList<ArtifactSO> ownedArtifacts = _researchManager.UnlockedArtifacts;
             for (int i = 0; i < ownedArtifacts.Count; i++)
             {
-                PerkSO artifact = ownedArtifacts[i];
+                ArtifactSO artifact = ownedArtifacts[i];
                 if (artifact == null)
                 {
                     continue;
                 }
 
-                _sellArtifactViewBuffer.Add(new OwnedItemViewData(artifact.icon, artifact.perkName, artifact));
+                _sellArtifactViewBuffer.Add(new OwnedItemViewData(artifact.icon, artifact.artifactName, artifact));
             }
         }
 
@@ -919,8 +919,7 @@ public sealed class MarketUIManager : MonoBehaviour
 
     private void OnSellArtifactCellClicked(OwnedItemViewData data)
     {
-        PerkSO artifact = data.Source as PerkSO;
-        if (artifact == null)
+        if (data.Source is not ArtifactSO artifact)
         {
             return;
         }
@@ -931,7 +930,7 @@ public sealed class MarketUIManager : MonoBehaviour
         if (sellArtifactConfirmNameText != null)
         {
             string desc = string.IsNullOrWhiteSpace(artifact.description) ? "-" : artifact.description;
-            sellArtifactConfirmNameText.text = $"이름: {artifact.perkName}\n{desc}";
+            sellArtifactConfirmNameText.text = $"이름: {artifact.artifactName}\n{desc}";
         }
 
         if (sellArtifactConfirmPriceText != null)
@@ -1146,10 +1145,10 @@ public sealed class MarketUIManager : MonoBehaviour
             return string.Empty;
         }
 
-        PerkSO artifact = offer.Artifact;
+        ArtifactSO artifact = offer.Artifact;
         string desc = string.IsNullOrWhiteSpace(artifact.description) ? "-" : artifact.description;
 
-        return $"가격: {offer.Price}\n이름: {artifact.perkName}\n{desc}";
+        return $"가격: {offer.Price}\n이름: {artifact.artifactName}\n{desc}";
     }
 
     private void ClearBuyGladiatorSlot(int slotIndex)

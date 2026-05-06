@@ -217,14 +217,14 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
 
         int artifactSlotCount = GetConfiguredArtifactSlotCount();
         int artifactPrice = GetArtifactBuyPrice();
-        IReadOnlyList<PerkSO> allPerks = _contentDatabaseProvider.Perks;
-        if (allPerks != null && allPerks.Count > 0)
+        IReadOnlyList<ArtifactSO> allArtifacts = _contentDatabaseProvider.Artifacts;
+        if (allArtifacts != null && allArtifacts.Count > 0)
         {
             System.Random rng = new System.Random(safeDay * 1000 + 7);
             for (int i = 0; i < artifactSlotCount; i++)
             {
-                int index = rng.Next(0, allPerks.Count);
-                PerkSO artifact = allPerks[index];
+                int index = rng.Next(0, allArtifacts.Count);
+                ArtifactSO artifact = allArtifacts[index];
                 _artifactOffers.Add(new MarketArtifactOffer(i, artifact, artifactPrice));
             }
         }
@@ -615,7 +615,7 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
         if (verboseLog)
         {
             Debug.Log(
-                $"[MarketManager] Artifact purchased. Slot={slotIndex}, Name={offer.Artifact.perkName}, Price={offer.Price}",
+                $"[MarketManager] Artifact purchased. Slot={slotIndex}, Name={offer.Artifact.artifactName}, Price={offer.Price}",
                 this
             );
         }
@@ -623,7 +623,7 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
         return true;
     }
 
-    public bool TrySellArtifact(PerkSO artifact, out int sellPrice, out string failReason)
+    public bool TrySellArtifact(ArtifactSO artifact, out int sellPrice, out string failReason)
     {
         sellPrice = 0;
         failReason = string.Empty;
@@ -656,7 +656,7 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
 
         if (verboseLog)
         {
-            Debug.Log($"[MarketManager] Artifact sold. Name={artifact.perkName}, SellPrice={sellPrice}", this);
+            Debug.Log($"[MarketManager] Artifact sold. Name={artifact.artifactName}, SellPrice={sellPrice}", this);
         }
 
         return true;

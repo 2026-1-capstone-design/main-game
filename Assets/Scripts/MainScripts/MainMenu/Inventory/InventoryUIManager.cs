@@ -182,16 +182,16 @@ public sealed class InventoryUIManager : MonoBehaviour
 
         if (_researchManager != null)
         {
-            IReadOnlyList<PerkSO> artifacts = _researchManager.UnlockedPerks;
+            IReadOnlyList<ArtifactSO> artifacts = _researchManager.UnlockedArtifacts;
             for (int i = 0; i < artifacts.Count; i++)
             {
-                PerkSO artifact = artifacts[i];
+                ArtifactSO artifact = artifacts[i];
                 if (artifact == null)
                 {
                     continue;
                 }
 
-                _artifactViewBuffer.Add(new OwnedItemViewData(artifact.icon, artifact.perkName, artifact));
+                _artifactViewBuffer.Add(new OwnedItemViewData(artifact.icon, artifact.artifactName, artifact));
             }
         }
 
@@ -216,7 +216,7 @@ public sealed class InventoryUIManager : MonoBehaviour
 
     private void OnArtifactCellClicked(OwnedItemViewData data)
     {
-        if (data.Source is not PerkSO artifact)
+        if (data.Source is not ArtifactSO artifact)
         {
             return;
         }
@@ -250,7 +250,7 @@ public sealed class InventoryUIManager : MonoBehaviour
         SetDetailPanelActive(true);
     }
 
-    private void ShowArtifactDetail(PerkSO artifact)
+    private void ShowArtifactDetail(ArtifactSO artifact)
     {
         if (detailPanelRoot == null)
         {
@@ -265,7 +265,7 @@ public sealed class InventoryUIManager : MonoBehaviour
 
         if (detailNameText != null)
         {
-            detailNameText.text = artifact.perkName;
+            detailNameText.text = artifact.artifactName;
         }
 
         if (detailDescriptionText != null)

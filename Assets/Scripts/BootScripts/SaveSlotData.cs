@@ -16,7 +16,7 @@ public sealed class SaveSlotData
     public SaveOwnedWeaponData[] ownedWeapons;
     public SaveOwnedGladiatorData[] ownedGladiators;
 
-    public string[] unlockedPerkNames;
+    public string[] unlockedArtifactNames;
 
     public int marketInitializedDay;
     public SaveMarketWeaponOfferData[] marketWeaponOffers;

@@ -7,10 +7,10 @@ public sealed class ResearchManager : MonoBehaviour
     [SerializeField]
     private bool verboseLog = true;
 
-    private readonly List<PerkSO> _unlockedPerks = new List<PerkSO>();
+    private readonly List<ArtifactSO> _unlockedArtifacts = new List<ArtifactSO>();
     private bool _initialized;
 
-    public IReadOnlyList<PerkSO> UnlockedPerks => _unlockedPerks;
+    public IReadOnlyList<ArtifactSO> UnlockedArtifacts => _unlockedArtifacts;
 
     public void Initialize(ContentDatabaseProvider contentDatabaseProvider)
     {
@@ -25,7 +25,7 @@ public sealed class ResearchManager : MonoBehaviour
             return;
         }
 
-        _unlockedPerks.Clear();
+        _unlockedArtifacts.Clear();
         _initialized = true;
 
         if (verboseLog)
@@ -34,69 +34,72 @@ public sealed class ResearchManager : MonoBehaviour
         }
     }
 
-    public int GetUnlockedPerkCount()
+    public int GetUnlockedArtifactCount()
     {
-        return _unlockedPerks.Count;
+        return _unlockedArtifacts.Count;
     }
 
-    public bool AddArtifact(PerkSO artifact)
+    public bool AddArtifact(ArtifactSO artifact)
     {
         if (artifact == null)
         {
             return false;
         }
 
-        if (_unlockedPerks.Contains(artifact))
+        if (_unlockedArtifacts.Contains(artifact))
         {
             return false;
         }
 
-        _unlockedPerks.Add(artifact);
+        _unlockedArtifacts.Add(artifact);
 
         if (verboseLog)
         {
-            Debug.Log($"[ResearchManager] Artifact added. Name={artifact.perkName}", this);
+            Debug.Log($"[ResearchManager] Artifact added. Name={artifact.artifactName}", this);
         }
 
         return true;
     }
 
-    public bool RemoveArtifact(PerkSO artifact)
+    public bool RemoveArtifact(ArtifactSO artifact)
     {
         if (artifact == null)
         {
             return false;
         }
 
-        bool removed = _unlockedPerks.Remove(artifact);
+        bool removed = _unlockedArtifacts.Remove(artifact);
 
         if (removed && verboseLog)
         {
-            Debug.Log($"[ResearchManager] Artifact removed. Name={artifact.perkName}", this);
+            Debug.Log($"[ResearchManager] Artifact removed. Name={artifact.artifactName}", this);
         }
 
         return removed;
     }
 
-    public void RestoreUnlockedPerksForLoad(List<PerkSO> unlockedPerks)
+    public void RestoreUnlockedArtifactsForLoad(List<ArtifactSO> unlockedArtifacts)
     {
-        _unlockedPerks.Clear();
+        _unlockedArtifacts.Clear();
 
-        if (unlockedPerks != null)
+        if (unlockedArtifacts != null)
         {
-            for (int i = 0; i < unlockedPerks.Count; i++)
+            for (int i = 0; i < unlockedArtifacts.Count; i++)
             {
-                PerkSO perk = unlockedPerks[i];
-                if (perk != null)
+                ArtifactSO artifact = unlockedArtifacts[i];
+                if (artifact != null)
                 {
-                    _unlockedPerks.Add(perk);
+                    _unlockedArtifacts.Add(artifact);
                 }
             }
         }
 
         if (verboseLog)
         {
-            Debug.Log($"[ResearchManager] Unlocked perks restored from save. Count={_unlockedPerks.Count}", this);
+            Debug.Log(
+                $"[ResearchManager] Unlocked artifacts restored from save. Count={_unlockedArtifacts.Count}",
+                this
+            );
         }
     }
 }
