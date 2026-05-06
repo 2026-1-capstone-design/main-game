@@ -10,8 +10,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 251b89a55cd5a2743878f62ed275c4de, type: 3}
-  m_Name: Perk5
-  m_EditorClassIdentifier: Assembly-CSharp::PerkSO
-  icon: {fileID: 21300000, guid: 846e972b22d172a4481cb48952ff7b6f, type: 3}
-  perkName: perk5
-  description: perk5 des
+  m_Name: Artifact7
+  m_EditorClassIdentifier: Assembly-CSharp::ArtifactSO
+  icon: {fileID: 21300000, guid: c7ed09800fe13894cabee59a46d25094, type: 3}
+  artifactName: artifact7
+  description: artifact7 des

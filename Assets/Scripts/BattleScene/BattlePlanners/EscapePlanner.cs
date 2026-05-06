@@ -12,10 +12,10 @@ public sealed class EscapePlanner : IBattleActionPlanner
         away.y = 0f;
 
         if (away.sqrMagnitude < 0.0001f)
-            away = unit.IsEnemy ? Vector3.right : Vector3.left;
+            away = unit.IsPlayerOwned ? Vector3.left : Vector3.right;
         away.Normalize();
 
-        Vector3 teamCenter = snapshot.ComputeTeamCenter(unit.State.IsEnemy);
+        Vector3 teamCenter = snapshot.ComputeTeamCenter(unit.State.TeamId);
         Vector3 towardTeam = (teamCenter - selfPos);
         towardTeam.y = 0f;
         towardTeam.Normalize();

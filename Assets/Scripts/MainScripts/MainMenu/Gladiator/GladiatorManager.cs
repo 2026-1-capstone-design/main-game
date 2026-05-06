@@ -324,7 +324,7 @@ public sealed class GladiatorManager : SingletonBehaviour<GladiatorManager>
             marketPreview.GladiatorClass,
             marketPreview.Trait,
             marketPreview.Personality,
-            marketPreview.EquippedPerk,
+            marketPreview.EquippedArtifact,
             marketPreview.EquippedWeapon,
             marketPreview.CustomizeIndicates
         );

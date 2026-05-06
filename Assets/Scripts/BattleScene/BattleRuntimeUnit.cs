@@ -6,6 +6,8 @@ using UnityEngine.UI;
 
 // BattleRuntimeUnit은 전투 중 비주얼 렌더러다.
 // 전투 상태(HP, 쿨다운, 행동 타입 등)는 State(BattleUnitCombatState)가 담당한다.
+// TODO: 더 명확한 이름으로 BattleUnitActor를 검토한다. 이 타입은 전투 계산 모델이 아니라
+// 씬에서 움직이고 애니메이션/UI/프리팹 표현을 반영하는 MonoBehaviour 경계다.
 // prefab 구조: Root -> BattleRuntimeUnit -> Dot_ally / Dot_enemy / Dot_dead / StatusText
 // - 아군이면 Dot_ally 활성, 적군이면 Dot_enemy 활성, 죽으면 팀 상관없이 Dot_dead 활성
 // - StatusText는 항상 두 줄: 첫 줄 = 유닛 번호, 둘째 줄 = 현재 행동명
@@ -52,7 +54,9 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
 
     // ── 정체성 프로퍼티 (State 위임) ──────────────────────────────
     public int UnitNumber => State.UnitNumber;
-    public bool IsEnemy => State.IsEnemy;
+    public BattleTeamId TeamId => State.TeamId;
+    public bool IsPlayerOwned { get; private set; }
+    public bool IsEnemy => !IsPlayerOwned;
     public BattleUnitSnapshot Snapshot { get; private set; }
 
     public string DisplayName => State.DisplayName;
@@ -211,7 +215,8 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     public void Initialize(
         BattleUnitSnapshot snapshot,
         int unitNumber,
-        bool isEnemy,
+        BattleTeamId teamId,
+        bool isPlayerOwned,
         IAnimationProvider animationProvider = null
     )
     {
@@ -222,11 +227,13 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         }
 
         Snapshot = snapshot;
+        IsPlayerOwned = isPlayerOwned;
 
         // ── State 생성 및 이벤트 구독 ────────────────────────────
-        state = new BattleUnitCombatState(snapshot, unitNumber, isEnemy);
+        state = new BattleUnitCombatState(snapshot, unitNumber, teamId);
         State.OnHealthChanged += _ => RefreshHPbar();
         State.OnDied += HandleUnitDied;
+        State.OnRevived += HandleUnitRevived;
         State.OnActionTypeChanged += (_, _) => RefreshStatusText();
         State.OnMovingStateChanged += isMoving => _myAnimation?.SetBool("isMoving", isMoving);
         State.OnIdleStateEntered += () => _myAnimation?.SetBool("isMoving", false);
@@ -243,14 +250,14 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
 
         EquipSkinFromSnapshot();
 
-        if (isEnemy)
+        if (!isPlayerOwned)
             HPbar.sprite = EnemybarSprite;
         else
             HPbar.sprite = AllybarSprite;
 
         RefreshHPbar();
 
-        string runtimeName = $"{(isEnemy ? "Enemy" : "Ally")}_{UnitNumber}_{DisplayName}";
+        string runtimeName = $"{(isPlayerOwned ? "Player" : "Hostile")}_{UnitNumber}_{DisplayName}";
         if (RuntimeRootObject != null)
             RuntimeRootObject.name = runtimeName;
 
@@ -260,7 +267,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         {
             Debug.Log(
                 $"[BattleRuntimeUnit] Initialized. UnitNumber={UnitNumber}, Name={DisplayName}, "
-                    + $"Team={(isEnemy ? "Enemy" : "Ally")}, HP={CurrentHealth:0.##}/{MaxHealth:0.##}",
+                    + $"TeamId={TeamId.Value}, IsPlayerOwned={IsPlayerOwned}, HP={CurrentHealth:0.##}/{MaxHealth:0.##}",
                 this
             );
         }
@@ -392,6 +399,12 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         RefreshVisualState();
     }
 
+    private void HandleUnitRevived()
+    {
+        RefreshHPbar();
+        RefreshVisualState();
+    }
+
     // ── 공격 트리거 (OnAttackTriggered 이벤트 핸들러) ────────────
     private void HandleAttackTriggered()
     {
@@ -508,7 +521,8 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     public skillType getSkillType() => State.GetSkillType();
 
     // ── 버프 위임 ─────────────────────────────────────────────────
-    public void TickBufflCooldown(float deltaTime) => State.TickBufflCooldown(deltaTime);
+    public void TickBufflCooldown(float deltaTime, IBattleEffectSink effects) =>
+        State.TickBufflCooldown(deltaTime, effects);
 
     public void BuffApply(BuffType type, int level, float cool) => State.BuffApply(type, level, cool);
 

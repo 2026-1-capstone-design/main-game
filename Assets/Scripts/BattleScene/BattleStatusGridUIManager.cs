@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 
 // BattleStatusGridUIManager 책임 (전투 디버그 UI 전담 manager):
-// - 하단 2×6 status panel 갱신 (ally 1~6 / enemy 7~12 상태 텍스트 표시)
+// - 하단 ally/enemy status panel 갱신
 // - 상단 speed text 표시
 // 각 셀에 표시: 유닛 번호, 이름, HP, 현재 행동, 이동/공격 여부, 현재 타겟,
 //              KeepBehaving, ActionTimer, 최고 점수 행동/값, RAW parameter set, MOD parameter set
@@ -15,34 +15,37 @@ public sealed class BattleStatusGridUIManager : MonoBehaviour
     [SerializeField]
     private TMP_Text simulationSpeedText; // 현재 배속 텍스트
 
-    [Header("Ally Cells (1~6)")]
+    [Header("Ally Cells")]
     [SerializeField]
-    private TMP_Text[] allyStatusTexts = new TMP_Text[6];
+    private TMP_Text[] allyStatusTexts = new TMP_Text[BattleTeamConstants.MaxUnitsPerTeam];
 
     [SerializeField]
-    private Button[] allyOrderButtons = new Button[6];
+    private Button[] allyOrderButtons = new Button[BattleTeamConstants.MaxUnitsPerTeam];
 
-    [Header("Enemy Cells (7~12)")]
+    [Header("Enemy Cells")]
     [SerializeField]
-    private TMP_Text[] enemyStatusTexts = new TMP_Text[6];
+    private TMP_Text[] enemyStatusTexts = new TMP_Text[BattleTeamConstants.MaxUnitsPerTeam];
 
     private BattleSimulationManager _simulationManager;
     private BattleSimulationManager _subscribedSimulationManager;
     private BattleSceneUIManager _battleSceneUIManager;
-    private readonly BattleRuntimeUnit[] _allyUnits = new BattleRuntimeUnit[6];
-    private readonly BattleRuntimeUnit[] _enemyUnits = new BattleRuntimeUnit[6];
+    private IBattleRosterProjection _rosterProjection;
+    private readonly BattleRuntimeUnit[] _allyUnits = new BattleRuntimeUnit[BattleTeamConstants.MaxUnitsPerTeam];
+    private readonly BattleRuntimeUnit[] _enemyUnits = new BattleRuntimeUnit[BattleTeamConstants.MaxUnitsPerTeam];
     private bool _initialized;
 
     public void Initialize(
         BattleSimulationManager simulationManager,
         IReadOnlyList<BattleRuntimeUnit> runtimeUnits,
+        IBattleRosterProjection rosterProjection,
         BattleSceneUIManager battleSceneUIManager = null
     )
     {
         _simulationManager = simulationManager;
         _battleSceneUIManager = battleSceneUIManager;
+        _rosterProjection = rosterProjection;
         RebindSimulationEvents();
-        BindUnits(runtimeUnits);
+        BindUnits(runtimeUnits, rosterProjection);
 
         BindAllyOrderButtons();
         UpdateAllyOrderButtonInteractableStates();
@@ -54,8 +57,10 @@ public sealed class BattleStatusGridUIManager : MonoBehaviour
         UnbindSimulationEvents();
     }
 
-    public void BindUnits(IReadOnlyList<BattleRuntimeUnit> runtimeUnits)
+    public void BindUnits(IReadOnlyList<BattleRuntimeUnit> runtimeUnits, IBattleRosterProjection rosterProjection)
     {
+        _rosterProjection = rosterProjection;
+
         for (int i = 0; i < _allyUnits.Length; i++)
         {
             _allyUnits[i] = null;
@@ -76,20 +81,18 @@ public sealed class BattleStatusGridUIManager : MonoBehaviour
                     continue;
                 }
 
-                if (!unit.IsEnemy)
+                if (_rosterProjection != null && _rosterProjection.TryGetPlayerIndex(unit, out int playerIndex))
                 {
-                    int allyIndex = unit.UnitNumber - 1;
-                    if (allyIndex >= 0 && allyIndex < _allyUnits.Length)
+                    if (playerIndex >= 0 && playerIndex < _allyUnits.Length)
                     {
-                        _allyUnits[allyIndex] = unit;
+                        _allyUnits[playerIndex] = unit;
                     }
                 }
-                else
+                else if (_rosterProjection != null && _rosterProjection.TryGetHostileIndex(unit, out int hostileIndex))
                 {
-                    int enemyIndex = unit.UnitNumber - 7;
-                    if (enemyIndex >= 0 && enemyIndex < _enemyUnits.Length)
+                    if (hostileIndex >= 0 && hostileIndex < _enemyUnits.Length)
                     {
-                        _enemyUnits[enemyIndex] = unit;
+                        _enemyUnits[hostileIndex] = unit;
                     }
                 }
             }
@@ -223,7 +226,10 @@ public sealed class BattleStatusGridUIManager : MonoBehaviour
         string targetText = unit.CurrentTarget != null ? unit.CurrentTarget.UnitNumber.ToString() : "-";
         string topActionText = unit.TopScoredAction == BattleActionType.None ? "-" : unit.TopScoredAction.ToString();
 
-        return $"#{unit.UnitNumber} {unit.DisplayName} {weaponType}\n"
+        string displayUnitId =
+            _rosterProjection != null ? _rosterProjection.GetDisplayUnitId(unit) : $"#{unit.UnitNumber}";
+
+        return $"{displayUnitId} {unit.DisplayName} {weaponType}\n"
             + $"{hpText}\n"
             + $"Action {unit.CurrentAction}\n"
             + $"Move {moveText} / Attack {attackText}  {targetText}\n"

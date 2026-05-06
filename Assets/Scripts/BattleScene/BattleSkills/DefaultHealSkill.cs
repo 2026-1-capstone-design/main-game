@@ -8,11 +8,22 @@ public sealed class DefaultHealSkill : IBattleSkill
     public skillType SkillCategory => skillType.support;
 
     public IReadOnlyList<WeaponType> CompatibleWeaponTypes { get; } = new WeaponType[0];
+    public BattleSkillTargetPolicy TargetPolicy => BattleSkillTargetPolicy.Self;
+    public float CastRange => 0f;
+    public float AreaRadius => 0f;
 
-    public bool CanActivate(BattleRuntimeUnit caster) => true;
+    public bool CanActivate(in BattleEffectContext context) => context.Actor != null;
 
-    public void Apply(BattleRuntimeUnit caster, ISkillEffectApplier applier)
+    public void Activate(in BattleEffectContext context, IBattleEffectSink effects)
     {
-        applier.ApplyHeal(caster.State, 10f);
+        effects.Heal(
+            new BattleHealRequest
+            {
+                Source = context.Actor != null ? context.Actor.State : null,
+                Target = context.Actor != null ? context.Actor.State : null,
+                Amount = 10f,
+                SourceKind = BattleEffectSourceKind.Skill,
+            }
+        );
     }
 }

@@ -44,7 +44,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 7787dc02d0d3d7740815b7650b3c0fb4, type: 2}
   - {fileID: 11400000, guid: 880a6e6a08a46964ab8ebe1c42ddff13, type: 2}
   - {fileID: 11400000, guid: 492eeff4b81f27f4288b2cbf0ece9b35, type: 2}
-  perks:
+  artifacts:
   - {fileID: 11400000, guid: cc7252e511639af44aeb0334433db009, type: 2}
   - {fileID: 11400000, guid: 342615a052314fb4f897c174d3d41fa3, type: 2}
   - {fileID: 11400000, guid: c33c5a989764d5147950f62f543a7e45, type: 2}

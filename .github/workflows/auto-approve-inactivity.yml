@@ -54,11 +54,26 @@ jobs:
                   pull_number: pr.number,
                 });
 
-                const isAlreadyApproved = reviews.some(review => 
+                const isAlreadyApproved = reviews.some(review =>
                   review.state === 'APPROVED' && review.user.login === 'github-actions[bot]'
                 );
 
-                if (!isAlreadyApproved) {
+                // 4. 각 리뷰어의 마지막 리뷰 상태 확인 — CHANGES_REQUESTED가 남아있으면 건너뜀
+                const latestReviewByUser = {};
+                for (const review of reviews) {
+                  if (review.state === 'COMMENTED') continue; // 코멘트만은 상태에 영향 없음
+                  const login = review.user.login;
+                  if (!latestReviewByUser[login] || new Date(review.submitted_at) > new Date(latestReviewByUser[login].submitted_at)) {
+                    latestReviewByUser[login] = review;
+                  }
+                }
+                const hasUnresolvedChangesRequest = Object.values(latestReviewByUser).some(
+                  review => review.state === 'CHANGES_REQUESTED'
+                );
+
+                if (hasUnresolvedChangesRequest) {
+                  console.log(`PR #${pr.number} has unresolved change requests. Skipping...`);
+                } else if (!isAlreadyApproved) {
                   console.log(`Approving PR #${pr.number}...`);
                   await github.rest.pulls.createReview({
                     owner,

@@ -37,12 +37,16 @@ public sealed class BattleSimulationManager : MonoBehaviour
     public float desiredPositionStopDistance = 8f;
     public float escapeTowardTeamBlend = 0.35f;
 
-    private readonly List<BattleRuntimeUnit> _runtimeUnits = new List<BattleRuntimeUnit>(12);
-    private readonly List<BattleUnitCombatState> _unitStates = new List<BattleUnitCombatState>(12);
+    private readonly List<BattleRuntimeUnit> _runtimeUnits = new List<BattleRuntimeUnit>(
+        BattleTeamConstants.MaxUnitsInBattle
+    );
+    private readonly List<BattleUnitCombatState> _unitStates = new List<BattleUnitCombatState>(
+        BattleTeamConstants.MaxUnitsInBattle
+    );
     private readonly Dictionary<BattleUnitCombatState, BattleRuntimeUnit> _runtimeUnitByState = new Dictionary<
         BattleUnitCombatState,
         BattleRuntimeUnit
-    >(12);
+    >(BattleTeamConstants.MaxUnitsInBattle);
 
     // 3D 전장 클램프를 위한 SphereCollider
     private SphereCollider _battlefieldCollider;
@@ -54,8 +58,29 @@ public sealed class BattleSimulationManager : MonoBehaviour
     private readonly BattleDecisionSystem _decisionSystem = new BattleDecisionSystem();
     private readonly BattlePlanningSystem _planningSystem = new BattlePlanningSystem();
     private readonly BattlePhysicsSystem _physicsSystem = new BattlePhysicsSystem();
-    private readonly BattleCombatSystem _combatSystem = new BattleCombatSystem(new SkillEffectApplier());
+    private readonly BattleArtifactSystem _artifactSystem = new BattleArtifactSystem();
+    private readonly BattleSkillChannelSystem _channelSystem = new BattleSkillChannelSystem();
+    private readonly BattleScheduledEffectSystem _scheduledEffectSystem = new BattleScheduledEffectSystem();
+    private readonly BattlePositionHistory _positionHistory = new BattlePositionHistory();
+    private readonly BattleDamageLifecycle _damageLifecycle = new BattleDamageLifecycle();
+    private readonly BattleRosterMutationSystem _rosterMutationSystem = new BattleRosterMutationSystem();
+    private BattleEffectSystem _effectSystem;
+    private BattleCombatSystem _combatSystem;
     private readonly BattleVictorySystem _victorySystem = new BattleVictorySystem();
+    private readonly int[] _tickUnitNumbersBuffer = new int[BattleTeamConstants.MaxUnitsInBattle];
+    private readonly BattleParameterSet[] _tickRawParametersBuffer = new BattleParameterSet[
+        BattleTeamConstants.MaxUnitsInBattle
+    ];
+    private readonly BattleParameterSet[] _tickModifiedParametersBuffer = new BattleParameterSet[
+        BattleTeamConstants.MaxUnitsInBattle
+    ];
+    private readonly bool[] _tickModifierOverflowFlagsBuffer = new bool[BattleTeamConstants.MaxUnitsInBattle];
+    private readonly BattleActionType[] _tickDecisionBuffer = new BattleActionType[
+        BattleTeamConstants.MaxUnitsInBattle
+    ];
+    private readonly BattleCombatResultBuffer _tickCombatResultBuffer = new BattleCombatResultBuffer(
+        BattleTeamConstants.MaxUnitsInBattle
+    );
 
     private bool _initialized;
     private bool _battleFinished;
@@ -63,6 +88,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
     private float _tickAccumulator;
     private float _tickInterval;
     private int _battleTickCount;
+    private SimulationTickData _tickData;
 
     public IReadOnlyList<BattleRuntimeUnit> RuntimeUnits => _runtimeUnits;
     public float SimulationSpeedMultiplier => simulationSpeedMultiplier;
@@ -126,6 +152,11 @@ public sealed class BattleSimulationManager : MonoBehaviour
         _runtimeUnits.Clear();
         _unitStates.Clear();
         _runtimeUnitByState.Clear();
+        _channelSystem.Clear();
+        _scheduledEffectSystem.Clear();
+        _positionHistory.Clear();
+        _damageLifecycle.Clear();
+        _rosterMutationSystem.Clear();
         _battlefieldCollider = battlefieldCollider;
 
         for (int i = 0; i < runtimeUnits.Count; i++)
@@ -147,7 +178,26 @@ public sealed class BattleSimulationManager : MonoBehaviour
 
         _payload = payload;
 
-        CurrentSnapshot = null;
+        ReleaseSnapshot();
+        EnsureCombatSystems();
+        _rosterMutationSystem.Configure(
+            _runtimeUnits,
+            _unitStates,
+            _runtimeUnitByState,
+            _battlefieldCollider,
+            _payload != null ? _payload.PlayerTeamId : BattleTeamIds.Player
+        );
+        _effectSystem.ConfigureLongRunningSystems(_scheduledEffectSystem, _damageLifecycle, _rosterMutationSystem);
+        BattleParameterRadii initialRadii = BattleParameterSystem.BuildRadii(aiTuning);
+        CurrentSnapshot = BattleFieldSnapshot.Build(
+            _runtimeUnits,
+            initialRadii,
+            escapeTowardTeamBlend,
+            CurrentSnapshot,
+            _artifactSystem.TargetingPolicy
+        );
+        _effectSystem.Configure(_tickCombatResultBuffer, _runtimeUnitByState, _battlefieldCollider);
+        _artifactSystem.Initialize(_runtimeUnits, CurrentSnapshot, 0f, 0, _effectSystem);
         _physicsSystem.Configure(_battlefieldCollider, desiredPositionStopDistance);
 
         _tickAccumulator = 0f;
@@ -155,6 +205,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
         _battleFinished = false;
         _isTemporarilyPaused = false;
         _battleTickCount = 0;
+        EnsureTickData();
         _initialized = true;
     }
 
@@ -206,32 +257,73 @@ public sealed class BattleSimulationManager : MonoBehaviour
 
     private void StepSimulation(float tickDeltaTime)
     {
+        _rosterMutationSystem.FlushPendingSummons();
         _battleTickCount++;
 
         BattleParameterRadii radii = BattleParameterSystem.BuildRadii(aiTuning);
-        CurrentSnapshot = BattleFieldSnapshot.Build(_runtimeUnits, radii, escapeTowardTeamBlend);
-        _cooldownSystem.Tick(_runtimeUnits, tickDeltaTime);
-
-        BattleParameterComputation[] parameterResults = _parameterSystem.Compute(
+        CurrentSnapshot = BattleFieldSnapshot.Build(
             _runtimeUnits,
             radii,
-            aiTuning,
-            CurrentSnapshot
+            escapeTowardTeamBlend,
+            CurrentSnapshot,
+            _artifactSystem.TargetingPolicy
         );
-        BattleActionType[] decisions = _decisionSystem.Decide(_runtimeUnits, aiTuning, tickDeltaTime);
+        float battleTime = _battleTickCount * _tickInterval;
+        BattleEffectContext tickContext = new BattleEffectContext(
+            null,
+            null,
+            CurrentSnapshot,
+            _runtimeUnits,
+            battleTime,
+            _battleTickCount
+        );
+        _tickCombatResultBuffer.Clear();
+        _effectSystem.Configure(_tickCombatResultBuffer, _runtimeUnitByState, _battlefieldCollider);
+        _rosterMutationSystem.Tick(battleTime);
+        _channelSystem.Tick(tickContext, _effectSystem);
+        _scheduledEffectSystem.Tick(tickContext, _effectSystem);
+        _cooldownSystem.Tick(_runtimeUnits, tickDeltaTime, _effectSystem);
 
-        _planningSystem.Build(_runtimeUnits, CurrentSnapshot);
-        _physicsSystem.Execute(_runtimeUnits, tickDeltaTime);
+        _parameterSystem.Compute(_runtimeUnits, radii, aiTuning, CurrentSnapshot, _tickModifierOverflowFlagsBuffer);
+        _decisionSystem.Decide(
+            _runtimeUnits,
+            aiTuning,
+            tickDeltaTime,
+            _tickDecisionBuffer,
+            _channelSystem,
+            _rosterMutationSystem
+        );
 
-        BattleCombatResult[] combatResults = _combatSystem.Execute(_runtimeUnits, _runtimeUnitByState);
+        _planningSystem.Build(_runtimeUnits, CurrentSnapshot, _rosterMutationSystem);
+        _physicsSystem.Execute(_runtimeUnits, tickDeltaTime, _artifactSystem.MovementPolicy, _channelSystem);
+        _positionHistory.RecordAll(_runtimeUnits, battleTime);
+        _artifactSystem.TickPositionHistoryArtifacts(_positionHistory, tickContext, _effectSystem);
+        _combatSystem.Execute(
+            _runtimeUnits,
+            _runtimeUnitByState,
+            _tickCombatResultBuffer,
+            CurrentSnapshot,
+            battleTime,
+            _battleTickCount,
+            false
+        );
 
-        BattleOutcome? outcome = _victorySystem.Evaluate(_runtimeUnits, _battleTickCount);
+        BattleOutcome? outcome = _victorySystem.Evaluate(
+            _runtimeUnits,
+            _battleTickCount,
+            _payload != null ? _payload.PlayerTeamId : BattleTeamIds.Player
+        );
 
-        SimulationTickData tickData = BuildTickData(parameterResults, decisions, combatResults);
+        SimulationTickData tickData = BuildTickData();
         OnSimulationTicked?.Invoke(tickData);
 
         if (outcome.HasValue)
             HandleBattleFinished(outcome.Value);
+    }
+
+    private void OnDestroy()
+    {
+        ReleaseSnapshot();
     }
 
     private void HandleBattleFinished(BattleOutcome outcome)
@@ -253,61 +345,72 @@ public sealed class BattleSimulationManager : MonoBehaviour
         OnBattleFinished?.Invoke(outcome);
     }
 
-    private SimulationTickData BuildTickData(
-        BattleParameterComputation[] parameterResults,
-        BattleActionType[] decisions,
-        BattleCombatResult[] combatResults
-    )
+    private SimulationTickData BuildTickData()
     {
-        int unitCount = _runtimeUnits.Count;
-        int[] unitNumbers = new int[unitCount];
-        var rawParameters = new BattleParameterSet[unitCount];
-        var modifiedParameters = new BattleParameterSet[unitCount];
-        var modifierOverflowFlags = new bool[unitCount];
-        var decisionResults = new BattleActionType[unitCount];
+        EnsureTickData();
 
+        int unitCount = _runtimeUnits.Count;
         for (int i = 0; i < unitCount; i++)
         {
             BattleRuntimeUnit unit = _runtimeUnits[i];
             if (unit == null)
             {
-                unitNumbers[i] = -1;
-                decisionResults[i] = BattleActionType.None;
+                _tickUnitNumbersBuffer[i] = -1;
+                _tickRawParametersBuffer[i] = default;
+                _tickModifiedParametersBuffer[i] = default;
+                _tickModifierOverflowFlagsBuffer[i] = false;
+                _tickDecisionBuffer[i] = BattleActionType.None;
                 continue;
             }
 
-            unitNumbers[i] = unit.UnitNumber;
-            rawParameters[i] = unit.CurrentRawParameters;
-            modifiedParameters[i] = unit.CurrentModifiedParameters;
-
-            if (decisions != null && i < decisions.Length)
-                decisionResults[i] = decisions[i];
-            else
-                decisionResults[i] = unit.CurrentActionType;
+            _tickUnitNumbersBuffer[i] = unit.UnitNumber;
+            _tickRawParametersBuffer[i] = unit.CurrentRawParameters;
+            _tickModifiedParametersBuffer[i] = unit.CurrentModifiedParameters;
         }
 
-        if (parameterResults != null)
+        _tickData.Update(_battleTickCount, unitCount, _tickCombatResultBuffer.Count);
+        return _tickData;
+    }
+
+    private void EnsureTickData()
+    {
+        if (_tickData == null)
         {
-            for (int i = 0; i < parameterResults.Length; i++)
-            {
-                BattleParameterComputation result = parameterResults[i];
-                if (result.UnitIndex < 0 || result.UnitIndex >= unitCount)
-                    continue;
-
-                rawParameters[result.UnitIndex] = result.Raw;
-                modifiedParameters[result.UnitIndex] = result.Modified;
-                modifierOverflowFlags[result.UnitIndex] = result.ModifierOverflowed;
-            }
+            _tickData = new SimulationTickData(
+                _tickUnitNumbersBuffer,
+                _tickRawParametersBuffer,
+                _tickModifiedParametersBuffer,
+                _tickModifierOverflowFlagsBuffer,
+                _tickDecisionBuffer,
+                _tickCombatResultBuffer.Items
+            );
+            return;
         }
 
-        return new SimulationTickData(
-            _battleTickCount,
-            unitNumbers,
-            rawParameters,
-            modifiedParameters,
-            modifierOverflowFlags,
-            decisionResults,
-            combatResults ?? new BattleCombatResult[0]
-        );
+        if (!ReferenceEquals(_tickData.CombatResults, _tickCombatResultBuffer.Items))
+            _tickData.UpdateCombatResultsBuffer(_tickCombatResultBuffer.Items);
+    }
+
+    private void EnsureCombatSystems()
+    {
+        if (_effectSystem == null)
+            _effectSystem = new BattleEffectSystem(_artifactSystem);
+
+        if (_combatSystem == null)
+            _combatSystem = new BattleCombatSystem(
+                _effectSystem,
+                _channelSystem,
+                _artifactSystem,
+                _rosterMutationSystem
+            );
+    }
+
+    private void ReleaseSnapshot()
+    {
+        if (CurrentSnapshot == null)
+            return;
+
+        CurrentSnapshot.Reset();
+        CurrentSnapshot = null;
     }
 }

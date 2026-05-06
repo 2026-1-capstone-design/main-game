@@ -7,5 +7,9 @@
     "editor.insertSpaces": true,
     "editor.defaultFormatter": "csharpier.csharpier-vscode"
   },
-  "cSpell.words": ["Bootstrapper", "Mathf"]
+  "cSpell.words": ["Bootstrapper", "Mathf"],
+  "files.exclude": {
+    "**/*.meta": true
+  },
+  "dotnet.defaultSolution": "main-game.sln"
 }

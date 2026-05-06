@@ -5,16 +5,18 @@ public sealed class BattleDecisionSystem
 {
     private const float CommitmentEnterMultiplier = 1.2f;
 
-    public BattleActionType[] Decide(
+    public void Decide(
         IReadOnlyList<BattleRuntimeUnit> units,
         BattleAITuningSO aiTuning,
-        float tickDeltaTime
+        float tickDeltaTime,
+        BattleActionType[] decisions,
+        BattleSkillChannelSystem channelSystem = null,
+        BattleRosterMutationSystem rosterMutationSystem = null
     )
     {
-        if (units == null)
-            return new BattleActionType[0];
+        if (units == null || decisions == null)
+            return;
 
-        var decisions = new BattleActionType[units.Count];
         float decay = aiTuning != null ? aiTuning.commitmentDecayPerSecond : 0.5f;
 
         for (int i = 0; i < units.Count; i++)
@@ -30,6 +32,16 @@ public sealed class BattleDecisionSystem
 
             if (unit.IsExternallyControlled)
             {
+                decisions[i] = unit.CurrentActionType;
+                continue;
+            }
+
+            if (
+                (channelSystem != null && channelSystem.IsDecisionChangeBlocked(unit))
+                || (rosterMutationSystem != null && rosterMutationSystem.IsCommandDisabled(unit))
+            )
+            {
+                unit.State.SetDecisionState(unit.KeepBehaving, unit.ActionTimer + tickDeltaTime);
                 decisions[i] = unit.CurrentActionType;
                 continue;
             }
@@ -76,8 +88,6 @@ public sealed class BattleDecisionSystem
 
             decisions[i] = unit.CurrentActionType;
         }
-
-        return decisions;
     }
 
     private static BattleActionScoreSet EvaluateScores(BattleRuntimeUnit unit, BattleAITuningSO aiTuning)

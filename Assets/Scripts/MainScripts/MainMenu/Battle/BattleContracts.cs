@@ -14,9 +14,9 @@ public enum BattleEncounterDifficulty
 public sealed class BattleUnitSnapshot
 {
     public int SourceRuntimeId { get; } // 원본인 OwnedGladiatorData의 RuntimeId.
+    public BattleTeamId TeamId { get; }
 
     // 전투 중 유닛이 어떤 실제로 중인 보유 검투사에서 복사됐는지 추적할 때 기준이 된다.
-    public bool IsEnemy { get; }
     public string DisplayName { get; }
     public int Level { get; }
     public int Loyalty { get; }
@@ -30,7 +30,8 @@ public sealed class BattleUnitSnapshot
     public GladiatorClassSO GladiatorClass { get; }
     public TraitSO Trait { get; }
     public PersonalitySO Personality { get; }
-    public PerkSO EquippedPerk { get; }
+    public ArtifactSO EquippedArtifact { get; }
+    public IReadOnlyList<ArtifactId> ArtifactIds { get; }
     public WeaponType WeaponType { get; }
 
     // 무기 왼쪽 오른쪽 추가
@@ -49,7 +50,7 @@ public sealed class BattleUnitSnapshot
 
     public BattleUnitSnapshot(
         int sourceRuntimeId,
-        bool isEnemy,
+        BattleTeamId teamId,
         string displayName,
         int level,
         int loyalty,
@@ -62,7 +63,7 @@ public sealed class BattleUnitSnapshot
         GladiatorClassSO gladiatorClass,
         TraitSO trait,
         PersonalitySO personality,
-        PerkSO equippedPerk,
+        ArtifactSO equippedArtifact,
         WeaponType weaponType,
         GameObject leftWeaponPrefab,
         GameObject rightWeaponPrefab,
@@ -74,7 +75,7 @@ public sealed class BattleUnitSnapshot
     )
     {
         SourceRuntimeId = sourceRuntimeId;
-        IsEnemy = isEnemy;
+        TeamId = teamId;
         DisplayName = string.IsNullOrWhiteSpace(displayName) ? "Gladiator" : displayName;
         Level = Mathf.Max(1, level);
         Loyalty = Mathf.Max(0, loyalty);
@@ -88,7 +89,8 @@ public sealed class BattleUnitSnapshot
         GladiatorClass = gladiatorClass;
         Trait = trait;
         Personality = personality;
-        EquippedPerk = equippedPerk;
+        EquippedArtifact = equippedArtifact;
+        ArtifactIds = BuildArtifactIds(equippedArtifact);
         WeaponType = weaponType;
 
         // 생성자에 추가
@@ -110,7 +112,7 @@ public sealed class BattleUnitSnapshot
     {
         return new BattleUnitSnapshot(
             SourceRuntimeId,
-            IsEnemy,
+            TeamId,
             DisplayName,
             Level,
             Loyalty,
@@ -123,7 +125,7 @@ public sealed class BattleUnitSnapshot
             GladiatorClass,
             Trait,
             Personality,
-            EquippedPerk,
+            EquippedArtifact,
             WeaponType,
             LeftWeaponPrefab,
             RightWeaponPrefab,
@@ -139,7 +141,7 @@ public sealed class BattleUnitSnapshot
     // 현재 보유 스탯, 장착 무기 타입/프리팹/스킬, 초상화까지 여기서 복사됨
     public static BattleUnitSnapshot FromOwnedGladiator(
         OwnedGladiatorData source,
-        bool isEnemy,
+        BattleTeamId teamId,
         Sprite portraitSprite = null
     )
     {
@@ -184,7 +186,7 @@ public sealed class BattleUnitSnapshot
 
         return new BattleUnitSnapshot(
             source.RuntimeId,
-            isEnemy,
+            teamId,
             source.DisplayName,
             source.Level,
             source.Loyalty,
@@ -197,7 +199,7 @@ public sealed class BattleUnitSnapshot
             source.GladiatorClass,
             source.Trait,
             source.Personality,
-            source.EquippedPerk,
+            source.EquippedArtifact,
             weaponType,
             leftPrefab,
             rightPrefab,
@@ -207,6 +209,14 @@ public sealed class BattleUnitSnapshot
             useProjectile,
             resolvedPortrait
         );
+    }
+
+    private static IReadOnlyList<ArtifactId> BuildArtifactIds(ArtifactSO equippedArtifact)
+    {
+        if (equippedArtifact == null || equippedArtifact.artifactId == ArtifactId.None)
+            return Array.Empty<ArtifactId>();
+
+        return new[] { equippedArtifact.artifactId };
     }
 }
 
@@ -255,14 +265,13 @@ public sealed class BattleEncounterPreview
 [Serializable]
 public sealed class BattleStartPayload
 {
-    // _allyUnits와 _enemyUnits: 메인씬에서 배틀씬으로 넘기는 최종 snapshot 목록
-    // 실제 보유 데이터가 아님. 전투 시작 시점에서부터 사용될 복사본이다.
-    private readonly List<BattleUnitSnapshot> _allyUnits = new List<BattleUnitSnapshot>();
-    private readonly List<BattleUnitSnapshot> _enemyUnits = new List<BattleUnitSnapshot>();
+    private readonly List<BattleTeamEntry> _teams = new List<BattleTeamEntry>();
+    private readonly Dictionary<BattleTeamId, BattleTeamEntry> _teamById =
+        new Dictionary<BattleTeamId, BattleTeamEntry>();
+    private readonly Dictionary<BattleTeamId, int> _teamStartUnitNumberById = new Dictionary<BattleTeamId, int>();
 
-    public IReadOnlyList<BattleUnitSnapshot> AllyUnits => _allyUnits;
-    public IReadOnlyList<BattleUnitSnapshot> EnemyUnits => _enemyUnits;
-
+    public IReadOnlyList<BattleTeamEntry> Teams => _teams;
+    public BattleTeamId PlayerTeamId { get; }
     public int SelectedEncounterIndex { get; }
     public float EnemyAverageLevel { get; }
     public int PreviewRewardGold { get; }
@@ -270,42 +279,157 @@ public sealed class BattleStartPayload
     // 랜덤매니저에서 쓸 시드
     public int BattleSeed { get; }
 
-    // 메인씬에서 배틀씬으로 넘길 최최최종 데이터들
-    // 아군/적군 snapshot, 보상, 전투 시드 등을 모두 패키징
+    private BattleTeamEntry _playerTeam;
+    private BattleTeamEntry _hostileTeam;
+
     public BattleStartPayload(
-        IEnumerable<BattleUnitSnapshot> allyUnits,
-        IEnumerable<BattleUnitSnapshot> enemyUnits,
+        IEnumerable<BattleTeamEntry> teams,
+        BattleTeamId playerTeamId,
         int selectedEncounterIndex,
         float enemyAverageLevel,
         int previewRewardGold,
         int battleSeed
     )
     {
-        if (allyUnits != null)
+        if (teams != null)
         {
-            foreach (BattleUnitSnapshot unit in allyUnits)
+            foreach (BattleTeamEntry team in teams)
             {
-                if (unit != null)
+                if (team != null)
                 {
-                    _allyUnits.Add(unit);
+                    _teams.Add(team);
                 }
             }
         }
 
-        if (enemyUnits != null)
+        if (_teams.Count == 0)
         {
-            foreach (BattleUnitSnapshot unit in enemyUnits)
+            throw new ArgumentException("BattleStartPayload requires at least one team.", nameof(teams));
+        }
+
+        if (_teams.Count != BattleTeamConstants.TeamCount)
+        {
+            throw new ArgumentException(
+                $"BattleStartPayload requires exactly {BattleTeamConstants.TeamCount} teams.",
+                nameof(teams)
+            );
+        }
+
+        int nextUnitNumber = 1;
+        for (int i = 0; i < _teams.Count; i++)
+        {
+            BattleTeamEntry team = _teams[i];
+            if (team == null)
             {
-                if (unit != null)
-                {
-                    _enemyUnits.Add(unit);
-                }
+                continue;
+            }
+
+            int unitCount = team.Units != null ? team.Units.Count : 0;
+            if (unitCount <= 0)
+            {
+                throw new ArgumentException(
+                    $"BattleStartPayload requires at least one unit for team {team.TeamId.Value}.",
+                    nameof(teams)
+                );
+            }
+
+            if (unitCount > BattleTeamConstants.MaxUnitsPerTeam)
+            {
+                throw new ArgumentException(
+                    $"BattleStartPayload supports up to {BattleTeamConstants.MaxUnitsPerTeam} units per team.",
+                    nameof(teams)
+                );
+            }
+
+            if (_teamById.ContainsKey(team.TeamId))
+            {
+                throw new ArgumentException($"Duplicate team id {team.TeamId.Value} detected.", nameof(teams));
+            }
+
+            _teamById[team.TeamId] = team;
+            _teamStartUnitNumberById[team.TeamId] = nextUnitNumber;
+            nextUnitNumber += unitCount;
+
+            if (team.TeamId == playerTeamId)
+            {
+                _playerTeam = team;
+            }
+            else if (_hostileTeam == null)
+            {
+                _hostileTeam = team;
+            }
+            else
+            {
+                throw new ArgumentException("BattleStartPayload supports only one hostile team.", nameof(teams));
             }
         }
 
+        if (_playerTeam == null)
+        {
+            throw new ArgumentException(
+                $"BattleStartPayload requires a player team entry for team id {playerTeamId.Value}.",
+                nameof(playerTeamId)
+            );
+        }
+
+        if (_hostileTeam == null)
+        {
+            throw new ArgumentException("BattleStartPayload requires exactly one hostile team.", nameof(teams));
+        }
+
+        PlayerTeamId = playerTeamId;
         SelectedEncounterIndex = Mathf.Max(0, selectedEncounterIndex);
         EnemyAverageLevel = Mathf.Max(0f, enemyAverageLevel);
         PreviewRewardGold = Mathf.Max(0, previewRewardGold);
         BattleSeed = battleSeed;
+    }
+
+    public BattleTeamEntry GetPlayerTeam() => _playerTeam;
+
+    public BattleTeamEntry GetHostileTeam() => _hostileTeam;
+
+    public bool TryGetTeam(BattleTeamId teamId, out BattleTeamEntry team) => _teamById.TryGetValue(teamId, out team);
+
+    public int GetTeamUnitCount(BattleTeamId teamId) =>
+        TryGetTeam(teamId, out BattleTeamEntry team) && team.Units != null ? team.Units.Count : 0;
+
+    public int GetTeamStartUnitNumber(BattleTeamId teamId) =>
+        _teamStartUnitNumberById.TryGetValue(teamId, out int startUnitNumber) ? startUnitNumber : -1;
+
+    public int AllocateUnitNumber(BattleTeamId teamId, int localUnitIndex)
+    {
+        if (!TryGetTeam(teamId, out BattleTeamEntry team))
+        {
+            throw new ArgumentException($"Unknown team id {teamId.Value}.", nameof(teamId));
+        }
+
+        if (localUnitIndex < 0 || localUnitIndex >= team.Units.Count)
+            throw new ArgumentOutOfRangeException(nameof(localUnitIndex));
+        return GetTeamStartUnitNumber(teamId) + localUnitIndex;
+    }
+
+    public bool TryGetTeamLocalUnitIndex(BattleTeamId teamId, int unitNumber, out int localUnitIndex)
+    {
+        localUnitIndex = -1;
+
+        if (!TryGetTeam(teamId, out BattleTeamEntry team))
+        {
+            return false;
+        }
+
+        int startUnitNumber = GetTeamStartUnitNumber(teamId);
+        if (startUnitNumber <= 0)
+        {
+            return false;
+        }
+
+        int unitIndex = unitNumber - startUnitNumber;
+        if (unitIndex < 0 || unitIndex >= team.Units.Count)
+        {
+            return false;
+        }
+
+        localUnitIndex = unitIndex;
+        return true;
     }
 }

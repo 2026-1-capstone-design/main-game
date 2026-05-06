@@ -1,31 +1,14 @@
 using System.Collections.Generic;
 
-public readonly struct BattleParameterComputation
-{
-    public int UnitIndex { get; }
-    public int UnitNumber { get; }
-    public BattleParameterSet Raw { get; }
-    public BattleParameterSet Modified { get; }
-    public bool ModifierOverflowed { get; }
-
-    public BattleParameterComputation(
-        int unitIndex,
-        int unitNumber,
-        BattleParameterSet raw,
-        BattleParameterSet modified,
-        bool modifierOverflowed
-    )
-    {
-        UnitIndex = unitIndex;
-        UnitNumber = unitNumber;
-        Raw = raw;
-        Modified = modified;
-        ModifierOverflowed = modifierOverflowed;
-    }
-}
-
 public sealed class BattleParameterSystem
 {
+    private readonly List<BattleUnitView> _allyViewBuffer = new List<BattleUnitView>(
+        BattleTeamConstants.MaxUnitsPerTeam
+    );
+    private readonly List<BattleUnitView> _enemyViewBuffer = new List<BattleUnitView>(
+        BattleTeamConstants.MaxUnitsPerTeam
+    );
+
     public static BattleParameterRadii BuildRadii(BattleAITuningSO aiTuning)
     {
         if (aiTuning == null)
@@ -44,36 +27,39 @@ public sealed class BattleParameterSystem
         };
     }
 
-    public BattleParameterComputation[] Compute(
+    public void Compute(
         IReadOnlyList<BattleRuntimeUnit> units,
         BattleParameterRadii radii,
         BattleAITuningSO aiTuning,
-        BattleFieldSnapshot snapshot
+        BattleFieldSnapshot snapshot,
+        bool[] modifierOverflowFlags
     )
     {
-        if (units == null)
-            return new BattleParameterComputation[0];
+        if (units == null || modifierOverflowFlags == null)
+            return;
 
-        var results = new List<BattleParameterComputation>(units.Count);
         for (int i = 0; i < units.Count; i++)
         {
             BattleRuntimeUnit unit = units[i];
+            modifierOverflowFlags[i] = false;
             if (unit == null || unit.IsCombatDisabled)
                 continue;
 
             BattleUnitView self = BattleUnitView.From(unit.State);
 
-            IReadOnlyList<BattleUnitView> allyViewSource = snapshot.GetLivingAllyViews(unit.State);
-            IReadOnlyList<BattleUnitView> enemyViews = snapshot.GetLivingEnemyViews(unit.State);
+            _allyViewBuffer.Clear();
+            _enemyViewBuffer.Clear();
 
-            var allies = new List<BattleUnitView>(allyViewSource.Count);
-            for (int j = 0; j < allyViewSource.Count; j++)
+            snapshot.GetLivingAllyViews(unit.State, _allyViewBuffer);
+            snapshot.GetLivingEnemyViews(unit.State, _enemyViewBuffer);
+
+            for (int j = _allyViewBuffer.Count - 1; j >= 0; j--)
             {
-                if (allyViewSource[j].UnitNumber != self.UnitNumber)
-                    allies.Add(allyViewSource[j]);
+                if (_allyViewBuffer[j].UnitNumber == self.UnitNumber)
+                    _allyViewBuffer.RemoveAt(j);
             }
 
-            BattleParameterSet raw = BattleParameterComputer.Compute(self, allies, enemyViews, radii);
+            BattleParameterSet raw = BattleParameterComputer.Compute(self, _allyViewBuffer, _enemyViewBuffer, radii);
             BattleParameterSet modified = ApplyCurrentActionParameterModifiers(
                 unit,
                 raw,
@@ -85,11 +71,8 @@ public sealed class BattleParameterSystem
             modified.Clamp01All();
 
             unit.State.SetCurrentParameters(raw, modified);
-
-            results.Add(new BattleParameterComputation(i, unit.UnitNumber, raw, modified, overflowed));
+            modifierOverflowFlags[i] = overflowed;
         }
-
-        return results.ToArray();
     }
 
     private static BattleParameterSet ApplyCurrentActionParameterModifiers(

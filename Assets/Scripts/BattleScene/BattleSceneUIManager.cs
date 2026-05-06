@@ -346,7 +346,7 @@ public sealed class BattleSceneUIManager : MonoBehaviour
             return;
         }
 
-        if (targetUnit.IsEnemy)
+        if (!targetUnit.IsPlayerOwned)
         {
             Debug.LogWarning("[BattleSceneUIManager] Single order open blocked. Target is an enemy unit.", this);
             return;
@@ -543,7 +543,7 @@ public sealed class BattleSceneUIManager : MonoBehaviour
                 continue;
             }
 
-            if (unit.IsEnemy != disableEnemies)
+            if (unit.IsPlayerOwned == disableEnemies)
             {
                 continue;
             }
