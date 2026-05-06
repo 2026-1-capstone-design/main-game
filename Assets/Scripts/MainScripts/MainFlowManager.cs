@@ -148,7 +148,14 @@ public sealed class MainFlowManager : MonoBehaviour
         inventoryUIManager.Initialize(this, inventoryManager, researchManager);
         gladiatorUIManager.Initialize(this, gladiatorManager, inventoryManager);
         battleUIManager.Initialize(this, battleManager);
-        marketUIManager.Initialize(this, marketManager, resourceManager, gladiatorManager, inventoryManager, researchManager);
+        marketUIManager.Initialize(
+            this,
+            marketManager,
+            resourceManager,
+            gladiatorManager,
+            inventoryManager,
+            researchManager
+        );
         mainUIManager.Initialize(this, _sessionManager);
 
         TryGrantPendingBattleRewardOnMainSceneEnter();

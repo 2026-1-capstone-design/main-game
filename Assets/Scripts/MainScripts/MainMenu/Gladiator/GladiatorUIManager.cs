@@ -330,7 +330,7 @@ public sealed class GladiatorUIManager : MonoBehaviour
             string className = gladiator.GladiatorClass != null ? gladiator.GladiatorClass.className : "(None)";
 
             detailText.text =
-                  $"이름: {gladiator.DisplayName}\r\n"
+                $"이름: {gladiator.DisplayName}\r\n"
                 + $"레벨: {gladiator.Level}\r\n"
                 + $"경험치: {gladiator.Exp}\r\n"
                 + $"충성도: {gladiator.Loyalty}\r\n"
