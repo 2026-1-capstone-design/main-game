@@ -1,13 +1,13 @@
 public sealed class MarketArtifactOffer
 {
     public int SlotIndex { get; }
-    public PerkSO Artifact { get; }
+    public ArtifactSO Artifact { get; }
     public int Price { get; }
     public bool IsSold { get; private set; }
 
     public bool IsAvailable => Artifact != null && !IsSold;
 
-    public MarketArtifactOffer(int slotIndex, PerkSO artifact, int price)
+    public MarketArtifactOffer(int slotIndex, ArtifactSO artifact, int price)
     {
         SlotIndex = slotIndex;
         Artifact = artifact;
