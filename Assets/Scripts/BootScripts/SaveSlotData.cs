@@ -21,6 +21,7 @@ public sealed class SaveSlotData
     public int marketInitializedDay;
     public SaveMarketWeaponOfferData[] marketWeaponOffers;
     public SaveMarketGladiatorOfferData[] marketGladiatorOffers;
+    public SaveMarketArtifactOfferData[] marketArtifactOffers;
 
     public int battleEncounterGeneratedDay;
     public int selectedEncounterIndex;
@@ -100,6 +101,15 @@ public sealed class SaveMarketGladiatorOfferData
     public int price;
     public bool isSold;
     public SaveOwnedGladiatorData gladiator;
+}
+
+[Serializable]
+public sealed class SaveMarketArtifactOfferData
+{
+    public int slotIndex;
+    public int price;
+    public bool isSold;
+    public string artifactName;
 }
 
 [Serializable]

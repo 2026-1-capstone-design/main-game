@@ -169,6 +169,7 @@ public static class SaveGameService
 
         SaveMarketWeaponOfferData[] marketWeaponOffers = BuildMarketWeaponOffersSnapshot(marketManager);
         SaveMarketGladiatorOfferData[] marketGladiatorOffers = BuildMarketGladiatorOffersSnapshot(marketManager);
+        SaveMarketArtifactOfferData[] marketArtifactOffers = BuildMarketArtifactOffersSnapshot(marketManager);
 
         SaveBattleEncounterData[] battleEncounters = BuildBattleEncountersSnapshot(battleManager);
 
@@ -191,6 +192,7 @@ public static class SaveGameService
             marketInitializedDay = marketManager != null ? marketManager.InitializedDay : 1,
             marketWeaponOffers = marketWeaponOffers,
             marketGladiatorOffers = marketGladiatorOffers,
+            marketArtifactOffers = marketArtifactOffers,
             battleEncounterGeneratedDay = battleManager != null ? battleManager.EncounterGeneratedDay : 1,
             selectedEncounterIndex = battleManager != null ? battleManager.SelectedEncounterIndex : -1,
             battleEncounters = battleEncounters,
@@ -313,13 +315,18 @@ public static class SaveGameService
                     data.marketGladiatorOffers,
                     contentDatabaseProvider
                 );
+                List<MarketArtifactOffer> marketArtifactOffers = BuildMarketArtifactOffersFromSave(
+                    data.marketArtifactOffers,
+                    contentDatabaseProvider
+                );
 
-                if (marketWeaponOffers.Count > 0 || marketGladiatorOffers.Count > 0)
+                if (marketWeaponOffers.Count > 0 || marketGladiatorOffers.Count > 0 || marketArtifactOffers.Count > 0)
                 {
                     marketManager.RestoreOffersForLoad(
                         data.marketInitializedDay,
                         marketGladiatorOffers,
-                        marketWeaponOffers
+                        marketWeaponOffers,
+                        marketArtifactOffers
                     );
                 }
                 else if (sessionManager != null)
@@ -485,6 +492,39 @@ public static class SaveGameService
                 price = offer.Price,
                 isSold = offer.IsSold,
                 gladiator = offer.Gladiator != null ? ToSaveOwnedGladiatorData(offer.Gladiator) : null,
+            };
+        }
+
+        return result;
+    }
+
+    private static SaveMarketArtifactOfferData[] BuildMarketArtifactOffersSnapshot(MarketManager marketManager)
+    {
+        if (
+            marketManager == null
+            || marketManager.ArtifactOffers == null
+            || marketManager.ArtifactOffers.Count == 0
+        )
+        {
+            return Array.Empty<SaveMarketArtifactOfferData>();
+        }
+
+        SaveMarketArtifactOfferData[] result = new SaveMarketArtifactOfferData[marketManager.ArtifactOffers.Count];
+
+        for (int i = 0; i < marketManager.ArtifactOffers.Count; i++)
+        {
+            MarketArtifactOffer offer = marketManager.ArtifactOffers[i];
+            if (offer == null)
+            {
+                continue;
+            }
+
+            result[i] = new SaveMarketArtifactOfferData
+            {
+                slotIndex = offer.SlotIndex,
+                price = offer.Price,
+                isSold = offer.IsSold,
+                artifactName = offer.Artifact != null ? offer.Artifact.perkName : string.Empty,
             };
         }
 
@@ -863,6 +903,39 @@ public static class SaveGameService
             );
 
             MarketGladiatorOffer offer = new MarketGladiatorOffer(savedOffer.slotIndex, gladiator, savedOffer.price);
+            if (savedOffer.isSold)
+            {
+                offer.MarkSold();
+            }
+
+            result.Add(offer);
+        }
+
+        return result;
+    }
+
+    private static List<MarketArtifactOffer> BuildMarketArtifactOffersFromSave(
+        SaveMarketArtifactOfferData[] savedOffers,
+        ContentDatabaseProvider contentDatabaseProvider
+    )
+    {
+        List<MarketArtifactOffer> result = new List<MarketArtifactOffer>();
+
+        if (savedOffers == null)
+        {
+            return result;
+        }
+
+        for (int i = 0; i < savedOffers.Length; i++)
+        {
+            SaveMarketArtifactOfferData savedOffer = savedOffers[i];
+            if (savedOffer == null)
+            {
+                continue;
+            }
+
+            PerkSO artifact = FindPerkByName(contentDatabaseProvider, savedOffer.artifactName);
+            MarketArtifactOffer offer = new MarketArtifactOffer(savedOffer.slotIndex, artifact, savedOffer.price);
             if (savedOffer.isSold)
             {
                 offer.MarkSold();

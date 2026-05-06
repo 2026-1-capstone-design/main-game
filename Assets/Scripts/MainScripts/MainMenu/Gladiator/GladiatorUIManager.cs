@@ -20,9 +20,6 @@ public sealed class GladiatorUIManager : MonoBehaviour
 
     [Header("List Labels")]
     [SerializeField]
-    private TMP_Text headerText;
-
-    [SerializeField]
     private TMP_Text statusText;
 
     [Header("Detail Layer")]
@@ -222,7 +219,7 @@ public sealed class GladiatorUIManager : MonoBehaviour
 
         if (statusText != null)
         {
-            statusText.text = $"Owned Gladiators: {_gladiatorViewBuffer.Count}";
+            statusText.text = $"보유 검투사 수: {_gladiatorViewBuffer.Count}";
         }
     }
 
@@ -267,12 +264,12 @@ public sealed class GladiatorUIManager : MonoBehaviour
 
         if (inventoryHeaderText != null)
         {
-            inventoryHeaderText.text = $"Weapons";
+            inventoryHeaderText.text = $"무기";
         }
 
         if (inventoryStatusText != null)
         {
-            inventoryStatusText.text = $"Owned Weapons: {_weaponViewBuffer.Count}";
+            inventoryStatusText.text = $"보유 무기 수: {_weaponViewBuffer.Count}";
         }
     }
 
@@ -304,7 +301,7 @@ public sealed class GladiatorUIManager : MonoBehaviour
 
         if (statusText != null)
         {
-            statusText.text = $"Selected Gladiator: {gladiator.DisplayName}";
+            statusText.text = $"선택한 검투사: {gladiator.DisplayName}";
         }
     }
 
@@ -333,16 +330,16 @@ public sealed class GladiatorUIManager : MonoBehaviour
             string className = gladiator.GladiatorClass != null ? gladiator.GladiatorClass.className : "(None)";
 
             detailText.text =
-                $"Name: {gladiator.DisplayName}\r\n"
-                + $"Level: {gladiator.Level}\r\n"
-                + $"Experience: {gladiator.Exp}\r\n"
-                + $"Loyalty: {gladiator.Loyalty}\r\n"
-                + $"Upkeep: {gladiator.Upkeep}\r\n"
-                + $"Health: {gladiator.CurrentHealth:0.##} / {gladiator.CachedMaxHealth:0.##}\r\n"
-                + $"Attack: {gladiator.CachedAttack:0.##}\r\n"
-                + $"Attack Speed: {gladiator.CachedAttackSpeed:0.##}\r\n"
-                + $"Move Speed: {gladiator.CachedMoveSpeed:0.##}\r\n"
-                + $"Range: {gladiator.CachedAttackRange:0.##}";
+                  $"이름: {gladiator.DisplayName}\r\n"
+                + $"레벨: {gladiator.Level}\r\n"
+                + $"경험치: {gladiator.Exp}\r\n"
+                + $"충성도: {gladiator.Loyalty}\r\n"
+                + $"유지비: {gladiator.Upkeep}\r\n"
+                + $"최대체력: {gladiator.CurrentHealth:0.##} / {gladiator.CachedMaxHealth:0.##}\r\n"
+                + $"공격력: {gladiator.CachedAttack:0.##}\r\n"
+                + $"공격속도: {gladiator.CachedAttackSpeed:0.##}\r\n"
+                + $"이동속도: {gladiator.CachedMoveSpeed:0.##}\r\n"
+                + $"사거리: {gladiator.CachedAttackRange:0.##}";
         }
     }
 
@@ -387,16 +384,16 @@ public sealed class GladiatorUIManager : MonoBehaviour
         if (weaponDetailText != null)
         {
             weaponDetailText.text =
-                $"Name: {weapon.DisplayName}\n"
-                + $"Type: {weaponTypeText}\n"
-                + $"Skill: {skillName}\n"
-                + $"Equipped By: {ownerText}\n"
-                + $"Level: {weapon.Level}\n"
-                + $"Attack Bonus: {weapon.CachedAttackBonus:0.##}\n"
-                + $"Health Bonus: {weapon.CachedHealthBonus:0.##}\n"
-                + $"Attack Speed Bonus: {weapon.CachedAttackSpeedBonus:0.##}\n"
-                + $"Move Speed Bonus: {weapon.CachedMoveSpeedBonus:0.##}\n"
-                + $"Range Bonus: {weapon.CachedAttackRangeBonus:0.##}";
+                $"이름: {weapon.DisplayName}\n"
+                + $"무기군: {weaponTypeText}\n"
+                + $"스킬: {skillName}\n"
+                + $"장착중인 검투사: {ownerText}\n"
+                + $"레벨: {weapon.Level}\n"
+                + $"추가 공격력: {weapon.CachedAttackBonus:0.##}\n"
+                + $"추가 체력: {weapon.CachedHealthBonus:0.##}\n"
+                + $"추가 공격속도: {weapon.CachedAttackSpeedBonus:0.##}\n"
+                + $"추가 이동속도: {weapon.CachedMoveSpeedBonus:0.##}\n"
+                + $"추가 사거리: {weapon.CachedAttackRangeBonus:0.##}";
         }
 
         if (weaponDetailEquipButton != null)
@@ -478,7 +475,7 @@ public sealed class GladiatorUIManager : MonoBehaviour
     {
         if (alreadyEquippedText != null)
         {
-            alreadyEquippedText.text = "already equipped to somebody!";
+            alreadyEquippedText.text = "이미 장착중인 장비입니다.";
         }
 
         SetAlreadyEquippedPopupActive(true);
@@ -566,18 +563,12 @@ public sealed class GladiatorUIManager : MonoBehaviour
         if (statusText != null)
         {
             int gladiatorCount = _gladiatorManager != null ? _gladiatorManager.GetOwnedGladiatorCount() : 0;
-            statusText.text = $"Owned Gladiators: {gladiatorCount}";
+            statusText.text = $"보유한 검투사 수: {gladiatorCount}";
         }
     }
 
     private void RefreshTexts()
     {
-        if (headerText != null)
-        {
-            int gladiatorCount = _gladiatorManager != null ? _gladiatorManager.GetOwnedGladiatorCount() : 0;
-            headerText.text = $"Gladiators (Owned: {gladiatorCount})";
-        }
-
         if (statusText != null && string.IsNullOrEmpty(statusText.text))
         {
             statusText.text = "Entered Gladiator Panel";

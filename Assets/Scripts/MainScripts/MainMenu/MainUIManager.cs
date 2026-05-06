@@ -15,10 +15,7 @@ public sealed class MainUIManager : MonoBehaviour
     private Button battleButton;
 
     [SerializeField]
-    private Button researchButton;
-
-    [SerializeField]
-    private Button missionButton;
+    private Button inventoryButton;
 
     [SerializeField]
     private Button marketButton;
@@ -28,6 +25,9 @@ public sealed class MainUIManager : MonoBehaviour
 
     [SerializeField]
     private Button saveButton;
+
+    [SerializeField]
+    private Button titleButton;
 
     [Header("Save Modal")]
     [SerializeField]
@@ -74,11 +74,11 @@ public sealed class MainUIManager : MonoBehaviour
 
         BindButton(gladiatorButton, OnGladiatorClicked);
         BindButton(battleButton, OnBattleClicked);
-        BindButton(researchButton, OnResearchClicked);
-        BindButton(missionButton, OnMissionClicked);
+        BindButton(inventoryButton, OnInventoryClicked);
         BindButton(marketButton, OnMarketClicked);
         BindButton(eodButton, OnEodClicked);
         BindButton(saveButton, OnSaveClicked);
+        BindButton(titleButton, OnTitleClicked);
 
         CacheSaveModalControls();
         BindSaveModalControls();
@@ -134,11 +134,11 @@ public sealed class MainUIManager : MonoBehaviour
     {
         SetButtonInteractable(gladiatorButton, value);
         SetButtonInteractable(battleButton, value);
-        SetButtonInteractable(researchButton, value);
-        SetButtonInteractable(missionButton, value);
+        SetButtonInteractable(inventoryButton, value);
         SetButtonInteractable(marketButton, value);
         SetButtonInteractable(eodButton, value);
         SetButtonInteractable(saveButton, value);
+        SetButtonInteractable(titleButton, value);
     }
 
     public void SetBattleButtonInteractable(bool value)
@@ -159,12 +159,20 @@ public sealed class MainUIManager : MonoBehaviour
             return;
         }
 
-        currentDayText.text = $"Day {currentDay}";
+        currentDayText.text = $"일차 {currentDay}";
     }
 
     private void OnDayChanged(int currentDay)
     {
         RefreshDayText(currentDay);
+    }
+
+    private void OnTitleClicked()
+    {
+        if (_flow != null)
+        {
+            _flow.HandleReturnToTitleRequested();
+        }
     }
 
     private void OnGladiatorClicked()
@@ -183,19 +191,11 @@ public sealed class MainUIManager : MonoBehaviour
         }
     }
 
-    private void OnResearchClicked()
+    private void OnInventoryClicked()
     {
         if (_flow != null)
         {
-            _flow.HandleResearchMenuRequested();
-        }
-    }
-
-    private void OnMissionClicked()
-    {
-        if (_flow != null)
-        {
-            _flow.HandleMissionMenuRequested();
+            _flow.HandleInventoryMenuRequested();
         }
     }
 
@@ -378,7 +378,7 @@ public sealed class MainUIManager : MonoBehaviour
         SaveGameService.SaveSlotPreview preview = SaveGameService.GetSlotPreview(slotIndex);
         if (!preview.hasData)
         {
-            return "Empty Slot";
+            return "빈 슬롯";
         }
 
         string savedTimeText = "-";
@@ -394,7 +394,7 @@ public sealed class MainUIManager : MonoBehaviour
             savedTimeText = savedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
         }
 
-        return $"SLOT {slotIndex}  |  DAY: {preview.day}  |  GOLD: {preview.gold}  |  SAVED: {savedTimeText}";
+        return $"슬롯 {slotIndex}  |  일차: {preview.day}  |  골드: {preview.gold}  |  저장일시: {savedTimeText}";
     }
 
     private static Button FindSlotButton(Transform modalRootTransform, int slotIndex)
