@@ -53,6 +53,8 @@ public struct BattleStatusFilter
 [Serializable]
 public struct BattleStatusInstance
 {
+    // BattleUnitCombatState._statuses → Source 순환 참조로 Unity 직렬화 깊이 초과 경고가 발생해 제외한다.
+    [System.NonSerialized]
     public BattleUnitCombatState Source;
     public BattleStatusType Type;
     public int Level;
