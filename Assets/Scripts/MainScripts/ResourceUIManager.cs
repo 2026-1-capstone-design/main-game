@@ -8,7 +8,7 @@ public sealed class ResourceUIManager : MonoBehaviour
     private TMP_Text goldText;
 
     [SerializeField]
-    private string goldPrefix = "Gold : ";
+    private string goldPrefix = "골드 : ";
 
     private ResourceManager _resourceManager;
 

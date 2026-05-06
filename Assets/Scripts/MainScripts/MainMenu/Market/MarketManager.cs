@@ -7,15 +7,18 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
     [SerializeField]
     private bool verboseLog = true;
 
-    // _gladiatorOffers 와 _weaponOffers 모두 날짜가 바뀌기 전까지만 유지되는 하루 단위 캐시
+    // _gladiatorOffers, _weaponOffers, _artifactOffers 모두 날짜가 바뀌기 전까지만 유지되는 하루 단위 캐시
     private readonly List<MarketGladiatorOffer> _gladiatorOffers = new List<MarketGladiatorOffer>();
     private readonly List<MarketWeaponOffer> _weaponOffers = new List<MarketWeaponOffer>();
+    private readonly List<MarketArtifactOffer> _artifactOffers = new List<MarketArtifactOffer>();
 
     private RecruitFactory _recruitFactory;
     private EquipmentFactory _equipmentFactory;
     private GladiatorManager _gladiatorManager;
     private InventoryManager _inventoryManager;
     private ResourceManager _resourceManager;
+    private ContentDatabaseProvider _contentDatabaseProvider;
+    private ResearchManager _researchManager;
 
     private int _initializedDay = -1; // 현재 시장 재고가 어느 날짜 기준으로 생성됐는지 나타냄
 
@@ -26,11 +29,13 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
 
     public IReadOnlyList<MarketGladiatorOffer> GladiatorOffers => _gladiatorOffers;
     public IReadOnlyList<MarketWeaponOffer> WeaponOffers => _weaponOffers;
+    public IReadOnlyList<MarketArtifactOffer> ArtifactOffers => _artifactOffers;
 
     public void RestoreOffersForLoad(
         int initializedDay,
         List<MarketGladiatorOffer> gladiatorOffers,
-        List<MarketWeaponOffer> weaponOffers
+        List<MarketWeaponOffer> weaponOffers,
+        List<MarketArtifactOffer> artifactOffers
     )
     {
         if (!_initialized)
@@ -41,6 +46,7 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
 
         _gladiatorOffers.Clear();
         _weaponOffers.Clear();
+        _artifactOffers.Clear();
 
         if (gladiatorOffers != null)
         {
@@ -52,12 +58,18 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
             _weaponOffers.AddRange(weaponOffers);
         }
 
+        if (artifactOffers != null)
+        {
+            _artifactOffers.AddRange(artifactOffers);
+        }
+
         _initializedDay = Mathf.Max(1, initializedDay);
 
         if (verboseLog)
         {
             Debug.Log(
-                $"[MarketManager] Offers restored from save. Day={_initializedDay}, GladiatorOffers={_gladiatorOffers.Count}, WeaponOffers={_weaponOffers.Count}",
+                $"[MarketManager] Offers restored from save. Day={_initializedDay}, "
+                    + $"GladiatorOffers={_gladiatorOffers.Count}, WeaponOffers={_weaponOffers.Count}, ArtifactOffers={_artifactOffers.Count}",
                 this
             );
         }
@@ -70,7 +82,9 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
         EquipmentFactory equipmentFactory,
         GladiatorManager gladiatorManager,
         InventoryManager inventoryManager,
-        ResourceManager resourceManager
+        ResourceManager resourceManager,
+        ContentDatabaseProvider contentDatabaseProvider,
+        ResearchManager researchManager
     )
     {
         _recruitFactory = recruitFactory;
@@ -78,6 +92,8 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
         _gladiatorManager = gladiatorManager;
         _inventoryManager = inventoryManager;
         _resourceManager = resourceManager;
+        _contentDatabaseProvider = contentDatabaseProvider;
+        _researchManager = researchManager;
 
         if (_recruitFactory == null)
         {
@@ -109,6 +125,18 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
             return;
         }
 
+        if (_contentDatabaseProvider == null)
+        {
+            Debug.LogError("[MarketManager] contentDatabaseProvider is null.", this);
+            return;
+        }
+
+        if (_researchManager == null)
+        {
+            Debug.LogError("[MarketManager] researchManager is null.", this);
+            return;
+        }
+
         bool wasInitialized = _initialized;
         _initialized = true;
 
@@ -116,6 +144,7 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
         {
             _gladiatorOffers.Clear();
             _weaponOffers.Clear();
+            _artifactOffers.Clear();
 
             if (verboseLog)
             {
@@ -155,7 +184,10 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
 
         int safeDay = Mathf.Max(1, currentDay);
 
-        if (_initializedDay == safeDay && (_gladiatorOffers.Count > 0 || _weaponOffers.Count > 0))
+        if (
+            _initializedDay == safeDay
+            && (_gladiatorOffers.Count > 0 || _weaponOffers.Count > 0 || _artifactOffers.Count > 0)
+        )
         {
             if (verboseLog)
             {
@@ -167,6 +199,7 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
 
         _gladiatorOffers.Clear();
         _weaponOffers.Clear();
+        _artifactOffers.Clear();
 
         int gladiatorSlotCount = GetConfiguredGladiatorSlotCount();
         for (int i = 0; i < gladiatorSlotCount; i++)
@@ -182,13 +215,28 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
             _weaponOffers.Add(offer);
         }
 
+        int artifactSlotCount = GetConfiguredArtifactSlotCount();
+        int artifactPrice = GetArtifactBuyPrice();
+        IReadOnlyList<PerkSO> allPerks = _contentDatabaseProvider.Perks;
+        if (allPerks != null && allPerks.Count > 0)
+        {
+            System.Random rng = new System.Random(safeDay * 1000 + 7);
+            for (int i = 0; i < artifactSlotCount; i++)
+            {
+                int index = rng.Next(0, allPerks.Count);
+                PerkSO artifact = allPerks[index];
+                _artifactOffers.Add(new MarketArtifactOffer(i, artifact, artifactPrice));
+            }
+        }
+
         _initializedDay = safeDay;
 
         if (verboseLog)
         {
             Debug.Log(
                 $"[MarketManager] InitializeDay({safeDay}) complete. "
-                    + $"GladiatorOfferCount={_gladiatorOffers.Count}, WeaponOfferCount={_weaponOffers.Count}",
+                    + $"GladiatorOfferCount={_gladiatorOffers.Count}, WeaponOfferCount={_weaponOffers.Count}, "
+                    + $"ArtifactOfferCount={_artifactOffers.Count}",
                 this
             );
         }
@@ -214,6 +262,19 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
             if (_weaponOffers[i] != null && _weaponOffers[i].SlotIndex == slotIndex)
             {
                 return _weaponOffers[i];
+            }
+        }
+
+        return null;
+    }
+
+    public MarketArtifactOffer GetArtifactOffer(int slotIndex)
+    {
+        for (int i = 0; i < _artifactOffers.Count; i++)
+        {
+            if (_artifactOffers[i] != null && _artifactOffers[i].SlotIndex == slotIndex)
+            {
+                return _artifactOffers[i];
             }
         }
 
@@ -250,6 +311,17 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
         }
 
         return Mathf.Max(0, weapon.Level * balance.weaponSellPricePerLevel);
+    }
+
+    public int GetArtifactSellPrice()
+    {
+        BalanceSO balance = _contentDatabaseProvider != null ? _contentDatabaseProvider.Balance : null;
+        if (balance == null)
+        {
+            return 0;
+        }
+
+        return Mathf.Max(0, balance.artifactSellPrice);
     }
 
     // 검투사 구매를 책임지는 함수.
@@ -489,6 +561,107 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
         return true;
     }
 
+    public bool TryBuyArtifact(int slotIndex, out string failReason)
+    {
+        failReason = string.Empty;
+
+        if (!_initialized)
+        {
+            failReason = "MarketManager is not initialized.";
+            Debug.LogError("[MarketManager] " + failReason, this);
+            return false;
+        }
+
+        MarketArtifactOffer offer = GetArtifactOffer(slotIndex);
+        if (offer == null || offer.Artifact == null)
+        {
+            failReason = "This market slot is empty.";
+            Debug.LogWarning("[MarketManager] " + failReason, this);
+            return false;
+        }
+
+        if (offer.IsSold)
+        {
+            failReason = "This artifact is already sold.";
+            Debug.LogWarning("[MarketManager] " + failReason, this);
+            return false;
+        }
+
+        if (!_resourceManager.CanAfford(offer.Price))
+        {
+            failReason = "Not enough gold.";
+            Debug.LogWarning("[MarketManager] " + failReason, this);
+            return false;
+        }
+
+        if (!_resourceManager.TrySpendGold(offer.Price))
+        {
+            failReason = "Failed to spend gold.";
+            Debug.LogWarning("[MarketManager] " + failReason, this);
+            return false;
+        }
+
+        bool addSucceeded = _researchManager != null && _researchManager.AddArtifact(offer.Artifact);
+        if (!addSucceeded)
+        {
+            _resourceManager.AddGold(offer.Price);
+            failReason = "Failed to add purchased artifact.";
+            Debug.LogError("[MarketManager] " + failReason, this);
+            return false;
+        }
+
+        offer.MarkSold();
+
+        if (verboseLog)
+        {
+            Debug.Log(
+                $"[MarketManager] Artifact purchased. Slot={slotIndex}, Name={offer.Artifact.perkName}, Price={offer.Price}",
+                this
+            );
+        }
+
+        return true;
+    }
+
+    public bool TrySellArtifact(PerkSO artifact, out int sellPrice, out string failReason)
+    {
+        sellPrice = 0;
+        failReason = string.Empty;
+
+        if (!_initialized)
+        {
+            failReason = "MarketManager is not initialized.";
+            Debug.LogError("[MarketManager] " + failReason, this);
+            return false;
+        }
+
+        if (artifact == null)
+        {
+            failReason = "Target artifact is null.";
+            Debug.LogWarning("[MarketManager] " + failReason, this);
+            return false;
+        }
+
+        sellPrice = GetArtifactSellPrice();
+
+        bool removed = _researchManager != null && _researchManager.RemoveArtifact(artifact);
+        if (!removed)
+        {
+            failReason = "Failed to remove artifact from owned list.";
+            Debug.LogWarning("[MarketManager] " + failReason, this);
+            return false;
+        }
+
+        _resourceManager.AddGold(sellPrice);
+
+        if (verboseLog)
+        {
+            Debug.Log($"[MarketManager] Artifact sold. Name={artifact.perkName}, SellPrice={sellPrice}", this);
+        }
+
+        return true;
+    }
+
     private int GetConfiguredGladiatorSlotCount()
     {
         BalanceSO balance = _recruitFactory != null ? _recruitFactory.Balance : null;
@@ -509,5 +682,27 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
         }
 
         return Mathf.Max(0, balance.marketWeaponSlots);
+    }
+
+    private int GetConfiguredArtifactSlotCount()
+    {
+        BalanceSO balance = _contentDatabaseProvider != null ? _contentDatabaseProvider.Balance : null;
+        if (balance == null)
+        {
+            return 4;
+        }
+
+        return Mathf.Max(0, balance.marketArtifactSlots);
+    }
+
+    private int GetArtifactBuyPrice()
+    {
+        BalanceSO balance = _contentDatabaseProvider != null ? _contentDatabaseProvider.Balance : null;
+        if (balance == null)
+        {
+            return 100;
+        }
+
+        return Mathf.Max(0, balance.artifactBuyPrice);
     }
 }

@@ -15,6 +15,7 @@ public sealed class MainFlowManager : MonoBehaviour
         Gladiator = 3,
         Market = 4,
         BattlePreparation = 5,
+        Inventory = 6,
     }
 
     [Header("Scene Managers")]
@@ -32,6 +33,9 @@ public sealed class MainFlowManager : MonoBehaviour
 
     [SerializeField]
     private ResearchUIManager researchUIManager;
+
+    [SerializeField]
+    private InventoryUIManager inventoryUIManager;
 
     [SerializeField]
     private BattleManager battleManager;
@@ -63,6 +67,10 @@ public sealed class MainFlowManager : MonoBehaviour
     [Header("Battle Scene")]
     [SerializeField]
     private string battleSceneName = "BattleScene"; // 전투 시작 시 실제로 로드할 배틀씬 이름
+
+    [Header("Title Scene")]
+    [SerializeField]
+    private string titleSceneName = "TitleScene";
 
     [Header("Debug")]
     [SerializeField]
@@ -115,7 +123,15 @@ public sealed class MainFlowManager : MonoBehaviour
         inventoryManager.Initialize(_contentDatabaseProvider, _randomManager);
         gladiatorManager.Initialize(balance, _randomManager);
         resourceManager.Initialize(balance);
-        marketManager.Initialize(recruitFactory, equipmentFactory, gladiatorManager, inventoryManager, resourceManager);
+        marketManager.Initialize(
+            recruitFactory,
+            equipmentFactory,
+            gladiatorManager,
+            inventoryManager,
+            resourceManager,
+            _contentDatabaseProvider,
+            researchManager
+        );
         marketManager.InitializeDay(_sessionManager.CurrentDay);
 
         gladiatorManager.GrantRandomStarterGladiators(_contentDatabaseProvider, _sessionManager, 6);
@@ -129,9 +145,10 @@ public sealed class MainFlowManager : MonoBehaviour
 
         resourceUIManager.Initialize(resourceManager);
         researchUIManager.Initialize(this, researchManager);
+        inventoryUIManager.Initialize(this, inventoryManager, researchManager);
         gladiatorUIManager.Initialize(this, gladiatorManager, inventoryManager);
         battleUIManager.Initialize(this, battleManager);
-        marketUIManager.Initialize(this, marketManager, resourceManager, gladiatorManager, inventoryManager);
+        marketUIManager.Initialize(this, marketManager, resourceManager, gladiatorManager, inventoryManager, researchManager);
         mainUIManager.Initialize(this, _sessionManager);
 
         TryGrantPendingBattleRewardOnMainSceneEnter();
@@ -244,6 +261,12 @@ public sealed class MainFlowManager : MonoBehaviour
         if (researchUIManager == null)
         {
             Debug.LogError("[MainFlowManager] researchUIManager is missing.", this);
+            ok = false;
+        }
+
+        if (inventoryUIManager == null)
+        {
+            Debug.LogError("[MainFlowManager] inventoryUIManager is missing.", this);
             ok = false;
         }
 
@@ -690,14 +713,86 @@ public sealed class MainFlowManager : MonoBehaviour
         yield break;
     }
 
-    public void HandleMissionMenuRequested()
+    public void HandleInventoryMenuRequested()
     {
         if (_uiOwner != UiOwner.Main)
         {
             return;
         }
 
-        Debug.Log("[MainFlowManager] 임무 메뉴는 아직 이번 단계 구현 범위 아님.", this);
+        _uiOwner = UiOwner.Inventory;
+        inventoryUIManager.OpenPanel();
+        ApplyUiState();
+
+        if (verboseLog)
+        {
+            Debug.Log("[MainFlowManager] Inventory panel opened.", this);
+        }
+    }
+
+    public void HandleInventoryBackRequested()
+    {
+        if (_uiOwner != UiOwner.Inventory)
+        {
+            return;
+        }
+
+        inventoryUIManager.ClosePanel();
+        _uiOwner = UiOwner.Main;
+        ApplyUiState();
+
+        if (verboseLog)
+        {
+            Debug.Log("[MainFlowManager] Inventory panel closed. Main UI regained control.", this);
+        }
+    }
+
+    public void HandleReturnToTitleRequested()
+    {
+        if (_uiOwner != UiOwner.Main)
+        {
+            return;
+        }
+
+        if (_sceneLoader == null)
+        {
+            Debug.LogError("[MainFlowManager] SceneLoader is null.", this);
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(titleSceneName))
+        {
+            Debug.LogError("[MainFlowManager] titleSceneName is empty.", this);
+            return;
+        }
+
+        if (!Application.CanStreamedLevelBeLoaded(titleSceneName))
+        {
+            Debug.LogError(
+                $"[MainFlowManager] Title scene '{titleSceneName}' is not in Build Settings or cannot be loaded.",
+                this
+            );
+            return;
+        }
+
+        if (_sceneLoader.IsLoading)
+        {
+            Debug.LogWarning("[MainFlowManager] SceneLoader is already loading another scene.", this);
+            return;
+        }
+
+        bool started = _sceneLoader.TryLoadScene(titleSceneName);
+
+        if (!started)
+        {
+            Debug.LogError($"[MainFlowManager] Failed to start TitleScene load. SceneName={titleSceneName}", this);
+            return;
+        }
+
+        if (verboseLog)
+        {
+            Debug.Log("[MainFlowManager] Returning to title scene.", this);
+        }
     }
 
     public void HandleMarketMenuRequested()

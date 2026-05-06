@@ -26,28 +26,56 @@ public sealed class ResearchManager : MonoBehaviour
         }
 
         _unlockedPerks.Clear();
-
-        IReadOnlyList<PerkSO> perks = contentDatabaseProvider.Perks;
-        for (int i = 0; i < perks.Count; i++)
-        {
-            PerkSO perk = perks[i];
-            if (perk != null)
-            {
-                _unlockedPerks.Add(perk);
-            }
-        }
-
         _initialized = true;
 
         if (verboseLog)
         {
-            Debug.Log($"[ResearchManager] Initialized. UnlockedPerkCount={_unlockedPerks.Count}", this);
+            Debug.Log("[ResearchManager] Initialized.", this);
         }
     }
 
     public int GetUnlockedPerkCount()
     {
         return _unlockedPerks.Count;
+    }
+
+    public bool AddArtifact(PerkSO artifact)
+    {
+        if (artifact == null)
+        {
+            return false;
+        }
+
+        if (_unlockedPerks.Contains(artifact))
+        {
+            return false;
+        }
+
+        _unlockedPerks.Add(artifact);
+
+        if (verboseLog)
+        {
+            Debug.Log($"[ResearchManager] Artifact added. Name={artifact.perkName}", this);
+        }
+
+        return true;
+    }
+
+    public bool RemoveArtifact(PerkSO artifact)
+    {
+        if (artifact == null)
+        {
+            return false;
+        }
+
+        bool removed = _unlockedPerks.Remove(artifact);
+
+        if (removed && verboseLog)
+        {
+            Debug.Log($"[ResearchManager] Artifact removed. Name={artifact.perkName}", this);
+        }
+
+        return removed;
     }
 
     public void RestoreUnlockedPerksForLoad(List<PerkSO> unlockedPerks)

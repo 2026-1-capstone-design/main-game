@@ -12,6 +12,8 @@ public sealed class BalanceSO : ScriptableObject
     public int weaponBuyPricePerLevel = 50;
     public int gladiatorSellPricePerLevel = 40;
     public int weaponSellPricePerLevel = 40;
+    public int artifactBuyPrice = 100;
+    public int artifactSellPrice = 80;
 
     [Header("Dummy Upkeep")]
     public int upkeepPerLevel = 10;
@@ -49,4 +51,5 @@ public sealed class BalanceSO : ScriptableObject
     [Header("Market Slots")]
     public int marketGladiatorSlots = 4;
     public int marketWeaponSlots = 4;
+    public int marketArtifactSlots = 4;
 }
