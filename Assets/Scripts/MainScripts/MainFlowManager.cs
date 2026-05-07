@@ -16,6 +16,7 @@ public sealed class MainFlowManager : MonoBehaviour
         Market = 4,
         BattlePreparation = 5,
         Inventory = 6,
+        Squad = 7,
     }
 
     [Header("Scene Managers")]
@@ -36,6 +37,12 @@ public sealed class MainFlowManager : MonoBehaviour
 
     [SerializeField]
     private InventoryUIManager inventoryUIManager;
+
+    [SerializeField]
+    private SquadManager squadManager;
+
+    [SerializeField]
+    private SquadUIManager squadUIManager;
 
     [SerializeField]
     private BattleManager battleManager;
@@ -148,6 +155,10 @@ public sealed class MainFlowManager : MonoBehaviour
         inventoryUIManager.Initialize(this, inventoryManager, researchManager);
         gladiatorUIManager.Initialize(this, gladiatorManager, inventoryManager);
         battleUIManager.Initialize(this, battleManager);
+        if (squadUIManager != null)
+        {
+            squadUIManager.Initialize(this, squadManager, gladiatorManager);
+        }
         marketUIManager.Initialize(
             this,
             marketManager,
@@ -571,9 +582,9 @@ public sealed class MainFlowManager : MonoBehaviour
         return true;
     }
 
-    // 현재 보유 검투사 목록의 앞 최대 BattleTeamConstants.MaxUnitsPerTeam명을 전투용 아군 snapshot으로 복사함.
-    // 프로토타입에서 전투에 들어가는 건 실제 인스턴스가 아니라, 각 유닛의 정보를 복사한 스냅샷임. (정보의 변형이나 버그를 방지, 오버헤드 감소)
-    // 즉, 실제 보유 데이터 자체를 넘기지 않고 전투 시작용 복사본을 만든다는 것
+    // 스쿼드 슬롯에 배치된 검투사를 전투용 아군 snapshot으로 복사한다.
+    // 슬롯이 모두 비어 있으면 보유 검투사 앞 최대 MaxUnitsPerTeam명을 폴백으로 사용한다.
+    // 실제 보유 데이터 자체를 넘기지 않고 전투 시작용 복사본을 만든다 (정보 변형 방지).
     private bool TryBuildAllySnapshotsForBattle(out List<BattleUnitSnapshot> allySnapshots)
     {
         allySnapshots = new List<BattleUnitSnapshot>(BattleTeamConstants.MaxUnitsPerTeam);
@@ -584,21 +595,45 @@ public sealed class MainFlowManager : MonoBehaviour
             return false;
         }
 
-        IReadOnlyList<OwnedGladiatorData> ownedGladiators = gladiatorManager.OwnedGladiators;
-        if (ownedGladiators == null || ownedGladiators.Count == 0)
+        List<OwnedGladiatorData> sources;
+
+        if (squadManager != null)
         {
-            Debug.LogWarning("[MainFlowManager] Cannot start battle because there are no owned gladiators.", this);
+            sources = squadManager.GetAssignedGladiators();
+        }
+        else
+        {
+            sources = new List<OwnedGladiatorData>();
+        }
+
+        // 스쿼드가 비어 있으면 보유 검투사 목록 앞부분으로 폴백한다.
+        if (sources.Count == 0)
+        {
+            IReadOnlyList<OwnedGladiatorData> owned = gladiatorManager.OwnedGladiators;
+            int fallbackCount = Mathf.Min(BattleTeamConstants.MaxUnitsPerTeam, owned.Count);
+            for (int i = 0; i < fallbackCount; i++)
+            {
+                if (owned[i] != null)
+                {
+                    sources.Add(owned[i]);
+                }
+            }
+        }
+
+        if (sources.Count == 0)
+        {
+            Debug.LogWarning(
+                "[MainFlowManager] Cannot start battle because there are no gladiators in the squad.",
+                this
+            );
             return false;
         }
 
-        int count = Mathf.Min(BattleTeamConstants.MaxUnitsPerTeam, ownedGladiators.Count);
-
-        for (int i = 0; i < count; i++)
+        for (int i = 0; i < sources.Count; i++)
         {
-            OwnedGladiatorData source = ownedGladiators[i];
+            OwnedGladiatorData source = sources[i];
             if (source == null)
             {
-                Debug.LogWarning($"[MainFlowManager] Owned gladiator at index {i} is null. Skipping.", this);
                 continue;
             }
 
@@ -755,6 +790,45 @@ public sealed class MainFlowManager : MonoBehaviour
         if (verboseLog)
         {
             Debug.Log("[MainFlowManager] Inventory panel closed. Main UI regained control.", this);
+        }
+    }
+
+    public void HandleSquadMenuRequested()
+    {
+        if (_uiOwner != UiOwner.Main)
+        {
+            return;
+        }
+
+        if (squadUIManager == null)
+        {
+            return;
+        }
+
+        _uiOwner = UiOwner.Squad;
+        squadUIManager.OpenPanel();
+        ApplyUiState();
+
+        if (verboseLog)
+        {
+            Debug.Log("[MainFlowManager] Squad panel opened.", this);
+        }
+    }
+
+    public void HandleSquadBackRequested()
+    {
+        if (_uiOwner != UiOwner.Squad)
+        {
+            return;
+        }
+
+        squadUIManager.ClosePanel();
+        _uiOwner = UiOwner.Main;
+        ApplyUiState();
+
+        if (verboseLog)
+        {
+            Debug.Log("[MainFlowManager] Squad panel closed. Main UI regained control.", this);
         }
     }
 

@@ -12,6 +12,9 @@ public sealed class MainUIManager : MonoBehaviour
     private Button gladiatorButton;
 
     [SerializeField]
+    private Button squadButton;
+
+    [SerializeField]
     private Button battleButton;
 
     [SerializeField]
@@ -73,6 +76,7 @@ public sealed class MainUIManager : MonoBehaviour
         }
 
         BindButton(gladiatorButton, OnGladiatorClicked);
+        BindButton(squadButton, OnSquadClicked);
         BindButton(battleButton, OnBattleClicked);
         BindButton(inventoryButton, OnInventoryClicked);
         BindButton(marketButton, OnMarketClicked);
@@ -133,6 +137,7 @@ public sealed class MainUIManager : MonoBehaviour
     public void SetMainMenuInteractable(bool value)
     {
         SetButtonInteractable(gladiatorButton, value);
+        SetButtonInteractable(squadButton, value);
         SetButtonInteractable(battleButton, value);
         SetButtonInteractable(inventoryButton, value);
         SetButtonInteractable(marketButton, value);
@@ -180,6 +185,14 @@ public sealed class MainUIManager : MonoBehaviour
         if (_flow != null)
         {
             _flow.HandleGladiatorMenuRequested();
+        }
+    }
+
+    private void OnSquadClicked()
+    {
+        if (_flow != null)
+        {
+            _flow.HandleSquadMenuRequested();
         }
     }
 

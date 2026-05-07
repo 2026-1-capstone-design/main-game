@@ -172,6 +172,8 @@ public static class SaveGameService
         SaveMarketArtifactOfferData[] marketArtifactOffers = BuildMarketArtifactOffersSnapshot(marketManager);
 
         SaveBattleEncounterData[] battleEncounters = BuildBattleEncountersSnapshot(battleManager);
+        SquadManager squadManager = UnityEngine.Object.FindFirstObjectByType<SquadManager>();
+        int[] squadSlotRuntimeIds = BuildSquadSlotRuntimeIdsSnapshot(squadManager);
 
         SaveSlotData data = new()
         {
@@ -196,6 +198,7 @@ public static class SaveGameService
             battleEncounterGeneratedDay = battleManager != null ? battleManager.EncounterGeneratedDay : 1,
             selectedEncounterIndex = battleManager != null ? battleManager.SelectedEncounterIndex : -1,
             battleEncounters = battleEncounters,
+            squadSlotRuntimeIds = squadSlotRuntimeIds,
         };
 
         return data;
@@ -355,9 +358,26 @@ public static class SaveGameService
                     battleManager.InitializeDay(sessionManager.CurrentDay);
                 }
             }
+
+            // 검투사 복원 이후에 스쿼드 슬롯을 복원한다.
+            SquadManager squadManager = UnityEngine.Object.FindFirstObjectByType<SquadManager>();
+            if (squadManager != null && gladiatorManager != null && data.squadSlotRuntimeIds != null)
+            {
+                squadManager.RestoreFromSave(data.squadSlotRuntimeIds, gladiatorManager);
+            }
         }
 
         return true;
+    }
+
+    private static int[] BuildSquadSlotRuntimeIdsSnapshot(SquadManager squadManager)
+    {
+        if (squadManager == null)
+        {
+            return Array.Empty<int>();
+        }
+
+        return squadManager.GetSlotRuntimeIds();
     }
 
     private static SaveOwnedWeaponData[] BuildOwnedWeaponsSnapshot(InventoryManager inventoryManager)
