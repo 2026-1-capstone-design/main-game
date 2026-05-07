@@ -50,25 +50,28 @@ public sealed class ResearchManager : MonoBehaviour
         return _unlockedArtifacts.Count;
     }
 
-    public void RestoreUnlockedPerksForLoad(List<PerkSO> unlockedPerks)
+    public void RestoreUnlockedArtifactsForLoad(List<ArtifactSO> unlockedArtifacts)
     {
-        _unlockedPerks.Clear();
+        _unlockedArtifacts.Clear();
 
-        if (unlockedPerks != null)
+        if (unlockedArtifacts != null)
         {
-            for (int i = 0; i < unlockedPerks.Count; i++)
+            for (int i = 0; i < unlockedArtifacts.Count; i++)
             {
-                PerkSO perk = unlockedPerks[i];
-                if (perk != null)
+                ArtifactSO artifact = unlockedArtifacts[i];
+                if (artifact != null)
                 {
-                    _unlockedPerks.Add(perk);
+                    _unlockedArtifacts.Add(artifact);
                 }
             }
         }
 
         if (verboseLog)
         {
-            Debug.Log($"[ResearchManager] Unlocked perks restored from save. Count={_unlockedPerks.Count}", this);
+            Debug.Log(
+                $"[ResearchManager] Unlocked artifacts restored from save. Count={_unlockedArtifacts.Count}",
+                this
+            );
         }
     }
 }
