@@ -45,10 +45,16 @@ public sealed class SquadSlotCell : MonoBehaviour
         _onSlotClicked = onSlotClicked;
         _onClearClicked = onClearClicked;
 
+        ResolveMissingReferences();
+
         if (slotButton != null)
         {
             slotButton.onClick.RemoveAllListeners();
             slotButton.onClick.AddListener(OnSlotClicked);
+        }
+        else
+        {
+            Debug.LogWarning($"[SquadSlotCell] slotButton is not assigned. Slot={slotIndex}", this);
         }
 
         if (clearButton != null)
@@ -105,5 +111,25 @@ public sealed class SquadSlotCell : MonoBehaviour
     private void OnClearClicked()
     {
         _onClearClicked?.Invoke(_slotIndex);
+    }
+
+    private void ResolveMissingReferences()
+    {
+        if (slotButton == null)
+        {
+            slotButton = GetComponent<Button>();
+        }
+
+        if (slotButton == null && emptyStateRoot != null)
+        {
+            slotButton = emptyStateRoot.GetComponentInChildren<Button>(true);
+        }
+
+        if (clearButton == null || slotButton != clearButton)
+        {
+            return;
+        }
+
+        clearButton = null;
     }
 }

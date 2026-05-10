@@ -28,6 +28,7 @@ public sealed class SaveSlotData
     public SaveBattleEncounterData[] battleEncounters;
 
     public int[] squadSlotRuntimeIds;
+    public int activeSquadTeamIndex;
 }
 
 [Serializable]

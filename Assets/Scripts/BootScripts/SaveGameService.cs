@@ -174,6 +174,7 @@ public static class SaveGameService
         SaveBattleEncounterData[] battleEncounters = BuildBattleEncountersSnapshot(battleManager);
         SquadManager squadManager = UnityEngine.Object.FindFirstObjectByType<SquadManager>();
         int[] squadSlotRuntimeIds = BuildSquadSlotRuntimeIdsSnapshot(squadManager);
+        int activeSquadTeamIndex = squadManager != null ? squadManager.ActiveTeamIndex : 0;
 
         SaveSlotData data = new()
         {
@@ -199,6 +200,7 @@ public static class SaveGameService
             selectedEncounterIndex = battleManager != null ? battleManager.SelectedEncounterIndex : -1,
             battleEncounters = battleEncounters,
             squadSlotRuntimeIds = squadSlotRuntimeIds,
+            activeSquadTeamIndex = activeSquadTeamIndex,
         };
 
         return data;
@@ -364,6 +366,7 @@ public static class SaveGameService
             if (squadManager != null && gladiatorManager != null && data.squadSlotRuntimeIds != null)
             {
                 squadManager.RestoreFromSave(data.squadSlotRuntimeIds, gladiatorManager);
+                squadManager.RestoreActiveTeamIndex(data.activeSquadTeamIndex);
             }
         }
 

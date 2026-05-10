@@ -27,11 +27,21 @@ public sealed class OwnedItemGridViewer : MonoBehaviour
     [SerializeField]
     private int fixedColumnCount = 6;
 
+    [SerializeField]
+    private bool stretchRootToParent = true;
+
+    [SerializeField]
+    private bool useMaxCellSize;
+
+    [SerializeField]
+    private float maxCellSize = 120f;
+
     private readonly List<OwnedItemGridCell> _cellPool = new List<OwnedItemGridCell>();
     private int _activeItemCount;
     private Action<OwnedItemViewData> _onCellClicked;
 
     private RectTransform _rootRect;
+    private bool _isRefreshingLayout;
 
     private void Awake()
     {
@@ -106,6 +116,13 @@ public sealed class OwnedItemGridViewer : MonoBehaviour
 
     public void RefreshLayoutNow()
     {
+        if (_isRefreshingLayout)
+        {
+            return;
+        }
+
+        _isRefreshingLayout = true;
+
         ConfigureStaticLayout();
         NormalizeRectTransforms();
 
@@ -114,17 +131,23 @@ public sealed class OwnedItemGridViewer : MonoBehaviour
         if (viewportRect == null || containerRect == null || gridLayoutGroup == null)
         {
             Debug.LogError("[OwnedItemGridViewer] Required Rect/UI reference is missing.", this);
+            _isRefreshingLayout = false;
             return;
         }
 
         float viewportWidth = viewportRect.rect.width;
         if (viewportWidth <= 0f)
         {
+            _isRefreshingLayout = false;
             return;
         }
 
         int columnCount = Mathf.Max(1, fixedColumnCount);
         float cellSize = viewportWidth / columnCount;
+        if (useMaxCellSize)
+        {
+            cellSize = Mathf.Min(cellSize, Mathf.Max(1f, maxCellSize));
+        }
 
         gridLayoutGroup.cellSize = new Vector2(cellSize, cellSize);
 
@@ -132,9 +155,15 @@ public sealed class OwnedItemGridViewer : MonoBehaviour
 
         float contentHeight = rowCount * cellSize;
 
-        containerRect.sizeDelta = new Vector2(0f, contentHeight);
+        Vector2 targetSize = new Vector2(0f, contentHeight);
+        if (containerRect.sizeDelta != targetSize)
+        {
+            containerRect.sizeDelta = targetSize;
+        }
 
         LayoutRebuilder.ForceRebuildLayoutImmediate(containerRect);
+
+        _isRefreshingLayout = false;
     }
 
     private void ConfigureStaticLayout()
@@ -165,7 +194,7 @@ public sealed class OwnedItemGridViewer : MonoBehaviour
             _rootRect = GetComponent<RectTransform>();
         }
 
-        if (_rootRect != null)
+        if (_rootRect != null && stretchRootToParent)
         {
             _rootRect.anchorMin = Vector2.zero;
             _rootRect.anchorMax = Vector2.one;

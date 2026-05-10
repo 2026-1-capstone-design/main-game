@@ -2,22 +2,47 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // 전투에 출전할 검투사 슬롯(최대 BattleTeamConstants.MaxUnitsPerTeam)을 관리하는 씬 레벨 매니저.
-// SaveGameService와 MainFlowManager가 참조하며, 저장 시 런타임 ID 배열로 직렬화된다.
+// SaveGameService와 MainFlowManager가 참조하며, 5개 팀 프리셋을 런타임 ID 배열로 직렬화한다.
 [DisallowMultipleComponent]
 public sealed class SquadManager : MonoBehaviour
 {
-    private readonly OwnedGladiatorData[] _slots = new OwnedGladiatorData[BattleTeamConstants.MaxUnitsPerTeam];
+    public const int SquadTeamCount = 5;
 
-    public int SlotCount => _slots.Length;
+    private readonly OwnedGladiatorData[,] _teamSlots = new OwnedGladiatorData[
+        SquadTeamCount,
+        BattleTeamConstants.MaxUnitsPerTeam
+    ];
+
+    private int _activeTeamIndex;
+
+    public int SlotCount => BattleTeamConstants.MaxUnitsPerTeam;
+    public int TeamCount => SquadTeamCount;
+    public int ActiveTeamIndex => _activeTeamIndex;
+
+    public bool SetActiveTeam(int teamIndex)
+    {
+        if (!IsValidTeamIndex(teamIndex))
+        {
+            return false;
+        }
+
+        _activeTeamIndex = teamIndex;
+        return true;
+    }
 
     public OwnedGladiatorData GetSlot(int slotIndex)
     {
-        if (slotIndex < 0 || slotIndex >= _slots.Length)
+        return GetSlot(_activeTeamIndex, slotIndex);
+    }
+
+    public OwnedGladiatorData GetSlot(int teamIndex, int slotIndex)
+    {
+        if (!IsValidTeamIndex(teamIndex) || !IsValidSlotIndex(slotIndex))
         {
             return null;
         }
 
-        return _slots[slotIndex];
+        return _teamSlots[teamIndex, slotIndex];
     }
 
     public bool IsInSquad(OwnedGladiatorData gladiator)
@@ -27,11 +52,14 @@ public sealed class SquadManager : MonoBehaviour
             return false;
         }
 
-        for (int i = 0; i < _slots.Length; i++)
+        for (int team = 0; team < SquadTeamCount; team++)
         {
-            if (_slots[i] == gladiator)
+            for (int slot = 0; slot < SlotCount; slot++)
             {
-                return true;
+                if (_teamSlots[team, slot] == gladiator)
+                {
+                    return true;
+                }
             }
         }
 
@@ -40,29 +68,29 @@ public sealed class SquadManager : MonoBehaviour
 
     public bool TryAssignToSlot(int slotIndex, OwnedGladiatorData gladiator)
     {
-        if (slotIndex < 0 || slotIndex >= _slots.Length || gladiator == null)
+        if (!IsValidSlotIndex(slotIndex) || gladiator == null)
         {
             return false;
         }
 
-        // 같은 검투사가 다른 슬롯에 이미 있으면 먼저 제거
-        for (int i = 0; i < _slots.Length; i++)
+        // 같은 팀 안에서는 검투사 하나가 한 슬롯에만 들어가도록 기존 배치를 먼저 제거한다.
+        for (int i = 0; i < SlotCount; i++)
         {
-            if (_slots[i] == gladiator)
+            if (_teamSlots[_activeTeamIndex, i] == gladiator)
             {
-                _slots[i] = null;
+                _teamSlots[_activeTeamIndex, i] = null;
             }
         }
 
-        _slots[slotIndex] = gladiator;
+        _teamSlots[_activeTeamIndex, slotIndex] = gladiator;
         return true;
     }
 
     public void ClearSlot(int slotIndex)
     {
-        if (slotIndex >= 0 && slotIndex < _slots.Length)
+        if (IsValidSlotIndex(slotIndex))
         {
-            _slots[slotIndex] = null;
+            _teamSlots[_activeTeamIndex, slotIndex] = null;
         }
     }
 
@@ -74,24 +102,28 @@ public sealed class SquadManager : MonoBehaviour
             return;
         }
 
-        for (int i = 0; i < _slots.Length; i++)
+        for (int team = 0; team < SquadTeamCount; team++)
         {
-            if (_slots[i] == gladiator)
+            for (int slot = 0; slot < SlotCount; slot++)
             {
-                _slots[i] = null;
+                if (_teamSlots[team, slot] == gladiator)
+                {
+                    _teamSlots[team, slot] = null;
+                }
             }
         }
     }
 
-    // 전투 시작 시 배치된 검투사 목록을 반환한다 (빈 슬롯 제외, 슬롯 순서 유지).
+    // 전투 시작 시 현재 선택된 팀의 검투사 목록을 반환한다 (빈 슬롯 제외, 슬롯 순서 유지).
     public List<OwnedGladiatorData> GetAssignedGladiators()
     {
-        var result = new List<OwnedGladiatorData>(_slots.Length);
-        for (int i = 0; i < _slots.Length; i++)
+        var result = new List<OwnedGladiatorData>(SlotCount);
+        for (int i = 0; i < SlotCount; i++)
         {
-            if (_slots[i] != null)
+            OwnedGladiatorData gladiator = _teamSlots[_activeTeamIndex, i];
+            if (gladiator != null)
             {
-                result.Add(_slots[i]);
+                result.Add(gladiator);
             }
         }
 
@@ -100,10 +132,14 @@ public sealed class SquadManager : MonoBehaviour
 
     public int[] GetSlotRuntimeIds()
     {
-        int[] ids = new int[_slots.Length];
-        for (int i = 0; i < _slots.Length; i++)
+        int[] ids = new int[SquadTeamCount * SlotCount];
+        for (int team = 0; team < SquadTeamCount; team++)
         {
-            ids[i] = _slots[i] != null ? _slots[i].RuntimeId : -1;
+            for (int slot = 0; slot < SlotCount; slot++)
+            {
+                OwnedGladiatorData gladiator = _teamSlots[team, slot];
+                ids[GetFlattenedIndex(team, slot)] = gladiator != null ? gladiator.RuntimeId : -1;
+            }
         }
 
         return ids;
@@ -112,9 +148,12 @@ public sealed class SquadManager : MonoBehaviour
     // 저장 데이터에서 복원한다. GladiatorManager 복원이 완료된 후 호출해야 한다.
     public void RestoreFromSave(int[] runtimeIds, GladiatorManager gladiatorManager)
     {
-        for (int i = 0; i < _slots.Length; i++)
+        for (int team = 0; team < SquadTeamCount; team++)
         {
-            _slots[i] = null;
+            for (int slot = 0; slot < SlotCount; slot++)
+            {
+                _teamSlots[team, slot] = null;
+            }
         }
 
         if (runtimeIds == null || gladiatorManager == null)
@@ -123,7 +162,7 @@ public sealed class SquadManager : MonoBehaviour
         }
 
         IReadOnlyList<OwnedGladiatorData> owned = gladiatorManager.OwnedGladiators;
-        int len = Mathf.Min(runtimeIds.Length, _slots.Length);
+        int len = Mathf.Min(runtimeIds.Length, SquadTeamCount * SlotCount);
 
         for (int i = 0; i < len; i++)
         {
@@ -137,10 +176,32 @@ public sealed class SquadManager : MonoBehaviour
             {
                 if (owned[j] != null && owned[j].RuntimeId == targetId)
                 {
-                    _slots[i] = owned[j];
+                    int teamIndex = i / SlotCount;
+                    int slotIndex = i % SlotCount;
+                    _teamSlots[teamIndex, slotIndex] = owned[j];
                     break;
                 }
             }
         }
+    }
+
+    public void RestoreActiveTeamIndex(int activeTeamIndex)
+    {
+        SetActiveTeam(activeTeamIndex);
+    }
+
+    private bool IsValidTeamIndex(int teamIndex)
+    {
+        return teamIndex >= 0 && teamIndex < SquadTeamCount;
+    }
+
+    private bool IsValidSlotIndex(int slotIndex)
+    {
+        return slotIndex >= 0 && slotIndex < SlotCount;
+    }
+
+    private int GetFlattenedIndex(int teamIndex, int slotIndex)
+    {
+        return teamIndex * SlotCount + slotIndex;
     }
 }

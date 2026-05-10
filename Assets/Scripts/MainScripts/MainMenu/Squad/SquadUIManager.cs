@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Text;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -16,6 +17,13 @@ public sealed class SquadUIManager : MonoBehaviour
     [Header("Buttons")]
     [SerializeField]
     private Button backButton;
+
+    [Header("Squad Team Tabs")]
+    [SerializeField]
+    private Button[] teamTabButtons = new Button[SquadManager.SquadTeamCount];
+
+    [SerializeField]
+    private TMP_Text squadTitleText;
 
     [Header("Squad Slots")]
     [SerializeField]
@@ -38,13 +46,34 @@ public sealed class SquadUIManager : MonoBehaviour
     [SerializeField]
     private TMP_Text pickerTitleText;
 
+    [Header("Gladiator Detail")]
+    [SerializeField]
+    private GameObject detailPanelRoot;
+
+    [SerializeField]
+    private Image detailPortraitImage;
+
+    [SerializeField]
+    private Image detailWeaponIcon;
+
+    [SerializeField]
+    private Image[] detailArtifactIcons = new Image[3];
+
+    [SerializeField]
+    private TMP_Text detailText;
+
+    [SerializeField]
+    private Button assignButton;
+
     private MainFlowManager _flow;
     private SquadManager _squadManager;
     private GladiatorManager _gladiatorManager;
     private bool _initialized;
     private int _pendingSlotIndex = -1;
+    private OwnedGladiatorData _pendingGladiator;
 
     private readonly List<OwnedItemViewData> _pickerBuffer = new List<OwnedItemViewData>();
+    private readonly StringBuilder _detailBuilder = new StringBuilder(256);
 
     public void Initialize(MainFlowManager flow, SquadManager squadManager, GladiatorManager gladiatorManager)
     {
@@ -57,9 +86,13 @@ public sealed class SquadUIManager : MonoBehaviour
         _squadManager = squadManager;
         _gladiatorManager = gladiatorManager;
 
+        ResolveMissingReferences();
+
         BindButton(backButton, OnBackClicked);
         BindButton(pickerCloseButton, OnPickerCloseClicked);
         BindButton(pickerClearButton, OnPickerClearClicked);
+        BindButton(assignButton, OnAssignClicked);
+        BindTeamTabButtons();
 
         if (slotCells != null)
         {
@@ -82,6 +115,7 @@ public sealed class SquadUIManager : MonoBehaviour
     {
         SetPickerPanelActive(false);
         SetPanelActive(true);
+        RefreshTeamTabs();
         RefreshSlots();
     }
 
@@ -108,10 +142,27 @@ public sealed class SquadUIManager : MonoBehaviour
         RefreshSlots();
     }
 
+    private void OnTeamTabClicked(int teamIndex)
+    {
+        if (_squadManager == null || !_squadManager.SetActiveTeam(teamIndex))
+        {
+            return;
+        }
+
+        _pendingSlotIndex = -1;
+        _pendingGladiator = null;
+        SetPickerPanelActive(false);
+        SetDetailPanelActive(false);
+        RefreshTeamTabs();
+        RefreshSlots();
+    }
+
     private void OnPickerCloseClicked()
     {
         _pendingSlotIndex = -1;
+        _pendingGladiator = null;
         SetPickerPanelActive(false);
+        SetDetailPanelActive(false);
     }
 
     private void OnPickerClearClicked()
@@ -123,6 +174,24 @@ public sealed class SquadUIManager : MonoBehaviour
         }
 
         _pendingSlotIndex = -1;
+        _pendingGladiator = null;
+        SetPickerPanelActive(false);
+        SetDetailPanelActive(false);
+    }
+
+    private void OnAssignClicked()
+    {
+        if (_pendingSlotIndex < 0 || _pendingGladiator == null)
+        {
+            return;
+        }
+
+        _squadManager?.TryAssignToSlot(_pendingSlotIndex, _pendingGladiator);
+        RefreshSlots();
+
+        _pendingSlotIndex = -1;
+        _pendingGladiator = null;
+        SetDetailPanelActive(false);
         SetPickerPanelActive(false);
     }
 
@@ -133,14 +202,25 @@ public sealed class SquadUIManager : MonoBehaviour
             pickerTitleText.text = $"슬롯 {slotIndex + 1} 검투사 선택";
         }
 
+        _pendingGladiator = null;
+        SetDetailPanelActive(false);
         RefreshPickerGrid(slotIndex);
         SetPickerPanelActive(true);
+
+        if (pickerPanelRoot == null)
+        {
+            Debug.LogWarning("[SquadUIManager] pickerPanelRoot is not assigned.", this);
+        }
     }
 
     private void RefreshPickerGrid(int slotIndex)
     {
         if (pickerGridViewer == null || _gladiatorManager == null || _squadManager == null)
         {
+            Debug.LogWarning(
+                "[SquadUIManager] Cannot refresh picker grid because a required reference is missing.",
+                this
+            );
             return;
         }
 
@@ -191,11 +271,8 @@ public sealed class SquadUIManager : MonoBehaviour
             return;
         }
 
-        _squadManager?.TryAssignToSlot(_pendingSlotIndex, gladiator);
-        RefreshSlots();
-
-        _pendingSlotIndex = -1;
-        SetPickerPanelActive(false);
+        _pendingGladiator = gladiator;
+        ShowGladiatorDetail(gladiator);
     }
 
     private void RefreshSlots()
@@ -216,6 +293,36 @@ public sealed class SquadUIManager : MonoBehaviour
         }
     }
 
+    private void RefreshTeamTabs()
+    {
+        if (_squadManager == null)
+        {
+            return;
+        }
+
+        int activeTeamIndex = _squadManager.ActiveTeamIndex;
+
+        if (squadTitleText != null)
+        {
+            squadTitleText.text = activeTeamIndex == 0 ? "메인 스쿼드" : $"스쿼드 {activeTeamIndex + 1}";
+        }
+
+        if (teamTabButtons == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < teamTabButtons.Length; i++)
+        {
+            if (teamTabButtons[i] == null)
+            {
+                continue;
+            }
+
+            teamTabButtons[i].interactable = i != activeTeamIndex;
+        }
+    }
+
     private void SetPickerPanelActive(bool value)
     {
         if (pickerPanelRoot != null)
@@ -224,11 +331,130 @@ public sealed class SquadUIManager : MonoBehaviour
         }
     }
 
+    private void ShowGladiatorDetail(OwnedGladiatorData gladiator)
+    {
+        if (gladiator == null)
+        {
+            SetDetailPanelActive(false);
+            return;
+        }
+
+        if (detailPortraitImage != null)
+        {
+            Sprite portrait = gladiator.GladiatorClass?.icon;
+            detailPortraitImage.sprite = portrait;
+            detailPortraitImage.enabled = portrait != null;
+            detailPortraitImage.preserveAspect = true;
+        }
+
+        if (detailWeaponIcon != null)
+        {
+            Sprite weaponIcon = gladiator.EquippedWeapon?.Weapon?.icon;
+            detailWeaponIcon.sprite = weaponIcon;
+            detailWeaponIcon.enabled = weaponIcon != null;
+            detailWeaponIcon.preserveAspect = true;
+        }
+
+        RefreshArtifactIcons(gladiator);
+
+        if (detailText != null)
+        {
+            detailText.text = BuildGladiatorDetailText(gladiator);
+        }
+
+        SetDetailPanelActive(true);
+    }
+
+    private string BuildGladiatorDetailText(OwnedGladiatorData gladiator)
+    {
+        _detailBuilder.Clear();
+        _detailBuilder.AppendLine($"이름 : {gladiator.DisplayName}");
+        _detailBuilder.AppendLine($"레벨 : {gladiator.Level}");
+        _detailBuilder.AppendLine($"경험치 : {gladiator.Exp}");
+        _detailBuilder.AppendLine($"충성도 : {gladiator.Loyalty}");
+        _detailBuilder.AppendLine(
+            $"체력 : {Mathf.FloorToInt(gladiator.CurrentHealth)} / {Mathf.FloorToInt(gladiator.CachedMaxHealth)}"
+        );
+        _detailBuilder.AppendLine($"공격력 : {Mathf.FloorToInt(gladiator.CachedAttack)}");
+        _detailBuilder.AppendLine($"공격속도 : {gladiator.CachedAttackSpeed:0.##}");
+        _detailBuilder.AppendLine($"이동속도 : {gladiator.CachedMoveSpeed:0.##}");
+        _detailBuilder.AppendLine($"공격 사거리 : {gladiator.CachedAttackRange:0.##}");
+
+        return _detailBuilder.ToString();
+    }
+
+    private void RefreshArtifactIcons(OwnedGladiatorData gladiator)
+    {
+        if (detailArtifactIcons == null)
+        {
+            return;
+        }
+
+        Sprite equippedArtifactIcon = gladiator.EquippedArtifact?.icon;
+        for (int i = 0; i < detailArtifactIcons.Length; i++)
+        {
+            Image icon = detailArtifactIcons[i];
+            if (icon == null)
+            {
+                continue;
+            }
+
+            // 현재 데이터 모델은 검투사당 장신구 1개만 지원한다.
+            // UI는 3칸을 먼저 준비해두고, 실제 다중 장신구 데이터가 생기면 여기서 순서대로 채우면 된다.
+            Sprite artifactIcon = i == 0 ? equippedArtifactIcon : null;
+            icon.sprite = artifactIcon;
+            icon.enabled = artifactIcon != null;
+            icon.preserveAspect = true;
+        }
+    }
+
+    private void SetDetailPanelActive(bool value)
+    {
+        if (detailPanelRoot != null)
+        {
+            detailPanelRoot.SetActive(value);
+        }
+    }
+
     private void SetPanelActive(bool value)
     {
         if (panelRoot != null)
         {
             panelRoot.SetActive(value);
+        }
+    }
+
+    private void ResolveMissingReferences()
+    {
+        if ((slotCells == null || slotCells.Length == 0) && panelRoot != null)
+        {
+            slotCells = panelRoot.GetComponentsInChildren<SquadSlotCell>(true);
+        }
+
+        if (pickerPanelRoot == null && pickerGridViewer != null)
+        {
+            pickerPanelRoot = pickerGridViewer.gameObject;
+        }
+    }
+
+    private void BindTeamTabButtons()
+    {
+        if (teamTabButtons == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < teamTabButtons.Length; i++)
+        {
+            Button button = teamTabButtons[i];
+            if (button == null)
+            {
+                continue;
+            }
+
+            int capturedIndex = i;
+            button.onClick.RemoveAllListeners();
+            button.onClick.AddListener(() => OnTeamTabClicked(capturedIndex));
         }
     }
 
