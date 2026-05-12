@@ -69,6 +69,8 @@ public sealed class BattleSimulationManager : MonoBehaviour
     public BattleProjectileManager projectileManager;
     private readonly BattleProjectileSystem _projectileSystem = new BattleProjectileSystem();   //투사체 시스템
 
+    public BattleTextManager _battleTextManager = new BattleTextManager();    //텍스트 메시지 매니저
+
 
     private BattleEffectSystem _effectSystem;
     private BattleCombatSystem _combatSystem;
@@ -198,6 +200,10 @@ public sealed class BattleSimulationManager : MonoBehaviour
         if (projectileManager != null)
         {
             _projectileSystem.Configure(_effectSystem, projectileManager.ProjectileRoot);
+        }
+        if(_battleTextManager != null)
+        {
+            _battleTextManager.Initialize(_effectSystem);
         }
 
         _rosterMutationSystem.Configure(

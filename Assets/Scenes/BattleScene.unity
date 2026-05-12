@@ -1259,6 +1259,7 @@ Transform:
   - {fileID: 1233094451}
   - {fileID: 273018759}
   - {fileID: 2081809182}
+  - {fileID: 817373529}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &235651748
@@ -2408,12 +2409,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 457637513}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: -10, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 1505140329}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &460529040
 GameObject:
@@ -3576,6 +3577,52 @@ MonoBehaviour:
   - {fileID: 1904280613}
   - {fileID: 1629190619}
   - {fileID: 1874751768}
+--- !u!1 &817373527
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 817373529}
+  - component: {fileID: 817373528}
+  m_Layer: 0
+  m_Name: BattleTextManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &817373528
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 817373527}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f068f170934b2dc4aba6ffa4fc05321b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  textPrefab: {fileID: 1295485813051539414, guid: da40dcc06caa8bb42849b5a3a189e177, type: 3}
+  maxTextCount: 50
+--- !u!4 &817373529
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 817373527}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -1672, y: -1001, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 231736454}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &833370495
 GameObject:
   m_ObjectHideFlags: 0
@@ -3813,6 +3860,10 @@ MonoBehaviour:
   - skillId: 5
     clip: {fileID: 0}
     cooltime: 20
+    type: 1
+  - skillId: 24
+    clip: {fileID: 0}
+    cooltime: 30
     type: 1
 --- !u!1 &957281080
 GameObject:
@@ -6546,6 +6597,7 @@ Transform:
   m_Children:
   - {fileID: 345151303}
   - {fileID: 699831721}
+  - {fileID: 457637514}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!135 &1505140330
@@ -9146,6 +9198,7 @@ MonoBehaviour:
   desiredPositionStopDistance: 0.5
   escapeTowardTeamBlend: 0.35
   projectileManager: {fileID: 273018758}
+  _battleTextManager: {fileID: 817373528}
 --- !u!1 &2050258309
 GameObject:
   m_ObjectHideFlags: 0
@@ -9544,11 +9597,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   effects:
   - effectId: fire_explosion
-    prefab: {fileID: 2433282508537954060, guid: 3ef3ae421f71c5c4e97fe12dc2fc6312, type: 3}
+    prefab: {fileID: 2433282508537954060, guid: 968b684744e7d7547afcb8de3c9de6b2, type: 3}
   - effectId: Critical Effect
-    prefab: {fileID: 4021103657954561961, guid: 5c755f9bc5253ea418e919994537dcc7, type: 3}
+    prefab: {fileID: 4021103657954561961, guid: deb8f7abd09810f47911d88727074d69, type: 3}
   - effectId: LightningHit
-    prefab: {fileID: 1141330259687333427, guid: 6718dc24203da53468af9ada8fef7d6d, type: 3}
+    prefab: {fileID: 1141330259687333427, guid: d001157ff1892174488d3b513c1efddf, type: 3}
 --- !u!1 &2089464883
 GameObject:
   m_ObjectHideFlags: 0
@@ -9738,4 +9791,3 @@ SceneRoots:
   - {fileID: 558297239}
   - {fileID: 1052342578}
   - {fileID: 180414084}
-  - {fileID: 457637514}
