@@ -24,6 +24,7 @@ public class FloatingText : MonoBehaviour
 
     private void Update()
     {
+        transform.rotation = Camera.main.transform.rotation;
         if (_timer > 0)
         {
             // 위로 둥둥 떠오름

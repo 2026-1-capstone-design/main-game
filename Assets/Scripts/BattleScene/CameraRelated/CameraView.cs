@@ -24,7 +24,7 @@ public sealed class CameraView : MonoBehaviour
     [Header("Zoom (FOV Only)")]
     [Tooltip("We keep the camera on the same spectator ring and zoom by FOV only for consistency.")]
     public float defaultFov = 60f;
-    public float minFov = 20f;
+    public float minFov = 5f;
     public float maxFov = 80f;
     public float zoomSpeed = 60f;
 
