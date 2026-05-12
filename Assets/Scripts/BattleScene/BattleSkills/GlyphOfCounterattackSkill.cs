@@ -16,7 +16,8 @@ public sealed class GlyphOfCounterattackSkill : IBattleSkill
     {
         BattleRuntimeUnit caster = context.Actor;
         BattleRuntimeUnit ally = context.PrimaryTarget;
-        if (caster == null || ally == null) return;
+        if (caster == null || ally == null)
+            return;
 
         // 시전자 공격력의 3배만큼의 쉴드량을 가진 아티팩트 부여
         float shieldAmount = caster.State.Attack * 3.0f;
@@ -24,10 +25,17 @@ public sealed class GlyphOfCounterattackSkill : IBattleSkill
 
         GameObject activeVfx = VFXManager.Instance.PlayEffect("CounterattackShield", ally.Position);
 
-        effects.ScheduleEffect(10f, caster, ally, context, (ctx, sink) =>
-        {
-            if (activeVfx != null) VFXManager.Instance.StopEffect(activeVfx);
-        });
+        effects.ScheduleEffect(
+            10f,
+            caster,
+            ally,
+            context,
+            (ctx, sink) =>
+            {
+                if (activeVfx != null)
+                    VFXManager.Instance.StopEffect(activeVfx);
+            }
+        );
     }
 
     private class CounterattackArtifact : IDamageModifierArtifact, IDamageReactionArtifact
@@ -67,7 +75,15 @@ public sealed class GlyphOfCounterattackSkill : IBattleSkill
         {
             if (result.Target == owner && result.Source != null && result.Source != owner)
             {
-                effects.DealDamage(new BattleDamageRequest { Source = _originalCaster, Target = result.Source, Amount = _originalCaster.Attack * 0.8f, IsSkill = true });
+                effects.DealDamage(
+                    new BattleDamageRequest
+                    {
+                        Source = _originalCaster,
+                        Target = result.Source,
+                        Amount = _originalCaster.Attack * 0.8f,
+                        IsSkill = true,
+                    }
+                );
             }
         }
     }

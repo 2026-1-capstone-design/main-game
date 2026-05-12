@@ -15,7 +15,8 @@ public sealed class HarvestSkill : IBattleSkill
     public void Activate(in BattleEffectContext context, IBattleEffectSink effects)
     {
         BattleUnitCombatState casterState = context.Actor?.State;
-        if (casterState == null || casterState.IsCombatDisabled) return;
+        if (casterState == null || casterState.IsCombatDisabled)
+            return;
 
         VFXManager.Instance.PlayEffect("HarvestSlash", casterState.Position);
         float totalTheoreticalDamage = 0f;
@@ -23,20 +24,41 @@ public sealed class HarvestSkill : IBattleSkill
         foreach (BattleRuntimeUnit unitView in context.Units)
         {
             BattleUnitCombatState targetState = unitView?.State;
-            if (!BattleFieldSnapshot.IsValidEnemyTarget(casterState, targetState)) continue;
+            if (!BattleFieldSnapshot.IsValidEnemyTarget(casterState, targetState))
+                continue;
 
             if (Vector3.Distance(casterState.Position, targetState.Position) <= AreaRadius)
             {
                 float damageAmount = casterState.Attack * 1.5f;
                 totalTheoreticalDamage += damageAmount;
 
-                effects.DealDamage(new BattleDamageRequest { Source = casterState, Target = targetState, Amount = damageAmount, SourceKind = BattleEffectSourceKind.Skill, DamageKind = BattleDamageKind.Area, SkillId = SkillId, IsSkill = true, IsArea = true });
+                effects.DealDamage(
+                    new BattleDamageRequest
+                    {
+                        Source = casterState,
+                        Target = targetState,
+                        Amount = damageAmount,
+                        SourceKind = BattleEffectSourceKind.Skill,
+                        DamageKind = BattleDamageKind.Area,
+                        SkillId = SkillId,
+                        IsSkill = true,
+                        IsArea = true,
+                    }
+                );
             }
         }
 
         if (totalTheoreticalDamage > 0f)
         {
-            effects.Heal(new BattleHealRequest { Source = casterState, Target = casterState, Amount = totalTheoreticalDamage * 0.3f, SourceKind = BattleEffectSourceKind.Skill });
+            effects.Heal(
+                new BattleHealRequest
+                {
+                    Source = casterState,
+                    Target = casterState,
+                    Amount = totalTheoreticalDamage * 0.3f,
+                    SourceKind = BattleEffectSourceKind.Skill,
+                }
+            );
         }
     }
 }

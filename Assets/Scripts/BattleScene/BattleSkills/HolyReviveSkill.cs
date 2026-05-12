@@ -12,10 +12,12 @@ public sealed class HolyReviveSkill : IBattleSkill
 
     public bool CanActivate(in BattleEffectContext context)
     {
-        if (context.Actor == null) return false;
+        if (context.Actor == null)
+            return false;
         foreach (var unit in context.Units)
         {
-            if (unit != null && unit.State.IsCombatDisabled && unit.TeamId == context.Actor.TeamId) return true;
+            if (unit != null && unit.State.IsCombatDisabled && unit.TeamId == context.Actor.TeamId)
+                return true;
         }
         return false;
     }
@@ -23,7 +25,8 @@ public sealed class HolyReviveSkill : IBattleSkill
     public void Activate(in BattleEffectContext context, IBattleEffectSink effects)
     {
         BattleUnitCombatState casterState = context.Actor?.State;
-        if (casterState == null) return;
+        if (casterState == null)
+            return;
 
         BattleRuntimeUnit deadAlly = null;
         foreach (var unit in context.Units)

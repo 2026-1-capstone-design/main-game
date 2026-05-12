@@ -53,7 +53,6 @@ public sealed class BattleCombatSystem
                 new MagicExplosionSkill(),
                 new RetributionSkill(),
                 new SubmersionSkill(),
-
                 new CurseSkill(),
                 new GlyphOfCounterattackSkill(),
                 new NobleSacrificeSkill(),
@@ -154,7 +153,13 @@ public sealed class BattleCombatSystem
                 float windUpDelay = attacker.Snapshot.WeaponType == WeaponType.bow ? 1.0f : 0.5f;
 
                 // 평타 전용 발사 API 호출
-                BattleSimulationManager.Instance.LaunchBasicProjectile(damageRequest, startPos, fireDirection, attacker.Snapshot.WeaponType, windUpDelay);
+                BattleSimulationManager.Instance.LaunchBasicProjectile(
+                    damageRequest,
+                    startPos,
+                    fireDirection,
+                    attacker.Snapshot.WeaponType,
+                    windUpDelay
+                );
             }
             else
             {

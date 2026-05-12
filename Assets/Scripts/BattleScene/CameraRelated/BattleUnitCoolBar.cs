@@ -1,6 +1,6 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using System.Collections.Generic;
 
 [System.Serializable]
 public struct StatusIconData
@@ -12,15 +12,24 @@ public struct StatusIconData
 public class BattleUnitCoolBar : MonoBehaviour
 {
     [Header("UI References")]
-    [SerializeField] private Image AttackCoolBarFillImage; // 기본 공격 쿨다운 바[cite: 16]
-    [SerializeField] private Image SkillCoolBarFillImage;
+    [SerializeField]
+    private Image AttackCoolBarFillImage; // 기본 공격 쿨다운 바[cite: 16]
+
+    [SerializeField]
+    private Image SkillCoolBarFillImage;
 
     [Header("Status (Buff/Debuff) UI")]
-    [SerializeField] private Transform statusContainer; // 아이콘들이 정렬될 부모 (Horizontal Layout Group 추천)
-    [SerializeField] private BattleStatusIconUI statusIconPrefab; // 방금 만든 아이콘 프리팹
-    [SerializeField] private int maxStatusIcons = 10; // 최대 표시할 버프 개수
-    [SerializeField] private List<StatusIconData> statusIconDatabase; // 에디터에서 상태별 이미지 등록
+    [SerializeField]
+    private Transform statusContainer; // 아이콘들이 정렬될 부모 (Horizontal Layout Group 추천)
 
+    [SerializeField]
+    private BattleStatusIconUI statusIconPrefab; // 방금 만든 아이콘 프리팹
+
+    [SerializeField]
+    private int maxStatusIcons = 10; // 최대 표시할 버프 개수
+
+    [SerializeField]
+    private List<StatusIconData> statusIconDatabase; // 에디터에서 상태별 이미지 등록
 
     private BattleUnitCombatState _targetState;
     private bool _isInitialized = false;
@@ -58,9 +67,12 @@ public class BattleUnitCoolBar : MonoBehaviour
         // 전투 불능 상태면 바를 모두 비워둡니다.
         if (_targetState.IsCombatDisabled)
         {
-            if (AttackCoolBarFillImage != null) AttackCoolBarFillImage.fillAmount = 0f;
-            if (SkillCoolBarFillImage != null) SkillCoolBarFillImage.fillAmount = 0f;
-            foreach (var icon in _statusIconPool) icon.Hide();
+            if (AttackCoolBarFillImage != null)
+                AttackCoolBarFillImage.fillAmount = 0f;
+            if (SkillCoolBarFillImage != null)
+                SkillCoolBarFillImage.fillAmount = 0f;
+            foreach (var icon in _statusIconPool)
+                icon.Hide();
             return;
         }
 
@@ -91,7 +103,6 @@ public class BattleUnitCoolBar : MonoBehaviour
         // ── 3. 상태 이상(버프/디버프) 처리 추가 ──────────────────────────
         UpdateStatusIcons();
     }
-
 
     private void UpdateStatusIcons()
     {

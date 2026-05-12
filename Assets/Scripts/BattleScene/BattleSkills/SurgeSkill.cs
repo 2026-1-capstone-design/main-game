@@ -10,7 +10,8 @@ public sealed class SurgeSkill : IBattleSkill
     public float CastRange => 20f;
     public float AreaRadius => 0f;
 
-    public bool CanActivate(in BattleEffectContext context) => context.Actor != null && context.Actor.PlannedTargetEnemy != null;
+    public bool CanActivate(in BattleEffectContext context) =>
+        context.Actor != null && context.Actor.PlannedTargetEnemy != null;
 
     public void Activate(in BattleEffectContext context, IBattleEffectSink effects)
     {
@@ -19,7 +20,8 @@ public sealed class SurgeSkill : IBattleSkill
         BattleRuntimeUnit targetRuntime = context.PrimaryTarget;
         BattleUnitCombatState targetState = targetRuntime?.State;
 
-        if (casterState == null || targetState == null || targetState.IsCombatDisabled) return;
+        if (casterState == null || targetState == null || targetState.IsCombatDisabled)
+            return;
 
         effects.Teleport(casterState, targetState.Position);
         effects.RosterMutations.DisableCommandAndSkill(casterRuntime, 1.0f);
@@ -29,19 +31,48 @@ public sealed class SurgeSkill : IBattleSkill
             float delay = i * 0.3f;
             bool isLastHit = (i == 2);
 
-            effects.ScheduleEffect(delay, casterRuntime, targetRuntime, context, (ctx, sink) =>
-            {
-                if (casterState.IsCombatDisabled || targetState.IsCombatDisabled) return;
-
-                sink.DealDamage(new BattleDamageRequest { Source = casterState, Target = targetState, Amount = casterState.Attack * 0.8f, SourceKind = BattleEffectSourceKind.Skill, DamageKind = BattleDamageKind.Direct, SkillId = SkillId, IsSkill = true });
-                VFXManager.Instance.PlayEffect("SurgeSlash", targetState.Position);
-
-                if (isLastHit)
+            effects.ScheduleEffect(
+                delay,
+                casterRuntime,
+                targetRuntime,
+                context,
+                (ctx, sink) =>
                 {
-                    sink.ApplyStatus(new BattleStatusRequest { Source = casterState, Target = targetState, Type = BattleStatusType.Stun, Level = 1, Duration = 2f, IsDebuff = true, IsDispelAllowed = true });
-                    VFXManager.Instance.PlayEffect("SurgeStun", targetState.Position);
+                    if (casterState.IsCombatDisabled || targetState.IsCombatDisabled)
+                        return;
+
+                    sink.DealDamage(
+                        new BattleDamageRequest
+                        {
+                            Source = casterState,
+                            Target = targetState,
+                            Amount = casterState.Attack * 0.8f,
+                            SourceKind = BattleEffectSourceKind.Skill,
+                            DamageKind = BattleDamageKind.Direct,
+                            SkillId = SkillId,
+                            IsSkill = true,
+                        }
+                    );
+                    VFXManager.Instance.PlayEffect("SurgeSlash", targetState.Position);
+
+                    if (isLastHit)
+                    {
+                        sink.ApplyStatus(
+                            new BattleStatusRequest
+                            {
+                                Source = casterState,
+                                Target = targetState,
+                                Type = BattleStatusType.Stun,
+                                Level = 1,
+                                Duration = 2f,
+                                IsDebuff = true,
+                                IsDispelAllowed = true,
+                            }
+                        );
+                        VFXManager.Instance.PlayEffect("SurgeStun", targetState.Position);
+                    }
                 }
-            });
+            );
         }
     }
 }

@@ -9,7 +9,8 @@ public enum BuffType
     AttackSpeed = 2,
     AttackDamage = 3,
     RedudeDamage = 4,
-    Untargetable,       //지정 불가
+    Untargetable, //지정 불가
+
     //부정 버프
     BleedDamage,
     Taunt,
@@ -65,12 +66,10 @@ public sealed class BattleSimulationManager : MonoBehaviour
     private readonly BattleDamageLifecycle _damageLifecycle = new BattleDamageLifecycle();
     private readonly BattleRosterMutationSystem _rosterMutationSystem = new BattleRosterMutationSystem();
 
-
     public BattleProjectileManager projectileManager;
-    private readonly BattleProjectileSystem _projectileSystem = new BattleProjectileSystem();   //투사체 시스템
+    private readonly BattleProjectileSystem _projectileSystem = new BattleProjectileSystem(); //투사체 시스템
 
-    public BattleTextManager _battleTextManager = new BattleTextManager();    //텍스트 메시지 매니저
-
+    public BattleTextManager _battleTextManager = new BattleTextManager(); //텍스트 메시지 매니저
 
     private BattleEffectSystem _effectSystem;
     private BattleCombatSystem _combatSystem;
@@ -201,7 +200,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
         {
             _projectileSystem.Configure(_effectSystem, projectileManager.ProjectileRoot);
         }
-        if(_battleTextManager != null)
+        if (_battleTextManager != null)
         {
             _battleTextManager.Initialize(_effectSystem);
         }
@@ -441,23 +440,39 @@ public sealed class BattleSimulationManager : MonoBehaviour
         CurrentSnapshot = null;
     }
 
-
     // 평타 전용
-    public void LaunchBasicProjectile(BattleDamageRequest request, Vector3 startPos, Vector3 direction, WeaponType weaponType, float delay = 0f)
+    public void LaunchBasicProjectile(
+        BattleDamageRequest request,
+        Vector3 startPos,
+        Vector3 direction,
+        WeaponType weaponType,
+        float delay = 0f
+    )
     {
-        if (projectileManager == null) return;
+        if (projectileManager == null)
+            return;
 
-        GameObject prefab = (weaponType == WeaponType.staff)
-            ? projectileManager.NormalMagicPrefab
-            : projectileManager.NormalArrowPrefab;
+        GameObject prefab =
+            (weaponType == WeaponType.staff)
+                ? projectileManager.NormalMagicPrefab
+                : projectileManager.NormalArrowPrefab;
 
         _projectileSystem.Launch(request, startPos, direction, 10f, prefab, delay);
     }
 
     // 스킬 전용 (string ID 사용)
-    public void LaunchCustomProjectile(BattleDamageRequest request, Vector3 startPos, Vector3 direction, float speed, string projectileId, float delay = 0f, Action<BattleUnitCombatState, Vector3, IBattleEffectSink> onHit = null)
+    public void LaunchCustomProjectile(
+        BattleDamageRequest request,
+        Vector3 startPos,
+        Vector3 direction,
+        float speed,
+        string projectileId,
+        float delay = 0f,
+        Action<BattleUnitCombatState, Vector3, IBattleEffectSink> onHit = null
+    )
     {
-        if (projectileManager == null) return;
+        if (projectileManager == null)
+            return;
 
         GameObject customPrefab = projectileManager.GetCustomPrefab(projectileId);
         if (customPrefab != null)
@@ -465,5 +480,4 @@ public sealed class BattleSimulationManager : MonoBehaviour
             _projectileSystem.Launch(request, startPos, direction, speed, customPrefab, delay, onHit);
         }
     }
-
 }

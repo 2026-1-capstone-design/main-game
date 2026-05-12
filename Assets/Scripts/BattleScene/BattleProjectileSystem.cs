@@ -15,7 +15,15 @@ public class BattleProjectileState
 
     public Action<BattleUnitCombatState, Vector3, IBattleEffectSink> OnHitCallback { get; }
 
-    public BattleProjectileState(BattleDamageRequest request, Vector3 startPos, Vector3 direction, float speed, GameObject prefab, float delay, Action<BattleUnitCombatState, Vector3, IBattleEffectSink> onHitCallback = null)
+    public BattleProjectileState(
+        BattleDamageRequest request,
+        Vector3 startPos,
+        Vector3 direction,
+        float speed,
+        GameObject prefab,
+        float delay,
+        Action<BattleUnitCombatState, Vector3, IBattleEffectSink> onHitCallback = null
+    )
     {
         DamageRequest = request;
         CurrentPosition = startPos;
@@ -29,7 +37,12 @@ public class BattleProjectileState
     public void SpawnVisual(Transform root)
     {
         if (_prefabToSpawn != null && VisualObject == null)
-            VisualObject = GameObject.Instantiate(_prefabToSpawn, CurrentPosition, Quaternion.LookRotation(Direction), root);
+            VisualObject = GameObject.Instantiate(
+                _prefabToSpawn,
+                CurrentPosition,
+                Quaternion.LookRotation(Direction),
+                root
+            );
     }
 
     public void TickMove(float deltaTime)
@@ -41,7 +54,8 @@ public class BattleProjectileState
 
     public void Destroy()
     {
-        if (VisualObject != null) GameObject.Destroy(VisualObject);
+        if (VisualObject != null)
+            GameObject.Destroy(VisualObject);
     }
 }
 
@@ -59,14 +73,24 @@ public class BattleProjectileSystem
 
     public void Clear()
     {
-        foreach (var p in _projectiles) p.Destroy();
+        foreach (var p in _projectiles)
+            p.Destroy();
         _projectiles.Clear();
     }
 
-    public void Launch(BattleDamageRequest request, Vector3 startPos, Vector3 direction, float speed, GameObject prefab, float delay, Action<BattleUnitCombatState, Vector3, IBattleEffectSink> onHitCallback = null)
+    public void Launch(
+        BattleDamageRequest request,
+        Vector3 startPos,
+        Vector3 direction,
+        float speed,
+        GameObject prefab,
+        float delay,
+        Action<BattleUnitCombatState, Vector3, IBattleEffectSink> onHitCallback = null
+    )
     {
         var proj = new BattleProjectileState(request, startPos, direction, speed, prefab, delay, onHitCallback);
-        if (delay <= 0f) proj.SpawnVisual(_projectileRoot);
+        if (delay <= 0f)
+            proj.SpawnVisual(_projectileRoot);
         _projectiles.Add(proj);
     }
 
@@ -79,8 +103,10 @@ public class BattleProjectileSystem
             if (proj.Delay > 0f)
             {
                 proj.Delay -= deltaTime;
-                if (proj.Delay <= 0f) proj.SpawnVisual(_projectileRoot);
-                else continue;
+                if (proj.Delay <= 0f)
+                    proj.SpawnVisual(_projectileRoot);
+                else
+                    continue;
             }
 
             proj.TickMove(deltaTime);

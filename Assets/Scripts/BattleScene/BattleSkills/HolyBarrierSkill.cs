@@ -15,18 +15,25 @@ public sealed class HolyBarrierSkill : IBattleSkill
     public void Activate(in BattleEffectContext context, IBattleEffectSink effects)
     {
         BattleRuntimeUnit caster = context.Actor;
-        if (caster == null) return;
+        if (caster == null)
+            return;
 
         effects.GrantTemporaryArtifact(caster, new HolyBarrierArtifact(caster), 10f, context);
-
 
         GameObject activeVfx = VFXManager.Instance.PlayEffect("HolyBarrierShield", caster.Position);
 
         // 3. 10초 뒤 이펙트 종료
-        effects.ScheduleEffect(10f, caster, caster, context, (ctx, sink) =>
-        {
-            if (activeVfx != null) VFXManager.Instance.StopEffect(activeVfx);
-        });
+        effects.ScheduleEffect(
+            10f,
+            caster,
+            caster,
+            context,
+            (ctx, sink) =>
+            {
+                if (activeVfx != null)
+                    VFXManager.Instance.StopEffect(activeVfx);
+            }
+        );
     }
 
     private class HolyBarrierArtifact : IDamageReactionArtifact
@@ -34,7 +41,10 @@ public sealed class HolyBarrierSkill : IBattleSkill
         public ArtifactId ArtifactId => ArtifactId.None;
         private readonly BattleRuntimeUnit _ownerView;
 
-        public HolyBarrierArtifact(BattleRuntimeUnit ownerView) { _ownerView = ownerView; }
+        public HolyBarrierArtifact(BattleRuntimeUnit ownerView)
+        {
+            _ownerView = ownerView;
+        }
 
         public void Initialize(BattleUnitCombatState owner, in BattleEffectContext context) { }
 

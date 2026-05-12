@@ -16,15 +16,23 @@ public sealed class NobleSacrificeSkill : IBattleSkill
     {
         BattleRuntimeUnit caster = context.Actor;
         BattleRuntimeUnit ally = context.PrimaryTarget;
-        if (caster == null || ally == null) return;
+        if (caster == null || ally == null)
+            return;
 
         effects.GrantTemporaryArtifact(ally, new SacrificeArtifact(caster.State), 10f, context);
         GameObject activeVfx = VFXManager.Instance.PlayEffect("SacrificeLink", ally.Position);
 
-        effects.ScheduleEffect(10f, caster, ally, context, (ctx, sink) =>
-        {
-            if (activeVfx != null) VFXManager.Instance.StopEffect(activeVfx);
-        });
+        effects.ScheduleEffect(
+            10f,
+            caster,
+            ally,
+            context,
+            (ctx, sink) =>
+            {
+                if (activeVfx != null)
+                    VFXManager.Instance.StopEffect(activeVfx);
+            }
+        );
     }
 
     private class SacrificeArtifact : IDamageModifierArtifact
@@ -32,7 +40,11 @@ public sealed class NobleSacrificeSkill : IBattleSkill
         public ArtifactId ArtifactId => ArtifactId.None;
         private readonly BattleUnitCombatState _protector;
 
-        public SacrificeArtifact(BattleUnitCombatState protector) { _protector = protector; }
+        public SacrificeArtifact(BattleUnitCombatState protector)
+        {
+            _protector = protector;
+        }
+
         public void Initialize(BattleUnitCombatState owner, in BattleEffectContext context) { }
 
         public void ModifyDamage(BattleUnitCombatState owner, ref BattleDamageRequest request)

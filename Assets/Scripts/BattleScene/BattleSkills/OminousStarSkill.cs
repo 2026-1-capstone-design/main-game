@@ -16,11 +16,45 @@ public sealed class OminousStarSkill : IBattleSkill
     public void Activate(in BattleEffectContext context, IBattleEffectSink effects)
     {
         BattleUnitCombatState caster = context.Actor?.State;
-        if (caster == null || caster.IsCombatDisabled) return;
+        if (caster == null || caster.IsCombatDisabled)
+            return;
 
-        effects.ApplyStatus(new BattleStatusRequest { Source = caster, Target = caster, Type = BattleStatusType.DamageTakenPercent, Level = 20, Duration = 10f, IsDebuff = true, IsDispelAllowed = true });
-        effects.ApplyStatus(new BattleStatusRequest { Source = caster, Target = caster, Type = BattleStatusType.MoveSpeed, Level = 30, Duration = 10f, IsDebuff = false, IsDispelAllowed = true });
-        effects.ApplyStatus(new BattleStatusRequest { Source = caster, Target = caster, Type = BattleStatusType.AttackDamage, Level = 30, Duration = 10f, IsDebuff = false, IsDispelAllowed = true });
+        effects.ApplyStatus(
+            new BattleStatusRequest
+            {
+                Source = caster,
+                Target = caster,
+                Type = BattleStatusType.DamageTakenPercent,
+                Level = 20,
+                Duration = 10f,
+                IsDebuff = true,
+                IsDispelAllowed = true,
+            }
+        );
+        effects.ApplyStatus(
+            new BattleStatusRequest
+            {
+                Source = caster,
+                Target = caster,
+                Type = BattleStatusType.MoveSpeed,
+                Level = 30,
+                Duration = 10f,
+                IsDebuff = false,
+                IsDispelAllowed = true,
+            }
+        );
+        effects.ApplyStatus(
+            new BattleStatusRequest
+            {
+                Source = caster,
+                Target = caster,
+                Type = BattleStatusType.AttackDamage,
+                Level = 30,
+                Duration = 10f,
+                IsDebuff = false,
+                IsDispelAllowed = true,
+            }
+        );
 
         VFXManager.Instance.PlayEffect("OminousStarBuff", caster.Position);
     }

@@ -11,25 +11,29 @@ public sealed class HuntStartSkill : IBattleSkill
     public float CastRange => 25f;
     public float AreaRadius => 0f;
 
-    public bool CanActivate(in BattleEffectContext context) => context.Actor != null && context.Actor.PlannedTargetEnemy != null;
+    public bool CanActivate(in BattleEffectContext context) =>
+        context.Actor != null && context.Actor.PlannedTargetEnemy != null;
 
     public void Activate(in BattleEffectContext context, IBattleEffectSink effects)
     {
         BattleUnitCombatState caster = context.Actor?.State;
         BattleUnitCombatState target = context.PrimaryTarget?.State;
 
-        if (caster == null || target == null || target.IsCombatDisabled) return;
+        if (caster == null || target == null || target.IsCombatDisabled)
+            return;
 
-        effects.ApplyStatus(new BattleStatusRequest
-        {
-            Source = caster,
-            Target = target,
-            Type = BattleStatusType.DamageTakenPercent,
-            Level = 25,
-            Duration = 8f,
-            IsDebuff = true,
-            IsDispelAllowed = true
-        });
+        effects.ApplyStatus(
+            new BattleStatusRequest
+            {
+                Source = caster,
+                Target = target,
+                Type = BattleStatusType.DamageTakenPercent,
+                Level = 25,
+                Duration = 8f,
+                IsDebuff = true,
+                IsDispelAllowed = true,
+            }
+        );
 
         VFXManager.Instance.PlayEffect("MarkOfHunt", target.Position + Vector3.up * 2f);
     }

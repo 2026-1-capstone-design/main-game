@@ -16,15 +16,18 @@ public class VFXManager : MonoBehaviour
     public static VFXManager Instance { get; private set; }
 
     [Header("Visual Effects (VFX)")]
-    [SerializeField] private List<VisualEffectData> effects;
+    [SerializeField]
+    private List<VisualEffectData> effects;
 
     private Dictionary<string, GameObject> _effectDict;
 
     private void Awake()
     {
         // 싱글톤 초기화
-        if (Instance == null) Instance = this;
-        else Destroy(gameObject);
+        if (Instance == null)
+            Instance = this;
+        else
+            Destroy(gameObject);
 
         // 딕셔너리 세팅
         _effectDict = new Dictionary<string, GameObject>();
@@ -41,7 +44,8 @@ public class VFXManager : MonoBehaviour
     // 🌟 수정됨: 단발성/고정 위치 이펙트 생성 (생성된 GameObject를 반환하도록 변경)
     public GameObject PlayEffect(string effectId, Vector3 position, Quaternion rotation = default)
     {
-        if (rotation == default) rotation = Quaternion.identity;
+        if (rotation == default)
+            rotation = Quaternion.identity;
 
         if (_effectDict != null && _effectDict.TryGetValue(effectId, out GameObject prefab))
         {

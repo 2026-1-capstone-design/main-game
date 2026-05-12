@@ -15,20 +15,31 @@ public sealed class OblivionSkill : IBattleSkill
     public void Activate(in BattleEffectContext context, IBattleEffectSink effects)
     {
         BattleRuntimeUnit caster = context.Actor;
-        if (caster == null) return;
+        if (caster == null)
+            return;
 
         foreach (var unit in context.Units)
         {
-            if (BattleFieldSnapshot.IsValidEnemyTarget(caster.State, unit?.State) && Vector3.Distance(caster.Position, unit.Position) <= AreaRadius)
+            if (
+                BattleFieldSnapshot.IsValidEnemyTarget(caster.State, unit?.State)
+                && Vector3.Distance(caster.Position, unit.Position) <= AreaRadius
+            )
             {
                 effects.GrantTemporaryArtifact(unit, new OblivionArtifact(), 10f, context);
 
                 GameObject activeVfx = VFXManager.Instance.PlayEffect("OblivionDebuff", unit.Position);
 
-                effects.ScheduleEffect(10f, caster, unit, context, (ctx, sink) =>
-                {
-                    if (activeVfx != null) VFXManager.Instance.StopEffect(activeVfx);
-                });
+                effects.ScheduleEffect(
+                    10f,
+                    caster,
+                    unit,
+                    context,
+                    (ctx, sink) =>
+                    {
+                        if (activeVfx != null)
+                            VFXManager.Instance.StopEffect(activeVfx);
+                    }
+                );
             }
         }
     }

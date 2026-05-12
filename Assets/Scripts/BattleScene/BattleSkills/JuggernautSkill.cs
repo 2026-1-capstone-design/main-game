@@ -10,7 +10,8 @@ public sealed class JuggernautSkill : IBattleSkill
     public float CastRange => 30f;
     public float AreaRadius => 0f;
 
-    public bool CanActivate(in BattleEffectContext context) => context.Actor != null && context.Actor.PlannedTargetEnemy != null;
+    public bool CanActivate(in BattleEffectContext context) =>
+        context.Actor != null && context.Actor.PlannedTargetEnemy != null;
 
     public void Activate(in BattleEffectContext context, IBattleEffectSink effects)
     {
@@ -19,7 +20,8 @@ public sealed class JuggernautSkill : IBattleSkill
         BattleRuntimeUnit targetRuntime = context.PrimaryTarget;
         BattleUnitCombatState targetState = targetRuntime?.State;
 
-        if (casterState == null || targetState == null || targetState.IsCombatDisabled) return;
+        if (casterState == null || targetState == null || targetState.IsCombatDisabled)
+            return;
 
         float distance = Vector3.Distance(casterState.Position, targetState.Position);
         float damageMultiplier = 1f + (distance * 0.1f);
@@ -27,6 +29,17 @@ public sealed class JuggernautSkill : IBattleSkill
         effects.Teleport(casterState, targetState.Position);
         VFXManager.Instance.PlayEffect("JuggernautImpact", targetState.Position);
 
-        effects.DealDamage(new BattleDamageRequest { Source = casterState, Target = targetState, Amount = casterState.Attack * damageMultiplier, SourceKind = BattleEffectSourceKind.Skill, DamageKind = BattleDamageKind.Direct, SkillId = SkillId, IsSkill = true });
+        effects.DealDamage(
+            new BattleDamageRequest
+            {
+                Source = casterState,
+                Target = targetState,
+                Amount = casterState.Attack * damageMultiplier,
+                SourceKind = BattleEffectSourceKind.Skill,
+                DamageKind = BattleDamageKind.Direct,
+                SkillId = SkillId,
+                IsSkill = true,
+            }
+        );
     }
 }

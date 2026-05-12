@@ -15,16 +15,24 @@ public sealed class MagicExplosionSkill : IBattleSkill
     public void Activate(in BattleEffectContext context, IBattleEffectSink effects)
     {
         BattleRuntimeUnit caster = context.Actor;
-        if (caster == null) return;
+        if (caster == null)
+            return;
 
         effects.GrantTemporaryArtifact(caster, new MagicExplosionArtifact(AreaRadius, context.Units), 10f, context);
 
         GameObject activeVfx = VFXManager.Instance.PlayEffect("MagicExplosionBuff", caster.Position);
 
-        effects.ScheduleEffect(10f, caster, caster, context, (ctx, sink) =>
-        {
-            if (activeVfx != null) VFXManager.Instance.StopEffect(activeVfx);
-        });
+        effects.ScheduleEffect(
+            10f,
+            caster,
+            caster,
+            context,
+            (ctx, sink) =>
+            {
+                if (activeVfx != null)
+                    VFXManager.Instance.StopEffect(activeVfx);
+            }
+        );
     }
 
     private class MagicExplosionArtifact : IDamageReactionArtifact
@@ -50,10 +58,25 @@ public sealed class MagicExplosionSkill : IBattleSkill
 
                 foreach (BattleRuntimeUnit unitView in _units)
                 {
-                    if (unitView.State == result.Target || !BattleFieldSnapshot.IsValidEnemyTarget(owner, unitView.State)) continue;
+                    if (
+                        unitView.State == result.Target
+                        || !BattleFieldSnapshot.IsValidEnemyTarget(owner, unitView.State)
+                    )
+                        continue;
 
                     // 타겟 주변 거리 계산 후 데미지
-                    effects.DealDamage(new BattleDamageRequest { Source = owner, Target = unitView.State, Amount = owner.Attack * 0.5f, SourceKind = BattleEffectSourceKind.Skill, DamageKind = BattleDamageKind.Area, IsArea = true, IsSkill = true });
+                    effects.DealDamage(
+                        new BattleDamageRequest
+                        {
+                            Source = owner,
+                            Target = unitView.State,
+                            Amount = owner.Attack * 0.5f,
+                            SourceKind = BattleEffectSourceKind.Skill,
+                            DamageKind = BattleDamageKind.Area,
+                            IsArea = true,
+                            IsSkill = true,
+                        }
+                    );
                 }
             }
         }

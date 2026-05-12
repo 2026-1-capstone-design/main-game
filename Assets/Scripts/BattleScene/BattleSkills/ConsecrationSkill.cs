@@ -16,13 +16,39 @@ public sealed class ConsecrationSkill : IBattleSkill
     public void Activate(in BattleEffectContext context, IBattleEffectSink effects)
     {
         BattleUnitCombatState caster = context.Actor?.State;
-        if (caster == null || caster.IsCombatDisabled) return;
+        if (caster == null || caster.IsCombatDisabled)
+            return;
 
-        effects.Dispel(caster, new BattleDispelFilter { RemoveDebuffs = true, RemoveBuffs = false, DispelOnlyAllowed = true });
+        effects.Dispel(
+            caster,
+            new BattleDispelFilter
+            {
+                RemoveDebuffs = true,
+                RemoveBuffs = false,
+                DispelOnlyAllowed = true,
+            }
+        );
 
-        effects.Heal(new BattleHealRequest { Source = caster, Target = caster, Amount = caster.MaxHealth * 0.05f, SourceKind = BattleEffectSourceKind.Skill });
+        effects.Heal(
+            new BattleHealRequest
+            {
+                Source = caster,
+                Target = caster,
+                Amount = caster.MaxHealth * 0.05f,
+                SourceKind = BattleEffectSourceKind.Skill,
+            }
+        );
 
-        effects.RefreshStatuses(caster, new BattleStatusFilter { IncludeBuffs = true, IncludeDebuffs = false, Type = null }, 10f);
+        effects.RefreshStatuses(
+            caster,
+            new BattleStatusFilter
+            {
+                IncludeBuffs = true,
+                IncludeDebuffs = false,
+                Type = null,
+            },
+            10f
+        );
 
         VFXManager.Instance.PlayEffect("ConsecrationEffect", caster.Position);
     }

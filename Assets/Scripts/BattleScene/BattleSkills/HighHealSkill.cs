@@ -19,17 +19,20 @@ public sealed class HighHealSkill : IBattleSkill
         BattleUnitCombatState caster = context.Actor?.State;
         BattleUnitCombatState target = context.PrimaryTarget?.State;
 
-        if (caster == null || target == null || target.IsCombatDisabled) return;
+        if (caster == null || target == null || target.IsCombatDisabled)
+            return;
 
         float healAmount = target.MaxHealth * 0.10f;
 
-        effects.Heal(new BattleHealRequest
-        {
-            Source = caster,
-            Target = target,
-            Amount = healAmount,
-            SourceKind = BattleEffectSourceKind.Skill
-        });
+        effects.Heal(
+            new BattleHealRequest
+            {
+                Source = caster,
+                Target = target,
+                Amount = healAmount,
+                SourceKind = BattleEffectSourceKind.Skill,
+            }
+        );
 
         VFXManager.Instance.PlayEffect("HighHealEffect", target.Position);
     }

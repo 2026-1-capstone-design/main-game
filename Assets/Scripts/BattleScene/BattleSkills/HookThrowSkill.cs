@@ -11,17 +11,30 @@ public sealed class HookThrowSkill : IBattleSkill
     public float CastRange => 20f;
     public float AreaRadius => 0f;
 
-    public bool CanActivate(in BattleEffectContext context) => context.Actor != null && context.Actor.PlannedTargetEnemy != null;
+    public bool CanActivate(in BattleEffectContext context) =>
+        context.Actor != null && context.Actor.PlannedTargetEnemy != null;
 
     public void Activate(in BattleEffectContext context, IBattleEffectSink effects)
     {
         BattleUnitCombatState caster = context.Actor?.State;
         BattleUnitCombatState target = context.PrimaryTarget?.State;
 
-        if (caster == null || target == null || target.IsCombatDisabled) return;
+        if (caster == null || target == null || target.IsCombatDisabled)
+            return;
 
         effects.PullTo(caster, target, 1.5f);
-        effects.ApplyStatus(new BattleStatusRequest { Source = caster, Target = target, Type = BattleStatusType.Slow, Level = 50, Duration = 2f, IsDebuff = true, IsDispelAllowed = true });
+        effects.ApplyStatus(
+            new BattleStatusRequest
+            {
+                Source = caster,
+                Target = target,
+                Type = BattleStatusType.Slow,
+                Level = 50,
+                Duration = 2f,
+                IsDebuff = true,
+                IsDispelAllowed = true,
+            }
+        );
 
         VFXManager.Instance.PlayEffect("HookEffect", target.Position);
     }

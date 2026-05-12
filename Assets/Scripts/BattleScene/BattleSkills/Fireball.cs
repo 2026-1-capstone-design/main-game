@@ -23,7 +23,8 @@ public sealed class FireballSkill : IBattleSkill
         BattleUnitCombatState casterState = casterRuntime != null ? casterRuntime.State : null;
         BattleUnitCombatState targetState = context.PrimaryTarget != null ? context.PrimaryTarget.State : null;
 
-        if (casterRuntime == null || targetState == null) return;
+        if (casterRuntime == null || targetState == null)
+            return;
 
         // 발사 위치 및 방향 계산
         Vector3 startPos = casterRuntime.Position + Vector3.up;
@@ -33,7 +34,8 @@ public sealed class FireballSkill : IBattleSkill
         // 적중시 효과
         Action<BattleUnitCombatState, Vector3, IBattleEffectSink> onHitEffect = (hitTarget, hitPos, sink) =>
         {
-            if (hitTarget == null || hitTarget.IsCombatDisabled) return;
+            if (hitTarget == null || hitTarget.IsCombatDisabled)
+                return;
 
             // 기존 로직과 동일하게 2.5배의 큰 데미지를 줍니다
             sink?.DealDamage(
@@ -53,19 +55,17 @@ public sealed class FireballSkill : IBattleSkill
             VFXManager.Instance.PlayEffect("fire_explosion", hitPos);
         };
 
-
         float windUpDelay = casterRuntime.GetSkillAnimationDuration() * 0.5f; // 애니메이션 길이에 비례한 선딜레이 설정
-
 
         //만든 효과를 담아서 발사.
         BattleSimulationManager.Instance.LaunchCustomProjectile(
             new BattleDamageRequest { Target = targetState }, // 타겟 추적용 Request
             startPos,
             direction,
-            5f,         // 파이어볼 투사체 속도
-            "fireball",  // 🌟 에디터에서 ProjectileManager에 등록해둔 ID
+            5f, // 파이어볼 투사체 속도
+            "fireball", // 🌟 에디터에서 ProjectileManager에 등록해둔 ID
             windUpDelay, // 스킬 선딜레이
-            onHitEffect  // 🌟 스킬 효과를 투사체에 쥐여줍니다!
+            onHitEffect // 🌟 스킬 효과를 투사체에 쥐여줍니다!
         );
     }
 }

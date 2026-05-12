@@ -12,12 +12,18 @@ public struct CustomProjectileData
 public class BattleProjectileManager : MonoBehaviour
 {
     [Header("Base Resources")]
-    [SerializeField] private Transform projectileRoot;
-    [SerializeField] private GameObject normalArrowPrefab;
-    [SerializeField] private GameObject normalMagicPrefab;
+    [SerializeField]
+    private Transform projectileRoot;
+
+    [SerializeField]
+    private GameObject normalArrowPrefab;
+
+    [SerializeField]
+    private GameObject normalMagicPrefab;
 
     [Header("Custom Projectiles")]
-    [SerializeField] private List<CustomProjectileData> customProjectiles;
+    [SerializeField]
+    private List<CustomProjectileData> customProjectiles;
 
     private Dictionary<string, GameObject> _projectileDict;
 

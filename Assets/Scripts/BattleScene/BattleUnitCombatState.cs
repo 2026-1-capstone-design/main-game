@@ -73,7 +73,7 @@ public sealed class BattleUnitCombatState
 
     [SerializeField]
     private List<BattleStatusInstance> _statuses = new List<BattleStatusInstance>();
-    public IReadOnlyList<BattleStatusInstance> ActiveStatuses => _statuses;     //통로 뚫기
+    public IReadOnlyList<BattleStatusInstance> ActiveStatuses => _statuses; //통로 뚫기
 
     [NonSerialized]
     private Dictionary<BattleStatusType, int> _statusLevelCache;

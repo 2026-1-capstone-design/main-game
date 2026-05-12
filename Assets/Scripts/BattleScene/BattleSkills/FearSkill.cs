@@ -10,23 +10,32 @@ public sealed class FearSkill : IBattleSkill
     public float CastRange => 20f;
     public float AreaRadius => 0f;
 
-    public bool CanActivate(in BattleEffectContext context) => context.Actor != null && context.Actor.PlannedTargetEnemy != null;
+    public bool CanActivate(in BattleEffectContext context) =>
+        context.Actor != null && context.Actor.PlannedTargetEnemy != null;
 
     public void Activate(in BattleEffectContext context, IBattleEffectSink effects)
     {
         BattleRuntimeUnit caster = context.Actor;
         BattleRuntimeUnit target = context.PrimaryTarget;
 
-        if (caster == null || target == null || target.State.IsCombatDisabled) return;
+        if (caster == null || target == null || target.State.IsCombatDisabled)
+            return;
 
         // 타겟(적)에게 5초짜리 임시 장신구를 강제로 채워버립니다!
         effects.GrantTemporaryArtifact(target, new FearArtifact(caster), 5f, context);
 
         GameObject activeVfx = VFXManager.Instance.PlayEffect("FearDebuff", target.Position);
-        effects.ScheduleEffect(10f, caster, caster, context, (ctx, sink) =>
-        {
-            if (activeVfx != null) VFXManager.Instance.StopEffect(activeVfx);
-        });
+        effects.ScheduleEffect(
+            10f,
+            caster,
+            caster,
+            context,
+            (ctx, sink) =>
+            {
+                if (activeVfx != null)
+                    VFXManager.Instance.StopEffect(activeVfx);
+            }
+        );
     }
 
     private class FearArtifact : IMovementModifierArtifact
@@ -34,7 +43,10 @@ public sealed class FearSkill : IBattleSkill
         public ArtifactId ArtifactId => ArtifactId.None;
         private readonly BattleRuntimeUnit _fearSource; // 나를 도망가게 만든 놈
 
-        public FearArtifact(BattleRuntimeUnit fearSource) { _fearSource = fearSource; }
+        public FearArtifact(BattleRuntimeUnit fearSource)
+        {
+            _fearSource = fearSource;
+        }
 
         public void Initialize(BattleUnitCombatState owner, in BattleEffectContext context) { }
 
@@ -51,6 +63,7 @@ public sealed class FearSkill : IBattleSkill
             }
         }
 
-        public bool CanIgnoreForcedMovement(BattleUnitCombatState owner, in BattleForcedMovementRequest request) => false;
+        public bool CanIgnoreForcedMovement(BattleUnitCombatState owner, in BattleForcedMovementRequest request) =>
+            false;
     }
 }

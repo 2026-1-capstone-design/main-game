@@ -15,14 +15,17 @@ public sealed class MoonlightDanceSkill : IBattleSkill
     public void Activate(in BattleEffectContext context, IBattleEffectSink effects)
     {
         BattleRuntimeUnit caster = context.Actor;
-        if (caster == null) return;
+        if (caster == null)
+            return;
 
         List<BattleRuntimeUnit> validTargets = new List<BattleRuntimeUnit>();
         foreach (var unit in context.Units)
         {
-            if (BattleFieldSnapshot.IsValidEnemyTarget(caster.State, unit?.State)) validTargets.Add(unit);
+            if (BattleFieldSnapshot.IsValidEnemyTarget(caster.State, unit?.State))
+                validTargets.Add(unit);
         }
-        if (validTargets.Count == 0) return;
+        if (validTargets.Count == 0)
+            return;
 
         // 1.5초 동안 절대 타겟으로 잡히지 않는 아티팩트 부여 (유체화 로직 대체)
         effects.GrantTemporaryArtifact(caster, new UntargetableDanceArtifact(), 1.5f, context);
@@ -31,30 +34,59 @@ public sealed class MoonlightDanceSkill : IBattleSkill
         for (int i = 0; i < 3; i++)
         {
             float delay = i * 0.3f;
-            effects.ScheduleEffect(delay, caster, caster, context, (ctx, sink) =>
-            {
-                if (caster.State.IsCombatDisabled) return;
-
-                BattleRuntimeUnit tgt = validTargets[Random.Range(0, validTargets.Count)];
-                if (tgt != null && !tgt.State.IsCombatDisabled)
+            effects.ScheduleEffect(
+                delay,
+                caster,
+                caster,
+                context,
+                (ctx, sink) =>
                 {
-                    sink.Teleport(caster.State, tgt.Position);
-                    sink.DealDamage(new BattleDamageRequest { Source = caster.State, Target = tgt.State, Amount = caster.State.Attack * 1.5f, IsSkill = true });
+                    if (caster.State.IsCombatDisabled)
+                        return;
+
+                    BattleRuntimeUnit tgt = validTargets[Random.Range(0, validTargets.Count)];
+                    if (tgt != null && !tgt.State.IsCombatDisabled)
+                    {
+                        sink.Teleport(caster.State, tgt.Position);
+                        sink.DealDamage(
+                            new BattleDamageRequest
+                            {
+                                Source = caster.State,
+                                Target = tgt.State,
+                                Amount = caster.State.Attack * 1.5f,
+                                IsSkill = true,
+                            }
+                        );
+                    }
                 }
-            });
+            );
         }
 
-        effects.ScheduleEffect(1.5f, caster, caster, context, (ctx, sink) =>
-        {
-            if (activeVfx != null) VFXManager.Instance.StopEffect(activeVfx);
-        });
+        effects.ScheduleEffect(
+            1.5f,
+            caster,
+            caster,
+            context,
+            (ctx, sink) =>
+            {
+                if (activeVfx != null)
+                    VFXManager.Instance.StopEffect(activeVfx);
+            }
+        );
     }
 
     private class UntargetableDanceArtifact : ITargetingModifierArtifact
     {
         public ArtifactId ArtifactId => ArtifactId.None;
+
         public void Initialize(BattleUnitCombatState owner, in BattleEffectContext context) { }
+
         public void ModifyTargetScore(BattleUnitCombatState owner, ref BattleTargetScore score) { }
-        public bool CanBeTargeted(BattleUnitCombatState owner, BattleRuntimeUnit requester, BattleTargetingReason reason) => false;
+
+        public bool CanBeTargeted(
+            BattleUnitCombatState owner,
+            BattleRuntimeUnit requester,
+            BattleTargetingReason reason
+        ) => false;
     }
 }

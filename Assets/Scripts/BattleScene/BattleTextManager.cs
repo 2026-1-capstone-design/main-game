@@ -3,8 +3,11 @@ using UnityEngine;
 public class BattleTextManager : MonoBehaviour
 {
     [Header("Settings")]
-    [SerializeField] private FloatingText textPrefab; // 만들어둔 텍스트 프리팹 연결
-    [SerializeField] private int maxTextCount = 50;   // 화면에 띄울 최대 텍스트 개수
+    [SerializeField]
+    private FloatingText textPrefab; // 만들어둔 텍스트 프리팹 연결
+
+    [SerializeField]
+    private int maxTextCount = 50; // 화면에 띄울 최대 텍스트 개수
 
     // 원형 버퍼(Circular Buffer) 배열
     private FloatingText[] _textPool;
@@ -20,7 +23,6 @@ public class BattleTextManager : MonoBehaviour
             obj.gameObject.SetActive(false); // 일단 꺼둠
             _textPool[i] = obj;
         }
-
     }
 
     public void Initialize(BattleEffectSystem effectSystem)
@@ -31,7 +33,8 @@ public class BattleTextManager : MonoBehaviour
 
     private void HandleDamageText(BattleDamageResult result)
     {
-        if (result.FinalAmount <= 0) return;
+        if (result.FinalAmount <= 0)
+            return;
 
         Vector3 targetPos = result.Target.Position;
 
@@ -47,7 +50,8 @@ public class BattleTextManager : MonoBehaviour
 
     private void HandleHealText(BattleHealResult result)
     {
-        if (result.FinalAmount <= 0) return;
+        if (result.FinalAmount <= 0)
+            return;
 
         Vector3 targetPos = result.Target.Position;
 
@@ -65,7 +69,8 @@ public class BattleTextManager : MonoBehaviour
     {
         Debug.Log(text + "만큼 데미지!");
 
-        if (_textPool == null || _textPool.Length == 0) return;
+        if (_textPool == null || _textPool.Length == 0)
+            return;
 
         FloatingText floatingText = _textPool[_currentIndex];
 

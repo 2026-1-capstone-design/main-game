@@ -16,27 +16,31 @@ public sealed class DarkShroudSkill : IBattleSkill
     public void Activate(in BattleEffectContext context, IBattleEffectSink effects)
     {
         BattleUnitCombatState caster = context.Actor?.State;
-        if (caster == null) return;
+        if (caster == null)
+            return;
 
         VFXManager.Instance.PlayEffect("DarkShroudEffect", caster.Position);
 
         foreach (BattleRuntimeUnit unitView in context.Units)
         {
             BattleUnitCombatState target = unitView?.State;
-            if (!BattleFieldSnapshot.IsValidEnemyTarget(caster, target)) continue;
+            if (!BattleFieldSnapshot.IsValidEnemyTarget(caster, target))
+                continue;
 
             if (Vector3.Distance(caster.Position, target.Position) <= AreaRadius)
             {
-                effects.ApplyStatus(new BattleStatusRequest
-                {
-                    Source = caster,
-                    Target = target,
-                    Type = BattleStatusType.SkillDisabled,
-                    Level = 1,
-                    Duration = 7f,
-                    IsDebuff = true,
-                    IsDispelAllowed = true
-                });
+                effects.ApplyStatus(
+                    new BattleStatusRequest
+                    {
+                        Source = caster,
+                        Target = target,
+                        Type = BattleStatusType.SkillDisabled,
+                        Level = 1,
+                        Duration = 7f,
+                        IsDebuff = true,
+                        IsDispelAllowed = true,
+                    }
+                );
             }
         }
     }

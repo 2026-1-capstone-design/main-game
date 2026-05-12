@@ -15,15 +15,23 @@ public sealed class FanaticalObsessionSkill : IBattleSkill
     public void Activate(in BattleEffectContext context, IBattleEffectSink effects)
     {
         BattleRuntimeUnit caster = context.Actor;
-        if (caster == null) return;
+        if (caster == null)
+            return;
 
         effects.GrantTemporaryArtifact(caster, new ObsessionArtifact(), 15f, context);
         GameObject activeVfx = VFXManager.Instance.PlayEffect("ObsessionBuff", caster.Position);
 
-        effects.ScheduleEffect(15f, caster, caster, context, (ctx, sink) =>
-        {
-            if (activeVfx != null) VFXManager.Instance.StopEffect(activeVfx);
-        });
+        effects.ScheduleEffect(
+            15f,
+            caster,
+            caster,
+            context,
+            (ctx, sink) =>
+            {
+                if (activeVfx != null)
+                    VFXManager.Instance.StopEffect(activeVfx);
+            }
+        );
     }
 
     private class ObsessionArtifact : IPositionHistoryArtifact
@@ -33,7 +41,12 @@ public sealed class FanaticalObsessionSkill : IBattleSkill
 
         public void Initialize(BattleUnitCombatState owner, in BattleEffectContext context) { }
 
-        public void TickWithPositionHistory(BattleRuntimeUnit owner, BattlePositionHistory history, in BattleEffectContext context, IBattleEffectSink effects)
+        public void TickWithPositionHistory(
+            BattleRuntimeUnit owner,
+            BattlePositionHistory history,
+            in BattleEffectContext context,
+            IBattleEffectSink effects
+        )
         {
             BattleUnitCombatState currentTarget = context.Actor?.PlannedTargetEnemy;
 
@@ -44,7 +57,15 @@ public sealed class FanaticalObsessionSkill : IBattleSkill
                 if (dist > owner.State.AttackRange && (context.BattleTime - _lastDashTime > 0.5f))
                 {
                     effects.Teleport(owner.State, currentTarget.Position);
-                    effects.DealDamage(new BattleDamageRequest { Source = owner.State, Target = currentTarget, Amount = owner.State.Attack, IsSkill = true });
+                    effects.DealDamage(
+                        new BattleDamageRequest
+                        {
+                            Source = owner.State,
+                            Target = currentTarget,
+                            Amount = owner.State.Attack,
+                            IsSkill = true,
+                        }
+                    );
                     VFXManager.Instance.PlayEffect("ObsessionDash", currentTarget.Position);
 
                     _lastDashTime = context.BattleTime;

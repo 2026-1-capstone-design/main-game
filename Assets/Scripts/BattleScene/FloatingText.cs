@@ -1,11 +1,16 @@
-using UnityEngine;
 using TMPro;
+using UnityEngine;
 
 public class FloatingText : MonoBehaviour
 {
-    [SerializeField] private TextMeshPro textMesh; // UI 캔버스가 아니라면 일반 TextMeshPro를 씁니다.
-    [SerializeField] private float moveSpeed = 2f; // 위로 올라가는 속도
-    [SerializeField] private float lifeTime = 1.0f; // 화면에 유지되는 시간
+    [SerializeField]
+    private TextMeshPro textMesh; // UI 캔버스가 아니라면 일반 TextMeshPro를 씁니다.
+
+    [SerializeField]
+    private float moveSpeed = 2f; // 위로 올라가는 속도
+
+    [SerializeField]
+    private float lifeTime = 1.0f; // 화면에 유지되는 시간
 
     private float _timer;
     private Color _color;

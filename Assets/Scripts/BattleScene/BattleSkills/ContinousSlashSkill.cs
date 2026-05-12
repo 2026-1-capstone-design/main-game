@@ -11,7 +11,8 @@ public sealed class ContinuousSlashSkill : IBattleSkill
     public float CastRange => 5f;
     public float AreaRadius => 0f;
 
-    public bool CanActivate(in BattleEffectContext context) => context.Actor != null && context.Actor.PlannedTargetEnemy != null;
+    public bool CanActivate(in BattleEffectContext context) =>
+        context.Actor != null && context.Actor.PlannedTargetEnemy != null;
 
     public void Activate(in BattleEffectContext context, IBattleEffectSink effects)
     {
@@ -20,26 +21,52 @@ public sealed class ContinuousSlashSkill : IBattleSkill
         BattleRuntimeUnit targetRuntime = context.PrimaryTarget;
         BattleUnitCombatState targetState = targetRuntime?.State;
 
-        if (casterState == null || targetState == null || targetState.IsCombatDisabled) return;
+        if (casterState == null || targetState == null || targetState.IsCombatDisabled)
+            return;
 
         effects.RosterMutations.DisableCommandAndSkill(casterRuntime, 2.0f);
 
         for (int i = 0; i < 4; i++)
         {
             float delay = i * 0.5f;
-            effects.ScheduleEffect(delay, casterRuntime, targetRuntime, context, (ctx, sink) =>
-            {
-                if (targetState.IsCombatDisabled || casterState.IsCombatDisabled) return;
-
-                sink.DealDamage(new BattleDamageRequest
+            effects.ScheduleEffect(
+                delay,
+                casterRuntime,
+                targetRuntime,
+                context,
+                (ctx, sink) =>
                 {
-                    Source = casterState, Target = targetState, Amount = casterState.Attack * 0.5f,
-                    SourceKind = BattleEffectSourceKind.Skill, DamageKind = BattleDamageKind.Direct, SkillId = SkillId, IsSkill = true
-                });
+                    if (targetState.IsCombatDisabled || casterState.IsCombatDisabled)
+                        return;
 
-                sink.ApplyStatus(new BattleStatusRequest { Source = casterState, Target = targetState, Type = BattleStatusType.Slow, Level = 40, Duration = 1.5f, IsDebuff = true, IsDispelAllowed = true });
-                VFXManager.Instance.PlayEffect("SlashHit", targetState.Position);
-            });
+                    sink.DealDamage(
+                        new BattleDamageRequest
+                        {
+                            Source = casterState,
+                            Target = targetState,
+                            Amount = casterState.Attack * 0.5f,
+                            SourceKind = BattleEffectSourceKind.Skill,
+                            DamageKind = BattleDamageKind.Direct,
+                            SkillId = SkillId,
+                            IsSkill = true,
+                        }
+                    );
+
+                    sink.ApplyStatus(
+                        new BattleStatusRequest
+                        {
+                            Source = casterState,
+                            Target = targetState,
+                            Type = BattleStatusType.Slow,
+                            Level = 40,
+                            Duration = 1.5f,
+                            IsDebuff = true,
+                            IsDispelAllowed = true,
+                        }
+                    );
+                    VFXManager.Instance.PlayEffect("SlashHit", targetState.Position);
+                }
+            );
         }
     }
 }

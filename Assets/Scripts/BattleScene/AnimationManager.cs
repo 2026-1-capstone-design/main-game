@@ -37,7 +37,8 @@ public class AnimationManager : MonoBehaviour, IAnimationProvider
 
     [Header("Skill Database (Inspector)")]
     // 🌟 인스펙터에서 편하게 추가/수정할 수 있는 리스트
-    [SerializeField] private List<SkillAnimationData> skillDatabase;
+    [SerializeField]
+    private List<SkillAnimationData> skillDatabase;
 
     // 🌟 런타임에 빠른 검색을 위한 딕셔너리
     private Dictionary<WeaponSkillId, SkillAnimationData> _skillDict;
@@ -65,19 +66,31 @@ public class AnimationManager : MonoBehaviour, IAnimationProvider
     {
         switch (type)
         {
-            case WeaponType.oneHand: return oneHandController;
-            case WeaponType.twoHand: return twoHandController;
-            case WeaponType.dualHand: return dualHandController;
-            case WeaponType.spear: return spearController;
-            case WeaponType.shield: return shieldController;
-            case WeaponType.dagger: return daggerController;
-            case WeaponType.handGun: return handgunController;
-            case WeaponType.dualGun: return dualgunController;
-            case WeaponType.rifle: return rifleController;
-            case WeaponType.staff: return staffController;
-            case WeaponType.bow: return bowController;
+            case WeaponType.oneHand:
+                return oneHandController;
+            case WeaponType.twoHand:
+                return twoHandController;
+            case WeaponType.dualHand:
+                return dualHandController;
+            case WeaponType.spear:
+                return spearController;
+            case WeaponType.shield:
+                return shieldController;
+            case WeaponType.dagger:
+                return daggerController;
+            case WeaponType.handGun:
+                return handgunController;
+            case WeaponType.dualGun:
+                return dualgunController;
+            case WeaponType.rifle:
+                return rifleController;
+            case WeaponType.staff:
+                return staffController;
+            case WeaponType.bow:
+                return bowController;
             case WeaponType.None:
-            default: return noneController;
+            default:
+                return noneController;
         }
     }
 

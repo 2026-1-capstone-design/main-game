@@ -30,7 +30,8 @@ public sealed class HeartAttackSkill : IBattleSkill
         BattleUnitCombatState casterState = casterRuntime != null ? casterRuntime.State : null;
         BattleUnitCombatState targetState = context.PrimaryTarget != null ? context.PrimaryTarget.State : null;
 
-        if (casterRuntime == null || targetState == null) return;
+        if (casterRuntime == null || targetState == null)
+            return;
 
         Vector3 startPos = casterRuntime.Position + Vector3.up;
         Vector3 direction = targetState.Position - startPos;
@@ -38,7 +39,8 @@ public sealed class HeartAttackSkill : IBattleSkill
 
         Action<BattleUnitCombatState, Vector3, IBattleEffectSink> onHitEffect = (hitTarget, hitPos, sink) =>
         {
-            if (hitTarget == null || hitTarget.IsCombatDisabled) return;
+            if (hitTarget == null || hitTarget.IsCombatDisabled)
+                return;
 
             Vector3 pushDir = hitTarget.Position - casterState.Position;
             pushDir.y = 0f;

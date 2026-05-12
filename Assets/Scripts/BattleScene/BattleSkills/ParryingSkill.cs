@@ -17,30 +17,84 @@ public sealed class ParryingSkill : IBattleSkill
     {
         BattleRuntimeUnit casterRuntime = context.Actor;
         BattleUnitCombatState casterState = casterRuntime?.State;
-        if (casterState == null || casterState.IsCombatDisabled) return;
+        if (casterState == null || casterState.IsCombatDisabled)
+            return;
 
         effects.RosterMutations.DisableCommandAndSkill(casterRuntime, 2.0f);
-        effects.ApplyStatus(new BattleStatusRequest { Source = casterState, Target = casterState, Type = BattleStatusType.DamageReductionPercent, Level = 90, Duration = 2f, IsDebuff = false, IsDispelAllowed = false });
-        effects.ApplyStatus(new BattleStatusRequest { Source = casterState, Target = casterState, Type = BattleStatusType.Taunt, Level = 1, Duration = 2f, IsDebuff = false, IsDispelAllowed = false });
+        effects.ApplyStatus(
+            new BattleStatusRequest
+            {
+                Source = casterState,
+                Target = casterState,
+                Type = BattleStatusType.DamageReductionPercent,
+                Level = 90,
+                Duration = 2f,
+                IsDebuff = false,
+                IsDispelAllowed = false,
+            }
+        );
+        effects.ApplyStatus(
+            new BattleStatusRequest
+            {
+                Source = casterState,
+                Target = casterState,
+                Type = BattleStatusType.Taunt,
+                Level = 1,
+                Duration = 2f,
+                IsDebuff = false,
+                IsDispelAllowed = false,
+            }
+        );
 
         VFXManager.Instance.PlayEffect("ParryStance", casterState.Position);
 
-        effects.ScheduleEffect(2.0f, casterRuntime, casterRuntime, context, (ctx, sink) =>
-        {
-            if (casterState.IsCombatDisabled) return;
-            VFXManager.Instance.PlayEffect("ParryCounter", casterState.Position);
-
-            foreach (BattleRuntimeUnit unitView in ctx.Units)
+        effects.ScheduleEffect(
+            2.0f,
+            casterRuntime,
+            casterRuntime,
+            context,
+            (ctx, sink) =>
             {
-                BattleUnitCombatState target = unitView?.State;
-                if (!BattleFieldSnapshot.IsValidEnemyTarget(casterState, target)) continue;
+                if (casterState.IsCombatDisabled)
+                    return;
+                VFXManager.Instance.PlayEffect("ParryCounter", casterState.Position);
 
-                if (Vector3.Distance(casterState.Position, target.Position) <= AreaRadius)
+                foreach (BattleRuntimeUnit unitView in ctx.Units)
                 {
-                    sink.DealDamage(new BattleDamageRequest { Source = casterState, Target = target, Amount = casterState.Attack * 2.0f, SourceKind = BattleEffectSourceKind.Skill, DamageKind = BattleDamageKind.Area, SkillId = SkillId, IsSkill = true, IsArea = true });
-                    sink.ApplyStatus(new BattleStatusRequest { Source = casterState, Target = target, Type = BattleStatusType.Stun, Level = 1, Duration = 1.5f, IsDebuff = true, IsDispelAllowed = true });
+                    BattleUnitCombatState target = unitView?.State;
+                    if (!BattleFieldSnapshot.IsValidEnemyTarget(casterState, target))
+                        continue;
+
+                    if (Vector3.Distance(casterState.Position, target.Position) <= AreaRadius)
+                    {
+                        sink.DealDamage(
+                            new BattleDamageRequest
+                            {
+                                Source = casterState,
+                                Target = target,
+                                Amount = casterState.Attack * 2.0f,
+                                SourceKind = BattleEffectSourceKind.Skill,
+                                DamageKind = BattleDamageKind.Area,
+                                SkillId = SkillId,
+                                IsSkill = true,
+                                IsArea = true,
+                            }
+                        );
+                        sink.ApplyStatus(
+                            new BattleStatusRequest
+                            {
+                                Source = casterState,
+                                Target = target,
+                                Type = BattleStatusType.Stun,
+                                Level = 1,
+                                Duration = 1.5f,
+                                IsDebuff = true,
+                                IsDispelAllowed = true,
+                            }
+                        );
+                    }
                 }
             }
-        });
+        );
     }
 }

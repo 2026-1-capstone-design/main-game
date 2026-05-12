@@ -16,14 +16,16 @@ public sealed class LeapOfFaithSkill : IBattleSkill
     public void Activate(in BattleEffectContext context, IBattleEffectSink effects)
     {
         BattleUnitCombatState caster = context.Actor?.State;
-        if (caster == null || caster.IsCombatDisabled) return;
+        if (caster == null || caster.IsCombatDisabled)
+            return;
 
         BattleRuntimeUnit lowestHpAlly = null;
         float minHpRatio = float.MaxValue;
 
         foreach (BattleRuntimeUnit unit in context.Units)
         {
-            if (unit == null || unit.State.IsCombatDisabled || unit.TeamId != caster.TeamId || unit == context.Actor) continue;
+            if (unit == null || unit.State.IsCombatDisabled || unit.TeamId != caster.TeamId || unit == context.Actor)
+                continue;
 
             float hpRatio = unit.CurrentHealth / unit.MaxHealth;
             if (hpRatio < minHpRatio)
@@ -38,8 +40,30 @@ public sealed class LeapOfFaithSkill : IBattleSkill
             Vector3 jumpDestination = lowestHpAlly.Position + (caster.Position - lowestHpAlly.Position).normalized * 2f;
             effects.Teleport(caster, jumpDestination);
 
-            effects.ApplyStatus(new BattleStatusRequest { Source = caster, Target = caster, Type = BattleStatusType.Taunt, Level = 1, Duration = 5f, IsDebuff = false, IsDispelAllowed = true });
-            effects.ApplyStatus(new BattleStatusRequest { Source = caster, Target = caster, Type = BattleStatusType.DamageReductionPercent, Level = 30, Duration = 5f, IsDebuff = false, IsDispelAllowed = true });
+            effects.ApplyStatus(
+                new BattleStatusRequest
+                {
+                    Source = caster,
+                    Target = caster,
+                    Type = BattleStatusType.Taunt,
+                    Level = 1,
+                    Duration = 5f,
+                    IsDebuff = false,
+                    IsDispelAllowed = true,
+                }
+            );
+            effects.ApplyStatus(
+                new BattleStatusRequest
+                {
+                    Source = caster,
+                    Target = caster,
+                    Type = BattleStatusType.DamageReductionPercent,
+                    Level = 30,
+                    Duration = 5f,
+                    IsDebuff = false,
+                    IsDispelAllowed = true,
+                }
+            );
 
             VFXManager.Instance.PlayEffect("ShieldLanding", jumpDestination);
         }

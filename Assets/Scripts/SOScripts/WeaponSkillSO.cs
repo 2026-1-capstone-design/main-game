@@ -53,7 +53,7 @@ public enum WeaponSkillId
     Oblivion = 46,
     Respite = 47,
     MoonlightDance = 48,
-    FanaticalObsession = 49
+    FanaticalObsession = 49,
 }
 
 public enum skillType

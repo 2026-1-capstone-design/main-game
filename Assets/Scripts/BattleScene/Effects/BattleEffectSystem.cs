@@ -118,7 +118,6 @@ public sealed class BattleEffectSystem : IBattleEffectSink
         BattleHealResult healResult = new BattleHealResult(request.Source, target, request.Amount, finalAmount);
         _artifacts?.AfterHeal(healResult, this);
         OnHealProcessed?.Invoke(healResult);
-
     }
 
     public void ApplyStatus(BattleStatusRequest request)
@@ -346,18 +345,23 @@ public sealed class BattleEffectSystem : IBattleEffectSink
         in BattleEffectContext context
     )
     {
-        if (_artifacts == null || target == null || artifact == null) return;
+        if (_artifacts == null || target == null || artifact == null)
+            return;
 
         _artifacts.AddDynamicArtifact(target, artifact, context);
 
         if (duration > 0f)
         {
-            ScheduleEffect(duration, target, target, context, (ctx, sink) =>
-            {
-                _artifacts.RemoveDynamicArtifact(artifact);
-            });
+            ScheduleEffect(
+                duration,
+                target,
+                target,
+                context,
+                (ctx, sink) =>
+                {
+                    _artifacts.RemoveDynamicArtifact(artifact);
+                }
+            );
         }
     }
-
-
 }

@@ -15,33 +15,65 @@ public sealed class RetributionSkill : IBattleSkill
     public void Activate(in BattleEffectContext context, IBattleEffectSink effects)
     {
         BattleRuntimeUnit caster = context.Actor;
-        if (caster == null || caster.State.IsCombatDisabled) return;
+        if (caster == null || caster.State.IsCombatDisabled)
+            return;
 
         // 1. 데미지를 축적할 장신구를 만들고, 5초간 부여
         RetributionArtifact artifact = new RetributionArtifact();
         effects.GrantTemporaryArtifact(caster, artifact, 5f, context);
 
-        effects.ApplyStatus(new BattleStatusRequest { Source = caster.State, Target = caster.State, Type = BattleStatusType.DamageReductionPercent, Level = 50, Duration = 5f });
+        effects.ApplyStatus(
+            new BattleStatusRequest
+            {
+                Source = caster.State,
+                Target = caster.State,
+                Type = BattleStatusType.DamageReductionPercent,
+                Level = 50,
+                Duration = 5f,
+            }
+        );
         GameObject activeVfx = VFXManager.Instance.PlayEffect("RetributionStance", caster.Position);
 
         // 2. 5초 뒤에 예약된 행동: 방금 만든 그 장신구에서 모아둔 데미지를 읽어와서 폭발!
-        effects.ScheduleEffect(5f, caster, caster, context, (ctx, sink) =>
-        {
-            if (caster.State.IsCombatDisabled) return;
-
-            if (activeVfx != null) VFXManager.Instance.StopEffect(activeVfx);
-
-            VFXManager.Instance.PlayEffect("RetributionExplosion", caster.Position);
-            float explosionDamage = artifact.AccumulatedDamage * 0.5f;
-
-            foreach (BattleRuntimeUnit unitView in ctx.Units)
+        effects.ScheduleEffect(
+            5f,
+            caster,
+            caster,
+            context,
+            (ctx, sink) =>
             {
-                if (BattleFieldSnapshot.IsValidEnemyTarget(caster.State, unitView.State) && Vector3.Distance(caster.Position, unitView.Position) <= AreaRadius)
+                if (caster.State.IsCombatDisabled)
+                    return;
+
+                if (activeVfx != null)
+                    VFXManager.Instance.StopEffect(activeVfx);
+
+                VFXManager.Instance.PlayEffect("RetributionExplosion", caster.Position);
+                float explosionDamage = artifact.AccumulatedDamage * 0.5f;
+
+                foreach (BattleRuntimeUnit unitView in ctx.Units)
                 {
-                    sink.DealDamage(new BattleDamageRequest { Source = caster.State, Target = unitView.State, Amount = explosionDamage, SourceKind = BattleEffectSourceKind.Skill, DamageKind = BattleDamageKind.Area, IsSkill = true, IsArea = true });
+                    if (
+                        BattleFieldSnapshot.IsValidEnemyTarget(caster.State, unitView.State)
+                        && Vector3.Distance(caster.Position, unitView.Position) <= AreaRadius
+                    )
+                    {
+                        sink.DealDamage(
+                            new BattleDamageRequest
+                            {
+                                Source = caster.State,
+                                Target = unitView.State,
+                                Amount = explosionDamage,
+                                SourceKind = BattleEffectSourceKind.Skill,
+                                DamageKind = BattleDamageKind.Area,
+                                IsSkill = true,
+                                IsArea = true,
+                            }
+                        );
+                    }
                 }
             }
-        });
+        );
     }
 
     private class RetributionArtifact : IDamageReactionArtifact
