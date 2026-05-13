@@ -17,23 +17,68 @@ MonoBehaviour:
   - classSO: {fileID: 11400000, guid: 6846407ed22928941b371aab2d355ecf, type: 2}
     level: 0
     weaponData: {fileID: 11400000, guid: 1125cefdf7e96c04cb5c836ceef728b5, type: 2}
-    weaponSkillId: 5
+    weaponSkillId: 24
     healthOverride: 200000
     attackOverride: 0
-    attackSpeedOverride: 0
+    attackSpeedOverride: 1
     moveSpeedOverride: 0
-    attackRangeOverride: 0
+    attackRangeOverride: 5
+    overrideWeaponSettings: 0
+    isRanged: 0
+    useProjectile: 0
+    statMultiplier: 0
+  - classSO: {fileID: 11400000, guid: 6846407ed22928941b371aab2d355ecf, type: 2}
+    level: 0
+    weaponData: {fileID: 11400000, guid: 1125cefdf7e96c04cb5c836ceef728b5, type: 2}
+    weaponSkillId: 24
+    healthOverride: 200000
+    attackOverride: 0
+    attackSpeedOverride: 1
+    moveSpeedOverride: 0
+    attackRangeOverride: 5
+    overrideWeaponSettings: 0
+    isRanged: 0
+    useProjectile: 0
+    statMultiplier: 0
+  - classSO: {fileID: 11400000, guid: 6846407ed22928941b371aab2d355ecf, type: 2}
+    level: 0
+    weaponData: {fileID: 11400000, guid: 1125cefdf7e96c04cb5c836ceef728b5, type: 2}
+    weaponSkillId: 24
+    healthOverride: 200000
+    attackOverride: 0
+    attackSpeedOverride: 1
+    moveSpeedOverride: 0
+    attackRangeOverride: 5
+    overrideWeaponSettings: 0
+    isRanged: 0
+    useProjectile: 0
+    statMultiplier: 0
+  - classSO: {fileID: 11400000, guid: 6846407ed22928941b371aab2d355ecf, type: 2}
+    level: 0
+    weaponData: {fileID: 11400000, guid: 1125cefdf7e96c04cb5c836ceef728b5, type: 2}
+    weaponSkillId: 24
+    healthOverride: 200000
+    attackOverride: 0
+    attackSpeedOverride: 1
+    moveSpeedOverride: 0
+    attackRangeOverride: 5
+    overrideWeaponSettings: 0
+    isRanged: 0
+    useProjectile: 0
     statMultiplier: 0
   enemyTeam:
   - classSO: {fileID: 11400000, guid: 6846407ed22928941b371aab2d355ecf, type: 2}
     level: 0
-    weaponData: {fileID: 11400000, guid: 8f15a2a951e32fa44914883dd11d291f, type: 2}
-    weaponSkillId: 8
+    weaponData: {fileID: 11400000, guid: 3da7b72ba791cd940915b68cc3d6a124, type: 2}
+    weaponSkillId: 10
     healthOverride: 200000
     attackOverride: 0
     attackSpeedOverride: 0
     moveSpeedOverride: 0
-    attackRangeOverride: 0
+    attackRangeOverride: 20
+    overrideWeaponSettings: 0
+    isRanged: 0
+    useProjectile: 0
     statMultiplier: 0
   battleSeed: 12345
   enemyAverageLevel: 1

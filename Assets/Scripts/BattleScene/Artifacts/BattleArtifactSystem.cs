@@ -291,6 +291,52 @@ public sealed class BattleArtifactSystem : IBattleTargetingPolicy, IBattleMoveme
         }
     }
 
+    // 전투 중 동적으로 장신구를 추가합니다.
+    public void AddDynamicArtifact(BattleRuntimeUnit owner, IBattleArtifact artifact, in BattleEffectContext context)
+    {
+        if (owner == null || owner.State == null || artifact == null)
+            return;
+
+        artifact.Initialize(owner.State, context);
+
+        if (artifact is IDamageModifierArtifact dmgMod)
+            _damageModifiers.Add(new ArtifactBinding<IDamageModifierArtifact>(owner.State, owner, dmgMod));
+        if (artifact is ITargetingModifierArtifact tgtMod)
+            _targetingModifiers.Add(new ArtifactBinding<ITargetingModifierArtifact>(owner.State, owner, tgtMod));
+        if (artifact is IMovementModifierArtifact movMod)
+            _movementModifiers.Add(new ArtifactBinding<IMovementModifierArtifact>(owner.State, owner, movMod));
+        if (artifact is IDamageReactionArtifact dmgReac)
+            _damageReactions.Add(new ArtifactBinding<IDamageReactionArtifact>(owner.State, owner, dmgReac));
+        if (artifact is IHealReactionArtifact healReac)
+            _healReactions.Add(new ArtifactBinding<IHealReactionArtifact>(owner.State, owner, healReac));
+        if (artifact is IKillReactionArtifact killReac)
+            _killReactions.Add(new ArtifactBinding<IKillReactionArtifact>(owner.State, owner, killReac));
+        if (artifact is ISkillCastReactionArtifact skillReac)
+            _skillCastReactions.Add(new ArtifactBinding<ISkillCastReactionArtifact>(owner.State, owner, skillReac));
+    }
+
+    // 전투 중 동적으로 장신구를 제거합니다.
+    public void RemoveDynamicArtifact(IBattleArtifact artifact)
+    {
+        if (artifact == null)
+            return;
+
+        if (artifact is IDamageModifierArtifact)
+            _damageModifiers.RemoveAll(b => b.Artifact == artifact);
+        if (artifact is ITargetingModifierArtifact)
+            _targetingModifiers.RemoveAll(b => b.Artifact == artifact);
+        if (artifact is IMovementModifierArtifact)
+            _movementModifiers.RemoveAll(b => b.Artifact == artifact);
+        if (artifact is IDamageReactionArtifact)
+            _damageReactions.RemoveAll(b => b.Artifact == artifact);
+        if (artifact is IHealReactionArtifact)
+            _healReactions.RemoveAll(b => b.Artifact == artifact);
+        if (artifact is IKillReactionArtifact)
+            _killReactions.RemoveAll(b => b.Artifact == artifact);
+        if (artifact is ISkillCastReactionArtifact)
+            _skillCastReactions.RemoveAll(b => b.Artifact == artifact);
+    }
+
     // 훅 구현체와 그 소유 유닛을 함께 보관해 콜백마다 역조회하지 않게 한다.
     private readonly struct ArtifactBinding<T>
         where T : IBattleArtifact

@@ -1,7 +1,8 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-// HeartAttack: 플랜된 적 대상에게 20 데미지 + 50 노크백. 한손검/양손검 계열.
+// HeartAttack: "heartAttackArrow" 투사체를 발사하여 적중 시 20 데미지 + 50 넉백 + 크리티컬 이펙트를 발생시킵니다.
 public sealed class HeartAttackSkill : IBattleSkill
 {
     public WeaponSkillId SkillId => WeaponSkillId.HeartAttack;
@@ -25,23 +26,56 @@ public sealed class HeartAttackSkill : IBattleSkill
 
     public void Activate(in BattleEffectContext context, IBattleEffectSink effects)
     {
-        BattleUnitCombatState caster = context.Actor != null ? context.Actor.State : null;
-        BattleUnitCombatState target = context.PrimaryTarget != null ? context.PrimaryTarget.State : null;
-        if (target == null)
+        BattleRuntimeUnit casterRuntime = context.Actor;
+        BattleUnitCombatState casterState = casterRuntime != null ? casterRuntime.State : null;
+        BattleUnitCombatState targetState = context.PrimaryTarget != null ? context.PrimaryTarget.State : null;
+
+        if (casterRuntime == null || targetState == null)
             return;
-        Vector3 pushDir = target.Position - caster.Position;
-        effects.DealDamage(
-            new BattleDamageRequest
+
+        Vector3 startPos = casterRuntime.Position + Vector3.up;
+        Vector3 direction = targetState.Position - startPos;
+        direction.y = 0f;
+
+        Action<BattleUnitCombatState, Vector3, IBattleEffectSink> onHitEffect = (hitTarget, hitPos, sink) =>
+        {
+            if (hitTarget == null || hitTarget.IsCombatDisabled)
+                return;
+
+            Vector3 pushDir = hitTarget.Position - casterState.Position;
+            pushDir.y = 0f;
+
+            sink?.DealDamage(
+                new BattleDamageRequest
+                {
+                    Source = casterState,
+                    Target = hitTarget,
+                    Amount = 20f,
+                    SourceKind = BattleEffectSourceKind.Skill,
+                    DamageKind = BattleDamageKind.Direct,
+                    SkillId = SkillId,
+                    IsSkill = true,
+                }
+            );
+
+            if (pushDir.sqrMagnitude > 0.0001f)
             {
-                Source = caster,
-                Target = target,
-                Amount = 20f,
-                SourceKind = BattleEffectSourceKind.Skill,
-                DamageKind = BattleDamageKind.Direct,
-                SkillId = SkillId,
-                IsSkill = true,
+                sink?.AddKnockback(hitTarget, pushDir.normalized, 50f);
             }
+
+            VFXManager.Instance.PlayEffect("Critical Effect", hitPos);
+        };
+
+        float windUpDelay = casterRuntime.GetSkillAnimationDuration() * 0.5f;
+
+        BattleSimulationManager.Instance.LaunchCustomProjectile(
+            new BattleDamageRequest { Target = targetState },
+            startPos,
+            direction,
+            15f,
+            "heartAttackArrow",
+            windUpDelay,
+            onHitEffect
         );
-        effects.AddKnockback(target, pushDir, 50f);
     }
 }

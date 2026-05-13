@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnityEngine;
 
 public sealed class BattleCombatSystem
 {
@@ -36,6 +37,32 @@ public sealed class BattleCombatSystem
                 new StimpackSkill(),
                 new ThroatSlitSkill(),
                 new WarcrySkill(),
+                new HighHealSkill(),
+                new DarkShroudSkill(),
+                new OminousStarSkill(),
+                new ConsecrationSkill(),
+                new WarCommanderSkill(),
+                new HuntStartSkill(),
+                new LeapOfFaithSkill(),
+                new HookThrowSkill(),
+                new ContinuousSlashSkill(),
+                new ParryingSkill(),
+                new ManaCollapseSkill(),
+                new HolyBarrierSkill(),
+                new FearSkill(),
+                new MagicExplosionSkill(),
+                new RetributionSkill(),
+                new SubmersionSkill(),
+                new CurseSkill(),
+                new GlyphOfCounterattackSkill(),
+                new NobleSacrificeSkill(),
+                new DuelSkill(),
+                //new FreezeSkill(),
+                //new MindControlSkill(),
+                new OblivionSkill(),
+                //new RespiteSkill(),
+                new MoonlightDanceSkill(),
+                //new FanaticalObsessionSkill()
             }
         );
     }
@@ -103,20 +130,41 @@ public sealed class BattleCombatSystem
             attacker.State.SetAttackState(true);
 
             BattleRuntimeUnit targetRuntime = ResolveRuntimeUnit(runtimeUnitByState, target);
-            effects.DealDamage(
-                new BattleDamageRequest
-                {
-                    Source = attacker.State,
-                    Target = target,
-                    Amount = attacker.Attack,
-                    SourceKind = BattleEffectSourceKind.BasicAttack,
-                    DamageKind = BattleDamageKind.Direct,
-                    SkillId = WeaponSkillId.None,
-                    ArtifactId = ArtifactId.None,
-                    IsBasicAttack = true,
-                }
-            );
 
+            BattleDamageRequest damageRequest = new BattleDamageRequest
+            {
+                Source = attacker.State,
+                Target = target,
+                Amount = attacker.Attack,
+                SourceKind = BattleEffectSourceKind.BasicAttack,
+                DamageKind = BattleDamageKind.Direct,
+                SkillId = WeaponSkillId.None,
+                ArtifactId = ArtifactId.None,
+                IsBasicAttack = true,
+            };
+
+            bool isProjectile = attacker.Snapshot.UseProjectile;
+            if (isProjectile)
+            {
+                Vector3 startPos = attacker.Position + Vector3.up;
+                Vector3 fireDirection = target.Position - startPos;
+                fireDirection.y = 0f;
+
+                float windUpDelay = attacker.Snapshot.WeaponType == WeaponType.bow ? 1.0f : 0.5f;
+
+                // 평타 전용 발사 API 호출
+                BattleSimulationManager.Instance.LaunchBasicProjectile(
+                    damageRequest,
+                    startPos,
+                    fireDirection,
+                    attacker.Snapshot.WeaponType,
+                    windUpDelay
+                );
+            }
+            else
+            {
+                effects.DealDamage(damageRequest);
+            }
             attacker.RaiseAttackLanded(targetRuntime, target.IsCombatDisabled);
             attacker.State.ResetAttackCooldown();
         }

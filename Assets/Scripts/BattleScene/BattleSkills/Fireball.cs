@@ -1,6 +1,8 @@
+using System; // 🌟 Action 사용을 위해 필요
 using System.Collections.Generic;
+using UnityEngine;
 
-// 6. 파이어볼 (스태프) : 화염구 (단일 강한 데미지로 임시 구현)
+// 파이어볼 (스태프) : 화염구 투사체를 발사하여 강력한 데미지를 줍니다.
 public sealed class FireballSkill : IBattleSkill
 {
     public WeaponSkillId SkillId => WeaponSkillId.Fireball;
@@ -17,18 +19,53 @@ public sealed class FireballSkill : IBattleSkill
 
     public void Activate(in BattleEffectContext context, IBattleEffectSink effects)
     {
-        BattleUnitCombatState caster = context.Actor != null ? context.Actor.State : null;
-        effects.DealDamage(
-            new BattleDamageRequest
-            {
-                Source = caster,
-                Target = context.PrimaryTarget != null ? context.PrimaryTarget.State : null,
-                Amount = caster.Attack * 2.5f,
-                SourceKind = BattleEffectSourceKind.Skill,
-                DamageKind = BattleDamageKind.Direct,
-                SkillId = SkillId,
-                IsSkill = true,
-            }
+        BattleRuntimeUnit casterRuntime = context.Actor;
+        BattleUnitCombatState casterState = casterRuntime != null ? casterRuntime.State : null;
+        BattleUnitCombatState targetState = context.PrimaryTarget != null ? context.PrimaryTarget.State : null;
+
+        if (casterRuntime == null || targetState == null)
+            return;
+
+        // 발사 위치 및 방향 계산
+        Vector3 startPos = casterRuntime.Position + Vector3.up;
+        Vector3 direction = targetState.Position - startPos;
+        direction.y = 0f;
+
+        // 적중시 효과
+        Action<BattleUnitCombatState, Vector3, IBattleEffectSink> onHitEffect = (hitTarget, hitPos, sink) =>
+        {
+            if (hitTarget == null || hitTarget.IsCombatDisabled)
+                return;
+
+            // 기존 로직과 동일하게 2.5배의 큰 데미지를 줍니다
+            sink?.DealDamage(
+                new BattleDamageRequest
+                {
+                    Source = casterState,
+                    Target = hitTarget,
+                    //Amount = casterState.Attack * 2.5f, // 2.5배
+                    Amount = 10000,
+                    SourceKind = BattleEffectSourceKind.Skill,
+                    DamageKind = BattleDamageKind.Direct,
+                    SkillId = SkillId,
+                    IsSkill = true,
+                }
+            );
+            //터질 때 모션
+            VFXManager.Instance.PlayEffect("fire_explosion", hitPos);
+        };
+
+        float windUpDelay = casterRuntime.GetSkillAnimationDuration() * 0.5f; // 애니메이션 길이에 비례한 선딜레이 설정
+
+        //만든 효과를 담아서 발사.
+        BattleSimulationManager.Instance.LaunchCustomProjectile(
+            new BattleDamageRequest { Target = targetState }, // 타겟 추적용 Request
+            startPos,
+            direction,
+            5f, // 파이어볼 투사체 속도
+            "fireball", // 🌟 에디터에서 ProjectileManager에 등록해둔 ID
+            windUpDelay, // 스킬 선딜레이
+            onHitEffect // 🌟 스킬 효과를 투사체에 쥐여줍니다!
         );
     }
 }

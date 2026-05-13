@@ -151,4 +151,14 @@ public sealed class SkillEffectApplier : IBattleEffectSink
 
         return _runtimeUnitByState.TryGetValue(state, out BattleRuntimeUnit runtime) ? runtime : null;
     }
+
+    public void GrantTemporaryArtifact(
+        BattleRuntimeUnit target,
+        IBattleArtifact artifact,
+        float duration,
+        in BattleEffectContext context
+    )
+    {
+        _effects?.GrantTemporaryArtifact(target, artifact, duration, context);
+    }
 }

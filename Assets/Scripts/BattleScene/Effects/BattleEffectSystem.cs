@@ -13,6 +13,9 @@ public sealed class BattleEffectSystem : IBattleEffectSink
     private BattleDamageLifecycle _damageLifecycle;
     private IBattleRosterMutationSink _rosterMutations;
 
+    public event System.Action<BattleDamageResult> OnDamageProcessed;
+    public event System.Action<BattleHealResult> OnHealProcessed;
+
     public BattleEffectSystem(BattleArtifactSystem artifacts)
     {
         _artifacts = artifacts;
@@ -99,6 +102,8 @@ public sealed class BattleEffectSystem : IBattleEffectSink
         _artifacts?.AfterDamage(result, this);
         if (result.TargetDied)
             _artifacts?.OnUnitKilled(new BattleKillEvent(request.Source, target), this);
+
+        OnDamageProcessed?.Invoke(result);
     }
 
     public void Heal(BattleHealRequest request)
@@ -109,7 +114,10 @@ public sealed class BattleEffectSystem : IBattleEffectSink
 
         float finalAmount = Mathf.Max(0f, request.Amount);
         target.ApplyHeal(finalAmount);
-        _artifacts?.AfterHeal(new BattleHealResult(request.Source, target, request.Amount, finalAmount), this);
+
+        BattleHealResult healResult = new BattleHealResult(request.Source, target, request.Amount, finalAmount);
+        _artifacts?.AfterHeal(healResult, this);
+        OnHealProcessed?.Invoke(healResult);
     }
 
     public void ApplyStatus(BattleStatusRequest request)
@@ -328,5 +336,32 @@ public sealed class BattleEffectSystem : IBattleEffectSink
             return null;
 
         return _runtimeUnitByState.TryGetValue(state, out BattleRuntimeUnit runtime) ? runtime : null;
+    }
+
+    public void GrantTemporaryArtifact(
+        BattleRuntimeUnit target,
+        IBattleArtifact artifact,
+        float duration,
+        in BattleEffectContext context
+    )
+    {
+        if (_artifacts == null || target == null || artifact == null)
+            return;
+
+        _artifacts.AddDynamicArtifact(target, artifact, context);
+
+        if (duration > 0f)
+        {
+            ScheduleEffect(
+                duration,
+                target,
+                target,
+                context,
+                (ctx, sink) =>
+                {
+                    _artifacts.RemoveDynamicArtifact(artifact);
+                }
+            );
+        }
     }
 }
