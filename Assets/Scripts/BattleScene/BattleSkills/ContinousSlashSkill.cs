@@ -24,7 +24,18 @@ public sealed class ContinuousSlashSkill : IBattleSkill
         if (casterState == null || targetState == null || targetState.IsCombatDisabled)
             return;
 
-        effects.RosterMutations.DisableCommandAndSkill(casterRuntime, 2.0f);
+        effects.ApplyStatus(
+            new BattleStatusRequest
+            {
+                Source = casterState,
+                Target = casterState,
+                Type = BattleStatusType.Stun,
+                Level = 90,
+                Duration = 2f,
+                IsDebuff = true,
+                IsDispelAllowed = false,
+            }
+        );
 
         for (int i = 0; i < 4; i++)
         {
@@ -44,7 +55,7 @@ public sealed class ContinuousSlashSkill : IBattleSkill
                         {
                             Source = casterState,
                             Target = targetState,
-                            Amount = casterState.Attack * 0.5f,
+                            Amount = casterState.Attack * 1.5f,
                             SourceKind = BattleEffectSourceKind.Skill,
                             DamageKind = BattleDamageKind.Direct,
                             SkillId = SkillId,
@@ -58,13 +69,13 @@ public sealed class ContinuousSlashSkill : IBattleSkill
                             Source = casterState,
                             Target = targetState,
                             Type = BattleStatusType.Slow,
-                            Level = 40,
+                            Level = -40,
                             Duration = 1.5f,
                             IsDebuff = true,
                             IsDispelAllowed = true,
                         }
                     );
-                    VFXManager.Instance.PlayEffect("SlashHit", targetState.Position);
+                    VFXManager.Instance.PlayEffect("CriticalHit", targetState.Position + Vector3.up);
                 }
             );
         }

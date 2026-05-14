@@ -20,7 +20,7 @@ public enum WeaponSkillId
     HeadStrike = 15,
     SpiralSlash = 16,
     Parrying = 18,
-    ContinuousSlash = 18,
+    ContinuousSlash = 19,
     HighHeal = 20,
     OminousStar = 21,
     DarkShroud = 22,

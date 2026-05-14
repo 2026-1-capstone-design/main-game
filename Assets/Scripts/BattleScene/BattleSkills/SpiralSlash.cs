@@ -16,13 +16,17 @@ public sealed class SpiralSlashSkill : IBattleSkill
     public void Activate(in BattleEffectContext context, IBattleEffectSink effects)
     {
         BattleUnitCombatState caster = context.Actor != null ? context.Actor.State : null;
+
+        VFXManager.Instance.PlayEffect("SwipeAttackEffect", caster.Position + Vector3.up * 1f);
+
         foreach (BattleRuntimeUnit unitView in context.Units)
         {
             BattleUnitCombatState unit = unitView != null ? unitView.State : null;
             if (BattleFieldSnapshot.IsValidEnemyTarget(caster, unit))
             {
-                if (Vector3.Distance(caster.Position, unit.Position) <= 45f) // 광역 반경 45
+                if (Vector3.Distance(caster.Position, unit.Position) <= 20f) // 광역 반경 20
                 {
+                    VFXManager.Instance.PlayEffect("PlainSwordHit", unit.Position + Vector3.up * 1f);
                     effects.DealDamage(
                         new BattleDamageRequest
                         {

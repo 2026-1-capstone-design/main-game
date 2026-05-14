@@ -23,6 +23,8 @@ public sealed class ShieldBashSkill : IBattleSkill
         if (target == null)
             return;
 
+
+        VFXManager.Instance.PlayEffect("LightHit", target.Position + Vector3.up * 1f);
         effects.DealDamage(
             new BattleDamageRequest
             {

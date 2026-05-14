@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnityEngine;
 
 // 9. 리볼버 패닝 (권총) : 6번 연속 공격
 public sealed class RevolverFanningSkill : IBattleSkill
@@ -24,6 +25,10 @@ public sealed class RevolverFanningSkill : IBattleSkill
 
         for (int i = 0; i < 6; i++)
         {
+            float newX = Random.Range(-1f, 1f);
+            float newY = Random.Range(0f, 1f);
+            float newZ = Random.Range(-1f, 1f);
+            VFXManager.Instance.PlayEffect("CompactHit", target.Position + new Vector3(newX, newY, newZ));
             effects.DealDamage(
                 new BattleDamageRequest
                 {

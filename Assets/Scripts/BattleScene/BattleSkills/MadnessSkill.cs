@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnityEngine;
 
 // Madness: 자신에게 AttackSpeed 버프 적용. 모든 무기에 호환 (enhance 타입).
 public sealed class MadnessSkill : IBattleSkill
@@ -16,6 +17,8 @@ public sealed class MadnessSkill : IBattleSkill
     public void Activate(in BattleEffectContext context, IBattleEffectSink effects)
     {
         BattleUnitCombatState caster = context.Actor != null ? context.Actor.State : null;
+
+        VFXManager.Instance.PlayEffect("NormalEnhance", caster.Position + Vector3.up * 0.1f);
         effects.ApplyBuff(caster, caster, BuffType.AttackSpeed, 2, 20f);
     }
 }

@@ -19,7 +19,7 @@ public sealed class WarCommanderSkill : IBattleSkill
         if (caster == null)
             return;
 
-        VFXManager.Instance.PlayEffect("WarCommanderAura", caster.Position);
+        VFXManager.Instance.PlayEffect("BigEnhance", caster.Position + Vector3.up);
 
         foreach (BattleRuntimeUnit unitView in context.Units)
         {
@@ -31,13 +31,18 @@ public sealed class WarCommanderSkill : IBattleSkill
             {
                 bool isEnemy = target.TeamId != caster.TeamId;
 
+                if(isEnemy)
+                    VFXManager.Instance.PlayEffect("DarkHit", target.Position + Vector3.up);
+                else
+                    VFXManager.Instance.PlayEffect("LightHit", target.Position + Vector3.up);
+
                 effects.ApplyStatus(
                     new BattleStatusRequest
                     {
                         Source = caster,
                         Target = target,
                         Type = BattleStatusType.MoveSpeed,
-                        Level = 15,
+                        Level = isEnemy?-15:15,
                         Duration = 8f,
                         IsDebuff = isEnemy,
                         IsDispelAllowed = true,
@@ -49,7 +54,7 @@ public sealed class WarCommanderSkill : IBattleSkill
                         Source = caster,
                         Target = target,
                         Type = BattleStatusType.AttackDamage,
-                        Level = 15,
+                        Level = isEnemy?-15:15,
                         Duration = 8f,
                         IsDebuff = isEnemy,
                         IsDispelAllowed = true,

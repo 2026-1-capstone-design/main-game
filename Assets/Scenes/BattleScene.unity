@@ -3118,7 +3118,7 @@ Transform:
   m_GameObject: {fileID: 273018757}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -1672, y: -1001, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -9026,6 +9026,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   textPrefab: {fileID: 1295485813051539414, guid: da40dcc06caa8bb42849b5a3a189e177, type: 3}
   maxTextCount: 50
+  statusTextInterval: 0.2
 --- !u!4 &817373529
 Transform:
   m_ObjectHideFlags: 0
@@ -9035,7 +9036,7 @@ Transform:
   m_GameObject: {fileID: 817373527}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -1672, y: -1001, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

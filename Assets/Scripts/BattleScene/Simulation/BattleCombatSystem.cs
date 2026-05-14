@@ -29,6 +29,7 @@ public sealed class BattleCombatSystem
         _skillRegistry = new BattleSkillRegistry(
             new IBattleSkill[]
             {
+                new SwipeAttackSkill(),
                 new HeartAttackSkill(),
                 new MadnessSkill(),
                 new BayonetChargeSkill(),

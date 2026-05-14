@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
 // BattleUnitCombatState: 순수 전투 상태 컨테이너 (MonoBehaviour 없음, Unity 씬 의존 없음)
@@ -53,6 +54,7 @@ public sealed class BattleUnitCombatState
     // ── 바디 반경 (분리/클램프 계산용) ────────────────────────────
     public float BodyRadius { get; private set; }
     public Vector3 Position { get; private set; }
+    public Transform transform;
 
     public void SetBodyRadius(float bodyRadius)
     {
@@ -62,6 +64,10 @@ public sealed class BattleUnitCombatState
     public void SyncPosition(Vector3 worldPosition)
     {
         Position = worldPosition;
+    }
+    public void SyncTransform(Transform unitTransform)
+    {
+        transform = unitTransform;
     }
 
     // ── 버프 ───────────────────────────────────────────────────────

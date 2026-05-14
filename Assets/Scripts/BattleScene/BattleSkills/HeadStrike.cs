@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnityEngine;
 
 // 12. 머리치기 (창) : 적 기절
 public sealed class HeadStrikeSkill : IBattleSkill
@@ -19,6 +20,12 @@ public sealed class HeadStrikeSkill : IBattleSkill
     {
         BattleUnitCombatState caster = context.Actor != null ? context.Actor.State : null;
         BattleUnitCombatState target = context.PrimaryTarget != null ? context.PrimaryTarget.State : null;
+
+        if(target == null)
+            return;
+
+        VFXManager.Instance.PlayEffect("CriticalHit", target.Position + Vector3.up);
+
         effects.DealDamage(
             new BattleDamageRequest
             {

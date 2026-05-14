@@ -22,6 +22,8 @@ public sealed class HookThrowSkill : IBattleSkill
         if (caster == null || target == null || target.IsCombatDisabled)
             return;
 
+        VFXManager.Instance.PlayEffect("CompactHit", target.Position);
+
         effects.PullTo(caster, target, 1.5f);
         effects.ApplyStatus(
             new BattleStatusRequest
@@ -36,6 +38,5 @@ public sealed class HookThrowSkill : IBattleSkill
             }
         );
 
-        VFXManager.Instance.PlayEffect("HookEffect", target.Position);
     }
 }

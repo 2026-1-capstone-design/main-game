@@ -56,6 +56,6 @@ public sealed class OminousStarSkill : IBattleSkill
             }
         );
 
-        VFXManager.Instance.PlayEffect("OminousStarBuff", caster.Position);
+        VFXManager.Instance.PlayEffect("BloodEnhance", caster.transform);
     }
 }

@@ -36,7 +36,7 @@ public sealed class SubmersionSkill : IBattleSkill
             }
         );
 
-        GameObject activeVfx = VFXManager.Instance.PlayEffect("SubmersionEffect", caster.Position);
+        GameObject activeVfx = VFXManager.Instance.PlayEffect("CloudEffect", caster.transform);
 
         effects.ScheduleEffect(
             8f,

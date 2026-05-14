@@ -19,7 +19,7 @@ public sealed class DarkShroudSkill : IBattleSkill
         if (caster == null)
             return;
 
-        VFXManager.Instance.PlayEffect("DarkShroudEffect", caster.Position);
+
 
         foreach (BattleRuntimeUnit unitView in context.Units)
         {
@@ -29,6 +29,7 @@ public sealed class DarkShroudSkill : IBattleSkill
 
             if (Vector3.Distance(caster.Position, target.Position) <= AreaRadius)
             {
+                VFXManager.Instance.PlayEffect("DarkHit", target.Position + Vector3.up);
                 effects.ApplyStatus(
                     new BattleStatusRequest
                     {

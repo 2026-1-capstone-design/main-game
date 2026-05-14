@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnityEngine;
 
 // 5. 녹슨 칼날 (단검) : 출혈 부여
 public sealed class RustyBladeSkill : IBattleSkill
@@ -19,6 +20,8 @@ public sealed class RustyBladeSkill : IBattleSkill
     {
         BattleUnitCombatState caster = context.Actor != null ? context.Actor.State : null;
         BattleUnitCombatState target = context.PrimaryTarget != null ? context.PrimaryTarget.State : null;
+
+        VFXManager.Instance.PlayEffect("CriticalHit", target.Position + Vector3.up * 0.2f);
         effects.DealDamage(
             new BattleDamageRequest
             {
