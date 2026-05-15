@@ -346,7 +346,8 @@ public sealed class BattleSimulationManager : MonoBehaviour
         BattleOutcome? outcome = _victorySystem.Evaluate(
             _runtimeUnits,
             _battleTickCount,
-            _payload != null ? _payload.PlayerTeamId : BattleTeamIds.Player
+            _payload != null ? _payload.PlayerTeamId : BattleTeamIds.Player,
+            _payload != null ? _payload.PreviewRewardGold : 0
         );
 
         SimulationTickData tickData = BuildTickData();

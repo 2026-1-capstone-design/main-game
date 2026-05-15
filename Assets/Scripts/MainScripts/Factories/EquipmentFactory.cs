@@ -71,7 +71,7 @@ public sealed class EquipmentFactory : MonoBehaviour
             return null;
         }
 
-        int price = Mathf.Max(0, preview.Level * _balance.weaponBuyPricePerLevel);
+        int price = CalculateWeaponPrice(preview, currentDay);
         MarketWeaponOffer offer = new MarketWeaponOffer(slotIndex, preview, price);
 
         if (verboseLog)
@@ -106,7 +106,7 @@ public sealed class EquipmentFactory : MonoBehaviour
             return null;
         }
 
-        int level = CalculateMarketLevel(currentDay);
+        int dayValue = CalculateMarketLevel(currentDay);
         WeaponSkillSO weaponSkill = PickRandomMatchingWeaponSkill(weapon.weaponType);
 
         float finalAttackVariancePercent = _randomManager.NextFloatRange(
@@ -121,7 +121,13 @@ public sealed class EquipmentFactory : MonoBehaviour
             _balance.weaponFinalStatVarianceMaxPercent
         );
 
-        return BuildWeaponPreview(weapon, weaponSkill, level, finalAttackVariancePercent, finalHealthVariancePercent);
+        return BuildWeaponPreview(
+            weapon,
+            weaponSkill,
+            dayValue,
+            finalAttackVariancePercent,
+            finalHealthVariancePercent
+        );
     }
 
     // 랜덤이 아니라 지정된 무기 타입/스킬/레벨로 무기 preview를 만든다.
@@ -173,16 +179,31 @@ public sealed class EquipmentFactory : MonoBehaviour
 
     private int CalculateMarketLevel(int currentDay)
     {
-        int safeDay = Mathf.Max(1, currentDay);
+        return Mathf.Max(1, currentDay);
+    }
 
-        float levelVariance = _randomManager.NextFloatRange(
-            RandomStreamType.Equipment,
-            _balance.weaponLevelVarianceMinPercent,
-            _balance.weaponLevelVarianceMaxPercent
-        );
+    public int CalculateWeaponPrice(OwnedWeaponData weapon)
+    {
+        return CalculateWeaponPrice(weapon, weapon != null ? weapon.Level : 0);
+    }
 
-        int level = Mathf.FloorToInt(safeDay * (1f + levelVariance));
-        return Mathf.Max(1, level);
+    public int CalculateWeaponPrice(OwnedWeaponData weapon, int currentDay)
+    {
+        if (weapon == null)
+        {
+            return 0;
+        }
+
+        if (weapon.Weapon == null || _balance == null)
+        {
+            return 0;
+        }
+
+        int dayValue = Mathf.Max(1, currentDay);
+        int gradeBasePrice = GetWeaponGradeBasePrice(weapon.Weapon.weaponGrade);
+        int dayPrice = GetWeaponGradePricePerLevel(weapon.Weapon.weaponGrade) * dayValue;
+
+        return Mathf.Max(0, gradeBasePrice + dayPrice);
     }
 
     // OwnedWeaponData preview를 실제로 조립하는 함수
@@ -206,7 +227,7 @@ public sealed class EquipmentFactory : MonoBehaviour
         preview.FinalAttackBonusVariancePercent = finalAttackVariancePercent;
         preview.FinalHealthBonusVariancePercent = finalHealthVariancePercent;
 
-        RefreshDerivedStats(preview);
+        RefreshDerivedStats(preview, level);
         return preview;
     }
 
@@ -284,13 +305,18 @@ public sealed class EquipmentFactory : MonoBehaviour
     // 이후 검투사 쪽 최종 스탯 계산에서 그대로 더해짐
     private void RefreshDerivedStats(OwnedWeaponData ownedWeapon)
     {
+        RefreshDerivedStats(ownedWeapon, ownedWeapon != null ? ownedWeapon.Level : 0);
+    }
+
+    private void RefreshDerivedStats(OwnedWeaponData ownedWeapon, int currentDay)
+    {
         if (ownedWeapon == null || ownedWeapon.Weapon == null)
         {
             Debug.LogError("[EquipmentFactory] RefreshDerivedStats failed because weapon data is invalid.", this);
             return;
         }
 
-        int levelOffset = Mathf.Max(0, ownedWeapon.Level - 1);
+        int dayValue = Mathf.Max(1, currentDay);
 
         float baseAttackBonus = Mathf.Max(0f, ownedWeapon.Weapon.baseAttackBonus);
         float baseHealthBonus = Mathf.Max(0f, ownedWeapon.Weapon.baseHealthBonus);
@@ -298,13 +324,13 @@ public sealed class EquipmentFactory : MonoBehaviour
         float baseMoveSpeedBonus = Mathf.Max(0f, ownedWeapon.Weapon.baseMoveSpeedBonus);
         float baseAttackRangeBonus = Mathf.Max(0f, ownedWeapon.Weapon.baseAttackRangeBonus);
 
-        float scaledAttackBonus = baseAttackBonus * (1f + (_balance.equipmentAttackBonusPerLevel * levelOffset));
-        float scaledHealthBonus = baseHealthBonus * (1f + (_balance.equipmentHealthBonusPerLevel * levelOffset));
-        float scaledAttackSpeedBonus =
-            baseAttackSpeedBonus * (1f + (_balance.equipmentAttackSpeedBonusPerLevel * levelOffset));
-        float scaledMoveSpeedBonus =
-            baseMoveSpeedBonus * (1f + (_balance.equipmentMoveSpeedBonusPerLevel * levelOffset));
-        float scaledAttackRangeBonus = baseAttackRangeBonus;
+        float growthRatio = CalculateWeaponGrowthRatio(ownedWeapon.Weapon, dayValue);
+
+        float scaledAttackBonus = baseAttackBonus * (1f + growthRatio);
+        float scaledHealthBonus = baseHealthBonus * (1f + growthRatio);
+        float scaledAttackSpeedBonus = baseAttackSpeedBonus * (1f + growthRatio);
+        float scaledMoveSpeedBonus = baseMoveSpeedBonus;
+        float scaledAttackRangeBonus = baseAttackRangeBonus * (1f + growthRatio);
 
         float finalAttackMultiplier = 1f + ownedWeapon.FinalAttackBonusVariancePercent;
         float finalHealthMultiplier = 1f + ownedWeapon.FinalHealthBonusVariancePercent;
@@ -324,6 +350,64 @@ public sealed class EquipmentFactory : MonoBehaviour
         ownedWeapon.CachedAttackSpeedBonus = scaledAttackSpeedBonus;
         ownedWeapon.CachedMoveSpeedBonus = scaledMoveSpeedBonus;
         ownedWeapon.CachedAttackRangeBonus = scaledAttackRangeBonus;
+    }
+
+    private float CalculateWeaponGrowthRatio(WeaponSO weapon, int currentDay)
+    {
+        if (weapon == null || currentDay <= 0)
+        {
+            return 0f;
+        }
+
+        int baseValue = Mathf.Max(
+            1,
+            WeaponSO.CalculatePrice(
+                weapon.baseHealthBonus,
+                weapon.baseAttackBonus,
+                weapon.baseAttackSpeedBonus,
+                weapon.baseMoveSpeedBonus,
+                weapon.baseAttackRangeBonus
+            )
+        );
+
+        int pricePerLevel = GetWeaponGradePricePerLevel(weapon.weaponGrade);
+        return Mathf.Max(0f, (pricePerLevel * currentDay) / (float)baseValue);
+    }
+
+    private int GetWeaponGradeBasePrice(WeaponGrade grade)
+    {
+        if (_balance == null)
+        {
+            return 0;
+        }
+
+        return grade switch
+        {
+            WeaponGrade.Common => Mathf.Max(0, _balance.commonWeaponBasePrice),
+            WeaponGrade.Uncommon => Mathf.Max(0, _balance.uncommonWeaponBasePrice),
+            WeaponGrade.Rare => Mathf.Max(0, _balance.rareWeaponBasePrice),
+            WeaponGrade.Unique => Mathf.Max(0, _balance.uniqueWeaponBasePrice),
+            WeaponGrade.Legend => Mathf.Max(0, _balance.legendWeaponBasePrice),
+            _ => Mathf.Max(0, _balance.commonWeaponBasePrice),
+        };
+    }
+
+    private int GetWeaponGradePricePerLevel(WeaponGrade grade)
+    {
+        if (_balance == null)
+        {
+            return 0;
+        }
+
+        return grade switch
+        {
+            WeaponGrade.Common => Mathf.Max(0, _balance.commonWeaponPricePerLevel),
+            WeaponGrade.Uncommon => Mathf.Max(0, _balance.uncommonWeaponPricePerLevel),
+            WeaponGrade.Rare => Mathf.Max(0, _balance.rareWeaponPricePerLevel),
+            WeaponGrade.Unique => Mathf.Max(0, _balance.uniqueWeaponPricePerLevel),
+            WeaponGrade.Legend => Mathf.Max(0, _balance.legendWeaponPricePerLevel),
+            _ => Mathf.Max(0, _balance.commonWeaponPricePerLevel),
+        };
     }
 
     private WeaponSkillSO PickRandomMatchingWeaponSkill(WeaponType weaponType)

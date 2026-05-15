@@ -233,7 +233,14 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
             return 0;
         }
 
-        return Mathf.Max(0, gladiator.Level * balance.gladiatorSellPricePerLevel);
+        int basePrice = CalculateApproximateGladiatorPrice(gladiator, balance);
+        if (basePrice <= 0 || balance.gladiatorBuyPricePerLevel <= 0)
+        {
+            return 0;
+        }
+
+        float sellRatio = balance.gladiatorSellPricePerLevel / (float)balance.gladiatorBuyPricePerLevel;
+        return Mathf.Max(0, Mathf.RoundToInt(basePrice * sellRatio));
     }
 
     public int GetWeaponSellPrice(OwnedWeaponData weapon)
@@ -249,7 +256,14 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
             return 0;
         }
 
-        return Mathf.Max(0, weapon.Level * balance.weaponSellPricePerLevel);
+        int basePrice = _equipmentFactory != null ? _equipmentFactory.CalculateWeaponPrice(weapon) : 0;
+        if (basePrice <= 0 || balance.weaponBuyPricePerLevel <= 0)
+        {
+            return 0;
+        }
+
+        float sellRatio = balance.weaponSellPricePerLevel / (float)balance.weaponBuyPricePerLevel;
+        return Mathf.Max(0, Mathf.RoundToInt(basePrice * sellRatio));
     }
 
     // 검투사 구매를 책임지는 함수.
@@ -498,6 +512,48 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
         }
 
         return Mathf.Max(0, balance.marketGladiatorSlots);
+    }
+
+    private static int CalculateApproximateGladiatorPrice(OwnedGladiatorData gladiator, BalanceSO balance)
+    {
+        if (gladiator == null || balance == null)
+        {
+            return 0;
+        }
+
+        int baseMarketPrice = Mathf.Max(0, balance.gladiatorBaseMarketPrice);
+        int averagePerLevel = Mathf.RoundToInt(
+            (
+                Mathf.Max(0, balance.gladiatorMarketPricePerLevelMin)
+                + Mathf.Max(0, balance.gladiatorMarketPricePerLevelMax)
+            ) * 0.5f
+        );
+
+        int levelPrice = averagePerLevel * Mathf.Max(1, gladiator.Level);
+        int statDeltaPrice = CalculateGladiatorStatDeltaPrice(gladiator);
+        return Mathf.Max(0, baseMarketPrice + levelPrice + statDeltaPrice);
+    }
+
+    private static int CalculateGladiatorStatDeltaPrice(OwnedGladiatorData gladiator)
+    {
+        if (gladiator == null || gladiator.GladiatorClass == null)
+        {
+            return 0;
+        }
+
+        float healthDelta = Mathf.Max(0f, gladiator.CachedMaxHealth - gladiator.GladiatorClass.baseHealth);
+        float attackDelta = Mathf.Max(0f, gladiator.CachedAttack - gladiator.GladiatorClass.baseAttack);
+        float attackSpeedDelta = Mathf.Max(0f, gladiator.CachedAttackSpeed - gladiator.GladiatorClass.attackSpeed);
+        float moveSpeedDelta = Mathf.Max(0f, gladiator.CachedMoveSpeed - gladiator.GladiatorClass.moveSpeed);
+        float attackRangeDelta = Mathf.Max(0f, gladiator.CachedAttackRange - gladiator.GladiatorClass.attackRange);
+
+        return Mathf.RoundToInt(
+            (healthDelta * 1f)
+                + (attackDelta * 50f)
+                + (attackSpeedDelta * 1000f)
+                + (moveSpeedDelta * 700f)
+                + (attackRangeDelta * 700f)
+        );
     }
 
     private int GetConfiguredWeaponSlotCount()

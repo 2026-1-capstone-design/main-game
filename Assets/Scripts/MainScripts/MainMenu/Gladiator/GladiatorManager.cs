@@ -475,8 +475,7 @@ public sealed class GladiatorManager : SingletonBehaviour<GladiatorManager>
         int exp = 0;
         int loyalty = RollLoyaltyFromPersonality(personality, RandomStreamType.Recruit);
 
-        int upkeepPerLevel = _balance != null ? _balance.upkeepPerLevel : 10;
-        int upkeep = Mathf.Max(0, upkeepPerLevel * level);
+        int upkeep = CalculateGladiatorUpkeep(level);
 
         OwnedGladiatorData starter = new OwnedGladiatorData(
             _nextRuntimeId++,
@@ -593,12 +592,18 @@ public sealed class GladiatorManager : SingletonBehaviour<GladiatorManager>
 
         if (levelUpCount > 0)
         {
-            int upkeepPerLevel = _balance != null ? _balance.upkeepPerLevel : 10;
-            gladiator.Upkeep = Mathf.Max(0, upkeepPerLevel * gladiator.Level);
+            gladiator.Upkeep = CalculateGladiatorUpkeep(gladiator.Level);
             RefreshDerivedStats(gladiator, true);
         }
 
         return levelUpCount;
+    }
+
+    private int CalculateGladiatorUpkeep(int level)
+    {
+        int baseUpkeep = _balance != null ? Mathf.Max(0, _balance.gladiatorBaseUpkeep) : 2000;
+        int upkeepPerLevel = _balance != null ? Mathf.Max(0, _balance.gladiatorUpkeepPerLevel) : 100;
+        return Mathf.Max(0, baseUpkeep + (Mathf.Max(1, level) * upkeepPerLevel));
     }
 
     private int GetRequiredXpForCurrentLevel(int currentLevel)
