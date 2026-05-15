@@ -43,8 +43,7 @@ public sealed class FireballSkill : IBattleSkill
                 {
                     Source = casterState,
                     Target = hitTarget,
-                    //Amount = casterState.Attack * 2.5f, // 2.5배
-                    Amount = 10000,
+                    Amount = casterState.Attack * 2.5f,
                     SourceKind = BattleEffectSourceKind.Skill,
                     DamageKind = BattleDamageKind.Direct,
                     SkillId = SkillId,
@@ -59,7 +58,7 @@ public sealed class FireballSkill : IBattleSkill
 
         //만든 효과를 담아서 발사.
         BattleSimulationManager.Instance.LaunchCustomProjectile(
-            new BattleDamageRequest { Target = targetState }, // 타겟 추적용 Request
+            new BattleDamageRequest { Source = casterState, Target = targetState }, // 타겟 추적용 Request
             startPos,
             direction,
             5f, // 파이어볼 투사체 속도

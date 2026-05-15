@@ -19,8 +19,11 @@ MonoBehaviour:
   rightWeaponPrefab: {fileID: 3050969012209765930, guid: af0fb2ed48c04e142aa0554265114c9b, type: 3}
   isRanged: 1
   useProjectile: 0
-  baseAttackBonus: 10
+  defaultDur: 0
+  duration: 1
+  baseAttackBonus: 12
   baseHealthBonus: 20
-  baseAttackSpeedBonus: 0
+  baseAttackSpeedBonus: 0.6
   baseMoveSpeedBonus: 1
   baseAttackRangeBonus: 3
+  calculatedPrice: 5004

@@ -13,10 +13,7 @@ public sealed class BattleCooldownSystem
             if (unit == null || unit.IsCombatDisabled)
                 continue;
 
-            if (!unit.State.IsAttacking)
-            {
-                unit.State.TickAttackCooldown(deltaTime);
-            }
+            unit.State.TickAttackCooldown(deltaTime);
             unit.State.TickSkillCooldown(deltaTime);
             unit.State.TickBufflCooldown(deltaTime, effects);
 

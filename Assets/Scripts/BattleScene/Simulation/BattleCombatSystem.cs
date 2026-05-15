@@ -150,7 +150,7 @@ public sealed class BattleCombatSystem
                 Vector3 fireDirection = target.Position - startPos;
                 fireDirection.y = 0f;
 
-                float windUpDelay = attacker.Snapshot.WeaponType == WeaponType.bow ? 1.0f : 0.5f;
+                float windUpDelay = attacker.Snapshot.WeaponType == WeaponType.bow ? 0.3f : 0.3f;
 
                 // 평타 전용 발사 API 호출
                 BattleSimulationManager.Instance.LaunchBasicProjectile(
@@ -181,7 +181,7 @@ public sealed class BattleCombatSystem
         for (int i = 0; i < units.Count; i++)
         {
             BattleRuntimeUnit unit = units[i];
-            if (unit == null || unit.IsCombatDisabled || unit.State.IsStunned)
+            if (unit == null || unit.IsCombatDisabled || unit.State.IsStunned || unit.IsAttacking)
                 continue;
             if (_channelSystem != null && _channelSystem.IsChanneling(unit))
                 continue;

@@ -34,6 +34,9 @@ public sealed class BattleUnitCombatState
     [SerializeField]
     public float BaseAttackRange;
 
+    [SerializeField]
+    public float BaseWeaponDuration;
+
     // ── 실효 스탯 (버프 반영 계산값) ──────────────────────────────
     [SerializeField]
     public float Attack => Mathf.Max(0f, BaseAttack + GetBuffLevel(BuffType.AttackDamage) * 10f);
@@ -107,11 +110,13 @@ public sealed class BattleUnitCombatState
     public float ActionTimer { get; private set; }
 
     // ── 스킬 정보 세터 ─────────────────────────────────────────────
-    public void SetSkillInfo(WeaponSkillId skillId, float cooltime, skillType type)
+    public void SetSkillInfo(WeaponSkillId skillId, float cooltime, skillType type, bool defaultDur, float duration)
     {
         HaveSkill = skillId;
         SkillCooltime = cooltime;
         SkillType = type;
+        SkillDefaultDur = defaultDur;
+        SkillDuration = duration;
     }
 
     // ── 스킬 쿨다운 ────────────────────────────────────────────────
@@ -133,6 +138,9 @@ public sealed class BattleUnitCombatState
     public WeaponSkillId GetSkill() => HaveSkill;
 
     public skillType GetSkillType() => SkillType;
+
+    public bool SkillDefaultDur { get; private set; }
+    public float SkillDuration { get; private set; }
 
     // ── 체력/사망 이벤트 ──────────────────────────────────────────
     // BattleRuntimeUnit이 구독하여 HPbar 갱신, 사망 처리를 담당한다.
@@ -203,6 +211,7 @@ public sealed class BattleUnitCombatState
         if (isMoving)
         {
             IsAttacking = false;
+            IsCastingSkill = false;
         }
         OnMovingStateChanged?.Invoke(IsMoving);
     }
@@ -214,8 +223,19 @@ public sealed class BattleUnitCombatState
         if (isAttacking)
         {
             IsMoving = false;
+            IsCastingSkill = false;
             if (!wasAttacking)
                 OnAttackTriggered?.Invoke();
+        }
+    }
+
+    public void SetCastingSkillState(bool isCasting)
+    {
+        IsCastingSkill = isCasting;
+        if (isCasting)
+        {
+            IsMoving = false;
+            IsAttacking = false;
         }
     }
 
@@ -223,6 +243,7 @@ public sealed class BattleUnitCombatState
     {
         IsMoving = false;
         IsAttacking = false;
+        IsCastingSkill = false;
         OnIdleStateEntered?.Invoke();
     }
 
@@ -282,6 +303,7 @@ public sealed class BattleUnitCombatState
     public bool HasPlannedDesiredPosition { get; private set; }
     public bool IsMoving { get; private set; }
     public bool IsAttacking { get; private set; }
+    public bool IsCastingSkill {get; private set;}
     public BattleUnitCombatState CurrentTarget { get; private set; }
     public BattleUnitCombatState PlannedTargetEnemy { get; private set; }
     public BattleUnitCombatState PlannedTargetAlly { get; private set; }
@@ -303,6 +325,8 @@ public sealed class BattleUnitCombatState
         BaseAttackSpeed = snapshot.AttackSpeed;
         BaseMoveSpeed = snapshot.MoveSpeed;
         BaseAttackRange = snapshot.AttackRange;
+
+        BaseWeaponDuration = snapshot.Duration > 0f ? snapshot.Duration : 1f;
 
         BodyRadius = 50f; // SetBodyRadius로 SimManager가 덮어쓴다
 

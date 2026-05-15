@@ -48,6 +48,12 @@ public sealed class BattleUnitSnapshot
     public bool UseProjectile { get; }
     public Sprite PortraitSprite { get; }
 
+    public bool DefaultDur {get; set;}
+    public float Duration {get; set;}
+
+    public bool SkillDefaultDur { get; }
+    public float SkillDuration { get; }
+
     public BattleUnitSnapshot(
         int sourceRuntimeId,
         BattleTeamId teamId,
@@ -71,7 +77,11 @@ public sealed class BattleUnitSnapshot
         int[] customizeIndicates,
         bool isRanged,
         bool useProjectile,
-        Sprite portraitSprite
+        Sprite portraitSprite,
+        bool defaultDur = false,
+        float duration = 1f,
+        bool skillDefaultDur = true,
+        float skillDuration = 1f
     )
     {
         SourceRuntimeId = sourceRuntimeId;
@@ -104,6 +114,12 @@ public sealed class BattleUnitSnapshot
         IsRanged = isRanged;
         UseProjectile = useProjectile;
         PortraitSprite = portraitSprite;
+
+        DefaultDur = defaultDur;
+        Duration = duration;
+
+        SkillDefaultDur = skillDefaultDur;
+        SkillDuration = skillDuration;
     }
 
     // snapshot을 그대로 카피.
@@ -133,7 +149,11 @@ public sealed class BattleUnitSnapshot
             CustomizeIndicates,
             IsRanged,
             UseProjectile,
-            PortraitSprite
+            PortraitSprite,
+            DefaultDur,
+            Duration,
+            SkillDefaultDur,
+            SkillDuration
         );
     }
 
@@ -165,6 +185,12 @@ public sealed class BattleUnitSnapshot
         bool isRanged = false;
         bool useProjectile = false;
 
+        bool defaultDur = false;
+        float duration = 1f;
+
+        bool skillDefaultDur = true;
+        float skillDuration = 1f;
+
         if (source.EquippedWeapon != null)
         {
             if (source.EquippedWeapon.Weapon != null)
@@ -176,6 +202,12 @@ public sealed class BattleUnitSnapshot
 
                 isRanged = source.EquippedWeapon.Weapon.isRanged;
                 useProjectile = source.EquippedWeapon.Weapon.useProjectile;
+
+                defaultDur = source.EquippedWeapon.Weapon.defaultDur;
+                duration = source.EquippedWeapon.Weapon.duration;
+
+                skillDefaultDur = source.EquippedWeapon.WeaponSkill.defaultDur;
+                skillDuration = source.EquippedWeapon.WeaponSkill.duration;
             }
 
             if (source.EquippedWeapon.WeaponSkill != null)
@@ -207,7 +239,11 @@ public sealed class BattleUnitSnapshot
             source.CustomizeIndicates,
             isRanged,
             useProjectile,
-            resolvedPortrait
+            resolvedPortrait,
+            defaultDur,
+            duration,
+            skillDefaultDur,
+            skillDuration
         );
     }
 

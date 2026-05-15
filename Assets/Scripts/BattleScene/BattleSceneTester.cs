@@ -176,6 +176,9 @@ public sealed class BattleSceneTester : MonoBehaviour
         bool isRanged = false;
         bool useProjectile = false;
 
+        bool defaultDur = false;
+        float duration  = 1f;
+
         if (entry.weaponData != null)
         {
             resolvedType = entry.weaponData.weaponType;
@@ -183,6 +186,9 @@ public sealed class BattleSceneTester : MonoBehaviour
             rightPrefab = entry.weaponData.rightWeaponPrefab;
             isRanged = entry.weaponData.isRanged;
             useProjectile = entry.weaponData.useProjectile;
+
+            defaultDur = entry.weaponData.defaultDur;
+            duration = entry.weaponData.duration;
 
             finalAtk += entry.weaponData.baseAttackBonus;
             finalAtkSpeed += entry.weaponData.baseAttackSpeedBonus;
@@ -224,7 +230,9 @@ public sealed class BattleSceneTester : MonoBehaviour
             isRanged: isRanged,
             useProjectile: useProjectile,
             customizeIndicates: randomSkins,
-            portraitSprite: classSO.icon
+            portraitSprite: classSO.icon,
+            defaultDur: defaultDur,
+            duration : duration
         );
     }
 }

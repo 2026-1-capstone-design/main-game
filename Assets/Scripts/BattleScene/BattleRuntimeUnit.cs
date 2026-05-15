@@ -95,6 +95,8 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     public bool IsMoving => State.IsMoving;
     public bool IsAttacking => State.IsAttacking;
 
+    public bool IsCastingSkill => state.IsCastingSkill;
+
     // ── 위치 (State 위임) ────────────────────────────────────────
     public Vector3 Position => State != null ? State.Position : transform.position;
 
@@ -212,6 +214,12 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     private float _attackAnimationClipLength = -1f;
     private float _skillAnimationClipLength = 0.5f;
 
+    //공격 모션 맞추기 위한 기본 배속
+    private float _normalAttackMotionSpeed = 1f;
+
+    //스킬 모션 맞추기 위한 기본 배속
+    private float _normalSkillMotionSpeed = 1f;
+
     // animationProvider가 null이면 AnimationManager.Instance로 폴백한다.
     public void Initialize(
         BattleUnitSnapshot snapshot,
@@ -306,7 +314,12 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
             if (weaponMotion != null)
             {
                 _myAnimation.runtimeAnimatorController = weaponMotion;
-                _attackAnimationClipLength = -1f;
+                _attackAnimationClipLength = GetAttackAnimationClipLength(weaponMotion);
+
+                if (!Snapshot.DefaultDur && Snapshot.Duration > 0f)
+                    _normalAttackMotionSpeed = _attackAnimationClipLength / Snapshot.Duration;
+                else
+                    _normalAttackMotionSpeed = 1f;
             }
         }
 
@@ -330,7 +343,14 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         skillType type = provider.getSkillType(skillId);
         _skillAnimationClipLength = skillAnimation != null ? skillAnimation.length : 0.5f;
 
-        State.SetSkillInfo(skillId, cooltime, type);
+        float clipLength = skillAnimation != null ? skillAnimation.length : 1f;
+
+        if (!Snapshot.SkillDefaultDur && Snapshot.SkillDuration > 0f)
+            _normalSkillMotionSpeed = clipLength / Snapshot.SkillDuration;
+        else
+            _normalSkillMotionSpeed = 1f;
+
+        State.SetSkillInfo(skillId, cooltime, type, Snapshot.SkillDefaultDur, Snapshot.Duration);
 
         if (_myAnimation != null && skillAnimation != null)
         {
@@ -351,6 +371,35 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
             local["HumanM@MiningOneHand01_L - Ground"] = skillAnimation;
             _myAnimation.runtimeAnimatorController = local;
         }
+    }
+
+    //공격 모션의 애니메이션 클립 길이 가져오기
+    private float GetAttackAnimationClipLength(RuntimeAnimatorController controller)
+    {
+        if (controller == null) return 1f;
+
+        // 1. 현재 컨트롤러가 오버라이드 컨트롤러인지 확인합니다.
+        if (controller is AnimatorOverrideController overrideController)
+        {
+            // 2. 원본 클립의 이름을 '열쇠'로 사용하여, 현재 그 자리에 껴있는(덮어씌워진) 클립을 가져옵니다.
+            AnimationClip currentAttackClip = overrideController["HumanM@AttackShield01"];
+
+            if (currentAttackClip != null)
+            {
+                return currentAttackClip.length; // 새로운 무기 모션의 길이를 정확히 반환!
+            }
+        }
+        else
+        {
+            // (예외 처리) 오버라이드가 안 된 순정 상태일 경우
+            foreach (AnimationClip clip in controller.animationClips)
+            {
+                if (clip.name == "HumanM@AttackShield01")
+                    return clip.length;
+            }
+        }
+
+        return 1f; // 못 찾으면 기본값
     }
 
     // ── 커스터마이즈 ─────────────────────────
@@ -417,6 +466,15 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     // ── 공격 트리거 (OnAttackTriggered 이벤트 핸들러) ────────────
     private void HandleAttackTriggered()
     {
+        //여기서 공속 비례한 속도 갱신
+        //최종 속도 = (무기 duration 보정값) * (현재 스탯에 적용된 버프 포함 공격 속도)
+        if (_myAnimation != null)
+        {
+            float finalAttackSpeed = _normalAttackMotionSpeed * AttackSpeed; // AttackSpeed는 State 위임 프로퍼티입니다.
+            _myAnimation.SetFloat("AttackSpeed", finalAttackSpeed);
+        }
+
+
         _myAnimation?.SetTrigger("attack");
         _lastAttackTriggerFrame = Time.frameCount;
         State.SetAttackState(true);
@@ -471,7 +529,14 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     // ── 스킬 실행 비주얼 ──────────────────────────────────────────
     public void SetSkillState(float animationDuration)
     {
+        if (_myAnimation != null)
+        {
+            float finalSkillSpeed = _normalSkillMotionSpeed * AttackSpeed;
+            _myAnimation.SetFloat("SkillSpeed", finalSkillSpeed);
+        }
+
         _myAnimation?.SetTrigger("skill");
+        state.SetCastingSkillState(true);
         if (PlannedTargetEnemy != null)
             FaceTarget(PlannedTargetEnemy.Position);
         else if (CurrentTarget != null)
@@ -567,6 +632,14 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     {
         transform.position = newPosition;
         State?.SyncPosition(newPosition);
+    }
+
+    public void SyncStatePositionWithTransform()
+    {
+        if (State != null)
+        {
+            State.SyncPosition(transform.position);
+        }
     }
 
     public void FaceTarget(Vector3 targetPos)

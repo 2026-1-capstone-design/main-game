@@ -76,4 +76,8 @@ public sealed class WeaponSkillSO : ScriptableObject
 
     public WeaponType weaponType = WeaponType.oneHand;
     public WeaponSkillId skillId = WeaponSkillId.None;
+
+    [Header("Skill Animation Timing")]
+    public bool defaultDur = true;
+    public float duration = 1.0f;
 }
