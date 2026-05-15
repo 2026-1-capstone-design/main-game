@@ -505,47 +505,23 @@ public sealed class RecruitFactory : MonoBehaviour
     private static int CalculateGladiatorStatDeltaPrice(OwnedGladiatorData gladiator)
     {
         if (gladiator == null || gladiator.GladiatorClass == null)
-        {
             return 0;
-        }
 
-        float baseHealth = gladiator.GladiatorClass.baseHealth;
-        float baseAttack = gladiator.GladiatorClass.baseAttack;
-        float baseAttackSpeed = gladiator.GladiatorClass.attackSpeed;
-        float baseMoveSpeed = gladiator.GladiatorClass.moveSpeed;
-        float baseAttackRange = gladiator.GladiatorClass.attackRange;
+        var baseStat = gladiator.GladiatorClass;
 
-        // 추가 스탯 계산
-        float additionalHealth = Mathf.Max(0f, gladiator.CachedMaxHealth - baseHealth);
-        float additionalMoveSpeed = Mathf.Max(0f, gladiator.CachedMoveSpeed - baseMoveSpeed);
-        float additionalAttackRange = Mathf.Max(0f, gladiator.CachedAttackRange - baseAttackRange);
+        float additionalHealth = Mathf.Max(0f, gladiator.CachedMaxHealth - baseStat.baseHealth);
+        float healthPremium = additionalHealth * 1f;
 
-        // (기본공격력 + 추가공격력) 및 (기본공속 + 추가공속)
-        float currentAttack = gladiator.CachedAttack;
-        float currentAttackSpeed = gladiator.CachedAttackSpeed;
+        float baseDps = baseStat.baseAttack * baseStat.attackSpeed;
+        float currentDps = gladiator.CachedAttack * gladiator.CachedAttackSpeed;
 
-        // DPS 계산
-        float baseDps = baseAttack * baseAttackSpeed;
-        float currentDps = currentAttack * currentAttackSpeed;
-
-        float offensivePrice = 0f;
-        if (baseDps > 0f)
+        float offensivePremium = 0f;
+        if (baseDps > 0.001f)
         {
-            // 제시해주신 공식 그대로 적용:
-            // {(기본공격력 + 추가공격력) * (기본공속 + 추가공속)} / 기본 DPS * 기본공격력 * 공격가격
-            offensivePrice = (currentDps / baseDps) * baseAttack * 50f;
+            offensivePremium = (currentDps / baseDps) * baseStat.baseAttack * 50f;
         }
 
-        // 최종 가격 합산
-        return Mathf.RoundToInt(
-            (additionalHealth * 1f)
-                + // 추가체력 * 체력가격
-                offensivePrice
-                + // DPS 환산 공격가격
-                (additionalMoveSpeed * 700f)
-                + // 추가이속 * 이속가격
-                (additionalAttackRange * 700f) // 추가사거리 * 사거리가격
-        );
+        return Mathf.RoundToInt(healthPremium + offensivePremium);
     }
 
     private int RollLoyaltyFromPersonality(PersonalitySO personality, RandomStreamType streamType)

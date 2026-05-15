@@ -203,18 +203,24 @@ public sealed class EquipmentFactory : MonoBehaviour
     public int CalculateWeaponPrice(OwnedWeaponData weapon, int currentDay)
     {
         if (weapon == null || weapon.Weapon == null)
-        {
             return 0;
+
+        WeaponSO so = weapon.Weapon;
+        float baseDps = Mathf.Max(0.01f, so.baseAttackBonus * so.baseAttackSpeedBonus);
+        float currentDps = weapon.CachedAttackBonus * weapon.CachedAttackSpeedBonus;
+
+        float offensiveValue = 0f;
+        if (baseDps > 0.001f)
+        {
+            offensiveValue = (currentDps / baseDps) * so.baseAttackBonus * 50f;
         }
 
-        // 🌟 할당된 최종 스탯들의 실제 가격을 역산합니다.
-        float finalValue =
-            (weapon.CachedAttackBonus * PricePerAtk)
-            + (weapon.CachedHealthBonus * PricePerHP)
-            + (weapon.CachedAttackRangeBonus * PricePerRange)
-            + (weapon.CachedMoveSpeedBonus * PricePerMoveSpd);
+        float otherValue =
+            (weapon.CachedHealthBonus * 1f)
+            + (weapon.CachedMoveSpeedBonus * 700f)
+            + (weapon.CachedAttackRangeBonus * 700f);
 
-        return Mathf.Max(0, Mathf.RoundToInt(finalValue));
+        return Mathf.RoundToInt(offensiveValue + otherValue);
     }
 
     // OwnedWeaponData preview를 실제로 조립하는 함수
@@ -319,41 +325,29 @@ public sealed class EquipmentFactory : MonoBehaviour
     private void RefreshDerivedStats(OwnedWeaponData ownedWeapon, int currentDay, float budgetVariance)
     {
         if (ownedWeapon == null || ownedWeapon.Weapon == null)
-        {
-            Debug.LogError("[EquipmentFactory] RefreshDerivedStats failed because weapon data is invalid.", this);
             return;
-        }
 
         WeaponSO so = ownedWeapon.Weapon;
         int dayValue = Mathf.Max(1, currentDay);
 
-        // 1. 기준 예산 설정 (등급 기본가 + 일차별 상승가)
         int gradeBasePrice = GetWeaponGradeBasePrice(so.weaponGrade);
         int dayPrice = GetWeaponGradePricePerLevel(so.weaponGrade) * dayValue;
-        float standardBudget = gradeBasePrice + dayPrice;
+        float totalBudget = (gradeBasePrice + dayPrice) * Mathf.Max(0f, budgetVariance);
 
-        // 2. 예산 편차(±5%) 적용
-        float totalBudget = standardBudget * Mathf.Max(0f, budgetVariance);
-
-        // 3. 무기 원본의 기본 가치 계산 (공속은 제외)
         float baseValue =
             (so.baseAttackBonus * PricePerAtk)
             + (so.baseHealthBonus * PricePerHP)
             + (so.baseAttackRangeBonus * PricePerRange)
             + (so.baseMoveSpeedBonus * PricePerMoveSpd);
 
-        // 4. 잉여 예산 및 성장 비율 계산
         float bonusBudget = Mathf.Max(0f, totalBudget - baseValue);
         float growthRatio = (baseValue > 0f) ? (bonusBudget / baseValue) : 0f;
 
-        // 5. 스탯 할당 (기본 스탯 비중에 맞춰 그대로 뻥튀기)
         ownedWeapon.CachedAttackBonus = so.baseAttackBonus * (1f + growthRatio);
+        ownedWeapon.CachedAttackSpeedBonus = so.baseAttackSpeedBonus * (1f + growthRatio);
         ownedWeapon.CachedHealthBonus = so.baseHealthBonus * (1f + growthRatio);
-        ownedWeapon.CachedAttackRangeBonus = so.baseAttackRangeBonus * (1f + growthRatio);
         ownedWeapon.CachedMoveSpeedBonus = so.baseMoveSpeedBonus * (1f + growthRatio);
-
-        // 공속은 게임 밸런스(애니메이션 속도 등) 보호를 위해 레벨이 올라도 성장하지 않게 고정합니다.
-        ownedWeapon.CachedAttackSpeedBonus = so.baseAttackSpeedBonus;
+        ownedWeapon.CachedAttackRangeBonus = so.baseAttackRangeBonus * (1f + growthRatio);
     }
 
     private float CalculateWeaponGrowthRatio(WeaponSO weapon, int currentDay)
