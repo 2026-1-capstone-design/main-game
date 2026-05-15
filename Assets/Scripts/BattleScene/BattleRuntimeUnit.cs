@@ -95,7 +95,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     public bool IsMoving => State.IsMoving;
     public bool IsAttacking => State.IsAttacking;
 
-    public bool IsCastingSkill => state.IsCastingSkill;
+    public bool IsCastingSkill => State.IsCastingSkill;
 
     // ── 위치 (State 위임) ────────────────────────────────────────
     public Vector3 Position => State != null ? State.Position : transform.position;
@@ -341,16 +341,14 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         AnimationClip skillAnimation = provider.getAnimation(skillId);
         float cooltime = provider.getCooltime(skillId);
         skillType type = provider.getSkillType(skillId);
-        _skillAnimationClipLength = skillAnimation != null ? skillAnimation.length : 0.5f;
-
-        float clipLength = skillAnimation != null ? skillAnimation.length : 1f;
+        _skillAnimationClipLength = skillAnimation != null ? skillAnimation.length : 1f;
 
         if (!Snapshot.SkillDefaultDur && Snapshot.SkillDuration > 0f)
-            _normalSkillMotionSpeed = clipLength / Snapshot.SkillDuration;
+            _normalSkillMotionSpeed = _skillAnimationClipLength / Snapshot.SkillDuration;
         else
             _normalSkillMotionSpeed = 1f;
 
-        State.SetSkillInfo(skillId, cooltime, type, Snapshot.SkillDefaultDur, Snapshot.Duration);
+        State.SetSkillInfo(skillId, cooltime, type, Snapshot.SkillDefaultDur, Snapshot.SkillDuration);
 
         if (_myAnimation != null && skillAnimation != null)
         {
@@ -632,14 +630,6 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     {
         transform.position = newPosition;
         State?.SyncPosition(newPosition);
-    }
-
-    public void SyncStatePositionWithTransform()
-    {
-        if (State != null)
-        {
-            State.SyncPosition(transform.position);
-        }
     }
 
     public void FaceTarget(Vector3 targetPos)

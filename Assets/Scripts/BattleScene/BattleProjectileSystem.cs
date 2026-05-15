@@ -9,12 +9,12 @@ public class BattleProjectileState
     public BattleDamageRequest DamageRequest { get; }
     public Vector3 CurrentPosition { get; private set; }
 
-    // 🌟 [수정] 방향이 실시간으로 바뀔 수 있도록 private set 추가
+    // [수정] 방향이 실시간으로 바뀔 수 있도록 private set 추가
     public Vector3 Direction { get; private set; }
     public float Speed { get; }
     public float Delay { get; set; }
 
-    // 🌟 [추가] 유도탄 여부
+    // [추가] 유도탄 여부
     public bool IsHoming { get; }
 
     public GameObject VisualObject { get; private set; }

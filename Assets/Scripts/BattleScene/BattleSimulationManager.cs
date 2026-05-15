@@ -290,7 +290,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
             BattleRuntimeUnit unit = _runtimeUnits[i];
             if (unit != null)
             {
-                unit.SyncStatePositionWithTransform();
+                unit.SetPosition(unit.Position);
             }
         }
 

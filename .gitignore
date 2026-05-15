@@ -94,3 +94,5 @@ Assets/ML-Agents/
 # Unity ML-Agents Demo
 Assets/Demos/
 Assets/Demos.meta
+
+*.lscache
