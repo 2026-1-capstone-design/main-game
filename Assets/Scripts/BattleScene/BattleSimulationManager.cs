@@ -198,7 +198,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
 
         if (projectileManager != null)
         {
-            _projectileSystem.Configure(_effectSystem, projectileManager.ProjectileRoot);
+            _projectileSystem.Configure(_effectSystem, projectileManager.ProjectileRoot, _runtimeUnits);
         }
         if (_battleTextManager != null)
         {
@@ -285,6 +285,15 @@ public sealed class BattleSimulationManager : MonoBehaviour
         _rosterMutationSystem.FlushPendingSummons();
         _battleTickCount++;
 
+        for (int i = 0; i < _runtimeUnits.Count; i++)
+        {
+            BattleRuntimeUnit unit = _runtimeUnits[i];
+            if (unit != null)
+            {
+                unit.SetPosition(unit.Position);
+            }
+        }
+
         BattleParameterRadii radii = BattleParameterSystem.BuildRadii(aiTuning);
         CurrentSnapshot = BattleFieldSnapshot.Build(
             _runtimeUnits,
@@ -337,7 +346,8 @@ public sealed class BattleSimulationManager : MonoBehaviour
         BattleOutcome? outcome = _victorySystem.Evaluate(
             _runtimeUnits,
             _battleTickCount,
-            _payload != null ? _payload.PlayerTeamId : BattleTeamIds.Player
+            _payload != null ? _payload.PlayerTeamId : BattleTeamIds.Player,
+            _payload != null ? _payload.PreviewRewardGold : 0
         );
 
         SimulationTickData tickData = BuildTickData();
@@ -457,7 +467,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
                 ? projectileManager.NormalMagicPrefab
                 : projectileManager.NormalArrowPrefab;
 
-        _projectileSystem.Launch(request, startPos, direction, 10f, prefab, delay);
+        _projectileSystem.Launch(request, startPos, direction, 5f, prefab, delay, null, true);
     }
 
     // 스킬 전용 (string ID 사용)
@@ -477,7 +487,8 @@ public sealed class BattleSimulationManager : MonoBehaviour
         GameObject customPrefab = projectileManager.GetCustomPrefab(projectileId);
         if (customPrefab != null)
         {
-            _projectileSystem.Launch(request, startPos, direction, speed, customPrefab, delay, onHit);
+            //기본값 false
+            _projectileSystem.Launch(request, startPos, direction, speed, customPrefab, delay, onHit, false);
         }
     }
 }

@@ -104,7 +104,7 @@ public sealed class RecruitFactory : MonoBehaviour
             return null;
         }
 
-        int price = Mathf.Max(0, preview.Level * _balance.gladiatorBuyPricePerLevel);
+        int price = CalculateGladiatorPrice(preview, currentDay, RandomStreamType.Recruit);
         MarketGladiatorOffer offer = new MarketGladiatorOffer(slotIndex, preview, price);
 
         if (verboseLog)
@@ -120,7 +120,7 @@ public sealed class RecruitFactory : MonoBehaviour
         return offer;
     }
 
-    // 하루치 전투 후보 전체를 생성한다. 각각 기준 레벨의 -40%, -10%, +0%, +10%
+    // 하루치 전투 후보 전체를 생성한다.
     // 실제 하나의 난이도 당 적 팀 하나는 CreateBattleEncounterPreviewForDifficulty에서 구성함.
     // 이렇게 난이도별 적 팀 preview를 만들고, BattleManager가 이를 캐시해 사용함.
     public List<BattleEncounterPreview> CreateBattleEncounterPreviewsForDay(
@@ -248,10 +248,7 @@ public sealed class RecruitFactory : MonoBehaviour
         return new BattleEncounterPreview(encounterIndex, units, averageLevel, previewRewardGold, difficulty);
     }
 
-    // 난이도와 날짜에 맞춰 적 팀 전체 레벨 총량을 정하고,
-    // 그 총량을 각 적 유닛에게 분배한다.
-    // 리팩토링 대상: 현재는 총량을 정하고 분배하는 방식이므로 레벨이 정수로 딱 떨어진다.
-    // 추후 약간의 노이즈를 위해 개별 분포를 적용할 수 있음.
+    // 레벨 = DAY 규칙에 맞춰 적 팀 유닛 레벨을 고정한다.
     private List<int> BuildEncounterUnitLevels(
         int currentDay,
         BattleEncounterDifficulty difficulty,
@@ -265,48 +262,14 @@ public sealed class RecruitFactory : MonoBehaviour
             return levels;
         }
 
-        float targetAverageLevel = Mathf.Max(1f, currentDay * GetAverageLevelMultiplierForDifficulty(difficulty));
-        int targetTotalLevel = Mathf.Max(unitsPerEncounter, Mathf.RoundToInt(targetAverageLevel * unitsPerEncounter));
-
-        int baseLevel = Mathf.Max(1, targetTotalLevel / unitsPerEncounter);
-        int remainder = Mathf.Max(0, targetTotalLevel - (baseLevel * unitsPerEncounter));
+        int level = Mathf.Max(1, currentDay);
 
         for (int i = 0; i < unitsPerEncounter; i++)
         {
-            levels.Add(baseLevel);
-        }
-
-        int startIndex =
-            _randomManager != null ? _randomManager.NextInt(RandomStreamType.BattleEncounter, 0, unitsPerEncounter) : 0;
-
-        for (int i = 0; i < remainder; i++)
-        {
-            int index = (startIndex + i) % unitsPerEncounter;
-            levels[index]++;
+            levels.Add(level);
         }
 
         return levels;
-    }
-
-    private float GetAverageLevelMultiplierForDifficulty(BattleEncounterDifficulty difficulty)
-    {
-        switch (difficulty)
-        {
-            case BattleEncounterDifficulty.VeryLow:
-                return 0.6f;
-
-            case BattleEncounterDifficulty.Low:
-                return 0.9f;
-
-            case BattleEncounterDifficulty.Medium:
-                return 1.0f;
-
-            case BattleEncounterDifficulty.High:
-                return 1.1f;
-
-            default:
-                return 1.0f;
-        }
     }
 
     private OwnedGladiatorData CreatePreviewGladiatorAtLevel(
@@ -339,7 +302,7 @@ public sealed class RecruitFactory : MonoBehaviour
 
         int level = Mathf.Max(1, fixedLevel);
         int loyalty = RollLoyaltyFromPersonality(personality, streamType);
-        int upkeep = Mathf.Max(0, _balance.upkeepPerLevel * level);
+        int upkeep = CalculateGladiatorUpkeep(fixedLevel);
 
         int[] randomIndicates = GladiatorSkinManager.Instance.GenerateRandomSkinIndicates();
 
@@ -380,7 +343,7 @@ public sealed class RecruitFactory : MonoBehaviour
             _balance.gladiatorFinalStatVarianceMaxPercent
         );
 
-        RefreshDerivedStats(preview, true);
+        RefreshDerivedStats(preview, fixedLevel, true);
         return preview;
     }
 
@@ -416,7 +379,7 @@ public sealed class RecruitFactory : MonoBehaviour
 
         int level = CalculateDayBasedLevel(currentDay, streamType);
         int loyalty = RollLoyaltyFromPersonality(personality, streamType);
-        int upkeep = Mathf.Max(0, _balance.upkeepPerLevel * level);
+        int upkeep = CalculateGladiatorUpkeep(currentDay);
 
         int[] randomIndicates = GladiatorSkinManager.Instance.GenerateRandomSkinIndicates();
 
@@ -457,38 +420,108 @@ public sealed class RecruitFactory : MonoBehaviour
             _balance.gladiatorFinalStatVarianceMaxPercent
         );
 
-        RefreshDerivedStats(preview, true);
+        RefreshDerivedStats(preview, currentDay, true);
         return preview;
     }
 
     private int CalculateDayBasedLevel(int currentDay, RandomStreamType streamType)
     {
-        int safeDay = Mathf.Max(1, currentDay);
-
-        float levelVariance = _randomManager.NextFloatRange(
-            streamType,
-            _balance.gladiatorLevelVarianceMinPercent,
-            _balance.gladiatorLevelVarianceMaxPercent
-        );
-
-        int level = Mathf.FloorToInt(safeDay * (1f + levelVariance));
-        return Mathf.Max(1, level);
+        return Mathf.Max(1, currentDay);
     }
 
     private int CalculatePreviewRewardForDifficulty(int currentDay, BattleEncounterDifficulty difficulty)
     {
-        int baseReward = Mathf.Max(0, Mathf.Max(1, currentDay) * _balance.battleVictoryRewardPerDay);
+        return CalculateRewardForDifficulty(_balance, currentDay, difficulty);
+    }
 
-        float multiplier = difficulty switch
+    public static int CalculateRewardForDifficulty(
+        BalanceSO balance,
+        int currentDay,
+        BattleEncounterDifficulty difficulty
+    )
+    {
+        int safeDay = Mathf.Max(1, currentDay);
+
+        if (balance == null)
         {
-            BattleEncounterDifficulty.VeryLow => 0.4f,
-            BattleEncounterDifficulty.Low => 0.9f,
-            BattleEncounterDifficulty.Medium => 1.0f,
-            BattleEncounterDifficulty.High => 1.1f,
-            _ => 1.0f,
-        };
+            return safeDay * 100;
+        }
 
-        return Mathf.Max(0, Mathf.RoundToInt(baseReward * multiplier));
+        return difficulty switch
+        {
+            BattleEncounterDifficulty.VeryLow => Mathf.Max(
+                0,
+                balance.veryLowRewardBase + (balance.veryLowRewardPerLevel * safeDay)
+            ),
+            BattleEncounterDifficulty.Low => Mathf.Max(
+                0,
+                balance.lowRewardBase + (balance.lowRewardPerLevel * safeDay)
+            ),
+            BattleEncounterDifficulty.Medium => Mathf.Max(
+                0,
+                balance.mediumRewardBase + (balance.mediumRewardPerLevel * safeDay)
+            ),
+            BattleEncounterDifficulty.High => Mathf.Max(
+                0,
+                balance.highRewardBase + (balance.highRewardPerLevel * safeDay)
+            ),
+            _ => Mathf.Max(0, balance.mediumRewardBase + (balance.mediumRewardPerLevel * safeDay)),
+        };
+    }
+
+    public int CalculateGladiatorPrice(OwnedGladiatorData gladiator, int currentDay, RandomStreamType streamType)
+    {
+        if (gladiator == null)
+        {
+            return 0;
+        }
+
+        int levelPriceMin = _balance != null ? _balance.gladiatorMarketPricePerLevelMin : 40;
+        int levelPriceMax = _balance != null ? _balance.gladiatorMarketPricePerLevelMax : 60;
+        if (levelPriceMax < levelPriceMin)
+        {
+            levelPriceMax = levelPriceMin;
+        }
+
+        int perLevelPrice =
+            _randomManager != null
+                ? _randomManager.NextInt(streamType, levelPriceMin, levelPriceMax + 1)
+                : Mathf.RoundToInt((levelPriceMin + levelPriceMax) * 0.5f);
+
+        int baseMarketPrice = _balance != null ? Mathf.Max(0, _balance.gladiatorBaseMarketPrice) : 2000;
+        int dayPrice = Mathf.Max(0, perLevelPrice) * Mathf.Max(1, currentDay);
+        int statDeltaPrice = CalculateGladiatorStatDeltaPrice(gladiator);
+
+        return Mathf.Max(0, baseMarketPrice + dayPrice + statDeltaPrice);
+    }
+
+    public int CalculateGladiatorUpkeep(int level)
+    {
+        int baseUpkeep = _balance != null ? Mathf.Max(0, _balance.gladiatorBaseUpkeep) : 2000;
+        int upkeepPerLevel = _balance != null ? Mathf.Max(0, _balance.gladiatorUpkeepPerLevel) : 100;
+        return Mathf.Max(0, baseUpkeep + (Mathf.Max(1, level) * upkeepPerLevel));
+    }
+
+    private static int CalculateGladiatorStatDeltaPrice(OwnedGladiatorData gladiator)
+    {
+        if (gladiator == null || gladiator.GladiatorClass == null)
+            return 0;
+
+        var baseStat = gladiator.GladiatorClass;
+
+        float additionalHealth = Mathf.Max(0f, gladiator.CachedMaxHealth - baseStat.baseHealth);
+        float healthPremium = additionalHealth * 1f;
+
+        float baseDps = baseStat.baseAttack * baseStat.attackSpeed;
+        float currentDps = gladiator.CachedAttack * gladiator.CachedAttackSpeed;
+
+        float offensivePremium = 0f;
+        if (baseDps > 0.001f)
+        {
+            offensivePremium = (currentDps / baseDps) * baseStat.baseAttack * 50f;
+        }
+
+        return Mathf.RoundToInt(healthPremium + offensivePremium);
     }
 
     private int RollLoyaltyFromPersonality(PersonalitySO personality, RandomStreamType streamType)
@@ -537,6 +570,11 @@ public sealed class RecruitFactory : MonoBehaviour
     // 프리뷰 단계에서도 이 함수로 실제 전투 진입 전 능력치가 확정됨.
     private void RefreshDerivedStats(OwnedGladiatorData gladiator, bool fullyHeal)
     {
+        RefreshDerivedStats(gladiator, gladiator != null ? gladiator.Level : 0, fullyHeal);
+    }
+
+    private void RefreshDerivedStats(OwnedGladiatorData gladiator, int currentDay, bool fullyHeal)
+    {
         if (gladiator == null)
         {
             Debug.LogError("[RecruitFactory] RefreshDerivedStats received null gladiator.", this);
@@ -552,15 +590,15 @@ public sealed class RecruitFactory : MonoBehaviour
         float oldCurrentHealth = gladiator.CurrentHealth;
         float oldMaxHealth = gladiator.CachedMaxHealth;
 
-        int levelOffset = Mathf.Max(0, gladiator.Level - 1);
+        int dayOffset = Mathf.Max(0, currentDay - 1);
 
         float baseHealth = Mathf.Max(0f, gladiator.GladiatorClass.baseHealth);
         float healthGrowthPerLevel = Mathf.Max(0f, gladiator.GladiatorClass.healthGrowthPerLevel);
-        float scaledHealth = baseHealth + (healthGrowthPerLevel * levelOffset);
+        float scaledHealth = baseHealth + (healthGrowthPerLevel * dayOffset);
 
         float baseAttack = Mathf.Max(0f, gladiator.GladiatorClass.baseAttack);
         float attackGrowthPerLevel = Mathf.Max(0f, gladiator.GladiatorClass.attackGrowthPerLevel);
-        float scaledAttack = baseAttack + (attackGrowthPerLevel * levelOffset);
+        float scaledAttack = baseAttack + (attackGrowthPerLevel * dayOffset);
 
         float baseAttackSpeed = Mathf.Max(0f, gladiator.GladiatorClass.attackSpeed);
         float baseMoveSpeed = Mathf.Max(0f, gladiator.GladiatorClass.moveSpeed);
@@ -697,7 +735,7 @@ public sealed class RecruitFactory : MonoBehaviour
         }
 
         preview.EquippedWeapon = weaponPreview;
-        RefreshDerivedStats(preview, true);
+        RefreshDerivedStats(preview, currentDay, true);
         return true;
     }
 

@@ -12,12 +12,35 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f16f1c1b9f0de404fbce71a05c45c8d0, type: 3}
   m_Name: Balance1
   m_EditorClassIdentifier: Assembly-CSharp::BalanceSO
-  initialGold: 1000
+  initialGold: 5000
   battleVictoryRewardPerDay: 100
   gladiatorBuyPricePerLevel: 50
   weaponBuyPricePerLevel: 50
   gladiatorSellPricePerLevel: 40
   weaponSellPricePerLevel: 40
+  veryLowRewardBase: 5000
+  veryLowRewardPerLevel: 100
+  lowRewardBase: 6000
+  lowRewardPerLevel: 150
+  mediumRewardBase: 7500
+  mediumRewardPerLevel: 200
+  highRewardBase: 10000
+  highRewardPerLevel: 250
+  gladiatorBaseMarketPrice: 2000
+  gladiatorMarketPricePerLevelMin: 40
+  gladiatorMarketPricePerLevelMax: 60
+  gladiatorBaseUpkeep: 2000
+  gladiatorUpkeepPerLevel: 100
+  commonWeaponBasePrice: 4000
+  commonWeaponPricePerLevel: 100
+  uncommonWeaponBasePrice: 5000
+  uncommonWeaponPricePerLevel: 200
+  rareWeaponBasePrice: 6000
+  rareWeaponPricePerLevel: 300
+  uniqueWeaponBasePrice: 7000
+  uniqueWeaponPricePerLevel: 400
+  legendWeaponBasePrice: 8000
+  legendWeaponPricePerLevel: 500
   upkeepPerLevel: 10
   eodXpGainChance: 0.5
   eodXpGainAmount: 500

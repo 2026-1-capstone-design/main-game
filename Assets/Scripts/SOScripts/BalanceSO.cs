@@ -13,6 +13,35 @@ public sealed class BalanceSO : ScriptableObject
     public int gladiatorSellPricePerLevel = 40;
     public int weaponSellPricePerLevel = 40;
 
+    [Header("Battle Rewards")]
+    public int veryLowRewardBase = 5000;
+    public int veryLowRewardPerLevel = 100;
+    public int lowRewardBase = 6000;
+    public int lowRewardPerLevel = 150;
+    public int mediumRewardBase = 7500;
+    public int mediumRewardPerLevel = 200;
+    public int highRewardBase = 10000;
+    public int highRewardPerLevel = 250;
+
+    [Header("Unit Economy")]
+    public int gladiatorBaseMarketPrice = 2000;
+    public int gladiatorMarketPricePerLevelMin = 40;
+    public int gladiatorMarketPricePerLevelMax = 60;
+    public int gladiatorBaseUpkeep = 2000;
+    public int gladiatorUpkeepPerLevel = 100;
+
+    [Header("Equipment Grade Economy")]
+    public int commonWeaponBasePrice = 4000;
+    public int commonWeaponPricePerLevel = 100;
+    public int uncommonWeaponBasePrice = 5000;
+    public int uncommonWeaponPricePerLevel = 200;
+    public int rareWeaponBasePrice = 6000;
+    public int rareWeaponPricePerLevel = 300;
+    public int uniqueWeaponBasePrice = 7000;
+    public int uniqueWeaponPricePerLevel = 400;
+    public int legendWeaponBasePrice = 8000;
+    public int legendWeaponPricePerLevel = 500;
+
     [Header("Dummy Upkeep")]
     public int upkeepPerLevel = 10;
 

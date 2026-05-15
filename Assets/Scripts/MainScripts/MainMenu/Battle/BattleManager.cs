@@ -316,7 +316,7 @@ public sealed class BattleManager : MonoBehaviour
 
         if (wasWin)
         {
-            pendingReward = Mathf.Max(0, _sessionManager.CurrentDay * GetRewardPerDay());
+            pendingReward = GetSelectedEncounterReward();
         }
 
         _sessionManager.SetPendingBattleReward(pendingReward);
@@ -350,6 +350,20 @@ public sealed class BattleManager : MonoBehaviour
     private int GetRewardPerDay()
     {
         return _balance != null ? Mathf.Max(0, _balance.battleVictoryRewardPerDay) : 100;
+    }
+
+    private int GetSelectedEncounterReward()
+    {
+        if (HasSelectedEncounter())
+        {
+            BattleEncounterPreview encounter = _dailyEncounters[_selectedEncounterIndex];
+            if (encounter != null)
+            {
+                return Mathf.Max(0, encounter.PreviewRewardGold);
+            }
+        }
+
+        return Mathf.Max(0, _sessionManager.CurrentDay * GetRewardPerDay());
     }
 
     public void SetCheatEncounterAverageLevelOverride(int averageLevel)

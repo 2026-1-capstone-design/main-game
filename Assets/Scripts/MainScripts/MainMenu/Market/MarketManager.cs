@@ -233,7 +233,14 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
             return 0;
         }
 
-        return Mathf.Max(0, gladiator.Level * balance.gladiatorSellPricePerLevel);
+        int basePrice = CalculateApproximateGladiatorPrice(gladiator, balance);
+        if (basePrice <= 0 || balance.gladiatorBuyPricePerLevel <= 0)
+        {
+            return 0;
+        }
+
+        float sellRatio = balance.gladiatorSellPricePerLevel / (float)balance.gladiatorBuyPricePerLevel;
+        return Mathf.Max(0, Mathf.RoundToInt(basePrice * sellRatio));
     }
 
     public int GetWeaponSellPrice(OwnedWeaponData weapon)
@@ -249,7 +256,14 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
             return 0;
         }
 
-        return Mathf.Max(0, weapon.Level * balance.weaponSellPricePerLevel);
+        int basePrice = _equipmentFactory != null ? _equipmentFactory.CalculateWeaponPrice(weapon) : 0;
+        if (basePrice <= 0 || balance.weaponBuyPricePerLevel <= 0)
+        {
+            return 0;
+        }
+
+        float sellRatio = balance.weaponSellPricePerLevel / (float)balance.weaponBuyPricePerLevel;
+        return Mathf.Max(0, Mathf.RoundToInt(basePrice * sellRatio));
     }
 
     // 검투사 구매를 책임지는 함수.
@@ -498,6 +512,62 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
         }
 
         return Mathf.Max(0, balance.marketGladiatorSlots);
+    }
+
+    private static int CalculateApproximateGladiatorPrice(OwnedGladiatorData gladiator, BalanceSO balance)
+    {
+        if (gladiator == null || balance == null)
+        {
+            return 0;
+        }
+
+        int baseMarketPrice = Mathf.Max(0, balance.gladiatorBaseMarketPrice);
+        int averagePerLevel = Mathf.RoundToInt(
+            (
+                Mathf.Max(0, balance.gladiatorMarketPricePerLevelMin)
+                + Mathf.Max(0, balance.gladiatorMarketPricePerLevelMax)
+            ) * 0.5f
+        );
+
+        int levelPrice = averagePerLevel * Mathf.Max(1, gladiator.Level);
+        int statDeltaPrice = CalculateGladiatorStatDeltaPrice(gladiator);
+        return Mathf.Max(0, baseMarketPrice + levelPrice + statDeltaPrice);
+    }
+
+    private static int CalculateGladiatorStatDeltaPrice(OwnedGladiatorData gladiator)
+    {
+        if (gladiator == null || gladiator.GladiatorClass == null)
+        {
+            return 0;
+        }
+
+        float baseHealth = gladiator.GladiatorClass.baseHealth;
+        float baseAttack = gladiator.GladiatorClass.baseAttack;
+        float baseAttackSpeed = gladiator.GladiatorClass.attackSpeed;
+        float baseMoveSpeed = gladiator.GladiatorClass.moveSpeed;
+        float baseAttackRange = gladiator.GladiatorClass.attackRange;
+
+        // 추가 스탯 계산
+        float additionalHealth = Mathf.Max(0f, gladiator.CachedMaxHealth - baseHealth);
+        float additionalMoveSpeed = Mathf.Max(0f, gladiator.CachedMoveSpeed - baseMoveSpeed);
+        float additionalAttackRange = Mathf.Max(0f, gladiator.CachedAttackRange - baseAttackRange);
+
+        // DPS 계산
+        float currentAttack = gladiator.CachedAttack;
+        float currentAttackSpeed = gladiator.CachedAttackSpeed;
+        float baseDps = baseAttack * baseAttackSpeed;
+        float currentDps = currentAttack * currentAttackSpeed;
+
+        float offensivePrice = 0f;
+        if (baseDps > 0f)
+        {
+            // RecruitFactory와 동일한 완벽한 DPS 환산 공식 적용
+            offensivePrice = (currentDps / baseDps) * baseAttack * 50f;
+        }
+
+        return Mathf.RoundToInt(
+            (additionalHealth * 1f) + offensivePrice + (additionalMoveSpeed * 700f) + (additionalAttackRange * 700f)
+        );
     }
 
     private int GetConfiguredWeaponSlotCount()

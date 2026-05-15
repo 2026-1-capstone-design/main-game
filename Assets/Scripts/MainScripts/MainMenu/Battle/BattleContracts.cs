@@ -48,6 +48,12 @@ public sealed class BattleUnitSnapshot
     public bool UseProjectile { get; }
     public Sprite PortraitSprite { get; }
 
+    public bool DefaultDur { get; set; }
+    public float Duration { get; set; }
+
+    public bool SkillDefaultDur { get; }
+    public float SkillDuration { get; }
+
     public BattleUnitSnapshot(
         int sourceRuntimeId,
         BattleTeamId teamId,
@@ -71,7 +77,11 @@ public sealed class BattleUnitSnapshot
         int[] customizeIndicates,
         bool isRanged,
         bool useProjectile,
-        Sprite portraitSprite
+        Sprite portraitSprite,
+        bool defaultDur = false,
+        float duration = 1f,
+        bool skillDefaultDur = true,
+        float skillDuration = 1f
     )
     {
         SourceRuntimeId = sourceRuntimeId;
@@ -104,6 +114,12 @@ public sealed class BattleUnitSnapshot
         IsRanged = isRanged;
         UseProjectile = useProjectile;
         PortraitSprite = portraitSprite;
+
+        DefaultDur = defaultDur;
+        Duration = duration;
+
+        SkillDefaultDur = skillDefaultDur;
+        SkillDuration = skillDuration;
     }
 
     // snapshot을 그대로 카피.
@@ -133,7 +149,11 @@ public sealed class BattleUnitSnapshot
             CustomizeIndicates,
             IsRanged,
             UseProjectile,
-            PortraitSprite
+            PortraitSprite,
+            DefaultDur,
+            Duration,
+            SkillDefaultDur,
+            SkillDuration
         );
     }
 
@@ -165,22 +185,36 @@ public sealed class BattleUnitSnapshot
         bool isRanged = false;
         bool useProjectile = false;
 
+        bool defaultDur = false;
+        float duration = 1f;
+
+        bool skillDefaultDur = true;
+        float skillDuration = 1f;
+
         if (source.EquippedWeapon != null)
         {
-            if (source.EquippedWeapon.Weapon != null)
-            {
-                weaponType = source.EquippedWeapon.Weapon.weaponType;
-                // 무기 추가
-                leftPrefab = source.EquippedWeapon.Weapon.leftWeaponPrefab;
-                rightPrefab = source.EquippedWeapon.Weapon.rightWeaponPrefab;
+            WeaponSO weapon = source.EquippedWeapon.Weapon;
+            WeaponSkillSO weaponSkill = source.EquippedWeapon.WeaponSkill;
 
-                isRanged = source.EquippedWeapon.Weapon.isRanged;
-                useProjectile = source.EquippedWeapon.Weapon.useProjectile;
+            if (weapon != null)
+            {
+                weaponType = weapon.weaponType;
+                // 무기 추가
+                leftPrefab = weapon.leftWeaponPrefab;
+                rightPrefab = weapon.rightWeaponPrefab;
+
+                isRanged = weapon.isRanged;
+                useProjectile = weapon.useProjectile;
+
+                defaultDur = weapon.defaultDur;
+                duration = weapon.duration;
             }
 
-            if (source.EquippedWeapon.WeaponSkill != null)
+            if (weaponSkill != null)
             {
-                weaponSkillId = source.EquippedWeapon.WeaponSkill.skillId;
+                weaponSkillId = weaponSkill.skillId;
+                skillDefaultDur = weaponSkill.defaultDur;
+                skillDuration = weaponSkill.duration;
             }
         }
 
@@ -207,7 +241,11 @@ public sealed class BattleUnitSnapshot
             source.CustomizeIndicates,
             isRanged,
             useProjectile,
-            resolvedPortrait
+            resolvedPortrait,
+            defaultDur,
+            duration,
+            skillDefaultDur,
+            skillDuration
         );
     }
 

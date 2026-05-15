@@ -8,7 +8,12 @@ public sealed class BattleVictorySystem
     );
     private readonly HashSet<BattleTeamId> _livingTeams = new HashSet<BattleTeamId>();
 
-    public BattleOutcome? Evaluate(IReadOnlyList<BattleRuntimeUnit> units, int currentTick, BattleTeamId playerTeamId)
+    public BattleOutcome? Evaluate(
+        IReadOnlyList<BattleRuntimeUnit> units,
+        int currentTick,
+        BattleTeamId playerTeamId,
+        int previewRewardGold
+    )
     {
         if (units == null)
             return null;
@@ -38,7 +43,7 @@ public sealed class BattleVictorySystem
 
         bool wasWin = winnerTeamId.HasValue && winnerTeamId.Value == playerTeamId;
         int currentDay = SessionManager.Instance != null ? Mathf.Max(1, SessionManager.Instance.CurrentDay) : 1;
-        int pendingReward = wasWin ? CalculateVictoryReward(currentDay) : 0;
+        int pendingReward = wasWin ? CalculateVictoryReward(currentDay, previewRewardGold) : 0;
 
         if (SessionManager.Instance != null)
             SessionManager.Instance.SetPendingBattleReward(pendingReward);
@@ -49,11 +54,14 @@ public sealed class BattleVictorySystem
         return new BattleOutcome(winner, winnerTeamId, currentTick, _survivorBuffer, resolution);
     }
 
-    private static int CalculateVictoryReward(int currentDay)
+    private static int CalculateVictoryReward(int currentDay, int previewRewardGold)
     {
-        BalanceSO balance = ContentDatabaseProvider.Instance != null ? ContentDatabaseProvider.Instance.Balance : null;
-        int rewardPerDay = balance != null ? Mathf.Max(0, balance.battleVictoryRewardPerDay) : 100;
+        if (previewRewardGold > 0)
+        {
+            return previewRewardGold;
+        }
 
-        return Mathf.Max(0, currentDay) * rewardPerDay;
+        BalanceSO balance = ContentDatabaseProvider.Instance != null ? ContentDatabaseProvider.Instance.Balance : null;
+        return RecruitFactory.CalculateRewardForDifficulty(balance, currentDay, BattleEncounterDifficulty.Medium);
     }
 }
