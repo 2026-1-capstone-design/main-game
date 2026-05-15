@@ -303,7 +303,7 @@ public sealed class BattleUnitCombatState
     public bool HasPlannedDesiredPosition { get; private set; }
     public bool IsMoving { get; private set; }
     public bool IsAttacking { get; private set; }
-    public bool IsCastingSkill {get; private set;}
+    public bool IsCastingSkill { get; private set; }
     public BattleUnitCombatState CurrentTarget { get; private set; }
     public BattleUnitCombatState PlannedTargetEnemy { get; private set; }
     public BattleUnitCombatState PlannedTargetAlly { get; private set; }

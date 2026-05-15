@@ -541,18 +541,32 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
             return 0;
         }
 
-        float healthDelta = Mathf.Max(0f, gladiator.CachedMaxHealth - gladiator.GladiatorClass.baseHealth);
-        float attackDelta = Mathf.Max(0f, gladiator.CachedAttack - gladiator.GladiatorClass.baseAttack);
-        float attackSpeedDelta = Mathf.Max(0f, gladiator.CachedAttackSpeed - gladiator.GladiatorClass.attackSpeed);
-        float moveSpeedDelta = Mathf.Max(0f, gladiator.CachedMoveSpeed - gladiator.GladiatorClass.moveSpeed);
-        float attackRangeDelta = Mathf.Max(0f, gladiator.CachedAttackRange - gladiator.GladiatorClass.attackRange);
+        float baseHealth = gladiator.GladiatorClass.baseHealth;
+        float baseAttack = gladiator.GladiatorClass.baseAttack;
+        float baseAttackSpeed = gladiator.GladiatorClass.attackSpeed;
+        float baseMoveSpeed = gladiator.GladiatorClass.moveSpeed;
+        float baseAttackRange = gladiator.GladiatorClass.attackRange;
+
+        // 추가 스탯 계산
+        float additionalHealth = Mathf.Max(0f, gladiator.CachedMaxHealth - baseHealth);
+        float additionalMoveSpeed = Mathf.Max(0f, gladiator.CachedMoveSpeed - baseMoveSpeed);
+        float additionalAttackRange = Mathf.Max(0f, gladiator.CachedAttackRange - baseAttackRange);
+
+        // DPS 계산
+        float currentAttack = gladiator.CachedAttack;
+        float currentAttackSpeed = gladiator.CachedAttackSpeed;
+        float baseDps = baseAttack * baseAttackSpeed;
+        float currentDps = currentAttack * currentAttackSpeed;
+
+        float offensivePrice = 0f;
+        if (baseDps > 0f)
+        {
+            // RecruitFactory와 동일한 완벽한 DPS 환산 공식 적용
+            offensivePrice = (currentDps / baseDps) * baseAttack * 50f;
+        }
 
         return Mathf.RoundToInt(
-            (healthDelta * 1f)
-                + (attackDelta * 50f)
-                + (attackSpeedDelta * 1000f)
-                + (moveSpeedDelta * 700f)
-                + (attackRangeDelta * 700f)
+            (additionalHealth * 1f) + offensivePrice + (additionalMoveSpeed * 700f) + (additionalAttackRange * 700f)
         );
     }
 

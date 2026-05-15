@@ -38,7 +38,6 @@ public sealed class WeaponSO : ScriptableObject
     public Sprite icon;
     public string weaponName = "Sword";
     public WeaponType weaponType = WeaponType.oneHand;
-    public WeaponGrade weaponGrade = WeaponGrade.Common;
 
     public GameObject leftWeaponPrefab;
     public GameObject rightWeaponPrefab;
@@ -59,6 +58,7 @@ public sealed class WeaponSO : ScriptableObject
     [Header("Auto Calculated Value")]
     [Tooltip("인스펙터 수정 시 자동으로 계산되는 무기 가치입니다.")]
     public int calculatedPrice;
+    public WeaponGrade weaponGrade;
 
     // 인스펙터에서 값이 바뀔 때마다 실행되는 함수
     private void OnValidate()
@@ -75,6 +75,7 @@ public sealed class WeaponSO : ScriptableObject
             baseMoveSpeedBonus,
             baseAttackRangeBonus
         );
+        weaponGrade = newGrade(calculatedPrice);
     }
 
     public static int CalculatePrice(
@@ -99,4 +100,14 @@ public sealed class WeaponSO : ScriptableObject
         float finalPrice = hpPrice + movePrice + rangePrice + combatPrice;
         return Mathf.RoundToInt(finalPrice);
     }
+
+    public WeaponGrade newGrade(int price) =>
+        price switch
+        {
+            < 5000 => WeaponGrade.Common,
+            < 6000 => WeaponGrade.Uncommon,
+            < 7000 => WeaponGrade.Rare,
+            < 8000 => WeaponGrade.Unique,
+            _ => WeaponGrade.Legend, // '_'는 그 외의 모든 경우(>= 8000)를 의미합니다.
+        };
 }

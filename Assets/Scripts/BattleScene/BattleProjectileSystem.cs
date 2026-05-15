@@ -8,6 +8,7 @@ public class BattleProjectileState
 {
     public BattleDamageRequest DamageRequest { get; }
     public Vector3 CurrentPosition { get; private set; }
+
     // 🌟 [수정] 방향이 실시간으로 바뀔 수 있도록 private set 추가
     public Vector3 Direction { get; private set; }
     public float Speed { get; }
@@ -122,7 +123,16 @@ public class BattleProjectileSystem
         bool isHoming = false // 🌟 [추가]
     )
     {
-        var proj = new BattleProjectileState(request, startPos, direction, speed, prefab, delay, onHitCallback, isHoming);
+        var proj = new BattleProjectileState(
+            request,
+            startPos,
+            direction,
+            speed,
+            prefab,
+            delay,
+            onHitCallback,
+            isHoming
+        );
         if (delay <= 0f)
             proj.SpawnVisual(_projectileRoot);
         _projectiles.Add(proj);
@@ -182,7 +192,8 @@ public class BattleProjectileSystem
                     for (int j = 0; j < _units.Count; j++)
                     {
                         BattleRuntimeUnit unit = _units[j];
-                        if (unit == null || unit.IsCombatDisabled) continue;
+                        if (unit == null || unit.IsCombatDisabled)
+                            continue;
 
                         // 시전자와 같은 팀(아군)은 투사체가 통과하도록 무시합니다.
                         if (proj.DamageRequest.Source != null)
@@ -203,7 +214,8 @@ public class BattleProjectileSystem
                 }
             }
 
-            if (hitOccurred) continue;
+            if (hitOccurred)
+                continue;
         }
     }
 

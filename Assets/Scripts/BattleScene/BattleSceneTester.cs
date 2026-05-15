@@ -177,7 +177,7 @@ public sealed class BattleSceneTester : MonoBehaviour
         bool useProjectile = false;
 
         bool defaultDur = false;
-        float duration  = 1f;
+        float duration = 1f;
 
         if (entry.weaponData != null)
         {
@@ -232,7 +232,7 @@ public sealed class BattleSceneTester : MonoBehaviour
             customizeIndicates: randomSkins,
             portraitSprite: classSO.icon,
             defaultDur: defaultDur,
-            duration : duration
+            duration: duration
         );
     }
 }

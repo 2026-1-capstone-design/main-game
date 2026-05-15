@@ -376,7 +376,8 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     //공격 모션의 애니메이션 클립 길이 가져오기
     private float GetAttackAnimationClipLength(RuntimeAnimatorController controller)
     {
-        if (controller == null) return 1f;
+        if (controller == null)
+            return 1f;
 
         // 1. 현재 컨트롤러가 오버라이드 컨트롤러인지 확인합니다.
         if (controller is AnimatorOverrideController overrideController)
@@ -473,7 +474,6 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
             float finalAttackSpeed = _normalAttackMotionSpeed * AttackSpeed; // AttackSpeed는 State 위임 프로퍼티입니다.
             _myAnimation.SetFloat("AttackSpeed", finalAttackSpeed);
         }
-
 
         _myAnimation?.SetTrigger("attack");
         _lastAttackTriggerFrame = Time.frameCount;

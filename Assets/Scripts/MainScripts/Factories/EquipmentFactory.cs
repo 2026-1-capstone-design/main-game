@@ -7,6 +7,11 @@ public sealed class EquipmentFactory : MonoBehaviour
     [SerializeField]
     private bool verboseLog = true;
 
+    private const float PricePerAtk = 50f;
+    private const float PricePerHP = 1f;
+    private const float PricePerRange = 700f;
+    private const float PricePerMoveSpd = 700f;
+
     private ContentDatabaseProvider _contentDatabaseProvider;
     private RandomManager _randomManager;
     private BalanceSO _balance;
@@ -59,38 +64,56 @@ public sealed class EquipmentFactory : MonoBehaviour
     public MarketWeaponOffer CreateMarketWeaponOffer(int currentDay, int slotIndex)
     {
         if (!_initialized)
-        {
-            Debug.LogError("[EquipmentFactory] CreateMarketWeaponOffer called before Initialize.", this);
             return null;
-        }
 
-        OwnedWeaponData preview = CreateRandomWeaponPreviewForDay(currentDay);
-        if (preview == null)
-        {
-            Debug.LogError("[EquipmentFactory] Failed to create market weapon preview.", this);
-            return null;
-        }
+        // 1. 무기 및 스킬 선정
+        WeaponSO weapon = PickRandomNonNull(_contentDatabaseProvider.Weapons);
+        WeaponSkillSO weaponSkill = PickRandomMatchingWeaponSkill(weapon.weaponType);
 
-        int price = CalculateWeaponPrice(preview, currentDay);
-        MarketWeaponOffer offer = new MarketWeaponOffer(slotIndex, preview, price);
+        // 2. 🌟 가격(예산) 먼저 결정 (등급가 + 레벨가)
+        int dayValue = Mathf.Max(1, currentDay);
+        int baseBudget =
+            GetWeaponGradeBasePrice(weapon.weaponGrade) + (GetWeaponGradePricePerLevel(weapon.weaponGrade) * dayValue);
 
-        if (verboseLog)
-        {
-            string skillName = preview.WeaponSkill != null ? preview.WeaponSkill.skillName : "(None)";
-            WeaponType weaponType = preview.Weapon != null ? preview.Weapon.weaponType : WeaponType.None;
+        // 3. 🌟 비슷한 가격 유지를 위한 소폭의 예산 편차 (±5%)
+        float budgetVariance = _randomManager.NextFloatRange(RandomStreamType.Equipment, 0.95f, 1.05f);
+        int finalPrice = Mathf.RoundToInt(baseBudget * budgetVariance);
 
-            Debug.Log(
-                $"[EquipmentFactory] Market weapon created. "
-                    + $"Slot={slotIndex}, Name={preview.DisplayName}, Type={weaponType}, Level={preview.Level}, Skill={skillName}, Price={price}",
-                this
-            );
-        }
+        // 4. 무기 데이터 생성 및 예산 기반 스탯 분배
+        OwnedWeaponData preview = new OwnedWeaponData(0, weapon.weaponName, dayValue, weapon);
+        preview.WeaponSkill = weaponSkill;
 
-        return offer;
+        // 🌟 [추가] 예산에 맞춰 스탯 비율 할당
+        RefreshStatsByBudget(preview, finalPrice);
+
+        return new MarketWeaponOffer(slotIndex, preview, finalPrice);
     }
 
-    // 날짜 기반 레벨, 무기 종류, 무기 스킬, 최종 공격/체력 분산값을 포함한
-    // '시장/적 장비용 무기 프리뷰'를 생성함.
+    private void RefreshStatsByBudget(OwnedWeaponData ownedWeapon, int budget)
+    {
+        WeaponSO so = ownedWeapon.Weapon;
+
+        // A. 기본 스탯들의 골드 가치 합산
+        float baseValue =
+            (so.baseAttackBonus * PricePerAtk)
+            + (so.baseHealthBonus * PricePerHP)
+            + (so.baseAttackRangeBonus * PricePerRange);
+
+        // B. 🌟 보너스 배분 비율 (성장률) 계산
+        // (전체 예산 - 기본 가치) / 기본 가치 = 추가 성장비율
+        float bonusBudget = Mathf.Max(0, budget - baseValue);
+        float growthRatio = (baseValue > 0) ? (bonusBudget / baseValue) : 0;
+
+        // C. 🌟 기본 스탯에 비례하여 할당 (GrowthRatio 적용)
+        ownedWeapon.CachedAttackBonus = so.baseAttackBonus * (1f + growthRatio);
+        ownedWeapon.CachedHealthBonus = so.baseHealthBonus * (1f + growthRatio);
+        ownedWeapon.CachedAttackRangeBonus = so.baseAttackRangeBonus * (1f + growthRatio);
+
+        // 고정 스탯
+        ownedWeapon.CachedAttackSpeedBonus = so.baseAttackSpeedBonus;
+        ownedWeapon.CachedMoveSpeedBonus = so.baseMoveSpeedBonus;
+    }
+
     public OwnedWeaponData CreateRandomWeaponPreviewForDay(int currentDay)
     {
         if (!_initialized)
@@ -109,24 +132,14 @@ public sealed class EquipmentFactory : MonoBehaviour
         int dayValue = CalculateMarketLevel(currentDay);
         WeaponSkillSO weaponSkill = PickRandomMatchingWeaponSkill(weapon.weaponType);
 
-        float finalAttackVariancePercent = _randomManager.NextFloatRange(
-            RandomStreamType.Equipment,
-            _balance.weaponFinalStatVarianceMinPercent,
-            _balance.weaponFinalStatVarianceMaxPercent
-        );
-
-        float finalHealthVariancePercent = _randomManager.NextFloatRange(
-            RandomStreamType.Equipment,
-            _balance.weaponFinalStatVarianceMinPercent,
-            _balance.weaponFinalStatVarianceMaxPercent
-        );
+        // 🌟 스탯 개별 편차가 아닌, 전체 가격 예산에 대한 편차(0.95 ~ 1.05)를 구합니다.
+        float budgetVariance = _randomManager.NextFloatRange(RandomStreamType.Equipment, 0.95f, 1.05f);
 
         return BuildWeaponPreview(
             weapon,
             weaponSkill,
             dayValue,
-            finalAttackVariancePercent,
-            finalHealthVariancePercent
+            budgetVariance // 🌟 2개의 variance 대신 1개만 전달
         );
     }
 
@@ -174,7 +187,7 @@ public sealed class EquipmentFactory : MonoBehaviour
             }
         }
 
-        return BuildWeaponPreview(weapon, weaponSkill, Mathf.Max(1, level), 0f, 0f);
+        return BuildWeaponPreview(weapon, weaponSkill, Mathf.Max(1, level), 1f);
     }
 
     private int CalculateMarketLevel(int currentDay)
@@ -189,21 +202,19 @@ public sealed class EquipmentFactory : MonoBehaviour
 
     public int CalculateWeaponPrice(OwnedWeaponData weapon, int currentDay)
     {
-        if (weapon == null)
+        if (weapon == null || weapon.Weapon == null)
         {
             return 0;
         }
 
-        if (weapon.Weapon == null || _balance == null)
-        {
-            return 0;
-        }
+        // 🌟 할당된 최종 스탯들의 실제 가격을 역산합니다.
+        float finalValue =
+            (weapon.CachedAttackBonus * PricePerAtk)
+            + (weapon.CachedHealthBonus * PricePerHP)
+            + (weapon.CachedAttackRangeBonus * PricePerRange)
+            + (weapon.CachedMoveSpeedBonus * PricePerMoveSpd);
 
-        int dayValue = Mathf.Max(1, currentDay);
-        int gradeBasePrice = GetWeaponGradeBasePrice(weapon.Weapon.weaponGrade);
-        int dayPrice = GetWeaponGradePricePerLevel(weapon.Weapon.weaponGrade) * dayValue;
-
-        return Mathf.Max(0, gradeBasePrice + dayPrice);
+        return Mathf.Max(0, Mathf.RoundToInt(finalValue));
     }
 
     // OwnedWeaponData preview를 실제로 조립하는 함수
@@ -212,8 +223,7 @@ public sealed class EquipmentFactory : MonoBehaviour
         WeaponSO weapon,
         WeaponSkillSO weaponSkill,
         int level,
-        float finalAttackVariancePercent,
-        float finalHealthVariancePercent
+        float budgetVariance // 🌟 수정됨
     )
     {
         if (weapon == null)
@@ -222,12 +232,10 @@ public sealed class EquipmentFactory : MonoBehaviour
         }
 
         OwnedWeaponData preview = new OwnedWeaponData(0, weapon.weaponName, Mathf.Max(1, level), weapon);
-
         preview.WeaponSkill = weaponSkill;
-        preview.FinalAttackBonusVariancePercent = finalAttackVariancePercent;
-        preview.FinalHealthBonusVariancePercent = finalHealthVariancePercent;
 
-        RefreshDerivedStats(preview, level);
+        // 예산 편차값을 RefreshDerivedStats로 넘겨줍니다.
+        RefreshDerivedStats(preview, level, budgetVariance);
         return preview;
     }
 
@@ -305,10 +313,10 @@ public sealed class EquipmentFactory : MonoBehaviour
     // 이후 검투사 쪽 최종 스탯 계산에서 그대로 더해짐
     private void RefreshDerivedStats(OwnedWeaponData ownedWeapon)
     {
-        RefreshDerivedStats(ownedWeapon, ownedWeapon != null ? ownedWeapon.Level : 0);
+        RefreshDerivedStats(ownedWeapon, ownedWeapon != null ? ownedWeapon.Level : 0, 1f);
     }
 
-    private void RefreshDerivedStats(OwnedWeaponData ownedWeapon, int currentDay)
+    private void RefreshDerivedStats(OwnedWeaponData ownedWeapon, int currentDay, float budgetVariance)
     {
         if (ownedWeapon == null || ownedWeapon.Weapon == null)
         {
@@ -316,40 +324,36 @@ public sealed class EquipmentFactory : MonoBehaviour
             return;
         }
 
+        WeaponSO so = ownedWeapon.Weapon;
         int dayValue = Mathf.Max(1, currentDay);
 
-        float baseAttackBonus = Mathf.Max(0f, ownedWeapon.Weapon.baseAttackBonus);
-        float baseHealthBonus = Mathf.Max(0f, ownedWeapon.Weapon.baseHealthBonus);
-        float baseAttackSpeedBonus = Mathf.Max(0f, ownedWeapon.Weapon.baseAttackSpeedBonus);
-        float baseMoveSpeedBonus = Mathf.Max(0f, ownedWeapon.Weapon.baseMoveSpeedBonus);
-        float baseAttackRangeBonus = Mathf.Max(0f, ownedWeapon.Weapon.baseAttackRangeBonus);
+        // 1. 기준 예산 설정 (등급 기본가 + 일차별 상승가)
+        int gradeBasePrice = GetWeaponGradeBasePrice(so.weaponGrade);
+        int dayPrice = GetWeaponGradePricePerLevel(so.weaponGrade) * dayValue;
+        float standardBudget = gradeBasePrice + dayPrice;
 
-        float growthRatio = CalculateWeaponGrowthRatio(ownedWeapon.Weapon, dayValue);
+        // 2. 예산 편차(±5%) 적용
+        float totalBudget = standardBudget * Mathf.Max(0f, budgetVariance);
 
-        float scaledAttackBonus = baseAttackBonus * (1f + growthRatio);
-        float scaledHealthBonus = baseHealthBonus * (1f + growthRatio);
-        float scaledAttackSpeedBonus = baseAttackSpeedBonus * (1f + growthRatio);
-        float scaledMoveSpeedBonus = baseMoveSpeedBonus;
-        float scaledAttackRangeBonus = baseAttackRangeBonus * (1f + growthRatio);
+        // 3. 무기 원본의 기본 가치 계산 (공속은 제외)
+        float baseValue =
+            (so.baseAttackBonus * PricePerAtk)
+            + (so.baseHealthBonus * PricePerHP)
+            + (so.baseAttackRangeBonus * PricePerRange)
+            + (so.baseMoveSpeedBonus * PricePerMoveSpd);
 
-        float finalAttackMultiplier = 1f + ownedWeapon.FinalAttackBonusVariancePercent;
-        float finalHealthMultiplier = 1f + ownedWeapon.FinalHealthBonusVariancePercent;
+        // 4. 잉여 예산 및 성장 비율 계산
+        float bonusBudget = Mathf.Max(0f, totalBudget - baseValue);
+        float growthRatio = (baseValue > 0f) ? (bonusBudget / baseValue) : 0f;
 
-        if (finalAttackMultiplier < 0f)
-        {
-            finalAttackMultiplier = 0f;
-        }
+        // 5. 스탯 할당 (기본 스탯 비중에 맞춰 그대로 뻥튀기)
+        ownedWeapon.CachedAttackBonus = so.baseAttackBonus * (1f + growthRatio);
+        ownedWeapon.CachedHealthBonus = so.baseHealthBonus * (1f + growthRatio);
+        ownedWeapon.CachedAttackRangeBonus = so.baseAttackRangeBonus * (1f + growthRatio);
+        ownedWeapon.CachedMoveSpeedBonus = so.baseMoveSpeedBonus * (1f + growthRatio);
 
-        if (finalHealthMultiplier < 0f)
-        {
-            finalHealthMultiplier = 0f;
-        }
-
-        ownedWeapon.CachedAttackBonus = scaledAttackBonus * finalAttackMultiplier;
-        ownedWeapon.CachedHealthBonus = scaledHealthBonus * finalHealthMultiplier;
-        ownedWeapon.CachedAttackSpeedBonus = scaledAttackSpeedBonus;
-        ownedWeapon.CachedMoveSpeedBonus = scaledMoveSpeedBonus;
-        ownedWeapon.CachedAttackRangeBonus = scaledAttackRangeBonus;
+        // 공속은 게임 밸런스(애니메이션 속도 등) 보호를 위해 레벨이 올라도 성장하지 않게 고정합니다.
+        ownedWeapon.CachedAttackSpeedBonus = so.baseAttackSpeedBonus;
     }
 
     private float CalculateWeaponGrowthRatio(WeaponSO weapon, int currentDay)
