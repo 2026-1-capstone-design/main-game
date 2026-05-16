@@ -88,11 +88,11 @@ Thumbs.db
 # Unity ML-Agents model output
 results/
 
-# Unity ML-Agents timer
-Assets/ML-Agents/
-
 # Unity ML-Agents demo / records
 Assets/Demos/
 Assets/Demos.meta
 
 *.lscache
+.claude/
+.codex/
+.agents/
