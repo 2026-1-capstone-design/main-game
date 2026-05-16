@@ -115,7 +115,7 @@ public sealed class GladiatorAgentEpisodeMetrics
         if (hasAttackOpportunity)
         {
             _attackOpportunityCount++;
-            if (action.WantsBasicAttack)
+            if (action.Command == GladiatorCommand.Attack)
             {
                 _attackOpportunityUsedCount++;
             }

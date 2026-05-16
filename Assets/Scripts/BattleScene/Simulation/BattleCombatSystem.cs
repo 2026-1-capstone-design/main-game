@@ -78,7 +78,6 @@ public sealed class BattleCombatSystem
         float battleTime,
         int battleTick,
         BattleControlPlan[] controlPlans = null,
-        BattleConsumedCommandBuffer consumedCommands = null,
         bool clearResults = true,
         bool projectilesEnabled = true
     )
@@ -97,19 +96,10 @@ public sealed class BattleCombatSystem
             _channelSystem,
             _artifactSystem,
             controlPlans,
-            consumedCommands,
             projectilesEnabled
         );
         if (_skillsEnabled)
-            ExecuteSkillPhase(
-                units,
-                runtimeUnitByState,
-                snapshot,
-                battleTime,
-                battleTick,
-                controlPlans,
-                consumedCommands
-            );
+            ExecuteSkillPhase(units, runtimeUnitByState, snapshot, battleTime, battleTick, controlPlans);
     }
 
     private static void ExecuteAttackPhase(
@@ -120,7 +110,6 @@ public sealed class BattleCombatSystem
         BattleSkillChannelSystem channelSystem,
         BattleArtifactSystem artifactSystem,
         BattleControlPlan[] controlPlans,
-        BattleConsumedCommandBuffer consumedCommands,
         bool projectilesEnabled
     )
     {
@@ -210,7 +199,6 @@ public sealed class BattleCombatSystem
             }
 
             attacker.State.ResetAttackCooldown();
-            consumedCommands?.Record(attacker.State, BattleCombatCommand.BasicAttack);
         }
     }
 
@@ -220,8 +208,7 @@ public sealed class BattleCombatSystem
         BattleFieldSnapshot snapshot,
         float battleTime,
         int battleTick,
-        BattleControlPlan[] controlPlans,
-        BattleConsumedCommandBuffer consumedCommands
+        BattleControlPlan[] controlPlans
     )
     {
         for (int i = 0; i < units.Count; i++)
@@ -243,7 +230,6 @@ public sealed class BattleCombatSystem
             if (unit.SkillCooldownRemaining > 0f)
             {
                 unit.RaiseSkillFailed();
-                consumedCommands?.Record(unit.State, BattleCombatCommand.Skill);
                 continue;
             }
 
@@ -262,7 +248,6 @@ public sealed class BattleCombatSystem
             if (skill == null || !skill.CanActivate(context))
             {
                 unit.RaiseSkillFailed();
-                consumedCommands?.Record(unit.State, BattleCombatCommand.Skill);
                 continue;
             }
 
@@ -282,7 +267,6 @@ public sealed class BattleCombatSystem
             unit.SetSkillState(unit.GetSkillAnimationDuration());
             unit.State.ResetSkillCooldown();
             unit.RaiseSkillActivated();
-            consumedCommands?.Record(unit.State, BattleCombatCommand.Skill);
         }
     }
 
