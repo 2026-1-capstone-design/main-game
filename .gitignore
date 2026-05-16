@@ -88,6 +88,9 @@ Thumbs.db
 # Unity ML-Agents model output
 results/
 
+# Unity ML-Agents Timer
+Assets/ML-Agents/Timers/
+
 # Unity ML-Agents demo / records
 Assets/Demos/
 Assets/Demos.meta
