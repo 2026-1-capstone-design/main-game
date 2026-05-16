@@ -150,6 +150,8 @@ public sealed class BattleCombatSystem
 
             if (!BattleFieldSnapshot.IsWithinEffectiveAttackDistance(attacker.State, target))
                 continue;
+            if (attacker.IsAttacking)
+                continue;
             if (attacker.AttackCooldownRemaining > 0f)
                 continue;
 

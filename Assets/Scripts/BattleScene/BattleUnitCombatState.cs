@@ -213,6 +213,7 @@ public sealed class BattleUnitCombatState
         if (isMoving)
         {
             IsAttacking = false;
+            AttackingLockRemaining = 0f;
             IsCastingSkill = false;
         }
         OnMovingStateChanged?.Invoke(IsMoving);
@@ -228,6 +229,23 @@ public sealed class BattleUnitCombatState
             IsCastingSkill = false;
             if (!wasAttacking)
                 OnAttackTriggered?.Invoke();
+            return;
+        }
+
+        AttackingLockRemaining = 0f;
+    }
+
+    public void StartAttackingLock(float duration)
+    {
+        AttackingLockRemaining = Mathf.Max(0f, duration);
+    }
+
+    public void TickAttackingLock(float deltaTime)
+    {
+        AttackingLockRemaining = Mathf.Max(0f, AttackingLockRemaining - Mathf.Max(0f, deltaTime));
+        if (IsAttacking && AttackingLockRemaining <= 0f)
+        {
+            SetAttackState(false);
         }
     }
 
@@ -238,6 +256,7 @@ public sealed class BattleUnitCombatState
         {
             IsMoving = false;
             IsAttacking = false;
+            AttackingLockRemaining = 0f;
         }
     }
 
@@ -245,6 +264,7 @@ public sealed class BattleUnitCombatState
     {
         IsMoving = false;
         IsAttacking = false;
+        AttackingLockRemaining = 0f;
         IsCastingSkill = false;
         OnIdleStateEntered?.Invoke();
     }
@@ -290,6 +310,7 @@ public sealed class BattleUnitCombatState
 
     // ── 공격 쿨다운 ────────────────────────────────────────────────
     public float AttackCooldownRemaining { get; private set; }
+    public float AttackingLockRemaining { get; private set; }
 
     // ── 스킬 정보 / 스킬 쿨다운 ────────────────────────────────────
     [SerializeField]
@@ -348,6 +369,7 @@ public sealed class BattleUnitCombatState
         ActionTimer = 0f;
 
         AttackCooldownRemaining = 0f;
+        AttackingLockRemaining = 0f;
 
         HaveSkill = snapshot.WeaponSkillId;
         SkillCooltime = 0f;
