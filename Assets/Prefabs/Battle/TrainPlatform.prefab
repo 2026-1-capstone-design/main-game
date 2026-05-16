@@ -333,23 +333,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   battleSceneFlowManager: {fileID: 2294310619055349884}
   battleSimulationManager: {fileID: 8950524180265300232}
-  preset: {fileID: 0}
   useCurriculumTeamSize: 1
   teamSizeEnvironmentParameter: team_size
   defaultTeamSize: 1
-  randomClassPool:
-  - {fileID: 11400000, guid: 6846407ed22928941b371aab2d355ecf, type: 2}
-  randomWeaponPool:
-  - {fileID: 11400000, guid: 1125cefdf7e96c04cb5c836ceef728b5, type: 2}
-  - {fileID: 11400000, guid: 8f15a2a951e32fa44914883dd11d291f, type: 2}
-  - {fileID: 11400000, guid: 3f69dd2a1b6d04140a0d6b09f9c06b82, type: 2}
-  - {fileID: 11400000, guid: 57a45c0a1bc261f4486e00585a46083b, type: 2}
-  - {fileID: 11400000, guid: 72083519813a3ab4098ce19d38d566cd, type: 2}
-  - {fileID: 11400000, guid: ab1629e5d89986f4595fdae5ee52b07e, type: 2}
-  - {fileID: 11400000, guid: dbdb181f9c76fca4d932bbbdbf2ded9b, type: 2}
-  - {fileID: 11400000, guid: 3da7b72ba791cd940915b68cc3d6a124, type: 2}
-  defaultUnitLevel: 1
-  defaultStatMultiplier: 1
+  randomPresetPool:
+  - {fileID: 11400000, guid: b150030cced20c8469515251b15f22f4, type: 2}
   allyStatMultiplierEnvironmentParameter: ally_stat_multiplier
   enemyStatMultiplierEnvironmentParameter: enemy_stat_multiplier
   defaultAllyStatMultiplier: 1
@@ -550,6 +538,8 @@ MonoBehaviour:
   desiredPositionStopDistance: 0.5
   escapeTowardTeamBlend: 0.35
   trainingOptimizedSimulation: 0
+  projectileManager: {fileID: 0}
+  _battleTextManager: {fileID: 0}
 --- !u!1 &1353830932261827759
 GameObject:
   m_ObjectHideFlags: 0

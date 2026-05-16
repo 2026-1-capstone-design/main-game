@@ -1,4 +1,3 @@
-using BattleTest;
 using Unity.MLAgents;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -7,9 +6,6 @@ public class TrainingBootstrapper : MonoBehaviour, ITrainingEnvironment, IGladia
 {
     public BattleSceneFlowManager battleSceneFlowManager;
     public BattleSimulationManager battleSimulationManager;
-
-    [SerializeField]
-    private BattleTestPresetSO preset;
 
     [Header("Curriculum")]
     [SerializeField]
@@ -22,16 +18,7 @@ public class TrainingBootstrapper : MonoBehaviour, ITrainingEnvironment, IGladia
     private int defaultTeamSize = 1;
 
     [SerializeField]
-    private GladiatorClassSO[] randomClassPool;
-
-    [SerializeField]
-    private WeaponSO[] randomWeaponPool;
-
-    [SerializeField]
-    private int defaultUnitLevel = 1;
-
-    [SerializeField]
-    private float defaultStatMultiplier = 1f;
+    private TrainingGladiatorPreset[] randomPresetPool;
 
     [Header("Training Stat Advantage")]
     [SerializeField]
@@ -145,8 +132,6 @@ public class TrainingBootstrapper : MonoBehaviour, ITrainingEnvironment, IGladia
         battleTicksPerEnvironmentStep = Mathf.Max(1, battleTicksPerEnvironmentStep);
         logProgressInterval = Mathf.Max(1, logProgressInterval);
         defaultTeamSize = Mathf.Clamp(defaultTeamSize, 1, BattleTeamConstants.MaxUnitsPerTeam);
-        defaultUnitLevel = Mathf.Max(1, defaultUnitLevel);
-        defaultStatMultiplier = Mathf.Max(0f, defaultStatMultiplier);
         defaultAllyStatMultiplier = Mathf.Max(0f, defaultAllyStatMultiplier);
         defaultEnemyStatMultiplier = Mathf.Max(0f, defaultEnemyStatMultiplier);
         editorTimeScale = Mathf.Max(0f, editorTimeScale);
@@ -296,14 +281,10 @@ public class TrainingBootstrapper : MonoBehaviour, ITrainingEnvironment, IGladia
     private TrainingBattlePayloadSettings CreatePayloadSettings()
     {
         return new TrainingBattlePayloadSettings(
-            preset,
             useCurriculumTeamSize,
             teamSizeEnvironmentParameter,
             defaultTeamSize,
-            randomClassPool,
-            randomWeaponPool,
-            defaultUnitLevel,
-            defaultStatMultiplier,
+            randomPresetPool,
             allyStatMultiplierEnvironmentParameter,
             enemyStatMultiplierEnvironmentParameter,
             defaultAllyStatMultiplier,

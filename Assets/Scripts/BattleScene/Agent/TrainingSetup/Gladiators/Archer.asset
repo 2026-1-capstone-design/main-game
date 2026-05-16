@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f7b7b32d57c8145439b2fb759e848d13, type: 3}
+  m_Name: Archer
+  m_EditorClassIdentifier: 
+  displayNamePrefix: Training
+  level: 1
+  gladiatorClass: {fileID: 11400000, guid: 6846407ed22928941b371aab2d355ecf, type: 2}
+  weapon: {fileID: 11400000, guid: 1125cefdf7e96c04cb5c836ceef728b5, type: 2}
+  overrideWeaponSettings: 1
+  isRanged: 1
+  useProjectile: 0
+  weaponSkillId: 0
+  maxHealth: 100
+  attack: 10
+  attackSpeed: 1
+  moveSpeed: 3
+  attackRange: 1
+  customizeIndicates: 0e0000000000000014000000000000001600000000000000000000000e0000000e0000000e0000000e0000000e000000
