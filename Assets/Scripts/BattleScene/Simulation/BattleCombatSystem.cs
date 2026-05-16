@@ -78,7 +78,7 @@ public sealed class BattleCombatSystem
         float battleTime,
         int battleTick,
         BattleControlPlan[] controlPlans = null,
-        BattleUnitPlannerRegistry planners = null,
+        BattleConsumedCommandBuffer consumedCommands = null,
         bool clearResults = true,
         bool projectilesEnabled = true
     )
@@ -97,11 +97,19 @@ public sealed class BattleCombatSystem
             _channelSystem,
             _artifactSystem,
             controlPlans,
-            planners,
+            consumedCommands,
             projectilesEnabled
         );
         if (_skillsEnabled)
-            ExecuteSkillPhase(units, runtimeUnitByState, snapshot, battleTime, battleTick, controlPlans, planners);
+            ExecuteSkillPhase(
+                units,
+                runtimeUnitByState,
+                snapshot,
+                battleTime,
+                battleTick,
+                controlPlans,
+                consumedCommands
+            );
     }
 
     private static void ExecuteAttackPhase(
@@ -112,7 +120,7 @@ public sealed class BattleCombatSystem
         BattleSkillChannelSystem channelSystem,
         BattleArtifactSystem artifactSystem,
         BattleControlPlan[] controlPlans,
-        BattleUnitPlannerRegistry planners,
+        BattleConsumedCommandBuffer consumedCommands,
         bool projectilesEnabled
     )
     {
@@ -202,7 +210,7 @@ public sealed class BattleCombatSystem
             }
 
             attacker.State.ResetAttackCooldown();
-            ConsumeCommand(planners, attacker.State, BattleCombatCommand.BasicAttack);
+            consumedCommands?.Record(attacker.State, BattleCombatCommand.BasicAttack);
         }
     }
 
@@ -213,7 +221,7 @@ public sealed class BattleCombatSystem
         float battleTime,
         int battleTick,
         BattleControlPlan[] controlPlans,
-        BattleUnitPlannerRegistry planners
+        BattleConsumedCommandBuffer consumedCommands
     )
     {
         for (int i = 0; i < units.Count; i++)
@@ -235,7 +243,7 @@ public sealed class BattleCombatSystem
             if (unit.SkillCooldownRemaining > 0f)
             {
                 unit.RaiseSkillFailed();
-                ConsumeCommand(planners, unit.State, BattleCombatCommand.Skill);
+                consumedCommands?.Record(unit.State, BattleCombatCommand.Skill);
                 continue;
             }
 
@@ -254,7 +262,7 @@ public sealed class BattleCombatSystem
             if (skill == null || !skill.CanActivate(context))
             {
                 unit.RaiseSkillFailed();
-                ConsumeCommand(planners, unit.State, BattleCombatCommand.Skill);
+                consumedCommands?.Record(unit.State, BattleCombatCommand.Skill);
                 continue;
             }
 
@@ -274,18 +282,8 @@ public sealed class BattleCombatSystem
             unit.SetSkillState(unit.GetSkillAnimationDuration());
             unit.State.ResetSkillCooldown();
             unit.RaiseSkillActivated();
-            ConsumeCommand(planners, unit.State, BattleCombatCommand.Skill);
+            consumedCommands?.Record(unit.State, BattleCombatCommand.Skill);
         }
-    }
-
-    private static void ConsumeCommand(
-        BattleUnitPlannerRegistry planners,
-        BattleUnitCombatState state,
-        BattleCombatCommand command
-    )
-    {
-        if (planners != null && planners.TryGet(state, out IBattleUnitPlanner planner))
-            planner.ConsumeCommand(state, command);
     }
 
     private static BattleRuntimeUnit ResolveRuntimeUnit(

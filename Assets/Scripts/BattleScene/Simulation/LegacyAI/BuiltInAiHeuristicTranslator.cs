@@ -24,8 +24,10 @@ public static class BuiltInAiHeuristicTranslator
 
         WriteMovement(continuous, plan, selfState);
         discrete[GladiatorActionSchema.CommandBranch] = ResolveCommand(plan, selfState);
-        discrete[GladiatorActionSchema.RoleBranch] = ResolveRole(plan.ActionType);
-        discrete[GladiatorActionSchema.FightModeBranch] = ResolveFightMode(plan.ActionType);
+        BattleActionType currentAction =
+            selfState != null ? selfState.CurrentActionType : BattleActionType.EngageNearest;
+        discrete[GladiatorActionSchema.RoleBranch] = ResolveRole(currentAction);
+        discrete[GladiatorActionSchema.FightModeBranch] = ResolveFightMode(currentAction);
         discrete[GladiatorActionSchema.AnchorBranch] = GladiatorActionSchema.EncodeAnchorAction(
             GladiatorAnchorKind.Enemy,
             ResolveTargetSlot(plan.TargetEnemy, rosterView)

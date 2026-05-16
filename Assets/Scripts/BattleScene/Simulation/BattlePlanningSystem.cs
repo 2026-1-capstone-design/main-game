@@ -5,7 +5,7 @@ public sealed class BattlePlanningSystem
     public void Build(
         IReadOnlyList<BattleRuntimeUnit> units,
         BattleFieldSnapshot snapshot,
-        BattleUnitPlannerRegistry planners,
+        BattleControlPlanProviderRegistry providers,
         BattleAITuningSO aiTuning,
         float tickDeltaTime,
         BattleControlPlan[] controlPlans,
@@ -28,13 +28,13 @@ public sealed class BattlePlanningSystem
             if (rosterMutationSystem != null && rosterMutationSystem.IsCommandDisabled(unit))
                 continue;
 
-            if (planners == null || !planners.TryGet(unit.State, out IBattleUnitPlanner planner))
+            if (providers == null || !providers.TryGet(unit.State, out IBattleControlPlanProvider provider))
             {
                 continue;
             }
 
             var context = new BattlePlanningContext(units, snapshot, aiTuning, tickDeltaTime);
-            if (!planner.TryBuildPlan(unit.State, context, out BattleControlPlan plan))
+            if (!provider.TryBuildPlan(unit.State, context, out BattleControlPlan plan))
             {
                 continue;
             }
@@ -50,7 +50,7 @@ public sealed class BattlePlanningSystem
             return;
 
         state.SetPlannedTargets(plan.TargetEnemy, plan.TargetAlly);
-        state.SetPlannedAnchor(plan.TacticalCommand.Anchor);
+        state.SetPlannedAnchor(plan.MovementAnchor);
         if (plan.MoveIntent == BattleMoveIntent.MoveToPosition && plan.HasDesiredPosition)
         {
             state.SetExecutionPlanPosition(plan.DesiredPosition, true);

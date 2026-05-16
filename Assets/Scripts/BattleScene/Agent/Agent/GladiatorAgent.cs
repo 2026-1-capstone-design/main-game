@@ -62,7 +62,7 @@ public class GladiatorAgent : Agent
     private GladiatorRewardEvaluator _rewardEvaluator;
     private RuntimeUnitAgentActionSink _actionSink;
     private BattleAgentControlBuffer _agentControlBuffer;
-    private BuiltInAiUnitPlanner _aiHeuristic;
+    private LegacyBuiltInAiPlanProvider _aiHeuristic;
     private GladiatorAction _lastAction;
     private GladiatorTacticalContext _lastTacticalContext;
     private bool _hasLastRewardContext;
@@ -130,7 +130,7 @@ public class GladiatorAgent : Agent
 
         if (useBuiltInAiHeuristic)
         {
-            _aiHeuristic = new BuiltInAiUnitPlanner();
+            _aiHeuristic = new LegacyBuiltInAiPlanProvider();
         }
         else
         {
@@ -482,7 +482,7 @@ public class GladiatorAgent : Agent
             ComputeTeamCenter(),
             arenaRadius,
             _curriculumSource != null ? _curriculumSource.BattleTimeoutRemainingRatio : 1f,
-            controlInput.SmoothedLocalMove,
+            controlInput.RawLocalMove,
             controlInput.PreviousRawLocalMove,
             controlInput.AnchorKind,
             controlInput.AnchorSlot,

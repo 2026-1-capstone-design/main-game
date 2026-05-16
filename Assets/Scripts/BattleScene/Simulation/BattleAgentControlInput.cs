@@ -3,7 +3,6 @@ using UnityEngine;
 public struct BattleAgentControlInput
 {
     public Vector2 RawLocalMove;
-    public Vector2 SmoothedLocalMove;
     public Vector2 PreviousRawLocalMove;
     public GladiatorActionRole Role;
     public GladiatorFightMode FightMode;
