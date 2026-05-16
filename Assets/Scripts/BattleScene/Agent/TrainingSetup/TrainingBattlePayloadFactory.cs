@@ -1,46 +1,33 @@
 using System.Collections.Generic;
-using BattleTest;
 using Unity.MLAgents;
 using UnityEngine;
 
 public readonly struct TrainingBattlePayloadSettings
 {
-    public readonly BattleTestPresetSO Preset;
     public readonly bool UseCurriculumTeamSize;
     public readonly string TeamSizeEnvironmentParameter;
     public readonly int DefaultTeamSize;
-    public readonly GladiatorClassSO[] RandomClassPool;
-    public readonly WeaponSO[] RandomWeaponPool;
-    public readonly int DefaultUnitLevel;
-    public readonly float DefaultStatMultiplier;
+    public readonly TrainingGladiatorPreset[] RandomPresetPool;
     public readonly string AllyStatMultiplierEnvironmentParameter;
     public readonly string EnemyStatMultiplierEnvironmentParameter;
     public readonly float DefaultAllyStatMultiplier;
     public readonly float DefaultEnemyStatMultiplier;
 
     public TrainingBattlePayloadSettings(
-        BattleTestPresetSO preset,
         bool useCurriculumTeamSize,
         string teamSizeEnvironmentParameter,
         int defaultTeamSize,
-        GladiatorClassSO[] randomClassPool,
-        WeaponSO[] randomWeaponPool,
-        int defaultUnitLevel,
-        float defaultStatMultiplier,
+        TrainingGladiatorPreset[] randomPresetPool,
         string allyStatMultiplierEnvironmentParameter,
         string enemyStatMultiplierEnvironmentParameter,
         float defaultAllyStatMultiplier,
         float defaultEnemyStatMultiplier
     )
     {
-        Preset = preset;
         UseCurriculumTeamSize = useCurriculumTeamSize;
         TeamSizeEnvironmentParameter = teamSizeEnvironmentParameter;
         DefaultTeamSize = defaultTeamSize;
-        RandomClassPool = randomClassPool;
-        RandomWeaponPool = randomWeaponPool;
-        DefaultUnitLevel = defaultUnitLevel;
-        DefaultStatMultiplier = defaultStatMultiplier;
+        RandomPresetPool = randomPresetPool;
         AllyStatMultiplierEnvironmentParameter = allyStatMultiplierEnvironmentParameter;
         EnemyStatMultiplierEnvironmentParameter = enemyStatMultiplierEnvironmentParameter;
         DefaultAllyStatMultiplier = defaultAllyStatMultiplier;
@@ -59,6 +46,16 @@ public sealed class TrainingBattlePayloadFactory
 
     public BattleStartPayload Create(TrainingBattlePayloadSettings settings)
     {
+        List<TrainingGladiatorPreset> validPresetPool = BuildValidPresetPool(settings.RandomPresetPool);
+        if (validPresetPool.Count == 0)
+        {
+            Debug.LogError(
+                "[TrainingBattlePayloadFactory] Cannot create payload because RandomPresetPool has no valid presets.",
+                _logContext
+            );
+            return null;
+        }
+
         var allySnapshots = new List<BattleUnitSnapshot>();
         var enemySnapshots = new List<BattleUnitSnapshot>();
         int teamSize = ResolveTeamSize(settings);
@@ -73,40 +70,31 @@ public sealed class TrainingBattlePayloadFactory
 
         for (int i = 0; i < teamSize; i++)
         {
-            if (!TryGetTrainingUnitConfig(settings.Preset?.allyTeam, i, settings, out BattleTestUnitConfig entry))
+            TrainingGladiatorPreset preset = PickRandomPreset(validPresetPool);
+            BattleUnitSnapshot snapshot = CreateSnapshot(i + 1, BattleTeamIds.Player, "Ally", preset, allyStatMultiplier);
+            if (snapshot != null)
             {
-                continue;
+                allySnapshots.Add(snapshot);
             }
-
-            allySnapshots.Add(
-                CreateSnapshot(
-                    i + 1,
-                    BattleTeamIds.Player,
-                    "Ally",
-                    entry,
-                    PickRandomClass(entry.classSO, settings),
-                    allyStatMultiplier
-                )
-            );
         }
 
         for (int i = 0; i < teamSize; i++)
         {
-            if (!TryGetTrainingUnitConfig(settings.Preset?.enemyTeam, i, settings, out BattleTestUnitConfig entry))
+            TrainingGladiatorPreset preset = PickRandomPreset(validPresetPool);
+            BattleUnitSnapshot snapshot = CreateSnapshot(i + 1, BattleTeamIds.Enemy, "Enemy", preset, enemyStatMultiplier);
+            if (snapshot != null)
             {
-                continue;
+                enemySnapshots.Add(snapshot);
             }
+        }
 
-            enemySnapshots.Add(
-                CreateSnapshot(
-                    i + 1,
-                    BattleTeamIds.Enemy,
-                    "Enemy",
-                    entry,
-                    PickRandomClass(entry.classSO, settings),
-                    enemyStatMultiplier
-                )
+        if (allySnapshots.Count == 0 || enemySnapshots.Count == 0)
+        {
+            Debug.LogError(
+                $"[TrainingBattlePayloadFactory] Cannot create payload. AllyCount={allySnapshots.Count}, EnemyCount={enemySnapshots.Count}.",
+                _logContext
             );
+            return null;
         }
 
         int battleSeed = Random.Range(1, 1000000);
@@ -122,11 +110,44 @@ public sealed class TrainingBattlePayloadFactory
             new[] { playerTeam, hostileTeam },
             BattleTeamIds.Player,
             selectedEncounterIndex: 0,
-            enemyAverageLevel: settings.Preset != null ? settings.Preset.enemyAverageLevel : settings.DefaultUnitLevel,
-            previewRewardGold: settings.Preset != null ? settings.Preset.previewRewardGold : 0,
+            enemyAverageLevel: CalculateAverageLevel(enemySnapshots),
+            previewRewardGold: 0,
             battleSeed: battleSeed,
             teamSlotIndicesById: teamSlotIndicesById
         );
+    }
+
+    private List<TrainingGladiatorPreset> BuildValidPresetPool(TrainingGladiatorPreset[] source)
+    {
+        var validPresets = new List<TrainingGladiatorPreset>();
+        if (source == null || source.Length == 0)
+        {
+            return validPresets;
+        }
+
+        for (int i = 0; i < source.Length; i++)
+        {
+            TrainingGladiatorPreset preset = source[i];
+            if (preset == null)
+            {
+                continue;
+            }
+
+            string validationError = preset.GetValidationError();
+            if (validationError != null)
+            {
+                Debug.LogError(
+                    $"[TrainingBattlePayloadFactory] Ignoring invalid TrainingGladiatorPreset at index {i}. "
+                        + $"Name={preset.name}, Reason={validationError}",
+                    _logContext
+                );
+                continue;
+            }
+
+            validPresets.Add(preset);
+        }
+
+        return validPresets;
     }
 
     private static int ResolveTeamSize(TrainingBattlePayloadSettings settings)
@@ -157,107 +178,9 @@ public sealed class TrainingBattlePayloadFactory
         return Mathf.Max(0f, requestedMultiplier);
     }
 
-    private bool TryGetTrainingUnitConfig(
-        IReadOnlyList<BattleTestUnitConfig> teamConfig,
-        int unitIndex,
-        TrainingBattlePayloadSettings settings,
-        out BattleTestUnitConfig entry
-    )
+    private static TrainingGladiatorPreset PickRandomPreset(IReadOnlyList<TrainingGladiatorPreset> presets)
     {
-        entry = default;
-        if (teamConfig == null || teamConfig.Count == 0)
-        {
-            entry = CreateDefaultTrainingUnitConfig(settings);
-            if (!HasRandomClassPool(settings))
-            {
-                Debug.LogError(
-                    "[TrainingBattlePayloadFactory] Random class pool is required when no training preset team config exists.",
-                    _logContext
-                );
-                return false;
-            }
-
-            return true;
-        }
-
-        entry = teamConfig[unitIndex % teamConfig.Count];
-        if (entry.classSO == null && !HasRandomClassPool(settings))
-        {
-            Debug.LogError(
-                "[TrainingBattlePayloadFactory] Training unit requires either a preset class or random class pool entry.",
-                _logContext
-            );
-            return false;
-        }
-
-        if (entry.level <= 0)
-            entry.level = settings.DefaultUnitLevel;
-
-        if (entry.statMultiplier <= 0f)
-            entry.statMultiplier = settings.DefaultStatMultiplier;
-
-        if (entry.weaponData == null)
-            entry.weaponData = PickRandomWeapon(null, settings);
-
-        return true;
-    }
-
-    private BattleTestUnitConfig CreateDefaultTrainingUnitConfig(TrainingBattlePayloadSettings settings)
-    {
-        return new BattleTestUnitConfig
-        {
-            level = settings.DefaultUnitLevel,
-            weaponData = PickRandomWeapon(null, settings),
-            statMultiplier = settings.DefaultStatMultiplier,
-        };
-    }
-
-    private static GladiatorClassSO PickRandomClass(GladiatorClassSO fallback, TrainingBattlePayloadSettings settings)
-    {
-        if (!HasRandomClassPool(settings))
-            return fallback;
-
-        int startIndex = Random.Range(0, settings.RandomClassPool.Length);
-        for (int offset = 0; offset < settings.RandomClassPool.Length; offset++)
-        {
-            GladiatorClassSO classSO = settings.RandomClassPool[
-                (startIndex + offset) % settings.RandomClassPool.Length
-            ];
-            if (classSO != null)
-                return classSO;
-        }
-
-        return fallback;
-    }
-
-    private static bool HasRandomClassPool(TrainingBattlePayloadSettings settings)
-    {
-        if (settings.RandomClassPool == null)
-            return false;
-
-        for (int i = 0; i < settings.RandomClassPool.Length; i++)
-        {
-            if (settings.RandomClassPool[i] != null)
-                return true;
-        }
-
-        return false;
-    }
-
-    private static WeaponSO PickRandomWeapon(WeaponSO fallback, TrainingBattlePayloadSettings settings)
-    {
-        if (settings.RandomWeaponPool == null || settings.RandomWeaponPool.Length == 0)
-            return fallback;
-
-        int startIndex = Random.Range(0, settings.RandomWeaponPool.Length);
-        for (int offset = 0; offset < settings.RandomWeaponPool.Length; offset++)
-        {
-            WeaponSO weaponSO = settings.RandomWeaponPool[(startIndex + offset) % settings.RandomWeaponPool.Length];
-            if (weaponSO != null)
-                return weaponSO;
-        }
-
-        return fallback;
+        return presets[Random.Range(0, presets.Count)];
     }
 
     private static Dictionary<BattleTeamId, IReadOnlyList<int>> CreateRandomizedTeamSlotIndices(
@@ -300,84 +223,65 @@ public sealed class TrainingBattlePayloadFactory
         int sourceRuntimeId,
         BattleTeamId teamId,
         string displayPrefix,
-        BattleTestUnitConfig entry,
-        GladiatorClassSO classOverride,
+        TrainingGladiatorPreset preset,
         float teamStatMultiplier
     )
     {
-        GladiatorClassSO classSO = classOverride != null ? classOverride : entry.classSO;
-        if (classSO == null)
+        if (preset == null || !preset.IsValid)
         {
-            Debug.LogError(
-                "[TrainingBattlePayloadFactory] Cannot create snapshot without a gladiator class.",
-                _logContext
-            );
+            Debug.LogError("[TrainingBattlePayloadFactory] Cannot create snapshot from an invalid preset.", _logContext);
             return null;
         }
 
-        int lv = Mathf.Max(1, entry.level);
-        float entryMultiplier = entry.statMultiplier <= 0 ? 1f : entry.statMultiplier;
-        float mult = entryMultiplier * Mathf.Max(0f, teamStatMultiplier);
-
-        float baseHp = classSO.baseHealth + classSO.healthGrowthPerLevel * (lv - 1);
-        float baseAtk = classSO.baseAttack + classSO.attackGrowthPerLevel * (lv - 1);
-
-        float finalHp = (entry.healthOverride > 0 ? entry.healthOverride : baseHp) * mult;
-        float finalAtk = (entry.attackOverride > 0 ? entry.attackOverride : baseAtk) * mult;
-        float finalAtkSpeed = (entry.attackSpeedOverride > 0 ? entry.attackSpeedOverride : classSO.attackSpeed) * mult;
-        float finalMove = (entry.moveSpeedOverride > 0 ? entry.moveSpeedOverride : classSO.moveSpeed) * mult;
-        float finalRange = entry.attackRangeOverride > 0 ? entry.attackRangeOverride : classSO.attackRange;
-
-        WeaponType resolvedType = WeaponType.None;
-        GameObject leftPrefab = null;
-        GameObject rightPrefab = null;
-        bool isRanged = false;
-        bool useProjectile = false;
-
-        if (entry.weaponData != null)
-        {
-            resolvedType = entry.weaponData.weaponType;
-            leftPrefab = entry.weaponData.leftWeaponPrefab;
-            rightPrefab = entry.weaponData.rightWeaponPrefab;
-            isRanged = entry.weaponData.isRanged;
-            useProjectile = entry.weaponData.useProjectile;
-            finalRange += Mathf.Max(0f, entry.weaponData.baseAttackRangeBonus);
-        }
-
-        if (entry.overrideWeaponSettings)
-        {
-            isRanged = entry.isRanged;
-            useProjectile = entry.useProjectile;
-        }
-
-        int[] randomSkins =
-            GladiatorSkinManager.Instance != null ? GladiatorSkinManager.Instance.GenerateRandomSkinIndicates() : null;
+        float mult = Mathf.Max(0f, teamStatMultiplier);
+        WeaponSO weapon = preset.weapon;
+        string presetName = string.IsNullOrWhiteSpace(preset.displayNamePrefix)
+            ? preset.gladiatorClass.className
+            : preset.displayNamePrefix;
 
         return new BattleUnitSnapshot(
             sourceRuntimeId: sourceRuntimeId,
             teamId: teamId,
-            displayName: $"{displayPrefix} {classSO.className}",
-            level: lv,
+            displayName: $"{displayPrefix} {presetName}",
+            level: preset.level,
             loyalty: 100,
-            maxHealth: finalHp,
-            currentHealth: finalHp,
-            attack: finalAtk,
-            attackSpeed: finalAtkSpeed,
-            moveSpeed: finalMove,
-            attackRange: finalRange,
-            gladiatorClass: classSO,
+            maxHealth: preset.maxHealth * mult,
+            currentHealth: preset.maxHealth * mult,
+            attack: preset.attack * mult,
+            attackSpeed: preset.attackSpeed * mult,
+            moveSpeed: preset.moveSpeed * mult,
+            attackRange: preset.attackRange * mult,
+            gladiatorClass: preset.gladiatorClass,
             trait: null,
             personality: null,
             equippedArtifact: null,
-            weaponType: resolvedType,
-            leftWeaponPrefab: leftPrefab,
-            rightWeaponPrefab: rightPrefab,
+            weaponType: weapon.weaponType,
+            leftWeaponPrefab: weapon.leftWeaponPrefab,
+            rightWeaponPrefab: weapon.rightWeaponPrefab,
             // TrainingScene은 이동/기본공격만 학습하므로 payload 단계에서 스킬을 제거한다.
             weaponSkillId: WeaponSkillId.None,
-            customizeIndicates: randomSkins,
-            isRanged: isRanged,
-            useProjectile: useProjectile,
-            portraitSprite: classSO.icon
+            customizeIndicates: preset.CloneCustomizeIndicates(),
+            isRanged: preset.ResolveIsRanged(),
+            useProjectile: preset.ResolveUseProjectile(),
+            portraitSprite: preset.gladiatorClass.icon,
+            defaultDur: weapon.defaultDur,
+            duration: weapon.duration
         );
+    }
+
+    private static float CalculateAverageLevel(IReadOnlyList<BattleUnitSnapshot> snapshots)
+    {
+        if (snapshots == null || snapshots.Count == 0)
+        {
+            return 0f;
+        }
+
+        float totalLevel = 0f;
+        for (int i = 0; i < snapshots.Count; i++)
+        {
+            totalLevel += snapshots[i] != null ? snapshots[i].Level : 0f;
+        }
+
+        return totalLevel / snapshots.Count;
     }
 }
