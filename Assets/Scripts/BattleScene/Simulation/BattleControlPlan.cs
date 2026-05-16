@@ -24,52 +24,86 @@ public enum BattleFacingIntent
     MoveDirection = 3,
 }
 
+public enum BattleAnchorKind
+{
+    Enemy = 0,
+    Ally = 1,
+    TeamCenter = 2,
+}
+
+public readonly struct BattleAnchor
+{
+    public readonly BattleAnchorKind Kind;
+    public readonly int SlotIndex;
+    public readonly BattleUnitCombatState Unit;
+    public readonly Vector3 Position;
+    public readonly bool HasUnit;
+
+    public BattleAnchor(
+        BattleAnchorKind kind,
+        int slotIndex,
+        BattleUnitCombatState unit,
+        Vector3 position,
+        bool hasUnit
+    )
+    {
+        Kind = kind;
+        SlotIndex = slotIndex;
+        Unit = unit;
+        Position = position;
+        HasUnit = hasUnit;
+    }
+}
+
 // BattleControlPlan은 planner가 결정한 tick 단위 최종 실행 명세다.
 // 하위 시스템은 explicit/built-in 분기 없이 intent만 읽고 집행한다.
 public readonly struct BattleControlPlan
 {
-    public readonly BattleActionType ActionType;
     public readonly BattleUnitCombatState TargetEnemy;
     public readonly BattleUnitCombatState TargetAlly;
     public readonly Vector3 DesiredPosition;
     public readonly bool HasDesiredPosition;
-    public readonly BattleTacticalCommand TacticalCommand;
+    public readonly BattleAnchor MovementAnchor;
+    public readonly Vector2 RelativeMove;
     public readonly BattleMoveIntent MoveIntent;
     public readonly BattleCombatIntent CombatIntent;
     public readonly BattleFacingIntent FacingIntent;
 
     public BattleControlPlan(
-        BattleActionType actionType,
         BattleUnitCombatState targetEnemy,
         BattleUnitCombatState targetAlly,
         Vector3 desiredPosition,
         bool hasDesiredPosition,
-        BattleTacticalCommand tacticalCommand,
+        BattleAnchor movementAnchor,
+        Vector2 relativeMove,
         BattleMoveIntent moveIntent,
         BattleCombatIntent combatIntent,
         BattleFacingIntent facingIntent
     )
     {
-        ActionType = actionType;
         TargetEnemy = targetEnemy;
         TargetAlly = targetAlly;
         DesiredPosition = desiredPosition;
         HasDesiredPosition = hasDesiredPosition;
-        TacticalCommand = tacticalCommand;
+        MovementAnchor = movementAnchor;
+        RelativeMove = Vector2.ClampMagnitude(relativeMove, 1f);
         MoveIntent = moveIntent;
         CombatIntent = combatIntent;
         FacingIntent = facingIntent;
     }
 
-    public static BattleControlPlan FromExecutionPlan(
+    public static BattleControlPlan CreateResolvedPlan(
         BattleUnitCombatState self,
-        BattleActionType actionType,
-        BattleActionExecutionPlan plan
+        BattleUnitCombatState targetEnemy,
+        BattleUnitCombatState targetAlly,
+        Vector3 desiredPosition,
+        bool hasDesiredPosition,
+        BattleAnchor movementAnchor = default,
+        Vector2 relativeMove = default
     )
     {
-        bool hasValidTarget = BattleFieldSnapshot.IsValidEnemyTarget(self, plan.TargetEnemy);
-        bool inAttackRange =
-            hasValidTarget && BattleFieldSnapshot.IsWithinEffectiveAttackDistance(self, plan.TargetEnemy);
+        bool hasValidTarget = BattleFieldSnapshot.IsValidEnemyTarget(self, targetEnemy);
+        bool inAttackRange = hasValidTarget && BattleFieldSnapshot.IsWithinEffectiveAttackDistance(self, targetEnemy);
 
         BattleMoveIntent moveIntent;
         BattleCombatIntent combatIntent;
@@ -80,7 +114,7 @@ public readonly struct BattleControlPlan
             combatIntent = BattleCombatIntent.Attack;
             facingIntent = BattleFacingIntent.TargetEnemy;
         }
-        else if (plan.HasDesiredPosition)
+        else if (hasDesiredPosition)
         {
             moveIntent = BattleMoveIntent.MoveToPosition;
             combatIntent = BattleCombatIntent.None;
@@ -100,32 +134,62 @@ public readonly struct BattleControlPlan
         }
 
         return new BattleControlPlan(
-            actionType,
-            plan.TargetEnemy,
-            plan.TargetAlly,
-            plan.DesiredPosition,
-            plan.HasDesiredPosition,
-            default,
+            targetEnemy,
+            targetAlly,
+            desiredPosition,
+            hasDesiredPosition,
+            movementAnchor,
+            relativeMove,
             moveIntent,
             combatIntent,
             facingIntent
         );
     }
 
-    public static BattleControlPlan FromAgentInput(BattleUnitCombatState self, BattleAgentControlInput input)
+    public static BattleControlPlan CreateTargetPlan(
+        BattleUnitCombatState self,
+        BattleUnitCombatState targetEnemy,
+        BattleUnitCombatState targetAlly = null,
+        BattleAnchor movementAnchor = default,
+        Vector2 relativeMove = default
+    )
     {
-        BattleUnitCombatState target = BattleFieldSnapshot.IsValidEnemyTarget(self, input.Target) ? input.Target : null;
-        BattleUnitCombatState anchorTarget = input.AnchorTarget;
-        BattleCombatIntent combatIntent = ResolveCombatIntent(input.Command);
-        BattleMoveIntent moveIntent = ResolveAgentMoveIntent(target, input, combatIntent);
-        BattleFacingIntent facingIntent = ResolveAgentFacingIntent(target, moveIntent, combatIntent);
+        return CreateResolvedPlan(self, targetEnemy, targetAlly, Vector3.zero, false, movementAnchor, relativeMove);
+    }
+
+    public static BattleControlPlan CreatePositionPlan(
+        BattleUnitCombatState self,
+        Vector3 desiredPosition,
+        BattleUnitCombatState targetEnemy = null,
+        BattleUnitCombatState targetAlly = null,
+        BattleAnchor movementAnchor = default,
+        Vector2 relativeMove = default
+    )
+    {
+        return CreateResolvedPlan(self, targetEnemy, targetAlly, desiredPosition, true, movementAnchor, relativeMove);
+    }
+
+    public static BattleControlPlan CreateTacticalInputPlan(
+        BattleUnitCombatState self,
+        BattleUnitCombatState targetEnemy,
+        BattleUnitCombatState targetAlly,
+        BattleAnchor movementAnchor,
+        Vector2 relativeMove,
+        BattleCombatCommand command
+    )
+    {
+        targetEnemy = BattleFieldSnapshot.IsValidEnemyTarget(self, targetEnemy) ? targetEnemy : null;
+        relativeMove = Vector2.ClampMagnitude(relativeMove, 1f);
+        BattleCombatIntent combatIntent = ResolveCombatIntent(command);
+        BattleMoveIntent moveIntent = ResolveTacticalMoveIntent(targetEnemy, relativeMove, combatIntent);
+        BattleFacingIntent facingIntent = ResolveTacticalFacingIntent(targetEnemy, moveIntent, combatIntent);
         return new BattleControlPlan(
-            BattleActionType.EngageNearest,
-            target,
-            input.AnchorKind == GladiatorAnchorKind.Ally ? anchorTarget : null,
+            targetEnemy,
+            targetAlly,
             Vector3.zero,
             false,
-            BuildTacticalCommand(self, input, anchorTarget),
+            movementAnchor,
+            relativeMove,
             moveIntent,
             combatIntent,
             facingIntent
@@ -140,24 +204,22 @@ public readonly struct BattleControlPlan
             _ => BattleCombatIntent.None,
         };
 
-    private static BattleMoveIntent ResolveAgentMoveIntent(
+    private static BattleMoveIntent ResolveTacticalMoveIntent(
         BattleUnitCombatState target,
-        BattleAgentControlInput input,
+        Vector2 relativeMove,
         BattleCombatIntent combatIntent
     )
     {
         if (combatIntent == BattleCombatIntent.Attack)
-        {
             return target != null ? BattleMoveIntent.MoveToTarget : BattleMoveIntent.Hold;
-        }
 
-        if (input.SmoothedLocalMove.sqrMagnitude > 0.0001f)
+        if (relativeMove.sqrMagnitude > 0.0001f)
             return BattleMoveIntent.MoveByTacticalInput;
 
         return BattleMoveIntent.Hold;
     }
 
-    private static BattleFacingIntent ResolveAgentFacingIntent(
+    private static BattleFacingIntent ResolveTacticalFacingIntent(
         BattleUnitCombatState target,
         BattleMoveIntent moveIntent,
         BattleCombatIntent combatIntent
@@ -174,29 +236,5 @@ public readonly struct BattleControlPlan
             return BattleFacingIntent.TargetEnemy;
 
         return BattleFacingIntent.KeepCurrent;
-    }
-
-    private static BattleTacticalCommand BuildTacticalCommand(
-        BattleUnitCombatState self,
-        BattleAgentControlInput input,
-        BattleUnitCombatState target
-    )
-    {
-        BattleAnchorKind kind = input.AnchorKind switch
-        {
-            GladiatorAnchorKind.Ally => BattleAnchorKind.Ally,
-            GladiatorAnchorKind.TeamCenter => BattleAnchorKind.TeamCenter,
-            _ => BattleAnchorKind.Enemy,
-        };
-
-        BattleAnchor anchor = new BattleAnchor(
-            kind,
-            input.AnchorSlot,
-            target,
-            target != null ? target.Position : (self != null ? self.Position : Vector3.zero),
-            target != null
-        );
-
-        return new BattleTacticalCommand(anchor, input.SmoothedLocalMove, input.Command, input.FightMode);
     }
 }

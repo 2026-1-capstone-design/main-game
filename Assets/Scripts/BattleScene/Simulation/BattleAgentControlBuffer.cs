@@ -1,12 +1,11 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// ML-Agents에서 받은 원시 입력을 저장하고, smoothed 입력을 계산한다.
+// BattleAgentControlBuffer는 ML-Agents action을 전투 시뮬레이션이 읽는 유닛별 제어 입력으로 보관한다.
+// 입력 벡터 정규화, Agent 명령을 전투 명령으로 변환, 타겟 유효성 검사, fight mode 상태 반영,
+// 실행된 일회성 명령 소비, observation용 입력 스냅샷 제공, 제어 해제 시 입력 초기화를 담당한다.
 public sealed class BattleAgentControlBuffer
 {
-    private static readonly bool EnableMoveInputSmoothing = false;
-    private const float MoveInputChangePerSecond = 8f;
-
     private readonly Dictionary<BattleUnitCombatState, BattleAgentControlInput> _inputs =
         new Dictionary<BattleUnitCombatState, BattleAgentControlInput>();
 
@@ -49,34 +48,14 @@ public sealed class BattleAgentControlBuffer
         self.SetAgentFightMode(fightMode);
     }
 
-    public BattleAgentControlInput GetSmoothedInput(BattleUnitCombatState self, float tickDeltaTime)
+    public BattleAgentControlInput GetInput(BattleUnitCombatState self)
     {
         if (self == null)
         {
             return default;
         }
 
-        _inputs.TryGetValue(self, out BattleAgentControlInput input);
-        if (!EnableMoveInputSmoothing)
-        {
-            input.SmoothedLocalMove = input.RawLocalMove;
-            _inputs[self] = input;
-            return input;
-        }
-
-        float moveStep = MoveInputChangePerSecond * Mathf.Max(0f, tickDeltaTime);
-
-        Vector2 smoothed = input.SmoothedLocalMove;
-        smoothed.x = Mathf.MoveTowards(smoothed.x, input.RawLocalMove.x, moveStep);
-        smoothed.y = Mathf.MoveTowards(smoothed.y, input.RawLocalMove.y, moveStep);
-        if (smoothed.sqrMagnitude > 1f)
-        {
-            smoothed.Normalize();
-        }
-
-        input.SmoothedLocalMove = smoothed;
-        _inputs[self] = input;
-        return input;
+        return _inputs.TryGetValue(self, out BattleAgentControlInput input) ? input : default;
     }
 
     public BattleAgentControlInput GetInputSnapshot(BattleUnitCombatState self)

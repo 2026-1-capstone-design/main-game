@@ -105,7 +105,7 @@ public sealed class BattlePhysicsSystem
 
     private bool MoveByTacticalInput(BattleRuntimeUnit unit, BattleControlPlan plan, float tickDeltaTime)
     {
-        Vector3 moveDirection = BuildMoveDirection(plan.TacticalCommand, unit);
+        Vector3 moveDirection = BuildMoveDirection(plan.MovementAnchor, plan.RelativeMove, unit);
         if (moveDirection.sqrMagnitude <= 0.0001f)
             return false;
 
@@ -138,24 +138,24 @@ public sealed class BattlePhysicsSystem
                     unit.FaceTarget(plan.DesiredPosition);
                 break;
             case BattleFacingIntent.MoveDirection:
-                Vector3 moveDirection = BuildMoveDirection(plan.TacticalCommand, unit);
+                Vector3 moveDirection = BuildMoveDirection(plan.MovementAnchor, plan.RelativeMove, unit);
                 if (moveDirection.sqrMagnitude > 0.0001f)
                     unit.FaceTarget(unit.Position + moveDirection);
                 break;
         }
     }
 
-    private Vector3 BuildMoveDirection(BattleTacticalCommand command, BattleRuntimeUnit unit)
+    private Vector3 BuildMoveDirection(BattleAnchor anchor, Vector2 relativeMove, BattleRuntimeUnit unit)
     {
         if (unit == null)
             return Vector3.zero;
 
-        Vector3 anchorForward = ResolveAnchorForward(command.Anchor, unit);
+        Vector3 anchorForward = ResolveAnchorForward(anchor, unit);
         if (anchorForward.sqrMagnitude <= 0.0001f)
             anchorForward = unit.transform.forward;
 
         Vector3 anchorLeft = Vector3.Cross(anchorForward, Vector3.up).normalized;
-        Vector3 direction = (anchorForward * command.RelativeMove.y) + (anchorLeft * command.RelativeMove.x);
+        Vector3 direction = (anchorForward * relativeMove.y) + (anchorLeft * relativeMove.x);
         if (direction.sqrMagnitude > 1f)
             direction.Normalize();
 
@@ -192,7 +192,7 @@ public sealed class BattlePhysicsSystem
         Vector3 direction = centerDistance > 0.0001f ? toTarget / centerDistance : Vector3.zero;
         if (plan.CombatIntent == BattleCombatIntent.Attack)
         {
-            direction = BuildAttackApproachDirection(plan.TacticalCommand, direction);
+            direction = BuildAttackApproachDirection(plan.RelativeMove, direction);
         }
 
         float remainingDistanceUntilAttack = Mathf.Max(0f, centerDistance - effectiveAttackDistance);
@@ -208,14 +208,14 @@ public sealed class BattlePhysicsSystem
         return true;
     }
 
-    private static Vector3 BuildAttackApproachDirection(BattleTacticalCommand command, Vector3 anchorForward)
+    private static Vector3 BuildAttackApproachDirection(Vector2 relativeMove, Vector3 anchorForward)
     {
         if (anchorForward.sqrMagnitude <= 0.0001f)
         {
             return anchorForward;
         }
 
-        Vector2 move = command.RelativeMove;
+        Vector2 move = relativeMove;
         if (move.sqrMagnitude <= 0.0001f)
         {
             return anchorForward;

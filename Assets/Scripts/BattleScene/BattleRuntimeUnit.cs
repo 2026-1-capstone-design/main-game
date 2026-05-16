@@ -567,13 +567,6 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     public void SetDecisionState(float keepBehaving, float actionTimer) =>
         State.SetDecisionState(keepBehaving, actionTimer);
 
-    public void SetExecutionPlan(BattleActionExecutionPlan plan)
-    {
-        State.SetPlannedTargets(plan.TargetEnemy, plan.TargetAlly);
-        State.SetPlannedAnchor(default);
-        State.SetExecutionPlanPosition(plan.DesiredPosition, plan.HasDesiredPosition);
-    }
-
     public void ClearExecutionPlan()
     {
         State.ClearTargets();

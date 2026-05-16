@@ -71,7 +71,13 @@ public sealed class TrainingBattlePayloadFactory
         for (int i = 0; i < teamSize; i++)
         {
             TrainingGladiatorPreset preset = PickRandomPreset(validPresetPool);
-            BattleUnitSnapshot snapshot = CreateSnapshot(i + 1, BattleTeamIds.Player, "Ally", preset, allyStatMultiplier);
+            BattleUnitSnapshot snapshot = CreateSnapshot(
+                i + 1,
+                BattleTeamIds.Player,
+                "Ally",
+                preset,
+                allyStatMultiplier
+            );
             if (snapshot != null)
             {
                 allySnapshots.Add(snapshot);
@@ -81,7 +87,13 @@ public sealed class TrainingBattlePayloadFactory
         for (int i = 0; i < teamSize; i++)
         {
             TrainingGladiatorPreset preset = PickRandomPreset(validPresetPool);
-            BattleUnitSnapshot snapshot = CreateSnapshot(i + 1, BattleTeamIds.Enemy, "Enemy", preset, enemyStatMultiplier);
+            BattleUnitSnapshot snapshot = CreateSnapshot(
+                i + 1,
+                BattleTeamIds.Enemy,
+                "Enemy",
+                preset,
+                enemyStatMultiplier
+            );
             if (snapshot != null)
             {
                 enemySnapshots.Add(snapshot);
@@ -229,7 +241,10 @@ public sealed class TrainingBattlePayloadFactory
     {
         if (preset == null || !preset.IsValid)
         {
-            Debug.LogError("[TrainingBattlePayloadFactory] Cannot create snapshot from an invalid preset.", _logContext);
+            Debug.LogError(
+                "[TrainingBattlePayloadFactory] Cannot create snapshot from an invalid preset.",
+                _logContext
+            );
             return null;
         }
 

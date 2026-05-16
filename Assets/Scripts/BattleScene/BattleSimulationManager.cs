@@ -80,9 +80,10 @@ public sealed class BattleSimulationManager : MonoBehaviour
     private BattleCombatSystem _combatSystem;
     private readonly BattleVictorySystem _victorySystem = new BattleVictorySystem();
     private readonly BattleAgentControlBuffer _agentControlBuffer = new BattleAgentControlBuffer();
-    private readonly BattleUnitPlannerRegistry _unitPlannerRegistry = new BattleUnitPlannerRegistry();
-    private readonly BuiltInAiUnitPlanner _builtInAiUnitPlanner = new BuiltInAiUnitPlanner();
-    private MlAgentUnitPlanner _mlAgentUnitPlanner;
+    private readonly BattleControlPlanProviderRegistry _controlPlanProviderRegistry =
+        new BattleControlPlanProviderRegistry();
+    private readonly LegacyBuiltInAiPlanProvider _legacyBuiltInAiPlanProvider = new LegacyBuiltInAiPlanProvider();
+    private MlAgentControlPlanProvider _mlAgentControlPlanProvider;
     private readonly int[] _tickUnitNumbersBuffer = new int[BattleTeamConstants.MaxUnitsInBattle];
     private readonly BattleParameterSet[] _tickRawParametersBuffer = new BattleParameterSet[
         BattleTeamConstants.MaxUnitsInBattle
@@ -97,6 +98,9 @@ public sealed class BattleSimulationManager : MonoBehaviour
     private readonly BattleControlPlan[] _tickControlPlanBuffer = new BattleControlPlan[
         BattleTeamConstants.MaxUnitsInBattle
     ];
+    private readonly BattleConsumedCommandBuffer _tickConsumedCommandBuffer = new BattleConsumedCommandBuffer(
+        BattleTeamConstants.MaxUnitsInBattle
+    );
     private readonly BattleCombatResultBuffer _tickCombatResultBuffer = new BattleCombatResultBuffer(
         BattleTeamConstants.MaxUnitsInBattle
     );
@@ -188,12 +192,12 @@ public sealed class BattleSimulationManager : MonoBehaviour
         _damageLifecycle.Clear();
         _rosterMutationSystem.Clear();
         _projectileSystem.Clear();
-        _unitPlannerRegistry.Clear();
+        _controlPlanProviderRegistry.Clear();
         _agentControlBuffer.ClearAll();
         _battlefieldCollider = battlefieldCollider;
-        _unitPlannerRegistry.DefaultPlanner = _builtInAiUnitPlanner;
-        if (_mlAgentUnitPlanner == null)
-            _mlAgentUnitPlanner = new MlAgentUnitPlanner(_agentControlBuffer);
+        _controlPlanProviderRegistry.DefaultProvider = _legacyBuiltInAiPlanProvider;
+        if (_mlAgentControlPlanProvider == null)
+            _mlAgentControlPlanProvider = new MlAgentControlPlanProvider(_agentControlBuffer);
 
         for (int i = 0; i < runtimeUnits.Count; i++)
         {
@@ -385,6 +389,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
             _battleTickCount
         );
         _tickCombatResultBuffer.Clear();
+        _tickConsumedCommandBuffer.Clear();
         _effectSystem.Configure(_tickCombatResultBuffer, _runtimeUnitByState, _battlefieldCollider);
         _rosterMutationSystem.Tick(battleTime);
         if (UseSkills)
@@ -407,7 +412,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
         _planningSystem.Build(
             _runtimeUnits,
             CurrentSnapshot,
-            _unitPlannerRegistry,
+            _controlPlanProviderRegistry,
             aiTuning,
             tickDeltaTime,
             _tickControlPlanBuffer,
@@ -433,10 +438,11 @@ public sealed class BattleSimulationManager : MonoBehaviour
             battleTime,
             _battleTickCount,
             _tickControlPlanBuffer,
-            _unitPlannerRegistry,
+            _tickConsumedCommandBuffer,
             clearResults: false,
             projectilesEnabled: UseProjectiles
         );
+        _controlPlanProviderRegistry.ConsumeAll(_tickConsumedCommandBuffer);
 
         BattleOutcome? outcome = _victorySystem.Evaluate(
             _runtimeUnits,
@@ -611,16 +617,16 @@ public sealed class BattleSimulationManager : MonoBehaviour
 
         if (mode == BattleUnitControlMode.AgentPolicy)
         {
-            if (_mlAgentUnitPlanner == null)
+            if (_mlAgentControlPlanProvider == null)
             {
-                _mlAgentUnitPlanner = new MlAgentUnitPlanner(_agentControlBuffer);
+                _mlAgentControlPlanProvider = new MlAgentControlPlanProvider(_agentControlBuffer);
             }
 
-            _unitPlannerRegistry.SetOverride(state, _mlAgentUnitPlanner);
+            _controlPlanProviderRegistry.SetOverride(state, _mlAgentControlPlanProvider);
             return;
         }
 
-        _unitPlannerRegistry.SetOverride(state, null);
+        _controlPlanProviderRegistry.SetOverride(state, null);
         _agentControlBuffer.Clear(state);
     }
 
@@ -628,8 +634,8 @@ public sealed class BattleSimulationManager : MonoBehaviour
     {
         if (
             state != null
-            && _unitPlannerRegistry.TryGet(state, out IBattleUnitPlanner planner)
-            && ReferenceEquals(planner, _mlAgentUnitPlanner)
+            && _controlPlanProviderRegistry.TryGet(state, out IBattleControlPlanProvider provider)
+            && ReferenceEquals(provider, _mlAgentControlPlanProvider)
         )
         {
             return BattleUnitControlMode.AgentPolicy;

@@ -1,7 +1,8 @@
 using System.Collections.Generic;
 
-// 기존 built-in AI의 decision + 행동별 execution planner 조합을 담당한다.
-public sealed class BuiltInAiUnitPlanner : IBattleUnitPlanner
+// Deprecated: 기존 built-in AI의 decision + 행동별 execution planner 조합을 보관하는 legacy provider다.
+// 신규 제어 로직은 BattleControlPlan을 직접 공급하는 별도 provider로 추가한다.
+public sealed class LegacyBuiltInAiPlanProvider : IBattleControlPlanProvider
 {
     private readonly BattleDecisionSystem _decisionSystem = new BattleDecisionSystem();
     private readonly Dictionary<BattleActionType, IBattleActionPlanner> _planners = BuildPlannerRegistry();
@@ -17,7 +18,13 @@ public sealed class BuiltInAiUnitPlanner : IBattleUnitPlanner
 
         _decisionSystem.DecideBuiltInUnit(context.Units, unit, context.AiTuning, context.TickDeltaTime);
         BattleActionExecutionPlan executionPlan = BuildExecutionPlan(unit, context.Snapshot);
-        plan = BattleControlPlan.FromExecutionPlan(unit.State, unit.CurrentActionType, executionPlan);
+        plan = BattleControlPlan.CreateResolvedPlan(
+            unit.State,
+            executionPlan.TargetEnemy,
+            executionPlan.TargetAlly,
+            executionPlan.DesiredPosition,
+            executionPlan.HasDesiredPosition
+        );
         return true;
     }
 

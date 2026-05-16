@@ -460,13 +460,3 @@ public readonly struct BattleUnitView
         );
     }
 }
-
-[Serializable]
-public struct BattleActionExecutionPlan
-{
-    public BattleActionType Action;
-    public BattleUnitCombatState TargetEnemy;
-    public BattleUnitCombatState TargetAlly;
-    public Vector3 DesiredPosition;
-    public bool HasDesiredPosition;
-}
