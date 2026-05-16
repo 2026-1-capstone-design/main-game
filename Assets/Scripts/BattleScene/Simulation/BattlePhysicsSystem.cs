@@ -6,7 +6,7 @@ public sealed class BattlePhysicsSystem
     private SphereCollider _battlefieldCollider;
     private float _desiredPositionStopDistance;
     private IBattleMovementPolicy _movementPolicy = DefaultBattleMovementPolicy.Instance;
-    private IReadOnlyList<BattleRuntimeUnit> _units;
+    private IReadOnlyDictionary<BattleUnitCombatState, BattleRuntimeUnit> _runtimeUnitByState;
 
     public void Configure(SphereCollider battlefieldCollider, float desiredPositionStopDistance)
     {
@@ -16,6 +16,7 @@ public sealed class BattlePhysicsSystem
 
     public void Execute(
         IReadOnlyList<BattleRuntimeUnit> units,
+        IReadOnlyDictionary<BattleUnitCombatState, BattleRuntimeUnit> runtimeUnitByState,
         float tickDeltaTime,
         BattleControlPlan[] controlPlans = null,
         IBattleMovementPolicy movementPolicy = null,
@@ -25,7 +26,7 @@ public sealed class BattlePhysicsSystem
         if (units == null)
             return;
 
-        _units = units;
+        _runtimeUnitByState = runtimeUnitByState;
         _movementPolicy = movementPolicy ?? DefaultBattleMovementPolicy.Instance;
         ExecuteSpecialEffect(units, tickDeltaTime);
         ExecuteMovementPhase(units, tickDeltaTime, controlPlans, channelSystem);
@@ -255,17 +256,10 @@ public sealed class BattlePhysicsSystem
 
     private BattleRuntimeUnit FindRuntimeUnitForState(BattleUnitCombatState state)
     {
-        if (state == null || _units == null)
+        if (state == null || _runtimeUnitByState == null)
             return null;
 
-        for (int i = 0; i < _units.Count; i++)
-        {
-            BattleRuntimeUnit unit = _units[i];
-            if (unit != null && unit.State == state)
-                return unit;
-        }
-
-        return null;
+        return _runtimeUnitByState.TryGetValue(state, out BattleRuntimeUnit runtime) ? runtime : null;
     }
 
     private void ResolveUnitSeparation(IReadOnlyList<BattleRuntimeUnit> units)

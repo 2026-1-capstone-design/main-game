@@ -429,6 +429,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
         );
         _physicsSystem.Execute(
             _runtimeUnits,
+            _runtimeUnitByState,
             tickDeltaTime,
             _tickControlPlanBuffer,
             UseArtifacts ? _artifactSystem.MovementPolicy : null,
@@ -544,6 +545,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
             UseSkills ? _channelSystem : null,
             UseArtifacts ? _artifactSystem : null,
             _rosterMutationSystem,
+            this,
             UseSkills
         );
     }

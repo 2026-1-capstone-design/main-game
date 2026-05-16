@@ -8,6 +8,7 @@ public sealed class BattleCombatSystem
     private readonly BattleSkillChannelSystem _channelSystem;
     private readonly BattleArtifactSystem _artifactSystem;
     private readonly BattleRosterMutationSystem _rosterMutationSystem;
+    private readonly BattleSimulationManager _simulationManager;
     private readonly bool _skillsEnabled;
 
     public BattleCombatSystem(
@@ -15,6 +16,7 @@ public sealed class BattleCombatSystem
         BattleSkillChannelSystem channelSystem = null,
         BattleArtifactSystem artifactSystem = null,
         BattleRosterMutationSystem rosterMutationSystem = null,
+        BattleSimulationManager simulationManager = null,
         bool skillsEnabled = true
     )
     {
@@ -22,6 +24,7 @@ public sealed class BattleCombatSystem
         _channelSystem = channelSystem;
         _artifactSystem = artifactSystem;
         _rosterMutationSystem = rosterMutationSystem;
+        _simulationManager = simulationManager;
         _skillsEnabled = skillsEnabled;
         _skillRegistry = new BattleSkillRegistry(
             new IBattleSkill[]
@@ -95,6 +98,7 @@ public sealed class BattleCombatSystem
             _effects,
             _channelSystem,
             _artifactSystem,
+            _simulationManager,
             controlPlans,
             projectilesEnabled
         );
@@ -109,6 +113,7 @@ public sealed class BattleCombatSystem
         IBattleEffectSink effects,
         BattleSkillChannelSystem channelSystem,
         BattleArtifactSystem artifactSystem,
+        BattleSimulationManager simulationManager,
         BattleControlPlan[] controlPlans,
         bool projectilesEnabled
     )
@@ -181,8 +186,8 @@ public sealed class BattleCombatSystem
                 float windUpDelay = attacker.Snapshot.WeaponType == WeaponType.bow ? 0.3f : 0.3f;
 
                 didLaunchProjectile =
-                    BattleSimulationManager.Instance != null
-                    && BattleSimulationManager.Instance.TryLaunchBasicProjectile(
+                    simulationManager != null
+                    && simulationManager.TryLaunchBasicProjectile(
                         damageRequest,
                         startPos,
                         fireDirection,
@@ -242,7 +247,8 @@ public sealed class BattleCombatSystem
                 snapshot,
                 units,
                 battleTime,
-                battleTick
+                battleTick,
+                _simulationManager
             );
 
             if (skill == null || !skill.CanActivate(context))

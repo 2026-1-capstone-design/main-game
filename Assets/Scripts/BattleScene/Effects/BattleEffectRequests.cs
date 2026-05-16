@@ -38,6 +38,7 @@ public readonly struct BattleEffectContext
 {
     public BattleRuntimeUnit Actor { get; }
     public BattleRuntimeUnit PrimaryTarget { get; }
+    public BattleSimulationManager SimulationManager { get; }
     public BattleFieldSnapshot Snapshot { get; }
     public IReadOnlyList<BattleRuntimeUnit> Units { get; }
     public float BattleTime { get; }
@@ -49,11 +50,13 @@ public readonly struct BattleEffectContext
         BattleFieldSnapshot snapshot,
         IReadOnlyList<BattleRuntimeUnit> unitViews,
         float battleTime,
-        int battleTick
+        int battleTick,
+        BattleSimulationManager simulationManager = null
     )
     {
         Actor = actor;
         PrimaryTarget = primaryTarget;
+        SimulationManager = simulationManager;
         Snapshot = snapshot;
         Units = unitViews;
         BattleTime = battleTime;
