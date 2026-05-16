@@ -96,6 +96,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     public bool IsAttacking => State.IsAttacking;
 
     public bool IsCastingSkill => State.IsCastingSkill;
+    public bool ShouldUseAnimatorAttackRelease => Snapshot == null || Snapshot.DefaultDur;
 
     // ── 위치 (State 위임) ────────────────────────────────────────
     public Vector3 Position => State != null ? State.Position : transform.position;
@@ -469,6 +470,8 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         _myAnimation?.SetTrigger("attack");
         _lastAttackTriggerFrame = Time.frameCount;
         State.SetAttackState(true);
+        if (!ShouldUseAnimatorAttackRelease)
+            State.StartAttackingLock(GetAttackingLockDuration());
         State.SetMovementState(false);
 
         if (PlannedTargetEnemy != null)
@@ -508,6 +511,14 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         }
 
         return false;
+    }
+
+    public float GetAttackingLockDuration()
+    {
+        if (Snapshot == null || Snapshot.DefaultDur || Snapshot.Duration <= 0f)
+            return 0f;
+
+        return Snapshot.Duration / Mathf.Max(0.01f, AttackSpeed);
     }
 
     public float GetSkillAnimationDuration()
