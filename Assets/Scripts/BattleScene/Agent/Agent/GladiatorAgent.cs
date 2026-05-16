@@ -62,7 +62,7 @@ public class GladiatorAgent : Agent
     private GladiatorRewardEvaluator _rewardEvaluator;
     private RuntimeUnitAgentActionSink _actionSink;
     private BattleAgentControlBuffer _agentControlBuffer;
-    private LegacyBuiltInAiPlanProvider _aiHeuristic;
+    private LegacyBuiltInAiPlanner _aiHeuristic;
     private GladiatorAction _lastAction;
     private GladiatorTacticalContext _lastTacticalContext;
     private bool _hasLastRewardContext;
@@ -130,7 +130,7 @@ public class GladiatorAgent : Agent
 
         if (useBuiltInAiHeuristic)
         {
-            _aiHeuristic = new LegacyBuiltInAiPlanProvider();
+            _aiHeuristic = new LegacyBuiltInAiPlanner();
         }
         else
         {

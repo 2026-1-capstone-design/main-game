@@ -11,5 +11,4 @@ public struct BattleAgentControlInput
     public BattleUnitCombatState AnchorTarget;
     public BattleCombatCommand Command;
     public BattleUnitCombatState Target;
-    public bool WantsBasicAttack;
 }

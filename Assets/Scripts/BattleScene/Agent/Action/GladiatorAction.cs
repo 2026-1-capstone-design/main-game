@@ -28,8 +28,6 @@ public readonly struct GladiatorAction
         Command = command;
     }
 
-    public bool WantsBasicAttack => Command == GladiatorCommand.Attack;
-
     public GladiatorAction WithCommand(GladiatorCommand command) =>
         new GladiatorAction(RelativeMove, Role, FightMode, AnchorKind, AnchorSlot, command);
 

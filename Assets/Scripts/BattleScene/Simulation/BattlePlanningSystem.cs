@@ -5,7 +5,7 @@ public sealed class BattlePlanningSystem
     public void Build(
         IReadOnlyList<BattleRuntimeUnit> units,
         BattleFieldSnapshot snapshot,
-        BattleControlPlanProviderRegistry providers,
+        BattleControlPlannerRegistry planners,
         BattleAITuningSO aiTuning,
         float tickDeltaTime,
         BattleControlPlan[] controlPlans,
@@ -28,13 +28,13 @@ public sealed class BattlePlanningSystem
             if (rosterMutationSystem != null && rosterMutationSystem.IsCommandDisabled(unit))
                 continue;
 
-            if (providers == null || !providers.TryGet(unit.State, out IBattleControlPlanProvider provider))
+            var context = new BattlePlanningContext(units, snapshot, aiTuning, tickDeltaTime);
+            if (planners == null || !planners.TryGet(unit.State, context, out IBattleControlPlanner planner))
             {
                 continue;
             }
 
-            var context = new BattlePlanningContext(units, snapshot, aiTuning, tickDeltaTime);
-            if (!provider.TryBuildPlan(unit.State, context, out BattleControlPlan plan))
+            if (!planner.TryBuildPlan(unit.State, context, out BattleControlPlan plan))
             {
                 continue;
             }

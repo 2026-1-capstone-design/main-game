@@ -42,7 +42,6 @@ public sealed class BattleAgentControlBuffer
         bool hasValidTarget = BattleFieldSnapshot.IsValidEnemyTarget(self, target);
         input.AnchorTarget = target;
         input.Target = hasValidTarget ? target : null;
-        input.WantsBasicAttack = input.Command == BattleCombatCommand.BasicAttack && hasValidTarget;
 
         _inputs[self] = input;
         self.SetAgentFightMode(fightMode);
@@ -61,25 +60,6 @@ public sealed class BattleAgentControlBuffer
     public BattleAgentControlInput GetInputSnapshot(BattleUnitCombatState self)
     {
         return self != null && _inputs.TryGetValue(self, out BattleAgentControlInput input) ? input : default;
-    }
-
-    public void ConsumeCommand(BattleUnitCombatState self, BattleCombatCommand command)
-    {
-        if (self == null || !_inputs.TryGetValue(self, out BattleAgentControlInput input))
-        {
-            return;
-        }
-
-        if (command == BattleCombatCommand.BasicAttack)
-        {
-            input.WantsBasicAttack = false;
-        }
-        if (input.Command == command)
-        {
-            input.Command = BattleCombatCommand.None;
-        }
-
-        _inputs[self] = input;
     }
 
     public void Clear(BattleUnitCombatState self)
