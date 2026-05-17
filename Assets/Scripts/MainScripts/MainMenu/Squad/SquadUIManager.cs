@@ -10,6 +10,12 @@ using UnityEngine.UI;
 [DisallowMultipleComponent]
 public sealed class SquadUIManager : MonoBehaviour
 {
+    private enum PickerSortMode
+    {
+        RecentAcquired,
+        Level,
+    }
+
     [Header("Panel")]
     [SerializeField]
     private GameObject panelRoot;
@@ -39,6 +45,15 @@ public sealed class SquadUIManager : MonoBehaviour
     [SerializeField]
     private Button pickerCloseButton;
 
+    [SerializeField]
+    private Button recentAcquiredSortButton;
+
+    [SerializeField]
+    private Button levelSortButton;
+
+    [SerializeField]
+    private RectTransform pickerBackground;
+
     // 현재 슬롯에 배치된 검투사를 제거하고 피커를 닫는 버튼
     [SerializeField]
     private Button pickerClearButton;
@@ -54,7 +69,10 @@ public sealed class SquadUIManager : MonoBehaviour
     private GameObject detailPanelRoot;
 
     [SerializeField]
-    private Image detailPortraitImage;
+    private Button detailBackButton;
+
+    [SerializeField]
+    private RawImage detailPortraitImage;
 
     [SerializeField]
     private Image detailWeaponIcon;
@@ -76,8 +94,12 @@ public sealed class SquadUIManager : MonoBehaviour
     private OwnedGladiatorData _pendingGladiator;
     private Transform[] _teamTabOriginalParents;
     private int[] _teamTabOriginalSiblingIndices;
+    private Transform[] _sortButtonOriginalParents;
+    private int[] _sortButtonOriginalSiblingIndices;
+    private PickerSortMode _currentPickerSortMode = PickerSortMode.RecentAcquired;
 
     private readonly List<OwnedItemViewData> _pickerBuffer = new List<OwnedItemViewData>();
+    private readonly List<OwnedGladiatorData> _sortedPickerBuffer = new List<OwnedGladiatorData>();
     private readonly StringBuilder _detailBuilder = new StringBuilder(256);
 
     public void Initialize(MainFlowManager flow, SquadManager squadManager, GladiatorManager gladiatorManager)
@@ -93,10 +115,14 @@ public sealed class SquadUIManager : MonoBehaviour
 
         ResolveMissingReferences();
         CaptureTeamTabLayout();
+        CapturePickerSortButtonLayout();
 
         BindButton(backButton, OnBackClicked);
         BindButton(pickerCloseButton, OnPickerCloseClicked);
         BindButton(pickerClearButton, OnPickerClearClicked);
+        BindButton(recentAcquiredSortButton, OnRecentAcquiredSortClicked);
+        BindButton(levelSortButton, OnLevelSortClicked);
+        BindButton(detailBackButton, OnDetailBackClicked);
         BindButton(assignButton, OnAssignClicked);
         BindTeamTabButtons();
 
@@ -185,6 +211,26 @@ public sealed class SquadUIManager : MonoBehaviour
         SetDetailPanelActive(false);
     }
 
+    private void OnRecentAcquiredSortClicked()
+    {
+        _currentPickerSortMode = PickerSortMode.RecentAcquired;
+        RefreshPickerSortButtons();
+        if (_pendingSlotIndex >= 0)
+        {
+            RefreshPickerGrid(_pendingSlotIndex);
+        }
+    }
+
+    private void OnLevelSortClicked()
+    {
+        _currentPickerSortMode = PickerSortMode.Level;
+        RefreshPickerSortButtons();
+        if (_pendingSlotIndex >= 0)
+        {
+            RefreshPickerGrid(_pendingSlotIndex);
+        }
+    }
+
     private void OnAssignClicked()
     {
         if (_pendingSlotIndex < 0 || _pendingGladiator == null)
@@ -201,6 +247,12 @@ public sealed class SquadUIManager : MonoBehaviour
         SetPickerPanelActive(false);
     }
 
+    private void OnDetailBackClicked()
+    {
+        _pendingGladiator = null;
+        SetDetailPanelActive(false);
+    }
+
     private void OpenPicker(int slotIndex)
     {
         if (pickerTitleText != null)
@@ -210,6 +262,7 @@ public sealed class SquadUIManager : MonoBehaviour
 
         _pendingGladiator = null;
         SetDetailPanelActive(false);
+        RefreshPickerSortButtons();
         RefreshPickerGrid(slotIndex);
         SetPickerPanelActive(true);
 
@@ -232,10 +285,11 @@ public sealed class SquadUIManager : MonoBehaviour
 
         _pickerBuffer.Clear();
         IReadOnlyList<OwnedGladiatorData> owned = _gladiatorManager.OwnedGladiators;
+        BuildSortedPickerBuffer(owned);
 
-        for (int i = 0; i < owned.Count; i++)
+        for (int i = 0; i < _sortedPickerBuffer.Count; i++)
         {
-            OwnedGladiatorData g = owned[i];
+            OwnedGladiatorData g = _sortedPickerBuffer[i];
             if (g == null)
             {
                 continue;
@@ -268,6 +322,54 @@ public sealed class SquadUIManager : MonoBehaviour
 
         Canvas.ForceUpdateCanvases();
         pickerGridViewer.SetItems(_pickerBuffer, OnPickerCellClicked);
+    }
+
+    private void BuildSortedPickerBuffer(IReadOnlyList<OwnedGladiatorData> owned)
+    {
+        _sortedPickerBuffer.Clear();
+        if (owned == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < owned.Count; i++)
+        {
+            if (owned[i] != null)
+            {
+                _sortedPickerBuffer.Add(owned[i]);
+            }
+        }
+
+        _sortedPickerBuffer.Sort(CompareGladiatorsForCurrentSort);
+    }
+
+    private int CompareGladiatorsForCurrentSort(OwnedGladiatorData left, OwnedGladiatorData right)
+    {
+        if (ReferenceEquals(left, right))
+        {
+            return 0;
+        }
+
+        if (left == null)
+        {
+            return 1;
+        }
+
+        if (right == null)
+        {
+            return -1;
+        }
+
+        if (_currentPickerSortMode == PickerSortMode.Level)
+        {
+            int levelCompare = right.Level.CompareTo(left.Level);
+            if (levelCompare != 0)
+            {
+                return levelCompare;
+            }
+        }
+
+        return right.RuntimeId.CompareTo(left.RuntimeId);
     }
 
     private void OnPickerCellClicked(OwnedItemViewData data)
@@ -328,6 +430,89 @@ public sealed class SquadUIManager : MonoBehaviour
             teamTabButtons[i].interactable = true;
             MoveTeamTabAroundBackground(teamTabButtons[i], i == activeTeamIndex);
         }
+    }
+
+    private void RefreshPickerSortButtons()
+    {
+        MovePickerSortButtonAroundBackground(
+            recentAcquiredSortButton,
+            _currentPickerSortMode == PickerSortMode.RecentAcquired
+        );
+        MovePickerSortButtonAroundBackground(levelSortButton, _currentPickerSortMode == PickerSortMode.Level);
+    }
+
+    private void MovePickerSortButtonAroundBackground(Button sortButton, bool isActive)
+    {
+        if (sortButton == null || pickerBackground == null)
+        {
+            return;
+        }
+
+        RectTransform buttonTransform = sortButton.transform as RectTransform;
+        if (buttonTransform == null)
+        {
+            return;
+        }
+
+        int buttonIndex = GetPickerSortButtonIndex(sortButton);
+        if (!isActive)
+        {
+            RestorePickerSortButtonParent(buttonTransform, buttonIndex);
+            return;
+        }
+
+        Transform backgroundParent = pickerBackground.parent;
+        if (backgroundParent == null)
+        {
+            return;
+        }
+
+        buttonTransform.SetParent(backgroundParent, true);
+        int backgroundIndex = pickerBackground.GetSiblingIndex();
+        buttonTransform.SetSiblingIndex(Mathf.Min(backgroundIndex + 1, backgroundParent.childCount - 1));
+    }
+
+    private void RestorePickerSortButtonParent(RectTransform buttonTransform, int buttonIndex)
+    {
+        if (
+            buttonTransform == null
+            || _sortButtonOriginalParents == null
+            || _sortButtonOriginalSiblingIndices == null
+            || buttonIndex < 0
+            || buttonIndex >= _sortButtonOriginalParents.Length
+        )
+        {
+            return;
+        }
+
+        Transform originalParent = _sortButtonOriginalParents[buttonIndex];
+        if (originalParent == null)
+        {
+            return;
+        }
+
+        if (buttonTransform.parent != originalParent)
+        {
+            buttonTransform.SetParent(originalParent, true);
+        }
+
+        int siblingIndex = Mathf.Clamp(_sortButtonOriginalSiblingIndices[buttonIndex], 0, originalParent.childCount - 1);
+        buttonTransform.SetSiblingIndex(siblingIndex);
+    }
+
+    private int GetPickerSortButtonIndex(Button sortButton)
+    {
+        if (sortButton == recentAcquiredSortButton)
+        {
+            return 0;
+        }
+
+        if (sortButton == levelSortButton)
+        {
+            return 1;
+        }
+
+        return -1;
     }
 
     private void MoveTeamTabAroundBackground(Button teamTabButton, bool isActive)
@@ -408,9 +593,8 @@ public sealed class SquadUIManager : MonoBehaviour
         if (detailPortraitImage != null)
         {
             Sprite portrait = gladiator.GladiatorClass?.icon;
-            detailPortraitImage.sprite = portrait;
+            detailPortraitImage.texture = portrait != null ? portrait.texture : null;
             detailPortraitImage.enabled = portrait != null;
-            detailPortraitImage.preserveAspect = true;
         }
 
         if (detailWeaponIcon != null)
@@ -507,6 +691,14 @@ public sealed class SquadUIManager : MonoBehaviour
             Transform backgroundTransform = FindChildTransform(panelRoot.transform, "SquadBackground");
             squadBackground = backgroundTransform as RectTransform;
         }
+
+        if (pickerBackground == null && pickerPanelRoot != null)
+        {
+            Transform pickerBackgroundTransform =
+                FindChildTransform(pickerPanelRoot.transform, "GladiatorBackground")
+                ?? FindChildTransform(pickerPanelRoot.transform, "PickerBackground");
+            pickerBackground = pickerBackgroundTransform as RectTransform;
+        }
     }
 
     private static Transform FindChildTransform(Transform root, string childName)
@@ -554,6 +746,26 @@ public sealed class SquadUIManager : MonoBehaviour
             Transform tabTransform = button.transform;
             _teamTabOriginalParents[i] = tabTransform.parent;
             _teamTabOriginalSiblingIndices[i] = tabTransform.GetSiblingIndex();
+        }
+    }
+
+    private void CapturePickerSortButtonLayout()
+    {
+        Button[] sortButtons = { recentAcquiredSortButton, levelSortButton };
+        _sortButtonOriginalParents = new Transform[sortButtons.Length];
+        _sortButtonOriginalSiblingIndices = new int[sortButtons.Length];
+
+        for (int i = 0; i < sortButtons.Length; i++)
+        {
+            Button button = sortButtons[i];
+            if (button == null)
+            {
+                continue;
+            }
+
+            Transform buttonTransform = button.transform;
+            _sortButtonOriginalParents[i] = buttonTransform.parent;
+            _sortButtonOriginalSiblingIndices[i] = buttonTransform.GetSiblingIndex();
         }
     }
 

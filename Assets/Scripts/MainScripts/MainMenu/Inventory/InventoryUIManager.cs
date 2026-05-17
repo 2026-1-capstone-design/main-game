@@ -7,6 +7,12 @@ using UnityEngine.UI;
 [DisallowMultipleComponent]
 public sealed class InventoryUIManager : MonoBehaviour
 {
+    private enum InventoryTabMode
+    {
+        Weapon,
+        Artifact,
+    }
+
     [Header("Panel")]
     [SerializeField]
     private GameObject panelRoot;
@@ -21,46 +27,28 @@ public sealed class InventoryUIManager : MonoBehaviour
     [SerializeField]
     private Button artifactTabButton;
 
-    [Header("Tab Canvas Groups")]
-    [SerializeField]
-    private CanvasGroup weaponTabGroup;
-
-    [SerializeField]
-    private CanvasGroup artifactTabGroup;
-
     [Header("Viewers")]
     [SerializeField]
-    private OwnedItemGridViewer weaponViewer;
-
-    [SerializeField]
-    private OwnedItemGridViewer artifactViewer;
+    private OwnedItemGridViewer itemViewer;
 
     [Header("Detail Panel")]
     [SerializeField]
-    private GameObject detailPanelRoot;
+    private TMP_Text equipmentHeaderText;
 
     [SerializeField]
-    private TMP_Text detailNameText;
+    private TMP_Text equipmentKindText;
 
     [SerializeField]
-    private TMP_Text detailDescriptionText;
-
-    [Header("Equipped Character Panels")]
-    [SerializeField]
-    private Image currentEquippedGladiatorImage;
+    private TMP_Text equipmentSkillText;
 
     [SerializeField]
-    private TMP_Text currentEquippedGladiatorNameText;
+    private TMP_Text equipmentDetailText;
 
     [SerializeField]
-    private Image plannedEquippedGladiatorImage;
+    private Image selectedItemIconImage;
 
     [SerializeField]
-    private TMP_Text plannedEquippedGladiatorNameText;
-
-    [Header("Optional Labels")]
-    [SerializeField]
-    private TMP_Text statusText;
+    private TMP_Text helpText;
 
     private readonly List<OwnedItemViewData> _weaponViewBuffer = new List<OwnedItemViewData>();
     private readonly List<OwnedItemViewData> _artifactViewBuffer = new List<OwnedItemViewData>();
@@ -68,8 +56,11 @@ public sealed class InventoryUIManager : MonoBehaviour
 
     private MainFlowManager _flow;
     private InventoryManager _inventoryManager;
-    private GladiatorManager _gladiatorManager;
-    private OwnedGladiatorData _plannedEquipGladiator;
+    private InventoryTabMode _currentDetailMode = InventoryTabMode.Weapon;
+    private OwnedWeaponData _currentSelectedWeapon;
+    private OwnedArtifactData _currentSelectedArtifact;
+    private bool _showLore;
+    private WeaponDetailLoreToggleInput _detailLoreToggleInput;
     private bool _initialized;
 
     public void Initialize(
@@ -86,14 +77,13 @@ public sealed class InventoryUIManager : MonoBehaviour
 
         _flow = flow;
         _inventoryManager = inventoryManager;
-        _gladiatorManager = gladiatorManager;
 
         BindButton(backButton, OnBackClicked);
         BindButton(weaponTabButton, OnWeaponTabClicked);
         BindButton(artifactTabButton, OnArtifactTabClicked);
+        EnsureDetailLoreToggleInput();
 
         SetDetailPanelActive(false);
-        ClearEquippedCharacterPanels();
         SetPanelActive(false);
 
         _initialized = true;
@@ -102,28 +92,24 @@ public sealed class InventoryUIManager : MonoBehaviour
     public void OpenPanel()
     {
         SetPanelActive(true);
-        ClearPlannedEquipGladiator();
         ClearDetailSelection();
         ShowWeaponTab();
     }
 
     public void ClosePanel()
     {
-        ClearPlannedEquipGladiator();
         ClearDetailSelection();
         SetPanelActive(false);
     }
 
     public void SetPlannedEquipGladiator(OwnedGladiatorData gladiator)
     {
-        _plannedEquipGladiator = gladiator;
-        RefreshPlannedEquippedCharacter();
+        // InventoryPanel은 장착/해제 흐름을 갖지 않는다. 기존 호출부 호환을 위해 메서드만 유지한다.
     }
 
     public void ClearPlannedEquipGladiator()
     {
-        _plannedEquipGladiator = null;
-        RefreshPlannedEquippedCharacter();
+        // InventoryPanel은 장착 예정 검투사를 표시하지 않는다.
     }
 
     private void OnBackClicked()
@@ -148,21 +134,18 @@ public sealed class InventoryUIManager : MonoBehaviour
 
     private void ShowWeaponTab()
     {
-        SetTabGroupVisible(weaponTabGroup, true);
-        SetTabGroupVisible(artifactTabGroup, false);
         RefreshWeaponViewer();
     }
 
     private void ShowArtifactTab()
     {
-        SetTabGroupVisible(weaponTabGroup, false);
-        SetTabGroupVisible(artifactTabGroup, true);
         RefreshArtifactViewer();
     }
 
     private void RefreshWeaponViewer()
     {
-        if (weaponViewer == null)
+        OwnedItemGridViewer viewer = GetActiveViewer(InventoryTabMode.Weapon);
+        if (viewer == null)
         {
             return;
         }
@@ -185,17 +168,14 @@ public sealed class InventoryUIManager : MonoBehaviour
         }
 
         Canvas.ForceUpdateCanvases();
-        weaponViewer.SetItems(_weaponViewBuffer, OnWeaponCellClicked);
+        viewer.SetItems(_weaponViewBuffer, OnWeaponCellClicked);
 
-        if (statusText != null)
-        {
-            statusText.text = $"장비 {_weaponViewBuffer.Count}개";
-        }
     }
 
     private void RefreshArtifactViewer()
     {
-        if (artifactViewer == null)
+        OwnedItemGridViewer viewer = GetActiveViewer(InventoryTabMode.Artifact);
+        if (viewer == null)
         {
             return;
         }
@@ -218,12 +198,8 @@ public sealed class InventoryUIManager : MonoBehaviour
         }
 
         Canvas.ForceUpdateCanvases();
-        artifactViewer.SetItems(_artifactViewBuffer, OnArtifactCellClicked);
+        viewer.SetItems(_artifactViewBuffer, OnArtifactCellClicked);
 
-        if (statusText != null)
-        {
-            statusText.text = $"장신구 {_artifactViewBuffer.Count}개";
-        }
     }
 
     private void OnWeaponCellClicked(OwnedItemViewData data)
@@ -248,116 +224,114 @@ public sealed class InventoryUIManager : MonoBehaviour
 
     private void ShowWeaponDetail(OwnedWeaponData weapon)
     {
-        if (detailNameText != null)
-        {
-            detailNameText.text = weapon.DisplayName;
-        }
+        _currentDetailMode = InventoryTabMode.Weapon;
+        _currentSelectedWeapon = weapon;
+        _currentSelectedArtifact = null;
+        _showLore = false;
 
-        if (detailDescriptionText != null)
-        {
-            detailDescriptionText.text = BuildWeaponDescription(weapon);
-        }
-
-        RefreshCurrentEquippedCharacter(
-            _gladiatorManager != null ? _gladiatorManager.FindOwnerOfEquippedWeapon(weapon) : null
+        SetDetailTexts(
+            weapon.DisplayName,
+            weapon.Weapon != null ? weapon.Weapon.weaponType.ToString() : string.Empty,
+            weapon.WeaponSkill != null ? weapon.WeaponSkill.skillName : string.Empty,
+            BuildWeaponStatsText(weapon)
         );
-        RefreshPlannedEquippedCharacter();
+        SetSelectedIcon(weapon.Weapon != null ? weapon.Weapon.icon : null);
+        EnsureDetailLoreToggleInput();
         SetDetailPanelActive(true);
     }
 
     private void ShowArtifactDetail(OwnedArtifactData artifact)
     {
-        if (detailNameText != null)
-        {
-            detailNameText.text = artifact.DisplayName;
-        }
+        _currentDetailMode = InventoryTabMode.Artifact;
+        _currentSelectedArtifact = artifact;
+        _currentSelectedWeapon = null;
+        _showLore = false;
 
-        if (detailDescriptionText != null)
-        {
-            detailDescriptionText.text = BuildArtifactDescription(artifact);
-        }
-
-        RefreshCurrentEquippedCharacter(
-            _gladiatorManager != null ? _gladiatorManager.FindOwnerOfEquippedArtifact(artifact) : null
+        SetDetailTexts(
+            artifact.DisplayName,
+            artifact.Artifact != null ? artifact.Artifact.ArtifactPerkId.ToString() : string.Empty,
+            string.Empty,
+            BuildArtifactStatsText(artifact)
         );
-        RefreshPlannedEquippedCharacter();
+        SetSelectedIcon(artifact.Artifact != null ? artifact.Artifact.icon : null);
+        EnsureDetailLoreToggleInput();
         SetDetailPanelActive(true);
     }
 
     private void ClearDetailSelection()
     {
-        if (detailNameText != null)
-        {
-            detailNameText.text = string.Empty;
-        }
+        _currentSelectedWeapon = null;
+        _currentSelectedArtifact = null;
+        _showLore = false;
 
-        if (detailDescriptionText != null)
-        {
-            detailDescriptionText.text = string.Empty;
-        }
-
-        RefreshCurrentEquippedCharacter(null);
-        RefreshPlannedEquippedCharacter();
+        SetDetailTexts(string.Empty, string.Empty, string.Empty, string.Empty);
+        SetSelectedIcon(null);
         SetDetailPanelActive(false);
     }
 
-    private void ClearEquippedCharacterPanels()
+    private void SetDetailTexts(string header, string kind, string skill, string detail)
     {
-        RefreshCurrentEquippedCharacter(null);
-        RefreshPlannedEquippedCharacter();
+        SetText(equipmentHeaderText, header);
+        SetText(equipmentKindText, kind);
+        SetText(equipmentSkillText, skill);
+        SetText(equipmentDetailText, detail);
     }
 
-    private void RefreshCurrentEquippedCharacter(OwnedGladiatorData gladiator)
+    private void SetSelectedIcon(Sprite icon)
     {
-        SetGladiatorPreview(currentEquippedGladiatorImage, currentEquippedGladiatorNameText, gladiator, "미착용");
-    }
-
-    private void RefreshPlannedEquippedCharacter()
-    {
-        SetGladiatorPreview(
-            plannedEquippedGladiatorImage,
-            plannedEquippedGladiatorNameText,
-            _plannedEquipGladiator,
-            "-"
-        );
-    }
-
-    private static void SetGladiatorPreview(
-        Image image,
-        TMP_Text nameText,
-        OwnedGladiatorData gladiator,
-        string fallbackName
-    )
-    {
-        Sprite icon = gladiator != null ? gladiator.GladiatorClass?.icon : null;
-
-        if (image != null)
+        if (selectedItemIconImage == null)
         {
-            image.sprite = icon;
-            image.enabled = icon != null;
-            image.preserveAspect = true;
+            return;
         }
 
-        if (nameText != null)
-        {
-            nameText.text = gladiator != null ? gladiator.DisplayName : fallbackName;
-        }
+        selectedItemIconImage.sprite = icon;
+        selectedItemIconImage.enabled = icon != null;
+        selectedItemIconImage.preserveAspect = true;
     }
 
-    private string BuildWeaponDescription(OwnedWeaponData weapon)
+    private void ToggleDetailLore()
+    {
+        if (equipmentDetailText == null || !equipmentDetailText.gameObject.activeInHierarchy)
+        {
+            return;
+        }
+
+        if (_currentSelectedWeapon == null && _currentSelectedArtifact == null)
+        {
+            return;
+        }
+
+        _showLore = !_showLore;
+        RefreshDetailTextBody();
+    }
+
+    private void RefreshDetailTextBody()
+    {
+        if (equipmentDetailText == null)
+        {
+            return;
+        }
+
+        if (_currentDetailMode == InventoryTabMode.Artifact)
+        {
+            equipmentDetailText.text = _showLore
+                ? BuildArtifactLoreText(_currentSelectedArtifact)
+                : BuildArtifactStatsText(_currentSelectedArtifact);
+            return;
+        }
+
+        equipmentDetailText.text = _showLore
+            ? BuildWeaponLoreText(_currentSelectedWeapon)
+            : BuildWeaponStatsText(_currentSelectedWeapon);
+    }
+
+    private string BuildWeaponStatsText(OwnedWeaponData weapon)
     {
         _sb.Clear();
 
-        if (weapon.Weapon != null)
+        if (weapon == null)
         {
-            _sb.AppendLine($"무기군: {weapon.Weapon.weaponType}");
-        }
-
-        _sb.AppendLine($"레벨: {weapon.Level}");
-
-        if (weapon.WeaponSkill != null)
-        {
-            _sb.AppendLine($"스킬: {weapon.WeaponSkill.skillId}");
+            return string.Empty;
         }
 
         if (weapon.CachedAttackBonus != 0f)
@@ -388,7 +362,27 @@ public sealed class InventoryUIManager : MonoBehaviour
         return _sb.ToString().TrimEnd();
     }
 
-    private static string BuildArtifactDescription(OwnedArtifactData artifact)
+    private static string BuildWeaponLoreText(OwnedWeaponData weapon)
+    {
+        if (weapon == null || weapon.Weapon == null || string.IsNullOrWhiteSpace(weapon.Weapon.lore))
+        {
+            return "-";
+        }
+
+        return weapon.Weapon.lore;
+    }
+
+    private static string BuildArtifactStatsText(OwnedArtifactData artifact)
+    {
+        if (artifact == null || artifact.Artifact == null)
+        {
+            return string.Empty;
+        }
+
+        return artifact.Artifact.ArtifactPerkId.ToString();
+    }
+
+    private static string BuildArtifactLoreText(OwnedArtifactData artifact)
     {
         if (artifact == null || artifact.Artifact == null)
         {
@@ -396,27 +390,17 @@ public sealed class InventoryUIManager : MonoBehaviour
         }
 
         string lore = string.IsNullOrWhiteSpace(artifact.Artifact.artifactLore) ? "-" : artifact.Artifact.artifactLore;
-        return $"퍼크: {artifact.Artifact.ArtifactPerkId}\n{lore}";
+        return lore;
     }
 
     private void SetDetailPanelActive(bool value)
     {
-        if (detailPanelRoot != null)
-        {
-            detailPanelRoot.SetActive(value);
-        }
-    }
-
-    private static void SetTabGroupVisible(CanvasGroup group, bool visible)
-    {
-        if (group == null)
-        {
-            return;
-        }
-
-        group.alpha = visible ? 1f : 0f;
-        group.interactable = visible;
-        group.blocksRaycasts = visible;
+        SetComponentGameObjectActive(equipmentHeaderText, value);
+        SetComponentGameObjectActive(equipmentKindText, value);
+        SetComponentGameObjectActive(equipmentSkillText, value);
+        SetComponentGameObjectActive(equipmentDetailText, value);
+        SetComponentGameObjectActive(selectedItemIconImage, value && selectedItemIconImage != null && selectedItemIconImage.sprite != null);
+        SetComponentGameObjectActive(helpText, value);
     }
 
     private void SetPanelActive(bool value)
@@ -425,6 +409,43 @@ public sealed class InventoryUIManager : MonoBehaviour
         {
             panelRoot.SetActive(value);
         }
+    }
+
+    private OwnedItemGridViewer GetActiveViewer(InventoryTabMode tabMode)
+    {
+        return itemViewer;
+    }
+
+    private static void SetText(TMP_Text text, string value)
+    {
+        if (text != null)
+        {
+            text.text = value ?? string.Empty;
+        }
+    }
+
+    private static void SetComponentGameObjectActive(Component component, bool value)
+    {
+        if (component != null)
+        {
+            component.gameObject.SetActive(value);
+        }
+    }
+
+    private void EnsureDetailLoreToggleInput()
+    {
+        if (equipmentDetailText == null)
+        {
+            return;
+        }
+
+        _detailLoreToggleInput = equipmentDetailText.GetComponent<WeaponDetailLoreToggleInput>();
+        if (_detailLoreToggleInput == null)
+        {
+            _detailLoreToggleInput = equipmentDetailText.gameObject.AddComponent<WeaponDetailLoreToggleInput>();
+        }
+
+        _detailLoreToggleInput.Initialize(ToggleDetailLore);
     }
 
     private static void BindButton(Button button, UnityEngine.Events.UnityAction action)
