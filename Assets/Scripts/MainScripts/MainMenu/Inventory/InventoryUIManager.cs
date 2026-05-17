@@ -169,7 +169,6 @@ public sealed class InventoryUIManager : MonoBehaviour
 
         Canvas.ForceUpdateCanvases();
         viewer.SetItems(_weaponViewBuffer, OnWeaponCellClicked);
-
     }
 
     private void RefreshArtifactViewer()
@@ -199,7 +198,6 @@ public sealed class InventoryUIManager : MonoBehaviour
 
         Canvas.ForceUpdateCanvases();
         viewer.SetItems(_artifactViewBuffer, OnArtifactCellClicked);
-
     }
 
     private void OnWeaponCellClicked(OwnedItemViewData data)
@@ -399,7 +397,10 @@ public sealed class InventoryUIManager : MonoBehaviour
         SetComponentGameObjectActive(equipmentKindText, value);
         SetComponentGameObjectActive(equipmentSkillText, value);
         SetComponentGameObjectActive(equipmentDetailText, value);
-        SetComponentGameObjectActive(selectedItemIconImage, value && selectedItemIconImage != null && selectedItemIconImage.sprite != null);
+        SetComponentGameObjectActive(
+            selectedItemIconImage,
+            value && selectedItemIconImage != null && selectedItemIconImage.sprite != null
+        );
         SetComponentGameObjectActive(helpText, value);
     }
 

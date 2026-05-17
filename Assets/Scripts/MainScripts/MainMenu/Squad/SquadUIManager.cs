@@ -496,7 +496,11 @@ public sealed class SquadUIManager : MonoBehaviour
             buttonTransform.SetParent(originalParent, true);
         }
 
-        int siblingIndex = Mathf.Clamp(_sortButtonOriginalSiblingIndices[buttonIndex], 0, originalParent.childCount - 1);
+        int siblingIndex = Mathf.Clamp(
+            _sortButtonOriginalSiblingIndices[buttonIndex],
+            0,
+            originalParent.childCount - 1
+        );
         buttonTransform.SetSiblingIndex(siblingIndex);
     }
 
