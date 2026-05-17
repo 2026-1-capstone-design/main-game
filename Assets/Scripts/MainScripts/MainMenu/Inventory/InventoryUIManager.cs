@@ -35,21 +35,28 @@ public sealed class InventoryUIManager : MonoBehaviour
     [SerializeField]
     private OwnedItemGridViewer artifactViewer;
 
-    [Header("Detail Modal")]
+    [Header("Detail Panel")]
     [SerializeField]
     private GameObject detailPanelRoot;
-
-    [SerializeField]
-    private Button detailCloseButton;
-
-    [SerializeField]
-    private Image detailIcon;
 
     [SerializeField]
     private TMP_Text detailNameText;
 
     [SerializeField]
     private TMP_Text detailDescriptionText;
+
+    [Header("Equipped Character Panels")]
+    [SerializeField]
+    private Image currentEquippedGladiatorImage;
+
+    [SerializeField]
+    private TMP_Text currentEquippedGladiatorNameText;
+
+    [SerializeField]
+    private Image plannedEquippedGladiatorImage;
+
+    [SerializeField]
+    private TMP_Text plannedEquippedGladiatorNameText;
 
     [Header("Optional Labels")]
     [SerializeField]
@@ -61,10 +68,16 @@ public sealed class InventoryUIManager : MonoBehaviour
 
     private MainFlowManager _flow;
     private InventoryManager _inventoryManager;
-    private ResearchManager _researchManager;
+    private GladiatorManager _gladiatorManager;
+    private OwnedGladiatorData _plannedEquipGladiator;
     private bool _initialized;
 
-    public void Initialize(MainFlowManager flow, InventoryManager inventoryManager, ResearchManager researchManager)
+    public void Initialize(
+        MainFlowManager flow,
+        InventoryManager inventoryManager,
+        ResearchManager researchManager,
+        GladiatorManager gladiatorManager
+    )
     {
         if (_initialized)
         {
@@ -73,14 +86,14 @@ public sealed class InventoryUIManager : MonoBehaviour
 
         _flow = flow;
         _inventoryManager = inventoryManager;
-        _researchManager = researchManager;
+        _gladiatorManager = gladiatorManager;
 
         BindButton(backButton, OnBackClicked);
         BindButton(weaponTabButton, OnWeaponTabClicked);
         BindButton(artifactTabButton, OnArtifactTabClicked);
-        BindButton(detailCloseButton, OnDetailCloseClicked);
 
         SetDetailPanelActive(false);
+        ClearEquippedCharacterPanels();
         SetPanelActive(false);
 
         _initialized = true;
@@ -89,14 +102,28 @@ public sealed class InventoryUIManager : MonoBehaviour
     public void OpenPanel()
     {
         SetPanelActive(true);
-        SetDetailPanelActive(false);
+        ClearPlannedEquipGladiator();
+        ClearDetailSelection();
         ShowWeaponTab();
     }
 
     public void ClosePanel()
     {
-        SetDetailPanelActive(false);
+        ClearPlannedEquipGladiator();
+        ClearDetailSelection();
         SetPanelActive(false);
+    }
+
+    public void SetPlannedEquipGladiator(OwnedGladiatorData gladiator)
+    {
+        _plannedEquipGladiator = gladiator;
+        RefreshPlannedEquippedCharacter();
+    }
+
+    public void ClearPlannedEquipGladiator()
+    {
+        _plannedEquipGladiator = null;
+        RefreshPlannedEquippedCharacter();
     }
 
     private void OnBackClicked()
@@ -109,19 +136,14 @@ public sealed class InventoryUIManager : MonoBehaviour
 
     private void OnWeaponTabClicked()
     {
-        SetDetailPanelActive(false);
+        ClearDetailSelection();
         ShowWeaponTab();
     }
 
     private void OnArtifactTabClicked()
     {
-        SetDetailPanelActive(false);
+        ClearDetailSelection();
         ShowArtifactTab();
-    }
-
-    private void OnDetailCloseClicked()
-    {
-        SetDetailPanelActive(false);
     }
 
     private void ShowWeaponTab()
@@ -180,18 +202,18 @@ public sealed class InventoryUIManager : MonoBehaviour
 
         _artifactViewBuffer.Clear();
 
-        if (_researchManager != null)
+        if (_inventoryManager != null)
         {
-            IReadOnlyList<ArtifactSO> artifacts = _researchManager.UnlockedArtifacts;
+            IReadOnlyList<OwnedArtifactData> artifacts = _inventoryManager.OwnedArtifacts;
             for (int i = 0; i < artifacts.Count; i++)
             {
-                ArtifactSO artifact = artifacts[i];
-                if (artifact == null)
+                OwnedArtifactData artifact = artifacts[i];
+                if (artifact == null || artifact.Artifact == null)
                 {
                     continue;
                 }
 
-                _artifactViewBuffer.Add(new OwnedItemViewData(artifact.icon, artifact.artifactName, artifact));
+                _artifactViewBuffer.Add(new OwnedItemViewData(artifact.Artifact.icon, artifact.DisplayName, artifact));
             }
         }
 
@@ -216,7 +238,7 @@ public sealed class InventoryUIManager : MonoBehaviour
 
     private void OnArtifactCellClicked(OwnedItemViewData data)
     {
-        if (data.Source is not ArtifactSO artifact)
+        if (data.Source is not OwnedArtifactData artifact)
         {
             return;
         }
@@ -226,17 +248,6 @@ public sealed class InventoryUIManager : MonoBehaviour
 
     private void ShowWeaponDetail(OwnedWeaponData weapon)
     {
-        if (detailPanelRoot == null)
-        {
-            return;
-        }
-
-        if (detailIcon != null)
-        {
-            detailIcon.sprite = weapon.Weapon?.icon;
-            detailIcon.enabled = detailIcon.sprite != null;
-        }
-
         if (detailNameText != null)
         {
             detailNameText.text = weapon.DisplayName;
@@ -247,33 +258,90 @@ public sealed class InventoryUIManager : MonoBehaviour
             detailDescriptionText.text = BuildWeaponDescription(weapon);
         }
 
+        RefreshCurrentEquippedCharacter(
+            _gladiatorManager != null ? _gladiatorManager.FindOwnerOfEquippedWeapon(weapon) : null
+        );
+        RefreshPlannedEquippedCharacter();
         SetDetailPanelActive(true);
     }
 
-    private void ShowArtifactDetail(ArtifactSO artifact)
+    private void ShowArtifactDetail(OwnedArtifactData artifact)
     {
-        if (detailPanelRoot == null)
-        {
-            return;
-        }
-
-        if (detailIcon != null)
-        {
-            detailIcon.sprite = artifact.icon;
-            detailIcon.enabled = detailIcon.sprite != null;
-        }
-
         if (detailNameText != null)
         {
-            detailNameText.text = artifact.artifactName;
+            detailNameText.text = artifact.DisplayName;
         }
 
         if (detailDescriptionText != null)
         {
-            detailDescriptionText.text = string.IsNullOrWhiteSpace(artifact.description) ? "-" : artifact.description;
+            detailDescriptionText.text = BuildArtifactDescription(artifact);
         }
 
+        RefreshCurrentEquippedCharacter(
+            _gladiatorManager != null ? _gladiatorManager.FindOwnerOfEquippedArtifact(artifact) : null
+        );
+        RefreshPlannedEquippedCharacter();
         SetDetailPanelActive(true);
+    }
+
+    private void ClearDetailSelection()
+    {
+        if (detailNameText != null)
+        {
+            detailNameText.text = string.Empty;
+        }
+
+        if (detailDescriptionText != null)
+        {
+            detailDescriptionText.text = string.Empty;
+        }
+
+        RefreshCurrentEquippedCharacter(null);
+        RefreshPlannedEquippedCharacter();
+        SetDetailPanelActive(false);
+    }
+
+    private void ClearEquippedCharacterPanels()
+    {
+        RefreshCurrentEquippedCharacter(null);
+        RefreshPlannedEquippedCharacter();
+    }
+
+    private void RefreshCurrentEquippedCharacter(OwnedGladiatorData gladiator)
+    {
+        SetGladiatorPreview(currentEquippedGladiatorImage, currentEquippedGladiatorNameText, gladiator, "미착용");
+    }
+
+    private void RefreshPlannedEquippedCharacter()
+    {
+        SetGladiatorPreview(
+            plannedEquippedGladiatorImage,
+            plannedEquippedGladiatorNameText,
+            _plannedEquipGladiator,
+            "-"
+        );
+    }
+
+    private static void SetGladiatorPreview(
+        Image image,
+        TMP_Text nameText,
+        OwnedGladiatorData gladiator,
+        string fallbackName
+    )
+    {
+        Sprite icon = gladiator != null ? gladiator.GladiatorClass?.icon : null;
+
+        if (image != null)
+        {
+            image.sprite = icon;
+            image.enabled = icon != null;
+            image.preserveAspect = true;
+        }
+
+        if (nameText != null)
+        {
+            nameText.text = gladiator != null ? gladiator.DisplayName : fallbackName;
+        }
     }
 
     private string BuildWeaponDescription(OwnedWeaponData weapon)
@@ -318,6 +386,17 @@ public sealed class InventoryUIManager : MonoBehaviour
         }
 
         return _sb.ToString().TrimEnd();
+    }
+
+    private static string BuildArtifactDescription(OwnedArtifactData artifact)
+    {
+        if (artifact == null || artifact.Artifact == null)
+        {
+            return string.Empty;
+        }
+
+        string lore = string.IsNullOrWhiteSpace(artifact.Artifact.artifactLore) ? "-" : artifact.Artifact.artifactLore;
+        return $"퍼크: {artifact.Artifact.ArtifactPerkId}\n{lore}";
     }
 
     private void SetDetailPanelActive(bool value)

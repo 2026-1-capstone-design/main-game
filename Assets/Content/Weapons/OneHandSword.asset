@@ -15,6 +15,7 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: ae6bbd58678f7f14c8c5e38176cfffa0, type: 3}
   weaponName: OneHandSword
   weaponType: 1
+  lore: "\uD55C\uC190\uAC80\uC774\uB2E4."
   leftWeaponPrefab: {fileID: 26744791562570188, guid: 49e6000adfc1e4947a3d1e139883ac4f, type: 3}
   rightWeaponPrefab: {fileID: 7670214427756641537, guid: 0a681ed521684e043894982505e9d1cf, type: 3}
   isRanged: 0

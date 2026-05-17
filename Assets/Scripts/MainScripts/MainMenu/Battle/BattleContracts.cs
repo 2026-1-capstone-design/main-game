@@ -233,7 +233,7 @@ public sealed class BattleUnitSnapshot
             source.GladiatorClass,
             source.Trait,
             source.Personality,
-            source.EquippedArtifact,
+            source.EquippedArtifact != null ? source.EquippedArtifact.Artifact : null,
             weaponType,
             leftPrefab,
             rightPrefab,
@@ -251,10 +251,10 @@ public sealed class BattleUnitSnapshot
 
     private static IReadOnlyList<ArtifactId> BuildArtifactIds(ArtifactSO equippedArtifact)
     {
-        if (equippedArtifact == null || equippedArtifact.artifactId == ArtifactId.None)
+        if (equippedArtifact == null || equippedArtifact.ArtifactPerkId == ArtifactId.None)
             return Array.Empty<ArtifactId>();
 
-        return new[] { equippedArtifact.artifactId };
+        return new[] { equippedArtifact.ArtifactPerkId };
     }
 }
 

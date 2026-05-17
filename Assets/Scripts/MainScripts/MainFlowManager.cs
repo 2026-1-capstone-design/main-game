@@ -152,7 +152,7 @@ public sealed class MainFlowManager : MonoBehaviour
 
         resourceUIManager.Initialize(resourceManager);
         researchUIManager.Initialize(this, researchManager);
-        inventoryUIManager.Initialize(this, inventoryManager, researchManager);
+        inventoryUIManager.Initialize(this, inventoryManager, researchManager, gladiatorManager);
         gladiatorUIManager.Initialize(this, gladiatorManager, inventoryManager);
         battleUIManager.Initialize(this, battleManager);
         if (squadUIManager != null)

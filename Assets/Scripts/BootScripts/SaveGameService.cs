@@ -159,13 +159,12 @@ public static class SaveGameService
         RandomManager randomManager = RandomManager.Instance;
         InventoryManager inventoryManager = InventoryManager.Instance;
         GladiatorManager gladiatorManager = GladiatorManager.Instance;
-        ResearchManager researchManager = UnityEngine.Object.FindFirstObjectByType<ResearchManager>();
         MarketManager marketManager = MarketManager.Instance;
         BattleManager battleManager = UnityEngine.Object.FindFirstObjectByType<BattleManager>();
 
         SaveOwnedWeaponData[] ownedWeapons = BuildOwnedWeaponsSnapshot(inventoryManager);
+        SaveOwnedArtifactData[] ownedArtifacts = BuildOwnedArtifactsSnapshot(inventoryManager);
         SaveOwnedGladiatorData[] ownedGladiators = BuildOwnedGladiatorsSnapshot(gladiatorManager);
-        string[] unlockedArtifactNames = BuildUnlockedArtifactNamesSnapshot(researchManager);
 
         SaveMarketWeaponOfferData[] marketWeaponOffers = BuildMarketWeaponOffersSnapshot(marketManager);
         SaveMarketGladiatorOfferData[] marketGladiatorOffers = BuildMarketGladiatorOffersSnapshot(marketManager);
@@ -190,8 +189,8 @@ public static class SaveGameService
                     ? sessionManager.GetClassCounterEntriesForSave()
                     : Array.Empty<SaveClassCounterEntry>(),
             ownedWeapons = ownedWeapons,
+            ownedArtifacts = ownedArtifacts,
             ownedGladiators = ownedGladiators,
-            unlockedArtifactNames = unlockedArtifactNames,
             marketInitializedDay = marketManager != null ? marketManager.InitializedDay : 1,
             marketWeaponOffers = marketWeaponOffers,
             marketGladiatorOffers = marketGladiatorOffers,
@@ -251,7 +250,6 @@ public static class SaveGameService
         ContentDatabaseProvider contentDatabaseProvider = ContentDatabaseProvider.Instance;
         InventoryManager inventoryManager = InventoryManager.Instance;
         GladiatorManager gladiatorManager = GladiatorManager.Instance;
-        ResearchManager researchManager = UnityEngine.Object.FindFirstObjectByType<ResearchManager>();
         MarketManager marketManager = MarketManager.Instance;
         BattleManager battleManager = UnityEngine.Object.FindFirstObjectByType<BattleManager>();
 
@@ -275,6 +273,7 @@ public static class SaveGameService
         if (contentDatabaseProvider != null)
         {
             Dictionary<int, OwnedWeaponData> weaponByRuntimeId = new Dictionary<int, OwnedWeaponData>();
+            Dictionary<int, OwnedArtifactData> artifactByRuntimeId = new Dictionary<int, OwnedArtifactData>();
             int nextWeaponRuntimeId;
             List<OwnedWeaponData> ownedWeapons = BuildOwnedWeaponsFromSave(
                 data.ownedWeapons,
@@ -288,26 +287,32 @@ public static class SaveGameService
                 inventoryManager.RestoreOwnedWeaponsForLoad(ownedWeapons, nextWeaponRuntimeId);
             }
 
+            int nextArtifactRuntimeId;
+            List<OwnedArtifactData> ownedArtifacts = BuildOwnedArtifactsFromSave(
+                data.ownedArtifacts,
+                data.unlockedArtifactNames,
+                contentDatabaseProvider,
+                artifactByRuntimeId,
+                out nextArtifactRuntimeId
+            );
+
+            if (inventoryManager != null)
+            {
+                inventoryManager.RestoreOwnedArtifactsForLoad(ownedArtifacts, nextArtifactRuntimeId);
+            }
+
             int nextGladiatorRuntimeId;
             List<OwnedGladiatorData> ownedGladiators = BuildOwnedGladiatorsFromSave(
                 data.ownedGladiators,
                 contentDatabaseProvider,
                 weaponByRuntimeId,
+                artifactByRuntimeId,
                 out nextGladiatorRuntimeId
             );
 
             if (gladiatorManager != null)
             {
                 gladiatorManager.RestoreOwnedGladiatorsForLoad(ownedGladiators, nextGladiatorRuntimeId);
-            }
-
-            if (researchManager != null)
-            {
-                List<ArtifactSO> unlockedArtifacts = BuildUnlockedArtifactsFromSave(
-                    data.unlockedArtifactNames,
-                    contentDatabaseProvider
-                );
-                researchManager.RestoreUnlockedArtifactsForLoad(unlockedArtifacts);
             }
 
             if (marketManager != null)
@@ -410,6 +415,33 @@ public static class SaveGameService
         return result;
     }
 
+    private static SaveOwnedArtifactData[] BuildOwnedArtifactsSnapshot(InventoryManager inventoryManager)
+    {
+        if (
+            inventoryManager == null
+            || inventoryManager.OwnedArtifacts == null
+            || inventoryManager.OwnedArtifacts.Count == 0
+        )
+        {
+            return Array.Empty<SaveOwnedArtifactData>();
+        }
+
+        SaveOwnedArtifactData[] result = new SaveOwnedArtifactData[inventoryManager.OwnedArtifacts.Count];
+
+        for (int i = 0; i < inventoryManager.OwnedArtifacts.Count; i++)
+        {
+            OwnedArtifactData artifact = inventoryManager.OwnedArtifacts[i];
+            if (artifact == null)
+            {
+                continue;
+            }
+
+            result[i] = ToSaveOwnedArtifactData(artifact);
+        }
+
+        return result;
+    }
+
     private static SaveOwnedGladiatorData[] BuildOwnedGladiatorsSnapshot(GladiatorManager gladiatorManager)
     {
         if (
@@ -435,32 +467,6 @@ public static class SaveGameService
         }
 
         return result;
-    }
-
-    private static string[] BuildUnlockedArtifactNamesSnapshot(ResearchManager researchManager)
-    {
-        if (
-            researchManager == null
-            || researchManager.UnlockedArtifacts == null
-            || researchManager.UnlockedArtifacts.Count == 0
-        )
-        {
-            return Array.Empty<string>();
-        }
-
-        List<string> names = new List<string>(researchManager.UnlockedArtifacts.Count);
-        for (int i = 0; i < researchManager.UnlockedArtifacts.Count; i++)
-        {
-            ArtifactSO artifact = researchManager.UnlockedArtifacts[i];
-            if (artifact == null || string.IsNullOrWhiteSpace(artifact.artifactName))
-            {
-                continue;
-            }
-
-            names.Add(artifact.artifactName);
-        }
-
-        return names.ToArray();
     }
 
     private static SaveMarketWeaponOfferData[] BuildMarketWeaponOffersSnapshot(MarketManager marketManager)
@@ -594,6 +600,8 @@ public static class SaveGameService
                         gladiatorClassName = unit.GladiatorClass != null ? unit.GladiatorClass.className : string.Empty,
                         traitName = unit.Trait != null ? unit.Trait.traitName : string.Empty,
                         personalityName = unit.Personality != null ? unit.Personality.personalityName : string.Empty,
+                        equippedArtifactName =
+                            unit.EquippedArtifact != null ? unit.EquippedArtifact.artifactName : string.Empty,
                         equippedPerkName =
                             unit.EquippedArtifact != null ? unit.EquippedArtifact.artifactName : string.Empty,
                         weaponType = (int)unit.WeaponType,
@@ -638,6 +646,15 @@ public static class SaveGameService
         };
     }
 
+    private static SaveOwnedArtifactData ToSaveOwnedArtifactData(OwnedArtifactData artifact)
+    {
+        return new SaveOwnedArtifactData
+        {
+            runtimeId = artifact.RuntimeId,
+            artifactName = artifact.Artifact != null ? artifact.Artifact.artifactName : string.Empty,
+        };
+    }
+
     private static SaveOwnedGladiatorData ToSaveOwnedGladiatorData(OwnedGladiatorData gladiator)
     {
         return new SaveOwnedGladiatorData
@@ -651,8 +668,11 @@ public static class SaveGameService
             gladiatorClassName = gladiator.GladiatorClass != null ? gladiator.GladiatorClass.className : string.Empty,
             traitName = gladiator.Trait != null ? gladiator.Trait.traitName : string.Empty,
             personalityName = gladiator.Personality != null ? gladiator.Personality.personalityName : string.Empty,
+            equippedArtifactName =
+                gladiator.EquippedArtifact != null ? gladiator.EquippedArtifact.DisplayName : string.Empty,
             equippedPerkName =
-                gladiator.EquippedArtifact != null ? gladiator.EquippedArtifact.artifactName : string.Empty,
+                gladiator.EquippedArtifact != null ? gladiator.EquippedArtifact.DisplayName : string.Empty,
+            equippedArtifactRuntimeId = gladiator.EquippedArtifact != null ? gladiator.EquippedArtifact.RuntimeId : 0,
             equippedWeaponRuntimeId = gladiator.EquippedWeapon != null ? gladiator.EquippedWeapon.RuntimeId : 0,
             cachedMaxHealth = gladiator.CachedMaxHealth,
             currentHealth = gladiator.CurrentHealth,
@@ -744,10 +764,84 @@ public static class SaveGameService
         return ownedWeapon;
     }
 
+    private static List<OwnedArtifactData> BuildOwnedArtifactsFromSave(
+        SaveOwnedArtifactData[] savedArtifacts,
+        string[] legacyUnlockedArtifactNames,
+        ContentDatabaseProvider contentDatabaseProvider,
+        Dictionary<int, OwnedArtifactData> artifactByRuntimeId,
+        out int nextRuntimeId
+    )
+    {
+        List<OwnedArtifactData> result = new List<OwnedArtifactData>();
+        int maxRuntimeId = 0;
+
+        if (savedArtifacts != null && savedArtifacts.Length > 0)
+        {
+            for (int i = 0; i < savedArtifacts.Length; i++)
+            {
+                SaveOwnedArtifactData savedArtifact = savedArtifacts[i];
+                OwnedArtifactData artifact = BuildOwnedArtifactFromSave(savedArtifact, contentDatabaseProvider);
+                if (artifact == null)
+                {
+                    continue;
+                }
+
+                result.Add(artifact);
+                if (artifact.RuntimeId > 0)
+                {
+                    artifactByRuntimeId[artifact.RuntimeId] = artifact;
+                    if (artifact.RuntimeId > maxRuntimeId)
+                    {
+                        maxRuntimeId = artifact.RuntimeId;
+                    }
+                }
+            }
+        }
+        else if (legacyUnlockedArtifactNames != null)
+        {
+            for (int i = 0; i < legacyUnlockedArtifactNames.Length; i++)
+            {
+                ArtifactSO artifactSo = FindArtifactByName(contentDatabaseProvider, legacyUnlockedArtifactNames[i]);
+                if (artifactSo == null)
+                {
+                    continue;
+                }
+
+                int runtimeId = ++maxRuntimeId;
+                OwnedArtifactData artifact = new OwnedArtifactData(runtimeId, artifactSo);
+                result.Add(artifact);
+                artifactByRuntimeId[runtimeId] = artifact;
+            }
+        }
+
+        nextRuntimeId = maxRuntimeId + 1;
+        return result;
+    }
+
+    private static OwnedArtifactData BuildOwnedArtifactFromSave(
+        SaveOwnedArtifactData savedArtifact,
+        ContentDatabaseProvider contentDatabaseProvider
+    )
+    {
+        if (savedArtifact == null)
+        {
+            return null;
+        }
+
+        ArtifactSO artifact = FindArtifactByName(contentDatabaseProvider, savedArtifact.artifactName);
+        if (artifact == null)
+        {
+            return null;
+        }
+
+        return new OwnedArtifactData(Mathf.Max(1, savedArtifact.runtimeId), artifact);
+    }
+
     private static List<OwnedGladiatorData> BuildOwnedGladiatorsFromSave(
         SaveOwnedGladiatorData[] savedGladiators,
         ContentDatabaseProvider contentDatabaseProvider,
         Dictionary<int, OwnedWeaponData> weaponByRuntimeId,
+        Dictionary<int, OwnedArtifactData> artifactByRuntimeId,
         out int nextRuntimeId
     )
     {
@@ -762,7 +856,8 @@ public static class SaveGameService
                 OwnedGladiatorData gladiator = BuildOwnedGladiatorFromSave(
                     savedGladiator,
                     contentDatabaseProvider,
-                    weaponByRuntimeId
+                    weaponByRuntimeId,
+                    artifactByRuntimeId
                 );
 
                 if (gladiator == null)
@@ -786,7 +881,8 @@ public static class SaveGameService
     private static OwnedGladiatorData BuildOwnedGladiatorFromSave(
         SaveOwnedGladiatorData savedGladiator,
         ContentDatabaseProvider contentDatabaseProvider,
-        Dictionary<int, OwnedWeaponData> weaponByRuntimeId
+        Dictionary<int, OwnedWeaponData> weaponByRuntimeId,
+        Dictionary<int, OwnedArtifactData> artifactByRuntimeId
     )
     {
         if (savedGladiator == null)
@@ -805,7 +901,32 @@ public static class SaveGameService
 
         TraitSO trait = FindTraitByName(contentDatabaseProvider, savedGladiator.traitName);
         PersonalitySO personality = FindPersonalityByName(contentDatabaseProvider, savedGladiator.personalityName);
-        ArtifactSO equippedArtifact = FindArtifactByName(contentDatabaseProvider, savedGladiator.equippedPerkName);
+        OwnedArtifactData equippedArtifact = null;
+        if (savedGladiator.equippedArtifactRuntimeId > 0 && artifactByRuntimeId != null)
+        {
+            artifactByRuntimeId.TryGetValue(savedGladiator.equippedArtifactRuntimeId, out equippedArtifact);
+        }
+
+        if (equippedArtifact == null)
+        {
+            string legacyArtifactName = !string.IsNullOrWhiteSpace(savedGladiator.equippedArtifactName)
+                ? savedGladiator.equippedArtifactName
+                : savedGladiator.equippedPerkName;
+            if (!string.IsNullOrWhiteSpace(legacyArtifactName) && artifactByRuntimeId != null)
+            {
+                foreach (OwnedArtifactData candidate in artifactByRuntimeId.Values)
+                {
+                    if (
+                        candidate != null
+                        && string.Equals(candidate.DisplayName, legacyArtifactName, StringComparison.Ordinal)
+                    )
+                    {
+                        equippedArtifact = candidate;
+                        break;
+                    }
+                }
+            }
+        }
 
         OwnedWeaponData equippedWeapon = null;
         if (savedGladiator.equippedWeaponRuntimeId > 0)
@@ -838,30 +959,6 @@ public static class SaveGameService
         gladiator.FinalAttackVariancePercent = savedGladiator.finalAttackVariancePercent;
 
         return gladiator;
-    }
-
-    private static List<ArtifactSO> BuildUnlockedArtifactsFromSave(
-        string[] unlockedArtifactNames,
-        ContentDatabaseProvider contentDatabaseProvider
-    )
-    {
-        List<ArtifactSO> result = new List<ArtifactSO>();
-
-        if (unlockedArtifactNames == null || unlockedArtifactNames.Length == 0)
-        {
-            return result;
-        }
-
-        for (int i = 0; i < unlockedArtifactNames.Length; i++)
-        {
-            ArtifactSO artifact = FindArtifactByName(contentDatabaseProvider, unlockedArtifactNames[i]);
-            if (artifact != null)
-            {
-                result.Add(artifact);
-            }
-        }
-
-        return result;
     }
 
     private static List<MarketWeaponOffer> BuildMarketWeaponOffersFromSave(
@@ -920,7 +1017,8 @@ public static class SaveGameService
             OwnedGladiatorData gladiator = BuildOwnedGladiatorFromSave(
                 savedOffer.gladiator,
                 contentDatabaseProvider,
-                new Dictionary<int, OwnedWeaponData>()
+                new Dictionary<int, OwnedWeaponData>(),
+                new Dictionary<int, OwnedArtifactData>()
             );
 
             MarketGladiatorOffer offer = new MarketGladiatorOffer(savedOffer.slotIndex, gladiator, savedOffer.price);
@@ -1034,7 +1132,10 @@ public static class SaveGameService
         );
         TraitSO trait = FindTraitByName(contentDatabaseProvider, savedUnit.traitName);
         PersonalitySO personality = FindPersonalityByName(contentDatabaseProvider, savedUnit.personalityName);
-        ArtifactSO equippedArtifact = FindArtifactByName(contentDatabaseProvider, savedUnit.equippedPerkName);
+        string artifactName = !string.IsNullOrWhiteSpace(savedUnit.equippedArtifactName)
+            ? savedUnit.equippedArtifactName
+            : savedUnit.equippedPerkName;
+        ArtifactSO equippedArtifact = FindArtifactByName(contentDatabaseProvider, artifactName);
 
         WeaponType weaponType = Enum.IsDefined(typeof(WeaponType), savedUnit.weaponType)
             ? (WeaponType)savedUnit.weaponType

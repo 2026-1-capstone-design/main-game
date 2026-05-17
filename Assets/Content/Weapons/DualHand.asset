@@ -15,6 +15,7 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: e5dda82d34675eb4b878658113823077, type: 3}
   weaponName: DualHand
   weaponType: 3
+  lore: "\uC591\uC190\uBB34\uAE30\uC774\uB2E4."
   leftWeaponPrefab: {fileID: 4008085833001920289, guid: dd6dfd462684df54db89046a01800a0d, type: 3}
   rightWeaponPrefab: {fileID: 8935633830502879671, guid: f0f67484e970cc44d8d22d4d17c32031, type: 3}
   isRanged: 0

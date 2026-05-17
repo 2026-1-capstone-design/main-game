@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 [DisallowMultipleComponent]
@@ -111,6 +111,7 @@ public sealed class GladiatorManager : SingletonBehaviour<GladiatorManager>
         }
 
         UnequipWeaponIfAny(gladiator);
+        gladiator.EquippedArtifact = null;
 
         bool removed = _ownedGladiators.Remove(gladiator);
 
@@ -163,8 +164,126 @@ public sealed class GladiatorManager : SingletonBehaviour<GladiatorManager>
         return null;
     }
 
+    public OwnedGladiatorData FindOwnerOfEquippedArtifact(OwnedArtifactData artifact)
+    {
+        if (!_initialized)
+        {
+            Debug.LogError("[GladiatorManager] FindOwnerOfEquippedArtifact called before Initialize.", this);
+            return null;
+        }
+
+        if (artifact == null)
+        {
+            return null;
+        }
+
+        for (int i = 0; i < _ownedGladiators.Count; i++)
+        {
+            OwnedGladiatorData gladiator = _ownedGladiators[i];
+            if (gladiator == null)
+            {
+                continue;
+            }
+
+            if (gladiator.EquippedArtifact == artifact)
+            {
+                return gladiator;
+            }
+        }
+
+        return null;
+    }
+
+    public bool TryEquipArtifact(OwnedGladiatorData gladiator, OwnedArtifactData artifact, out string failReason)
+    {
+        failReason = string.Empty;
+
+        if (!_initialized)
+        {
+            failReason = "GladiatorManager is not initialized.";
+            Debug.LogError("[GladiatorManager] " + failReason, this);
+            return false;
+        }
+
+        if (gladiator == null)
+        {
+            failReason = "Target gladiator is null.";
+            Debug.LogError("[GladiatorManager] " + failReason, this);
+            return false;
+        }
+
+        if (artifact == null)
+        {
+            failReason = "Target artifact is null.";
+            Debug.LogError("[GladiatorManager] " + failReason, this);
+            return false;
+        }
+
+        OwnedGladiatorData currentOwner = FindOwnerOfEquippedArtifact(artifact);
+        if (currentOwner != null && currentOwner != gladiator)
+        {
+            currentOwner.EquippedArtifact = null;
+        }
+
+        if (gladiator.EquippedArtifact == artifact)
+        {
+            failReason = "This gladiator already has this artifact equipped.";
+            return false;
+        }
+
+        gladiator.EquippedArtifact = artifact;
+
+        if (verboseLog)
+        {
+            Debug.Log(
+                $"[GladiatorManager] Artifact equipped. Gladiator={gladiator.DisplayName}, Artifact={artifact.DisplayName}",
+                this
+            );
+        }
+
+        return true;
+    }
+
+    public bool TryUnequipArtifact(OwnedGladiatorData gladiator, out string failReason)
+    {
+        failReason = string.Empty;
+
+        if (!_initialized)
+        {
+            failReason = "GladiatorManager is not initialized.";
+            Debug.LogError("[GladiatorManager] " + failReason, this);
+            return false;
+        }
+
+        if (gladiator == null)
+        {
+            failReason = "Target gladiator is null.";
+            Debug.LogError("[GladiatorManager] " + failReason, this);
+            return false;
+        }
+
+        if (gladiator.EquippedArtifact == null)
+        {
+            failReason = "There is no equipped artifact to unequip.";
+            return false;
+        }
+
+        OwnedArtifactData removedArtifact = gladiator.EquippedArtifact;
+        gladiator.EquippedArtifact = null;
+
+        if (verboseLog)
+        {
+            Debug.Log(
+                $"[GladiatorManager] Artifact unequipped. Gladiator={gladiator.DisplayName}, Artifact={removedArtifact.DisplayName}",
+                this
+            );
+        }
+
+        return true;
+    }
+
     // 무기를 해당 검투사에게 장착함.
-    // 이미 다른 검투사가 쓰는 무기면 막음.
+    // 이미 다른 검투사가 쓰는 무기면 기존 소유자의 장착을 해제하고 옮겨 장착한다.
     // 장착 성공 시 장비 보너스를 포함해 스탯을 다시 계산한다
     public bool TryEquipWeapon(OwnedGladiatorData gladiator, OwnedWeaponData weapon, out string failReason)
     {
@@ -194,8 +313,8 @@ public sealed class GladiatorManager : SingletonBehaviour<GladiatorManager>
         OwnedGladiatorData currentOwner = FindOwnerOfEquippedWeapon(weapon);
         if (currentOwner != null && currentOwner != gladiator)
         {
-            failReason = "already equipped!";
-            return false;
+            currentOwner.EquippedWeapon = null;
+            RefreshDerivedStats(currentOwner, false);
         }
 
         if (gladiator.EquippedWeapon == weapon)
@@ -279,6 +398,7 @@ public sealed class GladiatorManager : SingletonBehaviour<GladiatorManager>
         }
 
         gladiator.EquippedWeapon = null;
+        gladiator.EquippedArtifact = null;
         RefreshDerivedStats(gladiator, false);
 
         if (verboseLog)

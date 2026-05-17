@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -15,6 +15,9 @@ public sealed class OwnedItemGridCell : MonoBehaviour
 
     [SerializeField]
     private Image iconImage;
+
+    [SerializeField]
+    private RawImage rawIconImage;
 
     [SerializeField]
     private TMP_Text levelText;
@@ -50,8 +53,11 @@ public sealed class OwnedItemGridCell : MonoBehaviour
         if (rootButton != null)
         {
             rootButton.onClick.RemoveAllListeners();
-            rootButton.onClick.AddListener(OnClicked);
-            rootButton.interactable = true;
+            if (!data.IsPlaceholder)
+            {
+                rootButton.onClick.AddListener(OnClicked);
+            }
+            rootButton.interactable = !data.IsPlaceholder;
         }
     }
 

@@ -15,6 +15,7 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: 9eb825158918555459bbfd53c457244c, type: 3}
   weaponName: DualGun
   weaponType: 8
+  lore: "\uC30D\uAD8C\uCD1D\uC774\uB2E4."
   leftWeaponPrefab: {fileID: 957394319240228214, guid: 819537502fd71cb4baadbe1f096fa1eb, type: 3}
   rightWeaponPrefab: {fileID: 3050969012209765930, guid: af0fb2ed48c04e142aa0554265114c9b, type: 3}
   isRanged: 1

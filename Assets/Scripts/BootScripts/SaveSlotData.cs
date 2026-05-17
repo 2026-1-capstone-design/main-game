@@ -14,6 +14,7 @@ public sealed class SaveSlotData
 
     public SaveClassCounterEntry[] classCounters;
     public SaveOwnedWeaponData[] ownedWeapons;
+    public SaveOwnedArtifactData[] ownedArtifacts;
     public SaveOwnedGladiatorData[] ownedGladiators;
 
     public string[] unlockedArtifactNames;
@@ -60,6 +61,13 @@ public sealed class SaveOwnedWeaponData
 }
 
 [Serializable]
+public sealed class SaveOwnedArtifactData
+{
+    public int runtimeId;
+    public string artifactName;
+}
+
+[Serializable]
 public sealed class SaveOwnedGladiatorData
 {
     public int runtimeId;
@@ -72,7 +80,9 @@ public sealed class SaveOwnedGladiatorData
     public string gladiatorClassName;
     public string traitName;
     public string personalityName;
+    public string equippedArtifactName;
     public string equippedPerkName;
+    public int equippedArtifactRuntimeId;
     public int equippedWeaponRuntimeId;
 
     public float cachedMaxHealth;
@@ -133,6 +143,7 @@ public sealed class SaveBattleEncounterUnitData
     public string gladiatorClassName;
     public string traitName;
     public string personalityName;
+    public string equippedArtifactName;
     public string equippedPerkName;
 
     public int weaponType;

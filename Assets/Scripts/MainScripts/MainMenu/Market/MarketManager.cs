@@ -18,7 +18,6 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
     private InventoryManager _inventoryManager;
     private ResourceManager _resourceManager;
     private ContentDatabaseProvider _contentDatabaseProvider;
-    private ResearchManager _researchManager;
 
     private int _initializedDay = -1; // 현재 시장 재고가 어느 날짜 기준으로 생성됐는지 나타냄
 
@@ -93,8 +92,6 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
         _inventoryManager = inventoryManager;
         _resourceManager = resourceManager;
         _contentDatabaseProvider = contentDatabaseProvider;
-        _researchManager = researchManager;
-
         if (_recruitFactory == null)
         {
             Debug.LogError("[MarketManager] recruitFactory is null.", this);
@@ -128,12 +125,6 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
         if (_contentDatabaseProvider == null)
         {
             Debug.LogError("[MarketManager] contentDatabaseProvider is null.", this);
-            return;
-        }
-
-        if (_researchManager == null)
-        {
-            Debug.LogError("[MarketManager] researchManager is null.", this);
             return;
         }
 
@@ -615,7 +606,8 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
             return false;
         }
 
-        bool addSucceeded = _researchManager != null && _researchManager.AddArtifact(offer.Artifact);
+        bool addSucceeded =
+            _inventoryManager != null && _inventoryManager.AddPurchasedArtifactFromMarketOffer(offer.Artifact);
         if (!addSucceeded)
         {
             _resourceManager.AddGold(offer.Price);
@@ -637,7 +629,7 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
         return true;
     }
 
-    public bool TrySellArtifact(ArtifactSO artifact, out int sellPrice, out string failReason)
+    public bool TrySellArtifact(OwnedArtifactData artifact, out int sellPrice, out string failReason)
     {
         sellPrice = 0;
         failReason = string.Empty;
@@ -658,7 +650,16 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
 
         sellPrice = GetArtifactSellPrice();
 
-        bool removed = _researchManager != null && _researchManager.RemoveArtifact(artifact);
+        OwnedGladiatorData owner =
+            _gladiatorManager != null ? _gladiatorManager.FindOwnerOfEquippedArtifact(artifact) : null;
+        if (owner != null)
+        {
+            failReason = "You can't sell equipped items.";
+            Debug.LogWarning("[MarketManager] " + failReason, this);
+            return false;
+        }
+
+        bool removed = _inventoryManager != null && _inventoryManager.RemoveOwnedArtifact(artifact);
         if (!removed)
         {
             failReason = "Failed to remove artifact from owned list.";
@@ -670,7 +671,7 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
 
         if (verboseLog)
         {
-            Debug.Log($"[MarketManager] Artifact sold. Name={artifact.artifactName}, SellPrice={sellPrice}", this);
+            Debug.Log($"[MarketManager] Artifact sold. Name={artifact.DisplayName}, SellPrice={sellPrice}", this);
         }
 
         return true;

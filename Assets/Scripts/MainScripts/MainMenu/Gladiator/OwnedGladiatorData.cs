@@ -14,7 +14,7 @@ public sealed class OwnedGladiatorData
     public TraitSO Trait { get; }
     public PersonalitySO Personality { get; }
 
-    public ArtifactSO EquippedArtifact { get; set; }
+    public OwnedArtifactData EquippedArtifact { get; set; }
     public OwnedWeaponData EquippedWeapon { get; set; } // 현재 이 검투사가 장착 중인 실제 owned 무기 !!참조!!.
 
     // 클래스, 레벨, 개체 분산, 장비 보너스를 반영한 실제 전투용 캐시 스탯들.
@@ -44,7 +44,7 @@ public sealed class OwnedGladiatorData
         GladiatorClassSO gladiatorClass,
         TraitSO trait,
         PersonalitySO personality,
-        ArtifactSO equippedArtifact,
+        OwnedArtifactData equippedArtifact,
         OwnedWeaponData equippedWeapon,
         int[] customizeIndicates
     )

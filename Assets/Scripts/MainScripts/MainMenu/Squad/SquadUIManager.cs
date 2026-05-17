@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Text;
 using TMPro;
 using UnityEngine;
@@ -21,6 +21,9 @@ public sealed class SquadUIManager : MonoBehaviour
     [Header("Squad Team Tabs")]
     [SerializeField]
     private Button[] teamTabButtons = new Button[SquadManager.SquadTeamCount];
+
+    [SerializeField]
+    private RectTransform squadBackground;
 
     [SerializeField]
     private TMP_Text squadTitleText;
@@ -71,6 +74,8 @@ public sealed class SquadUIManager : MonoBehaviour
     private bool _initialized;
     private int _pendingSlotIndex = -1;
     private OwnedGladiatorData _pendingGladiator;
+    private Transform[] _teamTabOriginalParents;
+    private int[] _teamTabOriginalSiblingIndices;
 
     private readonly List<OwnedItemViewData> _pickerBuffer = new List<OwnedItemViewData>();
     private readonly StringBuilder _detailBuilder = new StringBuilder(256);
@@ -87,6 +92,7 @@ public sealed class SquadUIManager : MonoBehaviour
         _gladiatorManager = gladiatorManager;
 
         ResolveMissingReferences();
+        CaptureTeamTabLayout();
 
         BindButton(backButton, OnBackClicked);
         BindButton(pickerCloseButton, OnPickerCloseClicked);
@@ -319,8 +325,68 @@ public sealed class SquadUIManager : MonoBehaviour
                 continue;
             }
 
-            teamTabButtons[i].interactable = i != activeTeamIndex;
+            teamTabButtons[i].interactable = true;
+            MoveTeamTabAroundBackground(teamTabButtons[i], i == activeTeamIndex);
         }
+    }
+
+    private void MoveTeamTabAroundBackground(Button teamTabButton, bool isActive)
+    {
+        if (teamTabButton == null || squadBackground == null)
+        {
+            return;
+        }
+
+        RectTransform tabTransform = teamTabButton.transform as RectTransform;
+        if (tabTransform == null)
+        {
+            return;
+        }
+
+        int tabIndex = System.Array.IndexOf(teamTabButtons, teamTabButton);
+        if (!isActive)
+        {
+            RestoreTeamTabParent(tabTransform, tabIndex);
+            return;
+        }
+
+        Transform backgroundParent = squadBackground.parent;
+        if (backgroundParent == null)
+        {
+            return;
+        }
+
+        // SquadBackground와 SquadSlotPanel이 형제인 배치라 선택된 탭만 배경의 형제로 올려 렌더 순서를 분리한다.
+        tabTransform.SetParent(backgroundParent, true);
+        int backgroundIndex = squadBackground.GetSiblingIndex();
+        tabTransform.SetSiblingIndex(Mathf.Min(backgroundIndex + 1, backgroundParent.childCount - 1));
+    }
+
+    private void RestoreTeamTabParent(RectTransform tabTransform, int tabIndex)
+    {
+        if (tabTransform == null || _teamTabOriginalParents == null || _teamTabOriginalSiblingIndices == null)
+        {
+            return;
+        }
+
+        if (tabIndex < 0 || tabIndex >= _teamTabOriginalParents.Length)
+        {
+            return;
+        }
+
+        Transform originalParent = _teamTabOriginalParents[tabIndex];
+        if (originalParent == null)
+        {
+            return;
+        }
+
+        if (tabTransform.parent != originalParent)
+        {
+            tabTransform.SetParent(originalParent, true);
+        }
+
+        int siblingIndex = Mathf.Clamp(_teamTabOriginalSiblingIndices[tabIndex], 0, originalParent.childCount - 1);
+        tabTransform.SetSiblingIndex(siblingIndex);
     }
 
     private void SetPickerPanelActive(bool value)
@@ -390,7 +456,7 @@ public sealed class SquadUIManager : MonoBehaviour
             return;
         }
 
-        Sprite equippedArtifactIcon = gladiator.EquippedArtifact?.icon;
+        Sprite equippedArtifactIcon = gladiator.EquippedArtifact?.Artifact?.icon;
         for (int i = 0; i < detailArtifactIcons.Length; i++)
         {
             Image icon = detailArtifactIcons[i];
@@ -434,6 +500,60 @@ public sealed class SquadUIManager : MonoBehaviour
         if (pickerPanelRoot == null && pickerGridViewer != null)
         {
             pickerPanelRoot = pickerGridViewer.gameObject;
+        }
+
+        if (squadBackground == null && panelRoot != null)
+        {
+            Transform backgroundTransform = FindChildTransform(panelRoot.transform, "SquadBackground");
+            squadBackground = backgroundTransform as RectTransform;
+        }
+    }
+
+    private static Transform FindChildTransform(Transform root, string childName)
+    {
+        if (root == null || string.IsNullOrWhiteSpace(childName))
+        {
+            return null;
+        }
+
+        if (root.name == childName)
+        {
+            return root;
+        }
+
+        for (int i = 0; i < root.childCount; i++)
+        {
+            Transform found = FindChildTransform(root.GetChild(i), childName);
+            if (found != null)
+            {
+                return found;
+            }
+        }
+
+        return null;
+    }
+
+    private void CaptureTeamTabLayout()
+    {
+        if (teamTabButtons == null)
+        {
+            return;
+        }
+
+        _teamTabOriginalParents = new Transform[teamTabButtons.Length];
+        _teamTabOriginalSiblingIndices = new int[teamTabButtons.Length];
+
+        for (int i = 0; i < teamTabButtons.Length; i++)
+        {
+            Button button = teamTabButtons[i];
+            if (button == null)
+            {
+                continue;
+            }
+
+            Transform tabTransform = button.transform;
+            _teamTabOriginalParents[i] = tabTransform.parent;
+            _teamTabOriginalSiblingIndices[i] = tabTransform.GetSiblingIndex();
         }
     }
 
