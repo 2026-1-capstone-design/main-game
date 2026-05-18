@@ -1,5 +1,29 @@
 using UnityEngine;
 
+public readonly struct BattleAnchor
+{
+    public readonly BattleAnchorKind Kind;
+    public readonly int SlotIndex;
+    public readonly BattleUnitCombatState Unit;
+    public readonly Vector3 Position;
+    public readonly bool HasUnit;
+
+    public BattleAnchor(
+        BattleAnchorKind kind,
+        int slotIndex,
+        BattleUnitCombatState unit,
+        Vector3 position,
+        bool hasUnit
+    )
+    {
+        Kind = kind;
+        SlotIndex = slotIndex;
+        Unit = unit;
+        Position = position;
+        HasUnit = hasUnit;
+    }
+}
+
 // TrainingUnitCombatOverlay는 TrainingScene에서 ML policy가 고른 anchor와 공격 사거리를
 // 전투 모델 위에 직접 표시하는 훈련 전용 디버그 비주얼이다.
 [DisallowMultipleComponent]
@@ -104,7 +128,7 @@ public sealed class TrainingUnitCombatOverlay : MonoBehaviour
         float screenX = screenPoint.x;
         float screenY = Screen.height - screenPoint.y;
         DrawHpBar(screenX, screenY - 12f);
-        DrawFightMode(screenX, screenY + 2f);
+        DrawStrategy(screenX, screenY + 2f);
     }
 
     private void RefreshAttackRange()
@@ -137,19 +161,17 @@ public sealed class TrainingUnitCombatOverlay : MonoBehaviour
             return;
         }
 
-        Color color;
         switch (anchor.Kind)
         {
             case BattleAnchorKind.Ally:
-                color = allyAnchorColor;
-                break;
             case BattleAnchorKind.Enemy:
-                color = enemyAnchorColor;
                 break;
             default:
                 SetArrowVisible(false);
                 return;
         }
+
+        Color color = _unit.IsEnemy ? enemyAnchorColor : allyAnchorColor;
 
         Vector3 start = _unit.Position + Vector3.up * ArrowYOffset;
         Vector3 end = anchor.Unit.Position + Vector3.up * ArrowYOffset;
@@ -225,10 +247,10 @@ public sealed class TrainingUnitCombatOverlay : MonoBehaviour
         DrawRect(fillRect, fillColor);
     }
 
-    private void DrawFightMode(float centerX, float topY)
+    private void DrawStrategy(float centerX, float topY)
     {
         Rect labelRect = new Rect(centerX - modeLabelSize.x * 0.5f, topY, modeLabelSize.x, modeLabelSize.y);
-        GUI.Label(labelRect, _unit.State.AgentFightMode.ToString(), _modeLabelStyle);
+        GUI.Label(labelRect, _unit.State.AgentStrategy.ToString(), _modeLabelStyle);
     }
 
     private void EnsureGuiStyle()

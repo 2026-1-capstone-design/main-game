@@ -63,35 +63,32 @@ public readonly struct GladiatorCombatSignalFeatures
         {
             BattleUnitCombatState self = context.Self;
             BattleUnitCombatState anchor = context.CurrentAnchor;
-            bool usesTeamCenterAnchor = context.AnchorKind == GladiatorAnchorKind.TeamCenter;
-            if (self == null || (!usesTeamCenterAnchor && (anchor == null || anchor.IsCombatDisabled)))
+            if (self == null || anchor == null || anchor.IsCombatDisabled)
             {
                 return new GladiatorCombatSignalFeatures(0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f);
             }
 
-            Vector3 anchorPosition = usesTeamCenterAnchor ? context.TeamCenter : anchor.Position;
+            Vector3 anchorPosition = anchor.Position;
             float distance = Distance2D(self.Position, anchorPosition);
-            float selfRange = usesTeamCenterAnchor ? 0f : GetEffectiveRange(self, anchor, self.AttackRange);
-            float anchorRange = usesTeamCenterAnchor ? 0f : GetEffectiveRange(anchor, self, anchor.AttackRange);
+            float selfRange = GetEffectiveRange(self, anchor, self.AttackRange);
+            float anchorRange = GetEffectiveRange(anchor, self, anchor.AttackRange);
             Vector2 toAnchor = context.WorldToObservationAxes(anchorPosition - self.Position);
             Vector2 forward = toAnchor.sqrMagnitude > Epsilon ? toAnchor.normalized : Vector2.up;
 
-            GladiatorAnchorRelationFeatures relations = usesTeamCenterAnchor
-                ? new GladiatorAnchorRelationFeatures(0f, 0f, 0f, 0f)
-                : GladiatorAnchorRelationFeatureBuilder.Build(
-                    self,
-                    anchor,
-                    context.Teammates,
-                    context.Opponents,
-                    context.ArenaRadius
-                );
+            GladiatorAnchorRelationFeatures relations = GladiatorAnchorRelationFeatureBuilder.Build(
+                self,
+                anchor,
+                context.Teammates,
+                context.Opponents,
+                context.ArenaRadius
+            );
 
             return new GladiatorCombatSignalFeatures(
                 GladiatorObservationNormalization.NormalizeDistanceByArenaRadius(distance, context.ArenaRadius),
-                usesTeamCenterAnchor ? 0f : GetDamageToMaxHealthRatio(anchor, self),
-                usesTeamCenterAnchor ? 0f : GetDamageToMaxHealthRatio(self, anchor),
-                !usesTeamCenterAnchor && distance <= selfRange ? 1f : 0f,
-                !usesTeamCenterAnchor && distance <= anchorRange ? 1f : 0f,
+                GetDamageToMaxHealthRatio(anchor, self),
+                GetDamageToMaxHealthRatio(self, anchor),
+                distance <= selfRange ? 1f : 0f,
+                distance <= anchorRange ? 1f : 0f,
                 ComputeFlankClearanceRatio(context, self, context.Opponents, forward, -1f, context.ArenaRadius),
                 ComputeFlankClearanceRatio(context, self, context.Opponents, forward, 1f, context.ArenaRadius),
                 ComputeEnemyClusterPressure(self, context.Opponents, context.ArenaRadius),

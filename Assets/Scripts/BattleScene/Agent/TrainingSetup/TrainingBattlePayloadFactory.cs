@@ -281,8 +281,9 @@ public sealed class TrainingBattlePayloadFactory
             isRanged: preset.ResolveIsRanged(),
             useProjectile: preset.ResolveUseProjectile(),
             portraitSprite: preset.gladiatorClass.icon,
-            defaultDur: weapon.defaultDur,
-            duration: weapon.duration
+            defaultDur: preset.ResolveDefaultDur(),
+            duration: preset.ResolveDuration(),
+            personalityBias: preset.ResolvePersonalityBias()
         );
     }
 

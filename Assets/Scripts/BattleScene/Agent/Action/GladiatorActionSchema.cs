@@ -1,20 +1,25 @@
+// Action:
+//   Continuous Actions = GladiatorActionSchema.ContinuousSize (= 2)
+//     0=anchor strafe, 1=anchor forward
+//   Discrete Branches  = 3
+//     Branch 0 Size = GladiatorActionSchema.CommandBranchSize (= 3)
+//     Branch 1 Size = GladiatorActionSchema.StrategyBranchSize (= 4)
+//     Branch 2 Size = GladiatorActionSchema.AnchorActionBranchSize (= 6)
+
+//   Continuous 0/1:     anchor strafe / anchor forward
+//   Branch 0 (명령):     0=없음  1=기본공격  2=후퇴이동
+//   Branch 1 (strategy): 0=중립  1=압박  2=거리유지  3=후퇴
+//   Branch 2 (anchor):   0~5=적 슬롯
 // ML-Agents discrete action branch의 raw int 값을 파싱한 뒤 내부 로직에서 사용하는 명령 종류다.
 public enum GladiatorCommand
 {
     Move = 0,
     Attack = 1,
+    Withdraw = 2,
 }
 
-// ML-Agents role branch의 raw int 값을 파싱한 뒤 내부 로직에서 사용하는 전술 역할이다.
-public enum GladiatorActionRole
-{
-    Engage = 0,
-    Assassinate = 1,
-    Regroup = 2,
-}
-
-// ML-Agents fight mode branch의 raw int 값을 파싱한 뒤 내부 로직에서 사용하는 교전 태세다.
-public enum GladiatorFightMode
+// ML-Agents strategy branch의 raw int 값을 파싱한 뒤 내부 로직에서 사용하는 단기 교전 태세다.
+public enum GladiatorStrategy
 {
     Neutral = 0,
     Pressure = 1,
@@ -22,79 +27,41 @@ public enum GladiatorFightMode
     Retreat = 3,
 }
 
-// ML-Agents anchor kind branch의 raw int 값을 파싱한 뒤 내부 로직에서 사용하는 기준점 종류다.
-public enum GladiatorAnchorKind
-{
-    Enemy = 0,
-    Ally = 1,
-    TeamCenter = 2,
-}
-
 public static class GladiatorActionSchema
 {
-    public const int ContractVersion = 13;
+    public const int ContractVersion = 15;
 
     public const int ContinuousAnchorStrafe = 0;
     public const int ContinuousAnchorForward = 1;
     public const int ContinuousSize = 2;
 
     public const int CommandBranch = 0;
-    public const int RoleBranch = 1;
-    public const int FightModeBranch = 2;
-    public const int AnchorBranch = 3;
-    public const int DiscreteBranchCount = 4;
+    public const int StrategyBranch = 1;
+    public const int AnchorBranch = 2;
+    public const int DiscreteBranchCount = 3;
 
-    public const int CommandBranchSize = 2;
+    public const int CommandBranchSize = 3;
+    public const int StrategyBranchSize = 4;
+    public const int AnchorActionBranchSize = BattleTeamConstants.MaxUnitsPerTeam;
 
-    public const int RoleBranchSize = 3;
-
-    public const int FightModeBranchSize = 4;
-
-    public const int AnchorKindCount = 3;
-    public const int AnchorSlotObservationSize = BattleTeamConstants.MaxUnitsPerTeam;
-
-    public const int TeamCenterAnchorAction = 0;
-    public const int AllyAnchorActionOffset = 1;
-    public const int EnemyAnchorActionOffset = BattleTeamConstants.MaxUnitsPerTeam;
-    public const int AnchorActionBranchSize = BattleTeamConstants.MaxUnitsPerTeam * 2;
-
-    public static int EncodeAnchorAction(GladiatorAnchorKind anchorKind, int anchorSlot)
+    public static readonly int[] DiscreteBranchSizes =
     {
-        switch (anchorKind)
-        {
-            case GladiatorAnchorKind.TeamCenter:
-                return TeamCenterAnchorAction;
-            case GladiatorAnchorKind.Ally:
-                return AllyAnchorActionOffset + Clamp(anchorSlot, 0, BattleTeamConstants.MaxUnitsPerTeam - 2);
-            default:
-                return EnemyAnchorActionOffset + Clamp(anchorSlot, 0, BattleTeamConstants.MaxUnitsPerTeam - 1);
-        }
-    }
+        CommandBranchSize,
+        StrategyBranchSize,
+        AnchorActionBranchSize,
+    };
 
-    public static bool TryDecodeAnchorAction(int anchorAction, out GladiatorAnchorKind anchorKind, out int anchorSlot)
+    public static int EncodeEnemyAnchorAction(int anchorSlot) =>
+        Clamp(anchorSlot, 0, BattleTeamConstants.MaxUnitsPerTeam - 1);
+
+    public static bool TryDecodeEnemyAnchorAction(int anchorAction, out int anchorSlot)
     {
-        if (anchorAction == TeamCenterAnchorAction)
+        if (anchorAction >= 0 && anchorAction < AnchorActionBranchSize)
         {
-            anchorKind = GladiatorAnchorKind.TeamCenter;
-            anchorSlot = 0;
+            anchorSlot = anchorAction;
             return true;
         }
 
-        if (anchorAction >= AllyAnchorActionOffset && anchorAction < EnemyAnchorActionOffset)
-        {
-            anchorKind = GladiatorAnchorKind.Ally;
-            anchorSlot = anchorAction - AllyAnchorActionOffset;
-            return true;
-        }
-
-        if (anchorAction >= EnemyAnchorActionOffset && anchorAction < AnchorActionBranchSize)
-        {
-            anchorKind = GladiatorAnchorKind.Enemy;
-            anchorSlot = anchorAction - EnemyAnchorActionOffset;
-            return true;
-        }
-
-        anchorKind = GladiatorAnchorKind.TeamCenter;
         anchorSlot = 0;
         return false;
     }

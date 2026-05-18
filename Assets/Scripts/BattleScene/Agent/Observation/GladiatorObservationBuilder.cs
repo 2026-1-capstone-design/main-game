@@ -15,14 +15,15 @@ public readonly struct GladiatorObservationContext
     public readonly Vector3 TeamCenter;
     public readonly float ArenaRadius;
     public readonly float BattleTimeoutRemainingRatio;
-    public readonly Vector2 AgentSmoothedWorldMove;
-    public readonly Vector2 AgentPreviousRawWorldMove;
-    public readonly GladiatorAnchorKind AnchorKind;
+    public readonly Vector2 RawLocalMove;
+    public readonly Vector2 PreviousRawLocalMove;
     public readonly int AnchorSlot;
-    public readonly GladiatorFightMode CurrentFightMode;
-    public readonly GladiatorActionRole CurrentRole;
+    public readonly GladiatorCommand CurrentCommand;
+    public readonly GladiatorStrategy CurrentStrategy;
     public readonly int AnchorCommitmentSteps;
-    public readonly int RoleCommitmentSteps;
+    public readonly int StrategyCommitmentSteps;
+    public readonly float PersonalityCollectivism;
+    public readonly float PersonalityPassiveness;
     public readonly BattleUnitCombatState CurrentAnchor;
 
     public GladiatorObservationContext(
@@ -34,14 +35,15 @@ public readonly struct GladiatorObservationContext
         Vector3 teamCenter,
         float arenaRadius,
         float battleTimeoutRemainingRatio,
-        Vector2 agentSmoothedWorldMove,
-        Vector2 agentPreviousRawWorldMove,
-        GladiatorAnchorKind anchorKind,
+        Vector2 rawLocalMove,
+        Vector2 PreviousRawLocalMove,
         int anchorSlot,
-        GladiatorFightMode currentFightMode,
-        GladiatorActionRole currentRole,
+        GladiatorCommand currentCommand,
+        GladiatorStrategy currentStrategy,
         int anchorCommitmentSteps,
-        int roleCommitmentSteps,
+        int strategyCommitmentSteps,
+        float personalityCollectivism,
+        float personalityPassiveness,
         BattleUnitCombatState currentAnchor
     )
     {
@@ -53,24 +55,20 @@ public readonly struct GladiatorObservationContext
         TeamCenter = teamCenter;
         ArenaRadius = arenaRadius;
         BattleTimeoutRemainingRatio = Mathf.Clamp01(battleTimeoutRemainingRatio);
-        AgentSmoothedWorldMove = Vector2.ClampMagnitude(agentSmoothedWorldMove, 1f);
-        AgentPreviousRawWorldMove = Vector2.ClampMagnitude(agentPreviousRawWorldMove, 1f);
-        AnchorKind = anchorKind;
-        AnchorSlot = Mathf.Clamp(anchorSlot, 0, GladiatorActionSchema.AnchorSlotObservationSize - 1);
-        CurrentFightMode = currentFightMode;
-        CurrentRole = currentRole;
+        RawLocalMove = Vector2.ClampMagnitude(rawLocalMove, 1f);
+        this.PreviousRawLocalMove = Vector2.ClampMagnitude(PreviousRawLocalMove, 1f);
+        AnchorSlot = Mathf.Clamp(anchorSlot, 0, GladiatorActionSchema.AnchorActionBranchSize - 1);
+        CurrentCommand = currentCommand;
+        CurrentStrategy = currentStrategy;
         AnchorCommitmentSteps = Mathf.Max(0, anchorCommitmentSteps);
-        RoleCommitmentSteps = Mathf.Max(0, roleCommitmentSteps);
+        StrategyCommitmentSteps = Mathf.Max(0, strategyCommitmentSteps);
+        PersonalityCollectivism = Mathf.Clamp01(personalityCollectivism);
+        PersonalityPassiveness = Mathf.Clamp01(personalityPassiveness);
         CurrentAnchor = currentAnchor;
     }
 
     public Vector3 GetAnchorPosition()
     {
-        if (AnchorKind == GladiatorAnchorKind.TeamCenter)
-        {
-            return TeamCenter;
-        }
-
         if (CurrentAnchor != null && !CurrentAnchor.IsCombatDisabled)
         {
             return CurrentAnchor.Position;
@@ -177,23 +175,21 @@ public static class GladiatorObservationBuilder
             features.EnemyClusterPressure,
             boundaryPressure,
             context.BattleTimeoutRemainingRatio,
-            context.AgentSmoothedWorldMove.x,
-            context.AgentSmoothedWorldMove.y,
-            // TODO 임시 비활성화
-            // context.AgentPreviousRawWorldMove.x,
-            // context.AgentPreviousRawWorldMove.y,
-            0,
-            0,
-            context.AnchorKind,
+            context.RawLocalMove.x,
+            context.RawLocalMove.y,
+            context.PreviousRawLocalMove.x,
+            context.PreviousRawLocalMove.y,
             context.AnchorSlot,
-            context.CurrentFightMode,
-            context.CurrentRole,
+            context.CurrentCommand,
+            context.CurrentStrategy,
             NormalizeCommitment(context.AnchorCommitmentSteps),
-            NormalizeCommitment(context.RoleCommitmentSteps),
+            NormalizeCommitment(context.StrategyCommitmentSteps),
             features.AnchorAllySupportPressure,
             features.AnchorEnemyFocusPressure,
             features.AnchorEnemyIsolation,
-            features.AnchorEnemyRetreatSignal
+            features.AnchorEnemyRetreatSignal,
+            context.PersonalityCollectivism,
+            context.PersonalityPassiveness
         );
 
         return new GladiatorObservation(
@@ -242,7 +238,7 @@ public static class GladiatorObservationBuilder
             }
 
             bool isTargetingMeAggressively =
-                unit.PlannedTargetEnemy == self && unit.AgentFightMode != GladiatorFightMode.KeepRange;
+                unit.PlannedTargetEnemy == self && unit.AgentStrategy != GladiatorStrategy.KeepRange;
             observations[i] = BuildUnitObservation(self, unit, context, isTargetingMeAggressively ? 1f : 0f);
         }
 

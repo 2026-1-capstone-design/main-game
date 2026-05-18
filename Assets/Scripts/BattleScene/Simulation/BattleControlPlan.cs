@@ -1,12 +1,21 @@
+using System;
 using UnityEngine;
 
 public enum BattleMoveIntent
 {
-    None = 0,
-    Hold = 1,
-    MoveToTarget = 2,
-    MoveToPosition = 3,
-    MoveByTacticalInput = 4,
+    Hold = 0,
+    MoveToTarget = 1,
+    MoveToAbsolutePosition = 2,
+    MoveToRelativePosition = 3,
+    MoveToAbsoluteDirection = 4,
+    MoveToRelativeDirection = 5,
+
+    // deprecated
+    [Obsolete]
+    MoveByTacticalInput = 6,
+
+    [Obsolete]
+    MoveByWithdrawInput = 7,
 }
 
 public enum BattleCombatIntent
@@ -31,28 +40,72 @@ public enum BattleAnchorKind
     TeamCenter = 2,
 }
 
-public readonly struct BattleAnchor
+public readonly struct BattleMove
 {
-    public readonly BattleAnchorKind Kind;
-    public readonly int SlotIndex;
-    public readonly BattleUnitCombatState Unit;
+    public readonly BattleMoveIntent Intent;
     public readonly Vector3 Position;
-    public readonly bool HasUnit;
+    public readonly BattleUnitCombatState Target;
+    public readonly Vector3 Direction;
 
-    public BattleAnchor(
-        BattleAnchorKind kind,
-        int slotIndex,
-        BattleUnitCombatState unit,
-        Vector3 position,
-        bool hasUnit
-    )
+    private BattleMove(BattleMoveIntent intent, Vector3 position, BattleUnitCombatState target, Vector3 direction)
     {
-        Kind = kind;
-        SlotIndex = slotIndex;
-        Unit = unit;
+        Intent = intent;
         Position = position;
-        HasUnit = hasUnit;
+        Target = target;
+        Direction = direction;
     }
+
+    public static BattleMove Hold() => new BattleMove(BattleMoveIntent.Hold, default, null, default);
+
+    public static bool IsHold(BattleMove plan) => plan.Intent == BattleMoveIntent.Hold;
+
+    public static BattleMove ToAbsolutePosition(Vector3 position) =>
+        new BattleMove(BattleMoveIntent.MoveToAbsolutePosition, position, null, default);
+
+    public static bool IsMoveToAbsolutePosition(BattleMove plan) =>
+        plan.Intent == BattleMoveIntent.MoveToAbsolutePosition;
+
+    public static BattleMove ToRelativePosition(BattleUnitCombatState target, Vector2 relativePosition) =>
+        new BattleMove(
+            BattleMoveIntent.MoveToRelativePosition,
+            default,
+            target,
+            new Vector3(relativePosition.x, 0f, relativePosition.y)
+        );
+
+    public static bool IsMoveToRelativePosition(BattleMove plan) =>
+        plan.Intent == BattleMoveIntent.MoveToRelativePosition && plan.Target != null;
+
+    public static BattleMove ToTarget(BattleUnitCombatState target) =>
+        new BattleMove(BattleMoveIntent.MoveToTarget, default, target, default);
+
+    public static BattleMove ToTarget(BattleUnitCombatState target, Vector2 relativeDirection) =>
+        new BattleMove(
+            BattleMoveIntent.MoveToTarget,
+            default,
+            target,
+            new Vector3(relativeDirection.x, 0f, relativeDirection.y).normalized
+        );
+
+    public static bool IsMoveToTarget(BattleMove plan) =>
+        plan.Intent == BattleMoveIntent.MoveToTarget && plan.Target != null;
+
+    public static BattleMove ToAbsoluteDirection(Vector3 direction) =>
+        new BattleMove(BattleMoveIntent.MoveToAbsoluteDirection, default, null, direction.normalized);
+
+    public static bool IsMoveToAbsoluteDirection(BattleMove plan) =>
+        plan.Intent == BattleMoveIntent.MoveToAbsoluteDirection;
+
+    public static BattleMove ToRelativeDirection(BattleUnitCombatState target, Vector2 relativeDirection) =>
+        new BattleMove(
+            BattleMoveIntent.MoveToRelativeDirection,
+            default,
+            target,
+            new Vector3(relativeDirection.x, 0f, relativeDirection.y).normalized
+        );
+
+    public static bool IsMoveToRelativeDirection(BattleMove plan) =>
+        plan.Intent == BattleMoveIntent.MoveToRelativeDirection && plan.Target != null;
 }
 
 // BattleControlPlan은 planner가 결정한 tick 단위 저수준 실행 명세다.
@@ -61,33 +114,22 @@ public readonly struct BattleControlPlan
 {
     public readonly BattleUnitCombatState TargetEnemy;
     public readonly BattleUnitCombatState TargetAlly;
-    public readonly Vector3 DesiredPosition;
-    public readonly bool HasDesiredPosition;
-    public readonly BattleAnchor MovementAnchor;
-    public readonly Vector2 RelativeMove;
-    public readonly BattleMoveIntent MoveIntent;
+    public readonly BattleMove Move;
+
     public readonly BattleCombatIntent CombatIntent;
     public readonly BattleFacingIntent FacingIntent;
 
     public BattleControlPlan(
         BattleUnitCombatState targetEnemy,
         BattleUnitCombatState targetAlly,
-        Vector3 desiredPosition,
-        bool hasDesiredPosition,
-        BattleAnchor movementAnchor,
-        Vector2 relativeMove,
-        BattleMoveIntent moveIntent,
+        BattleMove move,
         BattleCombatIntent combatIntent,
         BattleFacingIntent facingIntent
     )
     {
         TargetEnemy = targetEnemy;
         TargetAlly = targetAlly;
-        DesiredPosition = desiredPosition;
-        HasDesiredPosition = hasDesiredPosition;
-        MovementAnchor = movementAnchor;
-        RelativeMove = Vector2.ClampMagnitude(relativeMove, 1f);
-        MoveIntent = moveIntent;
+        Move = move;
         CombatIntent = combatIntent;
         FacingIntent = facingIntent;
     }

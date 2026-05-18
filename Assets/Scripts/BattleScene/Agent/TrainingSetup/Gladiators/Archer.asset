@@ -19,10 +19,15 @@ MonoBehaviour:
   overrideWeaponSettings: 1
   isRanged: 1
   useProjectile: 0
+  overrideAttackAnimationTiming: 1
+  defaultDur: 0
+  duration: 0.5
   weaponSkillId: 0
-  maxHealth: 100
-  attack: 10
+  maxHealth: 2000
+  attack: 200
   attackSpeed: 1
   moveSpeed: 3
-  attackRange: 1
+  attackRange: 10
+  personalityCollectivism: 0.3
+  personalityPassiveness: 0.6
   customizeIndicates: 0e0000000000000014000000000000001600000000000000000000000e0000000e0000000e0000000e0000000e000000

@@ -69,11 +69,19 @@ public sealed class BattlePhysicsSystem
 
             BattleControlPlan plan = controlPlans != null && i < controlPlans.Length ? controlPlans[i] : default;
             ApplyFacing(unit, plan);
-            switch (plan.MoveIntent)
+            switch (plan.Move.Intent)
             {
-                case BattleMoveIntent.MoveByTacticalInput:
+                case BattleMoveIntent.MoveToAbsoluteDirection:
                 {
-                    bool moved = MoveByTacticalInput(unit, plan, tickDeltaTime);
+                    bool moved = MoveByAbsoluteDirection(unit, plan.Move.Direction, tickDeltaTime);
+                    unit.State.SetMovementState(moved);
+                    if (!moved)
+                        unit.State.SetIdleState();
+                    continue;
+                }
+                case BattleMoveIntent.MoveToRelativeDirection:
+                {
+                    bool moved = MoveByRelativeDirection(unit, plan.Move.Target, plan.Move.Direction, tickDeltaTime);
                     unit.State.SetMovementState(moved);
                     if (!moved)
                         unit.State.SetIdleState();
@@ -87,16 +95,28 @@ public sealed class BattlePhysicsSystem
                         unit.State.SetIdleState();
                     continue;
                 }
-                case BattleMoveIntent.MoveToPosition:
+                case BattleMoveIntent.MoveToAbsolutePosition:
                 {
-                    bool moved = MoveTowardsPosition(unit, plan.DesiredPosition, tickDeltaTime);
+                    bool moved = MoveTowardsPosition(unit, plan.Move.Position, tickDeltaTime);
+                    unit.State.SetMovementState(moved);
+                    if (!moved)
+                        unit.State.SetIdleState();
+                    continue;
+                }
+                case BattleMoveIntent.MoveToRelativePosition:
+                {
+                    bool moved = MoveTowardsRelativePosition(
+                        unit,
+                        plan.Move.Target,
+                        plan.Move.Direction,
+                        tickDeltaTime
+                    );
                     unit.State.SetMovementState(moved);
                     if (!moved)
                         unit.State.SetIdleState();
                     continue;
                 }
                 case BattleMoveIntent.Hold:
-                case BattleMoveIntent.None:
                 default:
                     unit.State.SetIdleState();
                     continue;
@@ -104,13 +124,37 @@ public sealed class BattlePhysicsSystem
         }
     }
 
-    private bool MoveByTacticalInput(BattleRuntimeUnit unit, BattleControlPlan plan, float tickDeltaTime)
+    private bool MoveByAbsoluteDirection(BattleRuntimeUnit unit, Vector3 direction, float tickDeltaTime)
     {
-        Vector3 moveDirection = BuildMoveDirection(plan.MovementAnchor, plan.RelativeMove, unit);
+        if (unit == null)
+            return false;
+
+        direction.y = 0f;
+        if (direction.sqrMagnitude <= 0.0001f)
+            return false;
+
+        BattleMoveRequest request = BattleMoveRequest.ForMover(unit, direction.normalized, null, unit.MoveSpeed);
+        _movementPolicy.ModifyMoveSpeed(ref request);
+        unit.SetPosition(unit.Position + request.Direction * request.Speed * tickDeltaTime);
+        unit.ClampInsideBattlefield(_battlefieldCollider);
+        return true;
+    }
+
+    private bool MoveByRelativeDirection(
+        BattleRuntimeUnit unit,
+        BattleUnitCombatState target,
+        Vector3 relativeDirection,
+        float tickDeltaTime
+    )
+    {
+        if (unit == null)
+            return false;
+
+        Vector3 moveDirection = BuildRelativeMoveDirection(target, relativeDirection, unit);
         if (moveDirection.sqrMagnitude <= 0.0001f)
             return false;
 
-        BattleRuntimeUnit targetRuntime = FindRuntimeUnitForState(plan.TargetEnemy);
+        BattleRuntimeUnit targetRuntime = FindRuntimeUnitForState(target);
         BattleMoveRequest request = BattleMoveRequest.ForMover(
             unit,
             moveDirection.normalized,
@@ -135,43 +179,77 @@ public sealed class BattlePhysicsSystem
                     unit.FaceTarget(plan.TargetEnemy.Position);
                 break;
             case BattleFacingIntent.DesiredPosition:
-                if (plan.HasDesiredPosition)
-                    unit.FaceTarget(plan.DesiredPosition);
+                if (TryResolveDesiredPosition(unit, plan.Move, out Vector3 desiredPosition))
+                    unit.FaceTarget(desiredPosition);
                 break;
             case BattleFacingIntent.MoveDirection:
-                Vector3 moveDirection = BuildMoveDirection(plan.MovementAnchor, plan.RelativeMove, unit);
+                Vector3 moveDirection =
+                    plan.Move.Intent == BattleMoveIntent.MoveToRelativeDirection
+                        ? BuildRelativeMoveDirection(plan.Move.Target, plan.Move.Direction, unit)
+                        : plan.Move.Direction;
                 if (moveDirection.sqrMagnitude > 0.0001f)
                     unit.FaceTarget(unit.Position + moveDirection);
                 break;
         }
     }
 
-    private Vector3 BuildMoveDirection(BattleAnchor anchor, Vector2 relativeMove, BattleRuntimeUnit unit)
+    private static Vector3 BuildRelativeMoveDirection(
+        BattleUnitCombatState target,
+        Vector3 relativeDirection,
+        BattleRuntimeUnit unit
+    )
     {
-        if (unit == null)
+        if (unit == null || target == null)
             return Vector3.zero;
 
-        Vector3 anchorForward = ResolveAnchorForward(anchor, unit);
+        Vector3 anchorForward = target.Position - unit.Position;
+        anchorForward.y = 0f;
         if (anchorForward.sqrMagnitude <= 0.0001f)
             anchorForward = unit.transform.forward;
 
+        anchorForward.y = 0f;
+        if (anchorForward.sqrMagnitude <= 0.0001f)
+            return Vector3.zero;
+
+        anchorForward.Normalize();
         Vector3 anchorLeft = Vector3.Cross(anchorForward, Vector3.up).normalized;
-        Vector3 direction = (anchorForward * relativeMove.y) + (anchorLeft * relativeMove.x);
+        Vector3 direction = (anchorForward * relativeDirection.z) + (anchorLeft * relativeDirection.x);
+        direction.y = 0f;
         if (direction.sqrMagnitude > 1f)
             direction.Normalize();
 
         return direction;
     }
 
-    private Vector3 ResolveAnchorForward(BattleAnchor anchor, BattleRuntimeUnit unit)
+    private static bool TryResolveRelativePosition(
+        BattleRuntimeUnit unit,
+        BattleUnitCombatState target,
+        Vector3 relativePosition,
+        out Vector3 position
+    )
     {
-        Vector3 anchorPosition = anchor.HasUnit ? anchor.Unit.Position : anchor.Position;
-        if (anchor.Kind == BattleAnchorKind.TeamCenter && _battlefieldCollider != null)
-            anchorPosition = _battlefieldCollider.bounds.center;
+        position = default;
+        if (unit == null || target == null)
+            return false;
 
-        Vector3 toAnchor = anchorPosition - unit.Position;
-        toAnchor.y = 0f;
-        return toAnchor.sqrMagnitude > 0.0001f ? toAnchor.normalized : Vector3.zero;
+        Vector3 offset = BuildRelativeMoveDirection(target, relativePosition, unit);
+        position = target.Position + offset;
+        return true;
+    }
+
+    private static bool TryResolveDesiredPosition(BattleRuntimeUnit unit, BattleMove move, out Vector3 position)
+    {
+        switch (move.Intent)
+        {
+            case BattleMoveIntent.MoveToAbsolutePosition:
+                position = move.Position;
+                return true;
+            case BattleMoveIntent.MoveToRelativePosition:
+                return TryResolveRelativePosition(unit, move.Target, move.Direction, out position);
+            default:
+                position = default;
+                return false;
+        }
     }
 
     private bool MoveTowardsTarget(BattleRuntimeUnit mover, BattleControlPlan plan, float tickDeltaTime)
@@ -191,9 +269,13 @@ public sealed class BattlePhysicsSystem
             return false;
 
         Vector3 direction = centerDistance > 0.0001f ? toTarget / centerDistance : Vector3.zero;
-        if (plan.CombatIntent == BattleCombatIntent.Attack)
+        if (plan.CombatIntent == BattleCombatIntent.Attack && plan.Move.Direction.sqrMagnitude > 0.0001f)
         {
-            direction = BuildAttackApproachDirection(plan.RelativeMove, direction);
+            direction = BuildRelativeMoveDirection(target, plan.Move.Direction, mover);
+            if (direction.sqrMagnitude <= 0.0001f)
+            {
+                direction = centerDistance > 0.0001f ? toTarget / centerDistance : Vector3.zero;
+            }
         }
 
         float remainingDistanceUntilAttack = Mathf.Max(0f, centerDistance - effectiveAttackDistance);
@@ -209,27 +291,31 @@ public sealed class BattlePhysicsSystem
         return true;
     }
 
-    private static Vector3 BuildAttackApproachDirection(Vector2 relativeMove, Vector3 anchorForward)
+    private bool MoveTowardsRelativePosition(
+        BattleRuntimeUnit mover,
+        BattleUnitCombatState target,
+        Vector3 relativePosition,
+        float tickDeltaTime
+    )
     {
-        if (anchorForward.sqrMagnitude <= 0.0001f)
-        {
-            return anchorForward;
-        }
+        if (!TryResolveRelativePosition(mover, target, relativePosition, out Vector3 desiredPosition))
+            return false;
 
-        Vector2 move = relativeMove;
-        if (move.sqrMagnitude <= 0.0001f)
-        {
-            return anchorForward;
-        }
-
-        float rawAngle = Mathf.Atan2(move.x, move.y) * Mathf.Rad2Deg;
-        float compressedAngle = rawAngle * 0.25f;
-        Vector3 rotated = Quaternion.AngleAxis(compressedAngle, Vector3.up) * anchorForward;
-        rotated.y = 0f;
-        return rotated.sqrMagnitude > 0.0001f ? rotated.normalized : anchorForward;
+        BattleRuntimeUnit targetRuntime = FindRuntimeUnitForState(target);
+        return MoveTowardsPosition(mover, desiredPosition, tickDeltaTime, targetRuntime);
     }
 
     private bool MoveTowardsPosition(BattleRuntimeUnit mover, Vector3 desiredPosition, float tickDeltaTime)
+    {
+        return MoveTowardsPosition(mover, desiredPosition, tickDeltaTime, null);
+    }
+
+    private bool MoveTowardsPosition(
+        BattleRuntimeUnit mover,
+        Vector3 desiredPosition,
+        float tickDeltaTime,
+        BattleRuntimeUnit target
+    )
     {
         if (mover == null)
             return false;
@@ -243,7 +329,7 @@ public sealed class BattlePhysicsSystem
             return false;
 
         Vector3 direction = distance > 0.0001f ? toTarget / distance : Vector3.zero;
-        BattleMoveRequest request = BattleMoveRequest.ForMover(mover, direction, null, mover.MoveSpeed);
+        BattleMoveRequest request = BattleMoveRequest.ForMover(mover, direction, target, mover.MoveSpeed);
         _movementPolicy.ModifyMoveSpeed(ref request);
         float moveDistance = Mathf.Min(request.Speed * tickDeltaTime, distance);
         if (moveDistance <= 0.0001f)

@@ -50,13 +50,40 @@ public sealed class BattlePlanningSystem
             return;
 
         state.SetPlannedTargets(plan.TargetEnemy, plan.TargetAlly);
-        state.SetPlannedAnchor(plan.MovementAnchor);
-        if (plan.MoveIntent == BattleMoveIntent.MoveToPosition && plan.HasDesiredPosition)
+        state.SetPlannedAnchor(ResolvePlannedAnchor(state, plan));
+        if (plan.Move.Intent == BattleMoveIntent.MoveToAbsolutePosition)
         {
-            state.SetExecutionPlanPosition(plan.DesiredPosition, true);
+            state.SetExecutionPlanPosition(plan.Move.Position, true);
             return;
         }
 
         state.ClearExecutionPlanPosition();
+    }
+
+    private static BattleAnchor ResolvePlannedAnchor(BattleUnitCombatState state, in BattleControlPlan plan)
+    {
+        if (BattleFieldSnapshot.IsValidEnemyTarget(state, plan.TargetEnemy))
+        {
+            return new BattleAnchor(
+                BattleAnchorKind.Enemy,
+                plan.TargetEnemy.UnitNumber,
+                plan.TargetEnemy,
+                plan.TargetEnemy.Position,
+                true
+            );
+        }
+
+        if (plan.TargetAlly != null && !plan.TargetAlly.IsCombatDisabled)
+        {
+            return new BattleAnchor(
+                BattleAnchorKind.Ally,
+                plan.TargetAlly.UnitNumber,
+                plan.TargetAlly,
+                plan.TargetAlly.Position,
+                true
+            );
+        }
+
+        return default;
     }
 }

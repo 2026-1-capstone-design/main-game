@@ -5,47 +5,29 @@ public static class GladiatorAgentActionParser
 {
     public static GladiatorAction Parse(ActionBuffers actions)
     {
-        Vector2 relativeMove = ReadMove(actions.ContinuousActions);
         int command = ReadDiscrete(
             actions.DiscreteActions,
             GladiatorActionSchema.CommandBranch,
             (int)GladiatorCommand.Move
         );
         command = Mathf.Clamp(command, 0, GladiatorActionSchema.CommandBranchSize - 1);
-        int role = ReadDiscrete(
+
+        int strategy = ReadDiscrete(
             actions.DiscreteActions,
-            GladiatorActionSchema.RoleBranch,
-            (int)GladiatorActionRole.Engage
+            GladiatorActionSchema.StrategyBranch,
+            (int)GladiatorStrategy.Neutral
         );
-        role = Mathf.Clamp(role, 0, GladiatorActionSchema.RoleBranchSize - 1);
-        int fightMode = ReadDiscrete(
-            actions.DiscreteActions,
-            GladiatorActionSchema.FightModeBranch,
-            (int)GladiatorFightMode.Neutral
-        );
-        fightMode = Mathf.Clamp(fightMode, 0, GladiatorActionSchema.FightModeBranchSize - 1);
-        int anchorAction = ReadDiscrete(
-            actions.DiscreteActions,
-            GladiatorActionSchema.AnchorBranch,
-            GladiatorActionSchema.EnemyAnchorActionOffset
-        );
-        if (
-            !GladiatorActionSchema.TryDecodeAnchorAction(
-                anchorAction,
-                out GladiatorAnchorKind anchorKind,
-                out int anchorSlot
-            )
-        )
+        strategy = Mathf.Clamp(strategy, 0, GladiatorActionSchema.StrategyBranchSize - 1);
+
+        int anchorAction = ReadDiscrete(actions.DiscreteActions, GladiatorActionSchema.AnchorBranch, 0);
+        if (!GladiatorActionSchema.TryDecodeEnemyAnchorAction(anchorAction, out int anchorSlot))
         {
-            anchorKind = GladiatorAnchorKind.Enemy;
             anchorSlot = 0;
         }
 
         return new GladiatorAction(
-            relativeMove,
-            (GladiatorActionRole)role,
-            (GladiatorFightMode)fightMode,
-            anchorKind,
+            ReadMove(actions.ContinuousActions),
+            (GladiatorStrategy)strategy,
             anchorSlot,
             (GladiatorCommand)command
         );
@@ -62,10 +44,7 @@ public static class GladiatorAgentActionParser
             Mathf.Clamp(continuousActions[GladiatorActionSchema.ContinuousAnchorStrafe], -1f, 1f),
             Mathf.Clamp(continuousActions[GladiatorActionSchema.ContinuousAnchorForward], -1f, 1f)
         );
-        if (worldMove.sqrMagnitude > 1f)
-        {
-            worldMove.Normalize();
-        }
+        worldMove.Normalize();
 
         return worldMove;
     }

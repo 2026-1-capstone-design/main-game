@@ -14,9 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   model: {fileID: 5022602860645237092, guid: bb8df75d83312f143bdbe4d1234d419f, type: 3}
   behaviorName: GladiatorBehavior
-  contractVersion: 13
+  contractVersion: 15
   expectedContinuousActions: 2
-  expectedObservationSize: 148
+  expectedObservationSize: 147
   controlledSide: 3
   decisionPeriod: 1
   takeActionsBetweenDecisions: 1

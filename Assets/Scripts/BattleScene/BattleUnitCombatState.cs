@@ -348,7 +348,7 @@ public sealed class BattleUnitCombatState
     public BattleUnitCombatState CurrentTarget { get; private set; }
     public BattleUnitCombatState PlannedTargetEnemy { get; private set; }
     public BattleUnitCombatState PlannedTargetAlly { get; private set; }
-    public GladiatorFightMode AgentFightMode { get; private set; }
+    public GladiatorStrategy AgentStrategy { get; private set; }
     public BattleAnchor PlannedAnchor { get; private set; }
 
     // ── 생성자 ─────────────────────────────────────────────────────
@@ -710,15 +710,15 @@ public sealed class BattleUnitCombatState
         return type == BuffType.BleedDamage || type == BuffType.Taunt || type == BuffType.Stun;
     }
 
-    public event Action<GladiatorFightMode> OnAgentFightModeChanged;
+    public event Action<GladiatorStrategy> OnAgentStrategyChanged;
 
-    public void SetAgentFightMode(GladiatorFightMode fightMode)
+    public void SetAgentStrategy(GladiatorStrategy strategy)
     {
-        if (AgentFightMode == fightMode)
+        if (AgentStrategy == strategy)
             return;
 
-        AgentFightMode = fightMode;
-        OnAgentFightModeChanged?.Invoke(AgentFightMode);
+        AgentStrategy = strategy;
+        OnAgentStrategyChanged?.Invoke(AgentStrategy);
     }
 
     public void SetCurrentTarget(BattleUnitCombatState target)

@@ -10,8 +10,7 @@ public sealed class BattleSceneGladiatorAgentBinder : MonoBehaviour
     private static readonly int[] ExpectedDiscreteBranches =
     {
         GladiatorActionSchema.CommandBranchSize,
-        GladiatorActionSchema.RoleBranchSize,
-        GladiatorActionSchema.FightModeBranchSize,
+        GladiatorActionSchema.StrategyBranchSize,
         GladiatorActionSchema.AnchorActionBranchSize,
     };
 
@@ -150,7 +149,7 @@ public sealed class BattleSceneGladiatorAgentBinder : MonoBehaviour
         behaviorParameters.BrainParameters.VectorObservationSize = GladiatorObservationSchema.TotalSize;
         behaviorParameters.BrainParameters.ActionSpec = new ActionSpec(
             GladiatorActionSchema.ContinuousSize,
-            (int[])ExpectedDiscreteBranches.Clone()
+            (int[])GladiatorActionSchema.DiscreteBranchSizes.Clone()
         );
 
         decisionRequester.DecisionPeriod = Mathf.Max(1, config.decisionPeriod);

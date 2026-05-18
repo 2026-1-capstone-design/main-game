@@ -30,12 +30,17 @@ public sealed class TrainingGladiatorPresetEditor : Editor
     private SerializedProperty _overrideWeaponSettings;
     private SerializedProperty _isRanged;
     private SerializedProperty _useProjectile;
+    private SerializedProperty _overrideAttackAnimationTiming;
+    private SerializedProperty _defaultDur;
+    private SerializedProperty _duration;
     private SerializedProperty _weaponSkillId;
     private SerializedProperty _maxHealth;
     private SerializedProperty _attack;
     private SerializedProperty _attackSpeed;
     private SerializedProperty _moveSpeed;
     private SerializedProperty _attackRange;
+    private SerializedProperty _personalityCollectivism;
+    private SerializedProperty _personalityPassiveness;
     private SerializedProperty _customizeIndicates;
 
     private GameObject _characterPrefab;
@@ -56,12 +61,17 @@ public sealed class TrainingGladiatorPresetEditor : Editor
         _overrideWeaponSettings = serializedObject.FindProperty("overrideWeaponSettings");
         _isRanged = serializedObject.FindProperty("isRanged");
         _useProjectile = serializedObject.FindProperty("useProjectile");
+        _overrideAttackAnimationTiming = serializedObject.FindProperty("overrideAttackAnimationTiming");
+        _defaultDur = serializedObject.FindProperty("defaultDur");
+        _duration = serializedObject.FindProperty("duration");
         _weaponSkillId = serializedObject.FindProperty("weaponSkillId");
         _maxHealth = serializedObject.FindProperty("maxHealth");
         _attack = serializedObject.FindProperty("attack");
         _attackSpeed = serializedObject.FindProperty("attackSpeed");
         _moveSpeed = serializedObject.FindProperty("moveSpeed");
         _attackRange = serializedObject.FindProperty("attackRange");
+        _personalityCollectivism = serializedObject.FindProperty("personalityCollectivism");
+        _personalityPassiveness = serializedObject.FindProperty("personalityPassiveness");
         _customizeIndicates = serializedObject.FindProperty("customizeIndicates");
 
         _characterPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(CharacterPreviewPrefabPath);
@@ -91,6 +101,19 @@ public sealed class TrainingGladiatorPresetEditor : Editor
             EditorGUILayout.PropertyField(_useProjectile);
         }
 
+        EditorGUILayout.Space(8f);
+        EditorGUILayout.LabelField("Weapon Attack Animation Timing", EditorStyles.boldLabel);
+        DrawEffectiveWeaponTimingHint();
+        EditorGUILayout.PropertyField(_overrideAttackAnimationTiming);
+        using (new EditorGUI.DisabledScope(!_overrideAttackAnimationTiming.boolValue))
+        {
+            EditorGUILayout.PropertyField(_defaultDur, new GUIContent("Default Dur"));
+            using (new EditorGUI.DisabledScope(_defaultDur.boolValue))
+            {
+                EditorGUILayout.PropertyField(_duration);
+            }
+        }
+
         using (new EditorGUI.DisabledScope(true))
         {
             EditorGUILayout.PropertyField(_weaponSkillId);
@@ -103,6 +126,11 @@ public sealed class TrainingGladiatorPresetEditor : Editor
         EditorGUILayout.PropertyField(_attackSpeed);
         EditorGUILayout.PropertyField(_moveSpeed);
         EditorGUILayout.PropertyField(_attackRange);
+
+        EditorGUILayout.Space(8f);
+        EditorGUILayout.LabelField("Personality Bias", EditorStyles.boldLabel);
+        EditorGUILayout.PropertyField(_personalityCollectivism, new GUIContent("Collectivism"));
+        EditorGUILayout.PropertyField(_personalityPassiveness, new GUIContent("Passiveness"));
 
         EditorGUILayout.Space(8f);
         DrawSkinDropdowns();
@@ -224,6 +252,27 @@ public sealed class TrainingGladiatorPresetEditor : Editor
         {
             EditorGUILayout.HelpBox(error, MessageType.Error);
         }
+    }
+
+    private void DrawEffectiveWeaponTimingHint()
+    {
+        WeaponSO weapon = _weapon.objectReferenceValue as WeaponSO;
+        if (weapon == null)
+        {
+            EditorGUILayout.HelpBox(
+                "Assign a WeaponSO to use or compare its attack animation timing.",
+                MessageType.Info
+            );
+            return;
+        }
+
+        bool effectiveDefaultDur = _overrideAttackAnimationTiming.boolValue ? _defaultDur.boolValue : weapon.defaultDur;
+        float effectiveDuration = _overrideAttackAnimationTiming.boolValue ? _duration.floatValue : weapon.duration;
+        string source = _overrideAttackAnimationTiming.boolValue ? "Preset override" : "WeaponSO";
+        string durationText = effectiveDefaultDur
+            ? "Animator default duration"
+            : $"{Mathf.Max(0f, effectiveDuration):0.###} sec base duration";
+        EditorGUILayout.HelpBox($"{source}: {durationText}", MessageType.None);
     }
 
     private void EnsureCustomizeArray()

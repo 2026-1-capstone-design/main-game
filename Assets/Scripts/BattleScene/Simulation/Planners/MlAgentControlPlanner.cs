@@ -16,46 +16,12 @@ public sealed class MlAgentControlPlanner : IBattleControlPlanner
     {
         BattleAgentControlInput input = _buffer != null ? _buffer.GetInput(self) : default;
         BattleUnitCombatState target = BattleFieldSnapshot.IsValidEnemyTarget(self, input.Target) ? input.Target : null;
-        BattleUnitCombatState anchorTarget = input.AnchorTarget;
-        BattleAnchor anchor = BuildAnchor(self, input, anchorTarget);
-        Vector2 relativeMove = Vector2.ClampMagnitude(input.RawLocalMove, 1f);
+        Vector2 resolvedMove = Vector2.ClampMagnitude(input.ResolvedRelativeMove, 1f);
         BattleCombatIntent combatIntent = ResolveCombatIntent(input.Command);
-        BattleMoveIntent moveIntent = ResolveMoveIntent(target, relativeMove, combatIntent);
-        BattleFacingIntent facingIntent = ResolveFacingIntent(target, moveIntent, combatIntent);
-        plan = new BattleControlPlan(
-            target,
-            input.AnchorKind == GladiatorAnchorKind.Ally ? anchorTarget : null,
-            Vector3.zero,
-            false,
-            anchor,
-            relativeMove,
-            moveIntent,
-            combatIntent,
-            facingIntent
-        );
+        BattleMove move = ResolveMove(target, resolvedMove, combatIntent);
+        BattleFacingIntent facingIntent = ResolveFacingIntent(target, move, combatIntent);
+        plan = new BattleControlPlan(target, null, move, combatIntent, facingIntent);
         return self != null;
-    }
-
-    private static BattleAnchor BuildAnchor(
-        BattleUnitCombatState self,
-        BattleAgentControlInput input,
-        BattleUnitCombatState target
-    )
-    {
-        BattleAnchorKind kind = input.AnchorKind switch
-        {
-            GladiatorAnchorKind.Ally => BattleAnchorKind.Ally,
-            GladiatorAnchorKind.TeamCenter => BattleAnchorKind.TeamCenter,
-            _ => BattleAnchorKind.Enemy,
-        };
-
-        return new BattleAnchor(
-            kind,
-            input.AnchorSlot,
-            target,
-            target != null ? target.Position : (self != null ? self.Position : UnityEngine.Vector3.zero),
-            target != null
-        );
     }
 
     private static BattleCombatIntent ResolveCombatIntent(BattleCombatCommand command) =>
@@ -66,33 +32,31 @@ public sealed class MlAgentControlPlanner : IBattleControlPlanner
             _ => BattleCombatIntent.None,
         };
 
-    private static BattleMoveIntent ResolveMoveIntent(
+    private static BattleMove ResolveMove(
         BattleUnitCombatState target,
-        Vector2 relativeMove,
+        Vector2 resolvedMove,
         BattleCombatIntent combatIntent
     )
     {
         if (combatIntent == BattleCombatIntent.Attack)
-            return target != null ? BattleMoveIntent.MoveToTarget : BattleMoveIntent.Hold;
+            return target != null ? BattleMove.ToTarget(target, resolvedMove) : BattleMove.Hold();
 
-        if (relativeMove.sqrMagnitude > 0.0001f)
-            return BattleMoveIntent.MoveByTacticalInput;
+        if (resolvedMove.sqrMagnitude > 0.0001f)
+            return target != null ? BattleMove.ToRelativeDirection(target, resolvedMove) : BattleMove.Hold();
 
-        return BattleMoveIntent.Hold;
+        return BattleMove.Hold();
     }
 
     private static BattleFacingIntent ResolveFacingIntent(
         BattleUnitCombatState target,
-        BattleMoveIntent moveIntent,
+        BattleMove move,
         BattleCombatIntent combatIntent
     )
     {
-        if (moveIntent == BattleMoveIntent.MoveByTacticalInput)
-        {
+        if (move.Intent == BattleMoveIntent.MoveToRelativeDirection)
             return combatIntent == BattleCombatIntent.Attack && target != null
                 ? BattleFacingIntent.TargetEnemy
                 : BattleFacingIntent.MoveDirection;
-        }
 
         if (target != null)
             return BattleFacingIntent.TargetEnemy;

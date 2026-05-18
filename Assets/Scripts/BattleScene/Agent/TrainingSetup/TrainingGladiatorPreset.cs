@@ -16,6 +16,11 @@ public sealed class TrainingGladiatorPreset : ScriptableObject
     public bool isRanged;
     public bool useProjectile;
 
+    [Header("Weapon Attack Animation Timing")]
+    public bool overrideAttackAnimationTiming;
+    public bool defaultDur;
+    public float duration = 1f;
+
     [Tooltip("TrainingScene v1 keeps skills disabled in payloads.")]
     public WeaponSkillId weaponSkillId = WeaponSkillId.None;
 
@@ -25,6 +30,13 @@ public sealed class TrainingGladiatorPreset : ScriptableObject
     public float attackSpeed = 1f;
     public float moveSpeed = 3f;
     public float attackRange = 1f;
+
+    [Header("Personality Bias")]
+    [Range(0f, 1f)]
+    public float personalityCollectivism = 0.5f;
+
+    [Range(0f, 1f)]
+    public float personalityPassiveness = 0.5f;
 
     [Header("Skin")]
     public int[] customizeIndicates = new int[(int)SkinPart.TotalCount];
@@ -39,6 +51,9 @@ public sealed class TrainingGladiatorPreset : ScriptableObject
         attackSpeed = Mathf.Max(0f, attackSpeed);
         moveSpeed = Mathf.Max(0f, moveSpeed);
         attackRange = Mathf.Max(0f, attackRange);
+        duration = Mathf.Max(0f, duration);
+        personalityCollectivism = Mathf.Clamp01(personalityCollectivism);
+        personalityPassiveness = Mathf.Clamp01(personalityPassiveness);
 
         if (customizeIndicates == null || customizeIndicates.Length != (int)SkinPart.TotalCount)
         {
@@ -82,6 +97,9 @@ public sealed class TrainingGladiatorPreset : ScriptableObject
         if (attackRange <= 0f)
             return "AttackRange must be greater than 0.";
 
+        if (overrideAttackAnimationTiming && !defaultDur && duration <= 0f)
+            return "Duration must be greater than 0 when custom attack animation timing is enabled.";
+
         return null;
     }
 
@@ -89,6 +107,16 @@ public sealed class TrainingGladiatorPreset : ScriptableObject
 
     public bool ResolveUseProjectile() =>
         overrideWeaponSettings ? useProjectile : weapon != null && weapon.useProjectile;
+
+    public bool ResolveDefaultDur() => overrideAttackAnimationTiming ? defaultDur : weapon != null && weapon.defaultDur;
+
+    public float ResolveDuration() =>
+        overrideAttackAnimationTiming ? duration
+        : weapon != null ? weapon.duration
+        : 1f;
+
+    public GladiatorPersonalityBias ResolvePersonalityBias() =>
+        new GladiatorPersonalityBias(personalityCollectivism, personalityPassiveness);
 
     public int[] CloneCustomizeIndicates()
     {
