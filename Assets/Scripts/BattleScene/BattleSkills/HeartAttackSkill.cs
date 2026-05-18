@@ -68,7 +68,7 @@ public sealed class HeartAttackSkill : IBattleSkill
 
         float windUpDelay = casterRuntime.GetSkillAnimationDuration() * 0.5f;
 
-        BattleSimulationManager.Instance.LaunchCustomProjectile(
+        context.SimulationManager?.LaunchCustomProjectile(
             new BattleDamageRequest { Target = targetState },
             startPos,
             direction,

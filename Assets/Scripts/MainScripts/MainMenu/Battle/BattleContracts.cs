@@ -308,6 +308,11 @@ public sealed class BattleStartPayload
         new Dictionary<BattleTeamId, BattleTeamEntry>();
     private readonly Dictionary<BattleTeamId, int> _teamStartUnitNumberById = new Dictionary<BattleTeamId, int>();
 
+    // 팀 local unit index와 전투/관측 슬롯 index를 분리해, sparse slot layout을 episode 시작 시 고정한다.
+    // _teamSlotIndexById[teamId][localUnitIndex] = slotIndex
+    // localUnitIndex는 팀 내 유닛 번호(0부터 시작), slotIndex는 전투 시스템에서 유닛이 실제로 차지하는 슬롯 번호(0부터 시작, 최대 BattleTeamConstants.MaxUnitsPerTeam - 1)
+    private readonly Dictionary<BattleTeamId, int[]> _teamSlotIndexById = new Dictionary<BattleTeamId, int[]>();
+
     public IReadOnlyList<BattleTeamEntry> Teams => _teams;
     public BattleTeamId PlayerTeamId { get; }
     public int SelectedEncounterIndex { get; }
@@ -326,7 +331,8 @@ public sealed class BattleStartPayload
         int selectedEncounterIndex,
         float enemyAverageLevel,
         int previewRewardGold,
-        int battleSeed
+        int battleSeed,
+        IReadOnlyDictionary<BattleTeamId, IReadOnlyList<int>> teamSlotIndicesById = null
     )
     {
         if (teams != null)
@@ -386,6 +392,7 @@ public sealed class BattleStartPayload
 
             _teamById[team.TeamId] = team;
             _teamStartUnitNumberById[team.TeamId] = nextUnitNumber;
+            _teamSlotIndexById[team.TeamId] = ResolveTeamSlotIndices(team, teamSlotIndicesById);
             nextUnitNumber += unitCount;
 
             if (team.TeamId == playerTeamId)
@@ -446,6 +453,33 @@ public sealed class BattleStartPayload
         return GetTeamStartUnitNumber(teamId) + localUnitIndex;
     }
 
+    public bool TryGetTeamSlotIndex(BattleTeamId teamId, int unitNumber, out int slotIndex)
+    {
+        slotIndex = -1;
+        if (!TryGetTeamLocalUnitIndex(teamId, unitNumber, out int localUnitIndex))
+        {
+            return false;
+        }
+
+        if (!_teamSlotIndexById.TryGetValue(teamId, out int[] slotIndices))
+        {
+            return false;
+        }
+
+        if (localUnitIndex < 0 || localUnitIndex >= slotIndices.Length)
+        {
+            return false;
+        }
+
+        slotIndex = slotIndices[localUnitIndex];
+        return slotIndex >= 0;
+    }
+
+    public IReadOnlyList<int> GetTeamSlotIndices(BattleTeamId teamId)
+    {
+        return _teamSlotIndexById.TryGetValue(teamId, out int[] slotIndices) ? slotIndices : Array.Empty<int>();
+    }
+
     public bool TryGetTeamLocalUnitIndex(BattleTeamId teamId, int unitNumber, out int localUnitIndex)
     {
         localUnitIndex = -1;
@@ -469,5 +503,61 @@ public sealed class BattleStartPayload
 
         localUnitIndex = unitIndex;
         return true;
+    }
+
+    private static int[] ResolveTeamSlotIndices(
+        BattleTeamEntry team,
+        IReadOnlyDictionary<BattleTeamId, IReadOnlyList<int>> teamSlotIndicesById
+    )
+    {
+        int unitCount = team != null && team.Units != null ? team.Units.Count : 0;
+        var slotIndices = new int[unitCount];
+        if (
+            team != null
+            && teamSlotIndicesById != null
+            && teamSlotIndicesById.TryGetValue(team.TeamId, out IReadOnlyList<int> configuredSlots)
+            && configuredSlots != null
+        )
+        {
+            if (configuredSlots.Count != unitCount)
+            {
+                throw new ArgumentException(
+                    $"Configured slot count for team {team.TeamId.Value} must match unit count.",
+                    nameof(teamSlotIndicesById)
+                );
+            }
+
+            var usedSlots = new HashSet<int>();
+            for (int i = 0; i < configuredSlots.Count; i++)
+            {
+                int slotIndex = configuredSlots[i];
+                if (slotIndex < 0 || slotIndex >= BattleTeamConstants.MaxUnitsPerTeam)
+                {
+                    throw new ArgumentOutOfRangeException(
+                        nameof(teamSlotIndicesById),
+                        $"Configured slot {slotIndex} is out of range for team {team.TeamId.Value}."
+                    );
+                }
+
+                if (!usedSlots.Add(slotIndex))
+                {
+                    throw new ArgumentException(
+                        $"Configured slots for team {team.TeamId.Value} must be unique.",
+                        nameof(teamSlotIndicesById)
+                    );
+                }
+
+                slotIndices[i] = slotIndex;
+            }
+
+            return slotIndices;
+        }
+
+        for (int i = 0; i < unitCount; i++)
+        {
+            slotIndices[i] = i;
+        }
+
+        return slotIndices;
     }
 }

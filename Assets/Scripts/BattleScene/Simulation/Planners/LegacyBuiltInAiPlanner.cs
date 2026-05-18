@@ -1,0 +1,148 @@
+using System.Collections.Generic;
+
+// Deprecated: 기존 built-in AI의 decision + 행동별 execution planner 조합을 보관하는 legacy planner다.
+// 신규 제어 로직은 BattleControlPlan을 직접 공급하는 별도 planner로 추가한다.
+public sealed class LegacyBuiltInAiPlanner : IBattleControlPlanner
+{
+    private readonly BattleDecisionSystem _decisionSystem = new BattleDecisionSystem();
+    private readonly Dictionary<BattleActionType, IBattleActionPlanner> _planners = BuildPlannerRegistry();
+
+    public bool IsActive(BattleUnitCombatState self, in BattlePlanningContext context) =>
+        self != null && context.Snapshot != null;
+
+    public bool TryBuildPlan(BattleUnitCombatState self, in BattlePlanningContext context, out BattleControlPlan plan)
+    {
+        plan = default;
+        BattleRuntimeUnit unit = FindRuntimeUnit(self, context.Units);
+        if (unit == null || unit.IsCombatDisabled || context.Snapshot == null)
+        {
+            return false;
+        }
+
+        _decisionSystem.DecideBuiltInUnit(context.Units, unit, context.AiTuning, context.TickDeltaTime);
+        BattleActionExecutionPlan executionPlan = BuildExecutionPlan(unit, context.Snapshot);
+        plan = BuildControlPlan(unit.State, executionPlan);
+        return true;
+    }
+
+    private BattleActionExecutionPlan BuildExecutionPlan(BattleRuntimeUnit unit, BattleFieldSnapshot snapshot)
+    {
+        BattleActionExecutionPlan plan;
+        if (!_planners.TryGetValue(unit.CurrentActionType, out IBattleActionPlanner planner))
+        {
+            plan = _planners[BattleActionType.EngageNearest].Build(unit, snapshot);
+        }
+        else
+        {
+            plan = planner.Build(unit, snapshot);
+            if (!planner.IsUsable(unit, plan))
+            {
+                IBattleActionPlanner engagePlanner = _planners[BattleActionType.EngageNearest];
+                BattleActionExecutionPlan engagePlan = engagePlanner.Build(unit, snapshot);
+                plan = engagePlanner.IsUsable(unit, engagePlan) ? engagePlan : default;
+
+                if (plan.Action == BattleActionType.None)
+                {
+                    plan.Action = unit.CurrentActionType;
+                    plan.DesiredPosition = unit.Position;
+                }
+            }
+        }
+
+        return plan;
+    }
+
+    private static BattleControlPlan BuildControlPlan(
+        BattleUnitCombatState self,
+        BattleActionExecutionPlan executionPlan
+    )
+    {
+        BattleUnitCombatState targetEnemy = executionPlan.TargetEnemy;
+        bool hasValidTarget = BattleFieldSnapshot.IsValidEnemyTarget(self, targetEnemy);
+        bool inAttackRange = hasValidTarget && BattleFieldSnapshot.IsWithinEffectiveAttackDistance(self, targetEnemy);
+
+        BattleMoveIntent moveIntent;
+        BattleCombatIntent combatIntent;
+        BattleFacingIntent facingIntent;
+        if (inAttackRange)
+        {
+            moveIntent = BattleMoveIntent.Hold;
+            combatIntent = BattleCombatIntent.Attack;
+            facingIntent = BattleFacingIntent.TargetEnemy;
+        }
+        else if (executionPlan.HasDesiredPosition)
+        {
+            moveIntent = BattleMoveIntent.MoveToPosition;
+            combatIntent = BattleCombatIntent.None;
+            facingIntent = BattleFacingIntent.DesiredPosition;
+        }
+        else if (hasValidTarget)
+        {
+            moveIntent = BattleMoveIntent.MoveToTarget;
+            combatIntent = BattleCombatIntent.None;
+            facingIntent = BattleFacingIntent.TargetEnemy;
+        }
+        else
+        {
+            moveIntent = BattleMoveIntent.Hold;
+            combatIntent = BattleCombatIntent.None;
+            facingIntent = BattleFacingIntent.KeepCurrent;
+        }
+
+        return new BattleControlPlan(
+            targetEnemy,
+            executionPlan.TargetAlly,
+            executionPlan.DesiredPosition,
+            executionPlan.HasDesiredPosition,
+            default,
+            default,
+            moveIntent,
+            combatIntent,
+            facingIntent
+        );
+    }
+
+    private static BattleRuntimeUnit FindRuntimeUnit(
+        BattleUnitCombatState state,
+        IReadOnlyList<BattleRuntimeUnit> units
+    )
+    {
+        if (state == null || units == null)
+        {
+            return null;
+        }
+
+        for (int i = 0; i < units.Count; i++)
+        {
+            BattleRuntimeUnit unit = units[i];
+            if (unit != null && unit.State == state)
+            {
+                return unit;
+            }
+        }
+
+        return null;
+    }
+
+    private static Dictionary<BattleActionType, IBattleActionPlanner> BuildPlannerRegistry()
+    {
+        var planners = new IBattleActionPlanner[]
+        {
+            new AssassinatePlanner(),
+            new DiveBacklinePlanner(),
+            new PeelPlanner(),
+            new EscapePlanner(),
+            new RegroupPlanner(),
+            new CollapsePlanner(),
+            new EngageNearestPlanner(),
+        };
+
+        var dictionary = new Dictionary<BattleActionType, IBattleActionPlanner>(planners.Length);
+        for (int i = 0; i < planners.Length; i++)
+        {
+            dictionary[planners[i].ActionType] = planners[i];
+        }
+
+        return dictionary;
+    }
+}

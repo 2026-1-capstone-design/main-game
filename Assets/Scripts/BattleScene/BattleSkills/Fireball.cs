@@ -57,7 +57,7 @@ public sealed class FireballSkill : IBattleSkill
         float windUpDelay = casterRuntime.GetSkillAnimationDuration() * 0.5f; // 애니메이션 길이에 비례한 선딜레이 설정
 
         //만든 효과를 담아서 발사.
-        BattleSimulationManager.Instance.LaunchCustomProjectile(
+        context.SimulationManager?.LaunchCustomProjectile(
             new BattleDamageRequest { Source = casterState, Target = targetState }, // 타겟 추적용 Request
             startPos,
             direction,

@@ -7,7 +7,8 @@
     "editor.insertSpaces": true,
     "editor.defaultFormatter": "ms-dotnettools.csharp"
   },
-  "cSpell.words": ["Bootstrapper", "Mathf"],
+  "cSpell.words": ["Bootstrapper", "Bootstrappers", "Cooldown", "Mathf"],
+  "editor.codeLens": false,
   "files.exclude": {
     "**/*.meta": true
   },

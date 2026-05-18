@@ -42,7 +42,7 @@ public sealed class BattleRosterProjection : IBattleRosterProjection
             return false;
         }
 
-        return _payload.TryGetTeamLocalUnitIndex(unit.TeamId, unit.UnitNumber, out unitIndex);
+        return _payload.TryGetTeamSlotIndex(unit.TeamId, unit.UnitNumber, out unitIndex);
     }
 
     public bool TryGetHostileIndex(BattleRuntimeUnit unit, out int unitIndex)
@@ -54,7 +54,7 @@ public sealed class BattleRosterProjection : IBattleRosterProjection
             return false;
         }
 
-        return _payload.TryGetTeamLocalUnitIndex(unit.TeamId, unit.UnitNumber, out unitIndex);
+        return _payload.TryGetTeamSlotIndex(unit.TeamId, unit.UnitNumber, out unitIndex);
     }
 
     public string GetDisplayUnitId(BattleRuntimeUnit unit)

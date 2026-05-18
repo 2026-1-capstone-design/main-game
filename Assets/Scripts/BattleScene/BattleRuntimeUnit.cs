@@ -96,36 +96,29 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     public bool IsAttacking => State.IsAttacking;
 
     public bool IsCastingSkill => State.IsCastingSkill;
+    public bool ShouldUseAnimatorAttackRelease => Snapshot == null || Snapshot.DefaultDur;
 
     // ── 위치 (State 위임) ────────────────────────────────────────
     public Vector3 Position => State != null ? State.Position : transform.position;
 
-    // ── ML-Agents 외부 제어 ───────────────────────────────────────
-    // true면 BattleSimulationManager의 AI 파이프라인(CommitOrSwitch, BuildPlan)을 스킵한다.
-    public bool IsExternallyControlled { get; private set; }
+    // 공격이 실제로 적에게 적중했을 때 발화한다. (target, actualDamage, wasKillingBlow)
+    public event Action<BattleRuntimeUnit, float, bool> OnAttackLanded;
 
-    // 공격이 실제로 적에게 적중했을 때 발화한다. (target, wasKillingBlow)
-    public event Action<BattleRuntimeUnit, bool> OnAttackLanded;
-
-    public void RaiseAttackLanded(BattleRuntimeUnit target, bool wasKill) => OnAttackLanded?.Invoke(target, wasKill);
+    public void RaiseAttackLanded(BattleRuntimeUnit target, float actualDamage, bool wasKill) =>
+        OnAttackLanded?.Invoke(target, actualDamage, wasKill);
 
     private int _lastAttackTriggerFrame = -1;
 
-    public Vector3 ExternalMoveDirection { get; private set; }
-    public float ExternalRotationDelta { get; private set; }
+    public bool HasReadySkill() =>
+        State != null && State.GetSkill() != WeaponSkillId.None && SkillCooldownRemaining <= 0f;
 
-    public void SetExternallyControlled(bool value) => IsExternallyControlled = value;
+    public void RaiseSkillActivated() => OnSkillActivated?.Invoke();
 
-    public void SetExternalMovement(Vector3 worldDirection, float rotationDeltaDegPerSec)
-    {
-        ExternalMoveDirection = worldDirection;
-        ExternalRotationDelta = rotationDeltaDegPerSec;
-    }
+    public event Action OnSkillActivated;
 
-    public void SetExternalAttackTarget(BattleRuntimeUnit target)
-    {
-        State.SetPlannedTargets(target != null ? target.State : null, null);
-    }
+    public void RaiseSkillFailed() => OnSkillFailed?.Invoke();
+
+    public event Action OnSkillFailed;
 
     public void Rotate(float deltaAngleDeg)
     {
@@ -244,6 +237,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         State.OnDied += HandleUnitDied;
         State.OnRevived += HandleUnitRevived;
         State.OnActionTypeChanged += (_, _) => RefreshStatusText();
+        State.OnAgentFightModeChanged += _ => RefreshStatusText();
         State.OnMovingStateChanged += isMoving => _myAnimation?.SetBool("isMoving", isMoving);
         State.OnIdleStateEntered += () => _myAnimation?.SetBool("isMoving", false);
         State.OnAttackTriggered += HandleAttackTriggered;
@@ -295,14 +289,14 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         //넣을 떄 주석 처리 필요 -> 위치 이미 할당됨
         if (Snapshot.LeftWeaponPrefab != null && leftHandSocket != null)
         {
-            Debug.Log("왼손 무기 장착");
+            // Debug.Log("왼손 무기 장착");
             _spawnedLeftWeapon = Instantiate(Snapshot.LeftWeaponPrefab, leftHandSocket);
             //_spawnedLeftWeapon.transform.localPosition = Vector3.zero;
             //_spawnedLeftWeapon.transform.localRotation = Quaternion.identity;
         }
         if (Snapshot.RightWeaponPrefab != null && rightHandSocket != null)
         {
-            Debug.Log("오른손 무기 장착");
+            // Debug.Log("오른손 무기 장착");
             _spawnedRightWeapon = Instantiate(Snapshot.RightWeaponPrefab, rightHandSocket);
             //_spawnedRightWeapon.transform.localPosition = Vector3.zero;
             //_spawnedRightWeapon.transform.localRotation = Quaternion.identity;
@@ -476,6 +470,8 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         _myAnimation?.SetTrigger("attack");
         _lastAttackTriggerFrame = Time.frameCount;
         State.SetAttackState(true);
+        if (!ShouldUseAnimatorAttackRelease)
+            State.StartAttackingLock(GetAttackingLockDuration());
         State.SetMovementState(false);
 
         if (PlannedTargetEnemy != null)
@@ -515,6 +511,14 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         }
 
         return false;
+    }
+
+    public float GetAttackingLockDuration()
+    {
+        if (Snapshot == null || Snapshot.DefaultDur || Snapshot.Duration <= 0f)
+            return 0f;
+
+        return Snapshot.Duration / Mathf.Max(0.01f, AttackSpeed);
     }
 
     public float GetSkillAnimationDuration()
@@ -563,12 +567,6 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     public void SetDecisionState(float keepBehaving, float actionTimer) =>
         State.SetDecisionState(keepBehaving, actionTimer);
 
-    public void SetExecutionPlan(BattleActionExecutionPlan plan)
-    {
-        State.SetPlannedTargets(plan.TargetEnemy, plan.TargetAlly);
-        State.SetExecutionPlanPosition(plan.DesiredPosition, plan.HasDesiredPosition);
-    }
-
     public void ClearExecutionPlan()
     {
         State.ClearTargets();
@@ -614,7 +612,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     }
 
     // ── 체력 위임 ─────────────────────────────────────────────────
-    public void ApplyDamage(float damage) => State.ApplyDamage(damage);
+    public float ApplyDamage(float damage) => State.ApplyDamage(damage);
 
     public void ApplyHeal(float heal) => State.ApplyHeal(heal);
 
@@ -712,8 +710,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     {
         if (statusText == null)
             return;
-        string actionLine = string.IsNullOrWhiteSpace(CurrentAction) ? "Idle" : CurrentAction;
-        statusText.text = $"{UnitNumber}\n{actionLine}";
+        statusText.text = $"{UnitNumber}\n{State.AgentFightMode}";
     }
 
     private void RefreshHPbar()

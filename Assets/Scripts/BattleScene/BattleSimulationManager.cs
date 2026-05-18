@@ -20,9 +20,17 @@ public enum BuffType
 [DisallowMultipleComponent]
 public sealed class BattleSimulationManager : MonoBehaviour
 {
+    private const int ForcedControlPriority = 400;
+    private const int PlayerCommandControlPriority = 300;
+    private const int MlAgentControlPriority = 200;
+    private const int BuiltInAiControlPriority = 100;
+
     [Header("Simulation")]
     public float simulationTickRate = 15f;
     public float simulationSpeedMultiplier = 1f;
+
+    // Update()에서 자동으로 시뮬레이션 틱을 진행할지 여부. false로 설정하면 외부에서 명시적으로 StepSimulationTick() 또는 StepSimulationTicks()를 호출해야 틱이 진행됨.
+    public bool autoStepInUpdate = true;
 
     [Header("Simulation Speed Clamp")]
     public float minSimulationSpeed = 0.05f;
@@ -38,6 +46,10 @@ public sealed class BattleSimulationManager : MonoBehaviour
     public float desiredPositionStopDistance = 8f;
     public float escapeTowardTeamBlend = 0.35f;
 
+    [Header("Training Optimization")]
+    [SerializeField]
+    private bool trainingOptimizedSimulation;
+
     private readonly List<BattleRuntimeUnit> _runtimeUnits = new List<BattleRuntimeUnit>(
         BattleTeamConstants.MaxUnitsInBattle
     );
@@ -49,14 +61,12 @@ public sealed class BattleSimulationManager : MonoBehaviour
         BattleRuntimeUnit
     >(BattleTeamConstants.MaxUnitsInBattle);
 
-    // 3D 전장 클램프를 위한 SphereCollider
     private SphereCollider _battlefieldCollider;
     private BattleStatusGridUIManager _statusGridUIManager;
     private BattleSceneUIManager _battleSceneUIManager;
     private BattleStartPayload _payload;
     private readonly BattleCooldownSystem _cooldownSystem = new BattleCooldownSystem();
     private readonly BattleParameterSystem _parameterSystem = new BattleParameterSystem();
-    private readonly BattleDecisionSystem _decisionSystem = new BattleDecisionSystem();
     private readonly BattlePlanningSystem _planningSystem = new BattlePlanningSystem();
     private readonly BattlePhysicsSystem _physicsSystem = new BattlePhysicsSystem();
     private readonly BattleArtifactSystem _artifactSystem = new BattleArtifactSystem();
@@ -74,6 +84,14 @@ public sealed class BattleSimulationManager : MonoBehaviour
     private BattleEffectSystem _effectSystem;
     private BattleCombatSystem _combatSystem;
     private readonly BattleVictorySystem _victorySystem = new BattleVictorySystem();
+    private readonly BattleAgentControlBuffer _agentControlBuffer = new BattleAgentControlBuffer();
+    private readonly ForcedControlPlanBuffer _forcedControlPlanBuffer = new ForcedControlPlanBuffer();
+    private readonly PlayerCommandControlBuffer _playerCommandControlBuffer = new PlayerCommandControlBuffer();
+    private readonly BattleControlPlannerRegistry _controlPlannerRegistry = new BattleControlPlannerRegistry();
+    private ForcedControlPlanner _forcedControlPlanner;
+    private PlayerCommandControlPlanner _playerCommandControlPlanner;
+    private readonly LegacyBuiltInAiPlanner _legacyBuiltInAiPlanner = new LegacyBuiltInAiPlanner();
+    private MlAgentControlPlanner _mlAgentControlPlanner;
     private readonly int[] _tickUnitNumbersBuffer = new int[BattleTeamConstants.MaxUnitsInBattle];
     private readonly BattleParameterSet[] _tickRawParametersBuffer = new BattleParameterSet[
         BattleTeamConstants.MaxUnitsInBattle
@@ -83,6 +101,9 @@ public sealed class BattleSimulationManager : MonoBehaviour
     ];
     private readonly bool[] _tickModifierOverflowFlagsBuffer = new bool[BattleTeamConstants.MaxUnitsInBattle];
     private readonly BattleActionType[] _tickDecisionBuffer = new BattleActionType[
+        BattleTeamConstants.MaxUnitsInBattle
+    ];
+    private readonly BattleControlPlan[] _tickControlPlanBuffer = new BattleControlPlan[
         BattleTeamConstants.MaxUnitsInBattle
     ];
     private readonly BattleCombatResultBuffer _tickCombatResultBuffer = new BattleCombatResultBuffer(
@@ -102,9 +123,15 @@ public sealed class BattleSimulationManager : MonoBehaviour
     public float UnitBodyRadius => unitBodyRadius;
     public bool IsBattleFinished => _battleFinished;
     public bool IsTemporarilyPaused => _isTemporarilyPaused;
+    public bool AutoStepInUpdate => autoStepInUpdate;
     public BattleStartPayload InitialPayload => _payload;
     public int BattleTickCount => _battleTickCount;
+    public float TickInterval => _tickInterval;
     public BattleFieldSnapshot CurrentSnapshot { get; private set; }
+    public BattleAgentControlBuffer AgentControlBuffer => _agentControlBuffer;
+    public ForcedControlPlanBuffer ForcedControlPlanBuffer => _forcedControlPlanBuffer;
+    public PlayerCommandControlBuffer PlayerCommandControlBuffer => _playerCommandControlBuffer;
+    public bool TrainingOptimizedSimulation => trainingOptimizedSimulation;
 
     public event Action<SimulationTickData> OnSimulationTicked;
     public event Action<BattleOutcome> OnBattleFinished;
@@ -172,7 +199,15 @@ public sealed class BattleSimulationManager : MonoBehaviour
         _damageLifecycle.Clear();
         _rosterMutationSystem.Clear();
         _projectileSystem.Clear();
+        _controlPlannerRegistry.Clear();
+        _agentControlBuffer.ClearAll();
+        _forcedControlPlanBuffer.ClearAll();
+        _playerCommandControlBuffer.ClearAll();
         _battlefieldCollider = battlefieldCollider;
+        if (_mlAgentControlPlanner == null)
+            _mlAgentControlPlanner = new MlAgentControlPlanner(_agentControlBuffer);
+        EnsureControlPlanners();
+        RegisterControlPlanners();
 
         for (int i = 0; i < runtimeUnits.Count; i++)
         {
@@ -214,15 +249,19 @@ public sealed class BattleSimulationManager : MonoBehaviour
         );
         _effectSystem.ConfigureLongRunningSystems(_scheduledEffectSystem, _damageLifecycle, _rosterMutationSystem);
         BattleParameterRadii initialRadii = BattleParameterSystem.BuildRadii(aiTuning);
-        CurrentSnapshot = BattleFieldSnapshot.Build(
-            _runtimeUnits,
-            initialRadii,
-            escapeTowardTeamBlend,
-            CurrentSnapshot,
-            _artifactSystem.TargetingPolicy
-        );
+        if (ShouldBuildSnapshot())
+        {
+            CurrentSnapshot = BattleFieldSnapshot.Build(
+                _runtimeUnits,
+                initialRadii,
+                escapeTowardTeamBlend,
+                CurrentSnapshot,
+                UseArtifacts ? _artifactSystem.TargetingPolicy : null
+            );
+        }
         _effectSystem.Configure(_tickCombatResultBuffer, _runtimeUnitByState, _battlefieldCollider);
-        _artifactSystem.Initialize(_runtimeUnits, CurrentSnapshot, 0f, 0, _effectSystem);
+        if (UseArtifacts)
+            _artifactSystem.Initialize(_runtimeUnits, CurrentSnapshot, 0f, 0, _effectSystem);
         _physicsSystem.Configure(_battlefieldCollider, desiredPositionStopDistance);
 
         _tickAccumulator = 0f;
@@ -236,7 +275,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
 
     private void Update()
     {
-        if (!_initialized || _battleFinished || _isTemporarilyPaused)
+        if (!autoStepInUpdate || !_initialized || _battleFinished || _isTemporarilyPaused)
             return;
 
         float scaledDeltaTime = Time.deltaTime * Mathf.Max(0f, simulationSpeedMultiplier);
@@ -245,11 +284,43 @@ public sealed class BattleSimulationManager : MonoBehaviour
         while (_tickAccumulator >= _tickInterval)
         {
             _tickAccumulator -= _tickInterval;
-            StepSimulation(_tickInterval);
+            StepSimulationTick();
 
             if (_battleFinished)
                 break;
         }
+    }
+
+    public void SetAutoStepInUpdate(bool enabled)
+    {
+        autoStepInUpdate = enabled;
+        if (!enabled)
+            _tickAccumulator = 0f;
+    }
+
+    public bool StepSimulationTick()
+    {
+        if (!_initialized || _battleFinished || _isTemporarilyPaused)
+            return false;
+
+        StepSimulation(_tickInterval);
+        return true;
+    }
+
+    public int StepSimulationTicks(int tickCount)
+    {
+        int steppedCount = 0;
+        tickCount = Mathf.Max(0, tickCount);
+
+        for (int i = 0; i < tickCount; i++)
+        {
+            if (!StepSimulationTick())
+                break;
+
+            steppedCount++;
+        }
+
+        return steppedCount;
     }
 
     public void AnimationSpeedSetting()
@@ -280,6 +351,14 @@ public sealed class BattleSimulationManager : MonoBehaviour
         _isTemporarilyPaused = isPaused;
     }
 
+    public void SetTrainingOptimizedSimulation(bool enabled)
+    {
+        trainingOptimizedSimulation = enabled;
+        _channelSystem.Clear();
+        ReleaseSnapshot();
+        EnsureCombatSystems();
+    }
+
     private void StepSimulation(float tickDeltaTime)
     {
         _rosterMutationSystem.FlushPendingSummons();
@@ -295,13 +374,21 @@ public sealed class BattleSimulationManager : MonoBehaviour
         }
 
         BattleParameterRadii radii = BattleParameterSystem.BuildRadii(aiTuning);
-        CurrentSnapshot = BattleFieldSnapshot.Build(
-            _runtimeUnits,
-            radii,
-            escapeTowardTeamBlend,
-            CurrentSnapshot,
-            _artifactSystem.TargetingPolicy
-        );
+        if (ShouldBuildSnapshot())
+        {
+            CurrentSnapshot = BattleFieldSnapshot.Build(
+                _runtimeUnits,
+                radii,
+                escapeTowardTeamBlend,
+                CurrentSnapshot,
+                UseArtifacts ? _artifactSystem.TargetingPolicy : null
+            );
+        }
+        else
+        {
+            ReleaseSnapshot();
+        }
+
         float battleTime = _battleTickCount * _tickInterval;
         BattleEffectContext tickContext = new BattleEffectContext(
             null,
@@ -314,25 +401,45 @@ public sealed class BattleSimulationManager : MonoBehaviour
         _tickCombatResultBuffer.Clear();
         _effectSystem.Configure(_tickCombatResultBuffer, _runtimeUnitByState, _battlefieldCollider);
         _rosterMutationSystem.Tick(battleTime);
-        _channelSystem.Tick(tickContext, _effectSystem);
+        if (UseSkills)
+            _channelSystem.Tick(tickContext, _effectSystem);
         _scheduledEffectSystem.Tick(tickContext, _effectSystem);
-        _cooldownSystem.Tick(_runtimeUnits, tickDeltaTime, _effectSystem);
-        _projectileSystem.Tick(tickDeltaTime);
+        _cooldownSystem.Tick(_runtimeUnits, tickDeltaTime, _effectSystem, UseSkills);
+        if (UseProjectiles)
+            _projectileSystem.Tick(tickDeltaTime);
 
-        _parameterSystem.Compute(_runtimeUnits, radii, aiTuning, CurrentSnapshot, _tickModifierOverflowFlagsBuffer);
-        _decisionSystem.Decide(
+        if (CurrentSnapshot != null)
+        {
+            _parameterSystem.Compute(_runtimeUnits, radii, aiTuning, CurrentSnapshot, _tickModifierOverflowFlagsBuffer);
+        }
+        else
+        {
+            for (int i = 0; i < _runtimeUnits.Count && i < _tickModifierOverflowFlagsBuffer.Length; i++)
+                _tickModifierOverflowFlagsBuffer[i] = false;
+        }
+
+        _planningSystem.Build(
             _runtimeUnits,
+            CurrentSnapshot,
+            _controlPlannerRegistry,
             aiTuning,
             tickDeltaTime,
-            _tickDecisionBuffer,
-            _channelSystem,
+            _tickControlPlanBuffer,
             _rosterMutationSystem
         );
-
-        _planningSystem.Build(_runtimeUnits, CurrentSnapshot, _rosterMutationSystem);
-        _physicsSystem.Execute(_runtimeUnits, tickDeltaTime, _artifactSystem.MovementPolicy, _channelSystem);
-        _positionHistory.RecordAll(_runtimeUnits, battleTime);
-        _artifactSystem.TickPositionHistoryArtifacts(_positionHistory, tickContext, _effectSystem);
+        _physicsSystem.Execute(
+            _runtimeUnits,
+            _runtimeUnitByState,
+            tickDeltaTime,
+            _tickControlPlanBuffer,
+            UseArtifacts ? _artifactSystem.MovementPolicy : null,
+            UseSkills ? _channelSystem : null
+        );
+        bool recordPositionHistory = UseArtifacts;
+        if (recordPositionHistory)
+            _positionHistory.RecordAll(_runtimeUnits, battleTime);
+        if (recordPositionHistory)
+            _artifactSystem.TickPositionHistoryArtifacts(_positionHistory, tickContext, _effectSystem);
         _combatSystem.Execute(
             _runtimeUnits,
             _runtimeUnitByState,
@@ -340,7 +447,9 @@ public sealed class BattleSimulationManager : MonoBehaviour
             CurrentSnapshot,
             battleTime,
             _battleTickCount,
-            false
+            _tickControlPlanBuffer,
+            clearResults: false,
+            projectilesEnabled: UseProjectiles
         );
 
         BattleOutcome? outcome = _victorySystem.Evaluate(
@@ -402,6 +511,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
             _tickUnitNumbersBuffer[i] = unit.UnitNumber;
             _tickRawParametersBuffer[i] = unit.CurrentRawParameters;
             _tickModifiedParametersBuffer[i] = unit.CurrentModifiedParameters;
+            _tickDecisionBuffer[i] = unit.CurrentActionType;
         }
 
         _tickData.Update(_battleTickCount, unitCount, _tickCombatResultBuffer.Count);
@@ -429,16 +539,15 @@ public sealed class BattleSimulationManager : MonoBehaviour
 
     private void EnsureCombatSystems()
     {
-        if (_effectSystem == null)
-            _effectSystem = new BattleEffectSystem(_artifactSystem);
-
-        if (_combatSystem == null)
-            _combatSystem = new BattleCombatSystem(
-                _effectSystem,
-                _channelSystem,
-                _artifactSystem,
-                _rosterMutationSystem
-            );
+        _effectSystem = new BattleEffectSystem(UseArtifacts ? _artifactSystem : null);
+        _combatSystem = new BattleCombatSystem(
+            _effectSystem,
+            UseSkills ? _channelSystem : null,
+            UseArtifacts ? _artifactSystem : null,
+            _rosterMutationSystem,
+            this,
+            UseSkills
+        );
     }
 
     private void ReleaseSnapshot()
@@ -459,15 +568,31 @@ public sealed class BattleSimulationManager : MonoBehaviour
         float delay = 0f
     )
     {
+        TryLaunchBasicProjectile(request, startPos, direction, weaponType, delay);
+    }
+
+    public bool TryLaunchBasicProjectile(
+        BattleDamageRequest request,
+        Vector3 startPos,
+        Vector3 direction,
+        WeaponType weaponType,
+        float delay = 0f
+    )
+    {
+        if (!UseProjectiles)
+            return false;
         if (projectileManager == null)
-            return;
+            return false;
 
         GameObject prefab =
             (weaponType == WeaponType.staff)
                 ? projectileManager.NormalMagicPrefab
                 : projectileManager.NormalArrowPrefab;
+        if (prefab == null)
+            return false;
 
         _projectileSystem.Launch(request, startPos, direction, 5f, prefab, delay, null, true);
+        return true;
     }
 
     // 스킬 전용 (string ID 사용)
@@ -481,6 +606,8 @@ public sealed class BattleSimulationManager : MonoBehaviour
         Action<BattleUnitCombatState, Vector3, IBattleEffectSink> onHit = null
     )
     {
+        if (!UseProjectiles)
+            return;
         if (projectileManager == null)
             return;
 
@@ -490,5 +617,88 @@ public sealed class BattleSimulationManager : MonoBehaviour
             //기본값 false
             _projectileSystem.Launch(request, startPos, direction, speed, customPrefab, delay, onHit, false);
         }
+    }
+
+    public void SetUnitControlMode(BattleUnitCombatState state, BattleUnitControlMode mode)
+    {
+        if (state == null)
+            return;
+
+        if (_mlAgentControlPlanner == null)
+        {
+            _mlAgentControlPlanner = new MlAgentControlPlanner(_agentControlBuffer);
+        }
+
+        if (mode == BattleUnitControlMode.AgentPolicy)
+        {
+            _controlPlannerRegistry.SetUnitPlannerEnabled(state, _mlAgentControlPlanner, MlAgentControlPriority, true);
+            return;
+        }
+
+        _controlPlannerRegistry.SetUnitPlannerEnabled(state, _mlAgentControlPlanner, MlAgentControlPriority, false);
+        _agentControlBuffer.Clear(state);
+    }
+
+    public BattleUnitControlMode GetUnitControlMode(BattleUnitCombatState state)
+    {
+        if (state != null && _controlPlannerRegistry.IsUnitPlannerEnabled(state, _mlAgentControlPlanner))
+        {
+            return BattleUnitControlMode.AgentPolicy;
+        }
+
+        return BattleUnitControlMode.BuiltInAI;
+    }
+
+    private bool UseArtifacts => !trainingOptimizedSimulation;
+
+    private bool UseSkills => !trainingOptimizedSimulation;
+
+    // 학습 환경에서는 투사체 비행/피격 지연을 제거한다.
+    // 강화학습 보상은 action step 경계에 묶이므로, 원거리 평타 피해를 나중 tick에 적용하면
+    // Attack 명령과 damage/kill reward의 credit assignment가 흐려진다.
+    private bool UseProjectiles => !trainingOptimizedSimulation;
+
+    private bool ShouldBuildSnapshot()
+    {
+        if (!trainingOptimizedSimulation)
+            return true;
+
+        return !AreAllUnitsAgentControlled();
+    }
+
+    private bool AreAllUnitsAgentControlled()
+    {
+        if (_runtimeUnits.Count == 0)
+            return false;
+
+        for (int i = 0; i < _runtimeUnits.Count; i++)
+        {
+            BattleRuntimeUnit unit = _runtimeUnits[i];
+            if (
+                unit == null
+                || unit.State == null
+                || GetUnitControlMode(unit.State) != BattleUnitControlMode.AgentPolicy
+            )
+                return false;
+        }
+
+        return true;
+    }
+
+    private void RegisterControlPlanners()
+    {
+        EnsureControlPlanners();
+        _controlPlannerRegistry.RegisterGlobal(_forcedControlPlanner, ForcedControlPriority);
+        _controlPlannerRegistry.RegisterGlobal(_playerCommandControlPlanner, PlayerCommandControlPriority);
+        _controlPlannerRegistry.RegisterGlobal(_legacyBuiltInAiPlanner, BuiltInAiControlPriority);
+    }
+
+    private void EnsureControlPlanners()
+    {
+        if (_forcedControlPlanner == null)
+            _forcedControlPlanner = new ForcedControlPlanner(_forcedControlPlanBuffer);
+
+        if (_playerCommandControlPlanner == null)
+            _playerCommandControlPlanner = new PlayerCommandControlPlanner(_playerCommandControlBuffer);
     }
 }

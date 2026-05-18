@@ -150,12 +150,12 @@ public sealed class BattleUnitCombatState
     public event Action OnRevived;
 
     // ── 체력/사망 메서드 ──────────────────────────────────────────
-    public void ApplyDamage(float damage)
+    public float ApplyDamage(float damage)
     {
         if (IsCombatDisabled)
-            return;
+            return 0f;
 
-        float actualDamage = Mathf.Max(0f, damage);
+        float actualDamage = Mathf.Min(CurrentHealth, Mathf.Max(0f, damage));
         CurrentHealth = Mathf.Max(0f, CurrentHealth - actualDamage);
         if (actualDamage > 0f)
             OnDamageTaken?.Invoke(actualDamage);
@@ -173,6 +173,8 @@ public sealed class BattleUnitCombatState
             SetIdleState();
             OnDied?.Invoke();
         }
+
+        return actualDamage;
     }
 
     public void ApplyHeal(float heal)
@@ -211,6 +213,7 @@ public sealed class BattleUnitCombatState
         if (isMoving)
         {
             IsAttacking = false;
+            AttackingLockRemaining = 0f;
             IsCastingSkill = false;
         }
         OnMovingStateChanged?.Invoke(IsMoving);
@@ -226,6 +229,23 @@ public sealed class BattleUnitCombatState
             IsCastingSkill = false;
             if (!wasAttacking)
                 OnAttackTriggered?.Invoke();
+            return;
+        }
+
+        AttackingLockRemaining = 0f;
+    }
+
+    public void StartAttackingLock(float duration)
+    {
+        AttackingLockRemaining = Mathf.Max(0f, duration);
+    }
+
+    public void TickAttackingLock(float deltaTime)
+    {
+        AttackingLockRemaining = Mathf.Max(0f, AttackingLockRemaining - Mathf.Max(0f, deltaTime));
+        if (IsAttacking && AttackingLockRemaining <= 0f)
+        {
+            SetAttackState(false);
         }
     }
 
@@ -236,6 +256,7 @@ public sealed class BattleUnitCombatState
         {
             IsMoving = false;
             IsAttacking = false;
+            AttackingLockRemaining = 0f;
         }
     }
 
@@ -243,6 +264,7 @@ public sealed class BattleUnitCombatState
     {
         IsMoving = false;
         IsAttacking = false;
+        AttackingLockRemaining = 0f;
         IsCastingSkill = false;
         OnIdleStateEntered?.Invoke();
     }
@@ -288,6 +310,7 @@ public sealed class BattleUnitCombatState
 
     // ── 공격 쿨다운 ────────────────────────────────────────────────
     public float AttackCooldownRemaining { get; private set; }
+    public float AttackingLockRemaining { get; private set; }
 
     // ── 스킬 정보 / 스킬 쿨다운 ────────────────────────────────────
     [SerializeField]
@@ -307,6 +330,8 @@ public sealed class BattleUnitCombatState
     public BattleUnitCombatState CurrentTarget { get; private set; }
     public BattleUnitCombatState PlannedTargetEnemy { get; private set; }
     public BattleUnitCombatState PlannedTargetAlly { get; private set; }
+    public GladiatorFightMode AgentFightMode { get; private set; }
+    public BattleAnchor PlannedAnchor { get; private set; }
 
     // ── 생성자 ─────────────────────────────────────────────────────
     public BattleUnitCombatState(BattleUnitSnapshot snapshot, int unitNumber, BattleTeamId teamId)
@@ -344,6 +369,7 @@ public sealed class BattleUnitCombatState
         ActionTimer = 0f;
 
         AttackCooldownRemaining = 0f;
+        AttackingLockRemaining = 0f;
 
         HaveSkill = snapshot.WeaponSkillId;
         SkillCooltime = 0f;
@@ -358,6 +384,7 @@ public sealed class BattleUnitCombatState
         CurrentTarget = null;
         PlannedTargetEnemy = null;
         PlannedTargetAlly = null;
+        PlannedAnchor = default;
     }
 
     // ── 공격 쿨다운 ────────────────────────────────────────────────
@@ -645,6 +672,17 @@ public sealed class BattleUnitCombatState
         return type == BuffType.BleedDamage || type == BuffType.Taunt || type == BuffType.Stun;
     }
 
+    public event Action<GladiatorFightMode> OnAgentFightModeChanged;
+
+    public void SetAgentFightMode(GladiatorFightMode fightMode)
+    {
+        if (AgentFightMode == fightMode)
+            return;
+
+        AgentFightMode = fightMode;
+        OnAgentFightModeChanged?.Invoke(AgentFightMode);
+    }
+
     public void SetCurrentTarget(BattleUnitCombatState target)
     {
         CurrentTarget = target;
@@ -657,10 +695,16 @@ public sealed class BattleUnitCombatState
         CurrentTarget = enemy;
     }
 
+    public void SetPlannedAnchor(BattleAnchor anchor)
+    {
+        PlannedAnchor = anchor;
+    }
+
     public void ClearTargets()
     {
         CurrentTarget = null;
         PlannedTargetEnemy = null;
         PlannedTargetAlly = null;
+        PlannedAnchor = default;
     }
 }
