@@ -361,10 +361,52 @@ public sealed class BattleOrdersManager : MonoBehaviour
                 + $"<color=#C8E6C9>RequestId:</color> {requestId}\n"
                 + $"<color=#C8E6C9>Type:</color> {orderType}\n"
                 + $"<color=#C8E6C9>ActorUnitId:</color> {BuildUnitId(actorUnit)}\n"
-                + $"<color=#C8E6C9>ParsedResponse:</color>\n{BuildParsedResponseSummary(parsedResponse)}\n"
-                + $"<color=#C8E6C9>Execution:</color> Not applied in this step. Log only.",
+                + $"<color=#C8E6C9>ParsedResponse:</color>\n{BuildParsedResponseSummary(parsedResponse)}",
             this
         );
+
+        // 검증 통과한 SLM 응답을 IR로 변환해 시뮬레이션에 명령을 활성화한다.
+        if (
+            !SlmDtoConverter.TryConvert(
+                parsedResponse,
+                actorUnit,
+                _allyUnits,
+                _enemyUnits,
+                _rosterProjection,
+                out List<SlmUnitCommand> slmCommands,
+                out string conversionError
+            )
+        )
+        {
+            Debug.LogError(
+                $"[BattleOrdersManager] SLM IR conversion failed. RequestId={requestId}, ActorUnitId={BuildUnitId(actorUnit)}, Error={conversionError}",
+                this
+            );
+            yield break;
+        }
+
+        if (slmCommands.Count == 0)
+        {
+            if (verboseLog)
+            {
+                Debug.Log(
+                    $"[BattleOrdersManager] SLM IR converted to empty command list (likely refusal). RequestId={requestId}",
+                    this
+                );
+            }
+            yield break;
+        }
+
+        if (BattleSimulationManager.Instance == null)
+        {
+            Debug.LogError(
+                $"[BattleOrdersManager] SLM execution skipped. BattleSimulationManager.Instance is null. RequestId={requestId}",
+                this
+            );
+            yield break;
+        }
+
+        BattleSimulationManager.Instance.IssueSlmCommands(actorUnit.State, slmCommands);
     }
 
     private bool TryResolveActorFromGlobalOrder(

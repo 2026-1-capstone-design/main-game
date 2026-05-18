@@ -42,6 +42,10 @@ public sealed class BattleSimulationManager : MonoBehaviour
     [Header("AI Configuration")]
     public BattleAITuningSO aiTuning;
 
+    // SLM 명령 처리 튜닝 수치(거리/threshold/timeout 등). 미할당이어도 코드 디폴트값으로 동작.
+    [SerializeField]
+    private SlmCommandTuningSO slmCommandTuningSO;
+
     [Header("AI / Position Helpers")]
     public float desiredPositionStopDistance = 8f;
     public float escapeTowardTeamBlend = 0.35f;
@@ -62,6 +66,15 @@ public sealed class BattleSimulationManager : MonoBehaviour
     >(BattleTeamConstants.MaxUnitsInBattle);
 
     private SphereCollider _battlefieldCollider;
+
+    // SLM 영역(SlmMoveSubtypeResolver.ResolveEscape)에서 도주 좌표를 경기장 안으로 보정할 때 사용한다.
+    public SphereCollider BattlefieldCollider => _battlefieldCollider;
+
+    // BattleUnitCombatState에서 BattleRuntimeUnit으로의 역참조를 O(1)로 노출한다.
+    // BattleCombatSystem 등 다른 시스템과 동일 dictionary를 공유한다.
+    public IReadOnlyDictionary<BattleUnitCombatState, BattleRuntimeUnit> RuntimeUnitByState =>
+        _runtimeUnitByState;
+
     private BattleStatusGridUIManager _statusGridUIManager;
     private BattleSceneUIManager _battleSceneUIManager;
     private BattleStartPayload _payload;
@@ -92,6 +105,9 @@ public sealed class BattleSimulationManager : MonoBehaviour
     private PlayerCommandControlPlanner _playerCommandControlPlanner;
     private readonly LegacyBuiltInAiPlanner _legacyBuiltInAiPlanner = new LegacyBuiltInAiPlanner();
     private MlAgentControlPlanner _mlAgentControlPlanner;
+
+    // SLM 명령 매니저. controller stack에 직접 등록되지 않고 매 tick PlayerCommandControlBuffer에 plan을 채운다.
+    private readonly SlmCommandUnitPlanner _slmCommandUnitPlanner = new SlmCommandUnitPlanner();
     private readonly int[] _tickUnitNumbersBuffer = new int[BattleTeamConstants.MaxUnitsInBattle];
     private readonly BattleParameterSet[] _tickRawParametersBuffer = new BattleParameterSet[
         BattleTeamConstants.MaxUnitsInBattle
@@ -203,6 +219,9 @@ public sealed class BattleSimulationManager : MonoBehaviour
         _agentControlBuffer.ClearAll();
         _forcedControlPlanBuffer.ClearAll();
         _playerCommandControlBuffer.ClearAll();
+        _slmCommandUnitPlanner.ClearAll();
+        _slmCommandUnitPlanner.SetTuning(slmCommandTuningSO);
+        SlmMoveSubtypeResolver.SetTuning(slmCommandTuningSO);
         _battlefieldCollider = battlefieldCollider;
         if (_mlAgentControlPlanner == null)
             _mlAgentControlPlanner = new MlAgentControlPlanner(_agentControlBuffer);
@@ -417,6 +436,16 @@ public sealed class BattleSimulationManager : MonoBehaviour
             for (int i = 0; i < _runtimeUnits.Count && i < _tickModifierOverflowFlagsBuffer.Length; i++)
                 _tickModifierOverflowFlagsBuffer[i] = false;
         }
+
+        // SLM 활성 액터의 plan을 PlayerCommandControlBuffer에 채워둔다.
+        // 직후 _planningSystem.Build가 controller stack을 통해 이 plan을 소비한다.
+        BattlePlanningContext slmContext = new BattlePlanningContext(
+            _runtimeUnits,
+            CurrentSnapshot,
+            aiTuning,
+            tickDeltaTime
+        );
+        _slmCommandUnitPlanner.Tick(in slmContext, _playerCommandControlBuffer);
 
         _planningSystem.Build(
             _runtimeUnits,
@@ -647,6 +676,20 @@ public sealed class BattleSimulationManager : MonoBehaviour
         }
 
         return BattleUnitControlMode.BuiltInAI;
+    }
+
+    // 검증된 SLM 명령 시퀀스를 액터에 활성화한다. BattleOrdersManager에서 호출되는 진입점.
+    // 명령이 끝나면 SlmCommandUnitPlanner.Tick이 PlayerCommandControlBuffer를 비우고,
+    // controller stack이 다음 우선순위(ML 또는 BuiltInAi)로 자동 fallback한다.
+    public void IssueSlmCommands(
+        BattleUnitCombatState actor,
+        IReadOnlyList<SlmUnitCommand> commands
+    )
+    {
+        if (actor == null || commands == null || commands.Count == 0)
+            return;
+
+        _slmCommandUnitPlanner.IssueCommands(actor, commands);
     }
 
     private bool UseArtifacts => !trainingOptimizedSimulation;
