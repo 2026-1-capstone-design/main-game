@@ -60,11 +60,18 @@ public sealed class LegacyBuiltInAiPlanner : IBattleControlPlanner
         BattleUnitCombatState targetEnemy = executionPlan.TargetEnemy;
         bool hasValidTarget = BattleFieldSnapshot.IsValidEnemyTarget(self, targetEnemy);
         bool inAttackRange = hasValidTarget && BattleFieldSnapshot.IsWithinEffectiveAttackDistance(self, targetEnemy);
+        bool shouldUseSkill = CanAutoCastSkillToEnemy(self, inAttackRange);
 
         BattleMoveIntent moveIntent;
         BattleCombatIntent combatIntent;
         BattleFacingIntent facingIntent;
-        if (inAttackRange)
+        if (shouldUseSkill)
+        {
+            moveIntent = BattleMoveIntent.Hold;
+            combatIntent = BattleCombatIntent.Skill;
+            facingIntent = BattleFacingIntent.TargetEnemy;
+        }
+        else if (inAttackRange)
         {
             moveIntent = BattleMoveIntent.Hold;
             combatIntent = BattleCombatIntent.Attack;
@@ -100,6 +107,20 @@ public sealed class LegacyBuiltInAiPlanner : IBattleControlPlanner
             combatIntent,
             facingIntent
         );
+    }
+
+    private static bool CanAutoCastSkillToEnemy(BattleUnitCombatState self, bool inAttackRange)
+    {
+        if (self == null || self.IsSkillDisabled)
+            return false;
+
+        if (self.IsCastingSkill)
+            return true;
+
+        if (!inAttackRange || self.GetSkill() == WeaponSkillId.None)
+            return false;
+
+        return self.SkillCooldownRemaining <= 0f;
     }
 
     private static BattleRuntimeUnit FindRuntimeUnit(
