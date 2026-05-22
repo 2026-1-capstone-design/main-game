@@ -154,7 +154,7 @@ public sealed class MainFlowManager : MonoBehaviour
         researchUIManager.Initialize(this, researchManager);
         inventoryUIManager.Initialize(this, inventoryManager, researchManager, gladiatorManager);
         gladiatorUIManager.Initialize(this, gladiatorManager, inventoryManager);
-        battleUIManager.Initialize(this, battleManager);
+        battleUIManager.Initialize(this, battleManager, squadManager);
         if (squadUIManager != null)
         {
             squadUIManager.Initialize(this, squadManager, gladiatorManager);
@@ -475,6 +475,11 @@ public sealed class MainFlowManager : MonoBehaviour
     // 그 payload를 boot scene DDOL인 BattleSessionManager에 전달해 저장한 뒤 배틀씬 로드를 시작
     public void HandleBattleStartRequested()
     {
+        HandleBattleStartRequested(null);
+    }
+
+    public void HandleBattleStartRequested(BattleDeploymentPlan deploymentPlan)
+    {
         if (_uiOwner != UiOwner.BattlePreparation)
         {
             return;
@@ -513,7 +518,7 @@ public sealed class MainFlowManager : MonoBehaviour
             return;
         }
 
-        if (!TryBuildBattleStartPayload(out BattleStartPayload payload))
+        if (!TryBuildBattleStartPayload(deploymentPlan, out BattleStartPayload payload))
         {
             return;
         }
@@ -541,7 +546,7 @@ public sealed class MainFlowManager : MonoBehaviour
 
     // 전투 진입 직전에 아군/적군 snapshot과 battleSeed를 묶어
     // BattleStartPayload를 완성함.
-    private bool TryBuildBattleStartPayload(out BattleStartPayload payload)
+    private bool TryBuildBattleStartPayload(BattleDeploymentPlan deploymentPlan, out BattleStartPayload payload)
     {
         payload = null;
 
@@ -551,12 +556,27 @@ public sealed class MainFlowManager : MonoBehaviour
             return false;
         }
 
-        if (!TryBuildAllySnapshotsForBattle(out List<BattleUnitSnapshot> allySnapshots))
+        if (
+            !TryBuildAllySnapshotsForBattle(
+                deploymentPlan,
+                out List<BattleUnitSnapshot> allySnapshots,
+                out List<int> allyDeploymentSlotIndices,
+                out List<Vector2> allyDeploymentPositions
+            )
+        )
         {
             return false;
         }
 
-        if (!TryBuildEnemySnapshotsForBattle(encounter, out List<BattleUnitSnapshot> enemySnapshots))
+        if (
+            !TryBuildEnemySnapshotsForBattle(
+                encounter,
+                deploymentPlan,
+                out List<BattleUnitSnapshot> enemySnapshots,
+                out List<int> enemyDeploymentSlotIndices,
+                out List<Vector2> enemyDeploymentPositions
+            )
+        )
         {
             return false;
         }
@@ -576,7 +596,11 @@ public sealed class MainFlowManager : MonoBehaviour
             encounter.EncounterIndex,
             encounter.AverageLevel,
             encounter.PreviewRewardGold,
-            battleSeed
+            battleSeed,
+            allyDeploymentSlotIndices,
+            enemyDeploymentSlotIndices,
+            allyDeploymentPositions,
+            enemyDeploymentPositions
         );
 
         return true;
@@ -585,9 +609,16 @@ public sealed class MainFlowManager : MonoBehaviour
     // 스쿼드 슬롯에 배치된 검투사를 전투용 아군 snapshot으로 복사한다.
     // 슬롯이 모두 비어 있으면 보유 검투사 앞 최대 MaxUnitsPerTeam명을 폴백으로 사용한다.
     // 실제 보유 데이터 자체를 넘기지 않고 전투 시작용 복사본을 만든다 (정보 변형 방지).
-    private bool TryBuildAllySnapshotsForBattle(out List<BattleUnitSnapshot> allySnapshots)
+    private bool TryBuildAllySnapshotsForBattle(
+        BattleDeploymentPlan deploymentPlan,
+        out List<BattleUnitSnapshot> allySnapshots,
+        out List<int> deploymentSlotIndices,
+        out List<Vector2> deploymentPositions
+    )
     {
         allySnapshots = new List<BattleUnitSnapshot>(BattleTeamConstants.MaxUnitsPerTeam);
+        deploymentSlotIndices = new List<int>(BattleTeamConstants.MaxUnitsPerTeam);
+        deploymentPositions = new List<Vector2>(BattleTeamConstants.MaxUnitsPerTeam);
 
         if (gladiatorManager == null)
         {
@@ -596,10 +627,21 @@ public sealed class MainFlowManager : MonoBehaviour
         }
 
         List<OwnedGladiatorData> sources;
+        List<int> sourceSlotIndices = new List<int>(BattleTeamConstants.MaxUnitsPerTeam);
+        List<Vector2> sourcePositions = new List<Vector2>(BattleTeamConstants.MaxUnitsPerTeam);
 
-        if (squadManager != null)
+        if (TryBuildDeploymentPlanAllySources(deploymentPlan, out sources, out sourceSlotIndices, out sourcePositions))
+        {
+            // 배치 화면에서 지정한 슬롯 순서를 그대로 사용한다.
+        }
+        else if (squadManager != null)
         {
             sources = squadManager.GetAssignedGladiators();
+            for (int i = 0; i < sources.Count; i++)
+            {
+                sourceSlotIndices.Add(i);
+                sourcePositions.Add(BattleDeploymentPositionUtility.BuildDefaultPosition(i, sources.Count, true));
+            }
         }
         else
         {
@@ -616,6 +658,10 @@ public sealed class MainFlowManager : MonoBehaviour
                 if (owned[i] != null)
                 {
                     sources.Add(owned[i]);
+                    sourceSlotIndices.Add(i);
+                    sourcePositions.Add(
+                        BattleDeploymentPositionUtility.BuildDefaultPosition(sources.Count - 1, fallbackCount, true)
+                    );
                 }
             }
         }
@@ -641,6 +687,16 @@ public sealed class MainFlowManager : MonoBehaviour
             if (snapshot != null)
             {
                 allySnapshots.Add(snapshot);
+                deploymentSlotIndices.Add(i < sourceSlotIndices.Count ? sourceSlotIndices[i] : allySnapshots.Count - 1);
+                deploymentPositions.Add(
+                    i < sourcePositions.Count
+                        ? sourcePositions[i]
+                        : BattleDeploymentPositionUtility.BuildDefaultPosition(
+                            allySnapshots.Count - 1,
+                            sources.Count,
+                            true
+                        )
+                );
             }
         }
 
@@ -659,10 +715,15 @@ public sealed class MainFlowManager : MonoBehaviour
     // 선택된 전투 후보가 들고 있는 적 preview를 실제 전투용 적 snapshot 리스트로 복사
     private bool TryBuildEnemySnapshotsForBattle(
         BattleEncounterPreview encounter,
-        out List<BattleUnitSnapshot> enemySnapshots
+        BattleDeploymentPlan deploymentPlan,
+        out List<BattleUnitSnapshot> enemySnapshots,
+        out List<int> deploymentSlotIndices,
+        out List<Vector2> deploymentPositions
     )
     {
         enemySnapshots = new List<BattleUnitSnapshot>(BattleTeamConstants.MaxUnitsPerTeam);
+        deploymentSlotIndices = new List<int>(BattleTeamConstants.MaxUnitsPerTeam);
+        deploymentPositions = new List<Vector2>(BattleTeamConstants.MaxUnitsPerTeam);
 
         if (encounter == null)
         {
@@ -677,18 +738,51 @@ public sealed class MainFlowManager : MonoBehaviour
             return false;
         }
 
-        int count = Mathf.Min(BattleTeamConstants.MaxUnitsPerTeam, encounterUnits.Count);
-
-        for (int i = 0; i < count; i++)
+        if (deploymentPlan != null && deploymentPlan.EnemyUnitIndicesBySlot != null)
         {
-            BattleUnitSnapshot source = encounterUnits[i];
-            if (source == null)
+            for (int slotIndex = 0; slotIndex < deploymentPlan.EnemyUnitIndicesBySlot.Length; slotIndex++)
             {
-                Debug.LogWarning($"[MainFlowManager] Encounter enemy snapshot at index {i} is null. Skipping.", this);
-                continue;
-            }
+                int enemyIndex = deploymentPlan.EnemyUnitIndicesBySlot[slotIndex];
+                if (enemyIndex < 0 || enemyIndex >= encounterUnits.Count)
+                {
+                    continue;
+                }
 
-            enemySnapshots.Add(source.Clone());
+                BattleUnitSnapshot source = encounterUnits[enemyIndex];
+                if (source == null)
+                {
+                    continue;
+                }
+
+                enemySnapshots.Add(source.Clone());
+                deploymentSlotIndices.Add(slotIndex);
+                deploymentPositions.Add(
+                    GetDeploymentPositionBySlot(deploymentPlan.EnemyNormalizedPositionsBySlot, slotIndex, false)
+                );
+            }
+        }
+        else
+        {
+            int count = Mathf.Min(BattleTeamConstants.MaxUnitsPerTeam, encounterUnits.Count);
+
+            for (int i = 0; i < count; i++)
+            {
+                BattleUnitSnapshot source = encounterUnits[i];
+                if (source == null)
+                {
+                    Debug.LogWarning(
+                        $"[MainFlowManager] Encounter enemy snapshot at index {i} is null. Skipping.",
+                        this
+                    );
+                    continue;
+                }
+
+                enemySnapshots.Add(source.Clone());
+                deploymentSlotIndices.Add(i);
+                deploymentPositions.Add(
+                    BattleDeploymentPositionUtility.BuildDefaultPosition(enemySnapshots.Count - 1, count, false)
+                );
+            }
         }
 
         if (enemySnapshots.Count == 0)
@@ -701,6 +795,82 @@ public sealed class MainFlowManager : MonoBehaviour
         }
 
         return true;
+    }
+
+    private bool TryBuildDeploymentPlanAllySources(
+        BattleDeploymentPlan deploymentPlan,
+        out List<OwnedGladiatorData> sources,
+        out List<int> sourceSlotIndices,
+        out List<Vector2> sourcePositions
+    )
+    {
+        sources = new List<OwnedGladiatorData>(BattleTeamConstants.MaxUnitsPerTeam);
+        sourceSlotIndices = new List<int>(BattleTeamConstants.MaxUnitsPerTeam);
+        sourcePositions = new List<Vector2>(BattleTeamConstants.MaxUnitsPerTeam);
+
+        if (deploymentPlan == null || deploymentPlan.AllyRuntimeIdsBySlot == null)
+        {
+            return false;
+        }
+
+        HashSet<int> usedRuntimeIds = new HashSet<int>();
+        for (int slotIndex = 0; slotIndex < deploymentPlan.AllyRuntimeIdsBySlot.Length; slotIndex++)
+        {
+            int runtimeId = deploymentPlan.AllyRuntimeIdsBySlot[slotIndex];
+            if (runtimeId < 0 || usedRuntimeIds.Contains(runtimeId))
+            {
+                continue;
+            }
+
+            OwnedGladiatorData gladiator = FindOwnedGladiatorByRuntimeId(runtimeId);
+            if (gladiator == null)
+            {
+                continue;
+            }
+
+            usedRuntimeIds.Add(runtimeId);
+            sources.Add(gladiator);
+            sourceSlotIndices.Add(slotIndex);
+            sourcePositions.Add(
+                GetDeploymentPositionBySlot(deploymentPlan.AllyNormalizedPositionsBySlot, slotIndex, true)
+            );
+        }
+
+        return sources.Count > 0;
+    }
+
+    private static Vector2 GetDeploymentPositionBySlot(Vector2[] positionsBySlot, int slotIndex, bool isPlayerTeam)
+    {
+        if (positionsBySlot != null && slotIndex >= 0 && slotIndex < positionsBySlot.Length)
+        {
+            return BattleDeploymentPositionUtility.ClampToDeploymentHalf(positionsBySlot[slotIndex], isPlayerTeam);
+        }
+
+        return BattleDeploymentPositionUtility.BuildDefaultPosition(
+            slotIndex,
+            BattleTeamConstants.MaxUnitsPerTeam,
+            isPlayerTeam
+        );
+    }
+
+    private OwnedGladiatorData FindOwnedGladiatorByRuntimeId(int runtimeId)
+    {
+        if (gladiatorManager == null || runtimeId < 0)
+        {
+            return null;
+        }
+
+        IReadOnlyList<OwnedGladiatorData> owned = gladiatorManager.OwnedGladiators;
+        for (int i = 0; i < owned.Count; i++)
+        {
+            OwnedGladiatorData gladiator = owned[i];
+            if (gladiator != null && gladiator.RuntimeId == runtimeId)
+            {
+                return gladiator;
+            }
+        }
+
+        return null;
     }
 
     // 전투 payload를 BattleSessionManager에 저장하고,

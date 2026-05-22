@@ -75,6 +75,9 @@ public sealed class SquadUIManager : MonoBehaviour
     private RawImage detailPortraitImage;
 
     [SerializeField]
+    private GladiatorModelPreviewView detailPortraitPreviewView;
+
+    [SerializeField]
     private Image detailWeaponIcon;
 
     [SerializeField]
@@ -316,8 +319,19 @@ public sealed class SquadUIManager : MonoBehaviour
                 continue;
             }
 
-            Sprite portrait = g.GladiatorClass?.icon;
-            _pickerBuffer.Add(new OwnedItemViewData(portrait, g.DisplayName, $"Lv.{g.Level}", string.Empty, g));
+            GameObject modelPrefab = g.GladiatorClass != null ? g.GladiatorClass.previewModelPrefab : null;
+            Sprite portrait = g.GladiatorClass != null ? g.GladiatorClass.icon : null;
+            _pickerBuffer.Add(
+                new OwnedItemViewData(
+                    modelPrefab,
+                    g.CustomizeIndicates,
+                    portrait,
+                    g.DisplayName,
+                    $"Lv.{g.Level}",
+                    string.Empty,
+                    g
+                )
+            );
         }
 
         Canvas.ForceUpdateCanvases();
@@ -594,9 +608,23 @@ public sealed class SquadUIManager : MonoBehaviour
             return;
         }
 
-        if (detailPortraitImage != null)
+        GameObject modelPrefab = gladiator.GladiatorClass != null ? gladiator.GladiatorClass.previewModelPrefab : null;
+        if (detailPortraitPreviewView != null && modelPrefab != null)
         {
-            Sprite portrait = gladiator.GladiatorClass?.icon;
+            detailPortraitPreviewView.Show(modelPrefab, gladiator.CustomizeIndicates);
+            if (detailPortraitImage != null && detailPortraitImage.GetComponent<GladiatorModelPreviewView>() == null)
+            {
+                detailPortraitImage.enabled = false;
+            }
+        }
+        else if (detailPortraitImage != null)
+        {
+            if (detailPortraitPreviewView != null)
+            {
+                detailPortraitPreviewView.Clear();
+            }
+
+            Sprite portrait = gladiator.GladiatorClass != null ? gladiator.GladiatorClass.icon : null;
             detailPortraitImage.texture = portrait != null ? portrait.texture : null;
             detailPortraitImage.enabled = portrait != null;
         }
@@ -702,6 +730,11 @@ public sealed class SquadUIManager : MonoBehaviour
                 FindChildTransform(pickerPanelRoot.transform, "GladiatorBackground")
                 ?? FindChildTransform(pickerPanelRoot.transform, "PickerBackground");
             pickerBackground = pickerBackgroundTransform as RectTransform;
+        }
+
+        if (detailPortraitPreviewView == null && detailPortraitImage != null)
+        {
+            detailPortraitPreviewView = detailPortraitImage.GetComponent<GladiatorModelPreviewView>();
         }
     }
 

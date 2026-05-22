@@ -56,6 +56,9 @@ public sealed class GladiatorUIManager : MonoBehaviour
     [SerializeField]
     private Image detailGladiatorIconImage;
 
+    [SerializeField]
+    private GladiatorModelPreviewView detailGladiatorPreviewView;
+
     [Header("Detail Weapon Slot")]
     [SerializeField]
     private Button weaponSlotButton;
@@ -243,6 +246,8 @@ public sealed class GladiatorUIManager : MonoBehaviour
 
                 _gladiatorViewBuffer.Add(
                     new OwnedItemViewData(
+                        gladiator.GladiatorClass.previewModelPrefab,
+                        gladiator.CustomizeIndicates,
                         gladiator.GladiatorClass.icon,
                         gladiator.DisplayName,
                         $"Lv.{gladiator.Level}",
@@ -544,12 +549,28 @@ public sealed class GladiatorUIManager : MonoBehaviour
         }
 
         Sprite gladiatorIcon = gladiator.GladiatorClass != null ? gladiator.GladiatorClass.icon : null;
+        GameObject gladiatorModelPrefab =
+            gladiator.GladiatorClass != null ? gladiator.GladiatorClass.previewModelPrefab : null;
         Sprite weaponIcon =
             gladiator.EquippedWeapon != null && gladiator.EquippedWeapon.Weapon != null
                 ? gladiator.EquippedWeapon.Weapon.icon
                 : null;
 
-        SetPassiveImage(detailGladiatorIconImage, gladiatorIcon);
+        if (detailGladiatorPreviewView != null && gladiatorModelPrefab != null)
+        {
+            detailGladiatorPreviewView.Show(gladiatorModelPrefab, gladiator.CustomizeIndicates);
+            SetComponentGameObjectActive(detailGladiatorIconImage, false);
+        }
+        else
+        {
+            if (detailGladiatorPreviewView != null)
+            {
+                detailGladiatorPreviewView.Clear();
+            }
+
+            SetPassiveImage(detailGladiatorIconImage, gladiatorIcon);
+        }
+
         SetSlotVisual(weaponSlotButton, weaponOverlayImage, weaponIcon);
         RefreshArtifactSlots(gladiator);
 

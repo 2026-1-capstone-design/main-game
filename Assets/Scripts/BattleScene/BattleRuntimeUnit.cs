@@ -403,7 +403,16 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
 
         Debug.Log("값은 들어옴");
 
-        int[] indicates = Snapshot.CustomizeIndicates;
+        ApplySkinCustomization(Snapshot.CustomizeIndicates);
+    }
+
+    // 메인 메뉴의 3D 프리뷰도 전투 프리팹을 그대로 쓰므로, 전투 Snapshot 없이 스킨 파츠만 적용할 수 있게 열어둔다.
+    public void ApplySkinCustomization(int[] indicates)
+    {
+        if (indicates == null || indicates.Length <= (int)SkinPart.Feet)
+        {
+            indicates = BuildDefaultSkinCustomization();
+        }
 
         // 1. 머리 및 세부 얼굴 파츠 토글
         ActivateSpecificSkinPart(rootFullHead, indicates[(int)SkinPart.FullHead]);
@@ -420,6 +429,24 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         ActivateSpecificSkinPart(rootBelt, indicates[(int)SkinPart.Belt]);
         ActivateSpecificSkinPart(rootLegs, indicates[(int)SkinPart.Legs]);
         ActivateSpecificSkinPart(rootFeet, indicates[(int)SkinPart.Feet]);
+    }
+
+    private static int[] BuildDefaultSkinCustomization()
+    {
+        int[] indicates = new int[(int)SkinPart.TotalCount];
+        indicates[(int)SkinPart.FullHead] = -1;
+        indicates[(int)SkinPart.Nose] = 0;
+        indicates[(int)SkinPart.Hair] = 0;
+        indicates[(int)SkinPart.Face] = 0;
+        indicates[(int)SkinPart.Eyes] = 0;
+        indicates[(int)SkinPart.Eyebrows] = 0;
+        indicates[(int)SkinPart.Ears] = 0;
+        indicates[(int)SkinPart.Chest] = 0;
+        indicates[(int)SkinPart.Arms] = 0;
+        indicates[(int)SkinPart.Belt] = 0;
+        indicates[(int)SkinPart.Legs] = 0;
+        indicates[(int)SkinPart.Feet] = 0;
+        return indicates;
     }
 
     private void ActivateSpecificSkinPart(Transform parentRoot, int targetIndex)

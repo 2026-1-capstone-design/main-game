@@ -20,6 +20,9 @@ public sealed class OwnedItemGridCell : MonoBehaviour
     private RawImage rawIconImage;
 
     [SerializeField]
+    private GladiatorModelPreviewView modelPreviewView;
+
+    [SerializeField]
     private TMP_Text levelText;
 
     [SerializeField]
@@ -33,11 +36,31 @@ public sealed class OwnedItemGridCell : MonoBehaviour
         _data = data;
         _clickCallback = clickCallback;
 
+        if (modelPreviewView != null)
+        {
+            if (data.ModelPrefab != null && !data.IsPlaceholder)
+            {
+                modelPreviewView.Show(data.ModelPrefab, data.ModelCustomizeIndicates);
+            }
+            else
+            {
+                modelPreviewView.Clear();
+            }
+        }
+
+        bool useModelPreview = modelPreviewView != null && data.ModelPrefab != null && !data.IsPlaceholder;
+
         if (iconImage != null)
         {
             iconImage.sprite = data.Icon;
-            iconImage.enabled = data.Icon != null;
+            iconImage.enabled = !useModelPreview && data.Icon != null;
             iconImage.preserveAspect = true;
+        }
+
+        if (rawIconImage != null)
+        {
+            rawIconImage.texture = data.RawIcon;
+            rawIconImage.enabled = !useModelPreview && data.RawIcon != null;
         }
 
         if (levelText != null)
@@ -70,6 +93,17 @@ public sealed class OwnedItemGridCell : MonoBehaviour
         {
             iconImage.sprite = null;
             iconImage.enabled = false;
+        }
+
+        if (rawIconImage != null)
+        {
+            rawIconImage.texture = null;
+            rawIconImage.enabled = false;
+        }
+
+        if (modelPreviewView != null)
+        {
+            modelPreviewView.Clear();
         }
 
         if (levelText != null)

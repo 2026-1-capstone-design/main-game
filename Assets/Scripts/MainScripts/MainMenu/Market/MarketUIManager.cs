@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 [DisallowMultipleComponent]
@@ -30,6 +31,12 @@ public sealed class MarketUIManager : MonoBehaviour
     [SerializeField]
     private GameObject sellModePanel;
 
+    [SerializeField]
+    private RectTransform buyBackground;
+
+    [SerializeField]
+    private RectTransform sellBackground;
+
     [Header("Root Buttons")]
     [SerializeField]
     private Button marketBackButton;
@@ -49,23 +56,29 @@ public sealed class MarketUIManager : MonoBehaviour
 
     [Header("Buy Category Buttons")]
     [SerializeField]
-    private Button buyEquipmentButton;
+    [FormerlySerializedAs("buyEquipmentButton")]
+    private Button buyWeaponTabButton;
 
     [SerializeField]
-    private Button buyArtifactButton;
+    [FormerlySerializedAs("buyArtifactButton")]
+    private Button buyArtifactTabButton;
 
     [SerializeField]
-    private Button buyGladiatorButton;
+    [FormerlySerializedAs("buyGladiatorButton")]
+    private Button buyGladiatorTabButton;
 
     [Header("Sell Category Buttons")]
     [SerializeField]
-    private Button sellEquipmentButton;
+    [FormerlySerializedAs("sellEquipmentButton")]
+    private Button sellWeaponTabButton;
 
     [SerializeField]
-    private Button sellArtifactButton;
+    [FormerlySerializedAs("sellArtifactButton")]
+    private Button sellArtifactTabButton;
 
     [SerializeField]
-    private Button sellGladiatorButton;
+    [FormerlySerializedAs("sellGladiatorButton")]
+    private Button sellGladiatorTabButton;
 
     [Header("Trade Buttons")]
     [SerializeField]
@@ -99,7 +112,22 @@ public sealed class MarketUIManager : MonoBehaviour
     private TMP_Text buyGoldText;
 
     [SerializeField]
-    private TMP_Text buyDescriptionText;
+    private TMP_Text buySelectedTabText;
+
+    [SerializeField]
+    private TMP_Text buyEquipmentNameText;
+
+    [SerializeField]
+    private TMP_Text buyEquipmentKindText;
+
+    [SerializeField]
+    private TMP_Text buyEquipmentSkillText;
+
+    [SerializeField]
+    private TMP_Text buyEquipmentDetailText;
+
+    [SerializeField]
+    private Image buyEquipmentImage;
 
     [SerializeField]
     private TMP_Text buyPriceText;
@@ -112,7 +140,22 @@ public sealed class MarketUIManager : MonoBehaviour
     private TMP_Text sellGoldText;
 
     [SerializeField]
-    private TMP_Text sellDescriptionText;
+    private TMP_Text sellSelectedTabText;
+
+    [SerializeField]
+    private TMP_Text sellEquipmentNameText;
+
+    [SerializeField]
+    private TMP_Text sellEquipmentKindText;
+
+    [SerializeField]
+    private TMP_Text sellEquipmentSkillText;
+
+    [SerializeField]
+    private TMP_Text sellEquipmentDetailText;
+
+    [SerializeField]
+    private Image sellEquipmentImage;
 
     [SerializeField]
     private TMP_Text sellPriceText;
@@ -188,12 +231,13 @@ public sealed class MarketUIManager : MonoBehaviour
         BindButton(sellModeButton, OnSellModeClicked);
         BindButton(buyModeBackButton, OnModeBackClicked);
         BindButton(sellModeBackButton, OnModeBackClicked);
-        BindButton(buyEquipmentButton, OnBuyEquipmentClicked);
-        BindButton(buyArtifactButton, OnBuyArtifactClicked);
-        BindButton(buyGladiatorButton, OnBuyGladiatorClicked);
-        BindButton(sellEquipmentButton, OnSellEquipmentClicked);
-        BindButton(sellArtifactButton, OnSellArtifactClicked);
-        BindButton(sellGladiatorButton, OnSellGladiatorClicked);
+        ResolveMissingReferences();
+        BindButton(buyWeaponTabButton, OnBuyEquipmentClicked);
+        BindButton(buyArtifactTabButton, OnBuyArtifactClicked);
+        BindButton(buyGladiatorTabButton, OnBuyGladiatorClicked);
+        BindButton(sellWeaponTabButton, OnSellEquipmentClicked);
+        BindButton(sellArtifactTabButton, OnSellArtifactClicked);
+        BindButton(sellGladiatorTabButton, OnSellGladiatorClicked);
         BindButton(buySelectedButton, OnBuySelectedClicked);
         BindButton(sellSelectedButton, OnSellSelectedClicked);
         BindButton(cannotSellConfirmButton, OnCannotSellConfirmClicked);
@@ -336,6 +380,8 @@ public sealed class MarketUIManager : MonoBehaviour
         SetPanelActive(buyModePanel, true);
         SetPanelActive(sellModePanel, false);
         ApplyViewerVisibility();
+        RefreshCategoryTabLayering();
+        SetSelectedTabText(buySelectedTabText, category);
         RefreshGoldText(_resourceManager.CurrentGold);
         RefreshCurrentCategoryViewer();
         ClearBuyDetail();
@@ -351,6 +397,8 @@ public sealed class MarketUIManager : MonoBehaviour
         SetPanelActive(buyModePanel, false);
         SetPanelActive(sellModePanel, true);
         ApplyViewerVisibility();
+        RefreshCategoryTabLayering();
+        SetSelectedTabText(sellSelectedTabText, category);
         RefreshGoldText(_resourceManager.CurrentGold);
         RefreshCurrentCategoryViewer();
         ClearSellDetail();
@@ -613,7 +661,15 @@ public sealed class MarketUIManager : MonoBehaviour
 
         ClearPendingSelections();
         _pendingBuyWeaponOffer = offer;
-        SetBuyDetail(BuildBuyEquipmentText(offer), offer.Price, GetBalanceAfterBuy(offer.Price));
+        SetBuyDetail(
+            offer.Weapon.DisplayName,
+            GetWeaponKindText(offer.Weapon),
+            GetWeaponSkillText(offer.Weapon),
+            BuildBuyEquipmentDetailText(offer),
+            offer.Weapon.Weapon != null ? offer.Weapon.Weapon.icon : null,
+            offer.Price,
+            GetBalanceAfterBuy(offer.Price)
+        );
     }
 
     private void OnBuyArtifactItemClicked(OwnedItemViewData data)
@@ -625,7 +681,15 @@ public sealed class MarketUIManager : MonoBehaviour
 
         ClearPendingSelections();
         _pendingBuyArtifactOffer = offer;
-        SetBuyDetail(BuildBuyArtifactText(offer), offer.Price, GetBalanceAfterBuy(offer.Price));
+        SetBuyDetail(
+            offer.Artifact.artifactName,
+            string.Empty,
+            string.Empty,
+            BuildBuyArtifactDetailText(offer),
+            offer.Artifact.icon,
+            offer.Price,
+            GetBalanceAfterBuy(offer.Price)
+        );
     }
 
     private void OnBuyGladiatorItemClicked(OwnedItemViewData data)
@@ -637,7 +701,15 @@ public sealed class MarketUIManager : MonoBehaviour
 
         ClearPendingSelections();
         _pendingBuyGladiatorOffer = offer;
-        SetBuyDetail(BuildBuyGladiatorText(offer), offer.Price, GetBalanceAfterBuy(offer.Price));
+        SetBuyDetail(
+            offer.Gladiator.DisplayName,
+            GetGladiatorKindText(offer.Gladiator),
+            string.Empty,
+            BuildBuyGladiatorDetailText(offer),
+            offer.Gladiator.GladiatorClass != null ? offer.Gladiator.GladiatorClass.icon : null,
+            offer.Price,
+            GetBalanceAfterBuy(offer.Price)
+        );
     }
 
     private void OnSellEquipmentItemClicked(OwnedItemViewData data)
@@ -658,7 +730,15 @@ public sealed class MarketUIManager : MonoBehaviour
         ClearPendingSelections();
         _pendingSellWeapon = weapon;
         int price = _marketManager != null ? _marketManager.GetWeaponSellPrice(weapon) : 0;
-        SetSellDetail(BuildSellEquipmentText(weapon), price, GetBalanceAfterSell(price));
+        SetSellDetail(
+            weapon.DisplayName,
+            GetWeaponKindText(weapon),
+            GetWeaponSkillText(weapon),
+            BuildSellEquipmentDetailText(weapon),
+            weapon.Weapon != null ? weapon.Weapon.icon : null,
+            price,
+            GetBalanceAfterSell(price)
+        );
     }
 
     private void OnSellArtifactItemClicked(OwnedItemViewData data)
@@ -679,7 +759,15 @@ public sealed class MarketUIManager : MonoBehaviour
         ClearPendingSelections();
         _pendingSellArtifact = artifact;
         int price = _marketManager != null ? _marketManager.GetArtifactSellPrice() : 0;
-        SetSellDetail(BuildSellArtifactText(artifact), price, GetBalanceAfterSell(price));
+        SetSellDetail(
+            artifact.DisplayName,
+            string.Empty,
+            string.Empty,
+            BuildSellArtifactDetailText(artifact),
+            artifact.Artifact != null ? artifact.Artifact.icon : null,
+            price,
+            GetBalanceAfterSell(price)
+        );
     }
 
     private void OnSellGladiatorItemClicked(OwnedItemViewData data)
@@ -692,7 +780,15 @@ public sealed class MarketUIManager : MonoBehaviour
         ClearPendingSelections();
         _pendingSellGladiator = gladiator;
         int price = _marketManager != null ? _marketManager.GetGladiatorSellPrice(gladiator) : 0;
-        SetSellDetail(BuildSellGladiatorText(gladiator), price, GetBalanceAfterSell(price));
+        SetSellDetail(
+            gladiator.DisplayName,
+            GetGladiatorKindText(gladiator),
+            string.Empty,
+            BuildSellGladiatorDetailText(gladiator),
+            gladiator.GladiatorClass != null ? gladiator.GladiatorClass.icon : null,
+            price,
+            GetBalanceAfterSell(price)
+        );
     }
 
     private void OnBuySelectedClicked()
@@ -730,8 +826,8 @@ public sealed class MarketUIManager : MonoBehaviour
         RefreshGoldText(_resourceManager != null ? _resourceManager.CurrentGold : 0);
         if (succeeded)
         {
-            SetBuyBalanceAfterTrade(_resourceManager.CurrentGold);
             ClearPendingSelections();
+            ClearBuyDetail();
             RefreshCurrentCategoryViewer();
         }
     }
@@ -776,8 +872,8 @@ public sealed class MarketUIManager : MonoBehaviour
         RefreshGoldText(_resourceManager != null ? _resourceManager.CurrentGold : 0);
         if (succeeded)
         {
-            SetSellBalanceAfterTrade(_resourceManager.CurrentGold);
             ClearPendingSelections();
+            ClearSellDetail();
             RefreshCurrentCategoryViewer();
         }
     }
@@ -792,13 +888,28 @@ public sealed class MarketUIManager : MonoBehaviour
         return (_resourceManager != null ? _resourceManager.CurrentGold : 0) + Mathf.Max(0, price);
     }
 
-    private void SetBuyDetail(string description, int price, int balanceAfterTrade)
+    private void SetBuyDetail(
+        string name,
+        string kind,
+        string skill,
+        string detail,
+        Sprite icon,
+        int price,
+        int balanceAfterTrade
+    )
     {
-        if (buyDescriptionText != null)
-        {
-            buyDescriptionText.text = description;
-        }
-
+        SetTradeDetailTexts(
+            buyEquipmentNameText,
+            buyEquipmentKindText,
+            buyEquipmentSkillText,
+            buyEquipmentDetailText,
+            buyEquipmentImage,
+            name,
+            kind,
+            skill,
+            detail,
+            icon
+        );
         if (buyPriceText != null)
         {
             buyPriceText.text = $"가격: {price}";
@@ -807,13 +918,28 @@ public sealed class MarketUIManager : MonoBehaviour
         SetBuyBalanceAfterTrade(balanceAfterTrade);
     }
 
-    private void SetSellDetail(string description, int price, int balanceAfterTrade)
+    private void SetSellDetail(
+        string name,
+        string kind,
+        string skill,
+        string detail,
+        Sprite icon,
+        int price,
+        int balanceAfterTrade
+    )
     {
-        if (sellDescriptionText != null)
-        {
-            sellDescriptionText.text = description;
-        }
-
+        SetTradeDetailTexts(
+            sellEquipmentNameText,
+            sellEquipmentKindText,
+            sellEquipmentSkillText,
+            sellEquipmentDetailText,
+            sellEquipmentImage,
+            name,
+            kind,
+            skill,
+            detail,
+            icon
+        );
         if (sellPriceText != null)
         {
             sellPriceText.text = $"가격: {price}";
@@ -824,11 +950,18 @@ public sealed class MarketUIManager : MonoBehaviour
 
     private void ClearBuyDetail()
     {
-        if (buyDescriptionText != null)
-        {
-            buyDescriptionText.text = string.Empty;
-        }
-
+        SetTradeDetailTexts(
+            buyEquipmentNameText,
+            buyEquipmentKindText,
+            buyEquipmentSkillText,
+            buyEquipmentDetailText,
+            buyEquipmentImage,
+            string.Empty,
+            string.Empty,
+            string.Empty,
+            string.Empty,
+            null
+        );
         if (buyPriceText != null)
         {
             buyPriceText.text = "가격: -";
@@ -839,11 +972,18 @@ public sealed class MarketUIManager : MonoBehaviour
 
     private void ClearSellDetail()
     {
-        if (sellDescriptionText != null)
-        {
-            sellDescriptionText.text = string.Empty;
-        }
-
+        SetTradeDetailTexts(
+            sellEquipmentNameText,
+            sellEquipmentKindText,
+            sellEquipmentSkillText,
+            sellEquipmentDetailText,
+            sellEquipmentImage,
+            string.Empty,
+            string.Empty,
+            string.Empty,
+            string.Empty,
+            null
+        );
         if (sellPriceText != null)
         {
             sellPriceText.text = "가격: -";
@@ -870,6 +1010,199 @@ public sealed class MarketUIManager : MonoBehaviour
                 ? $"거래 후 잔금: {balanceAfterTrade.Value}"
                 : "거래 후 잔금: -";
         }
+    }
+
+    private static void SetTradeDetailTexts(
+        TMP_Text nameText,
+        TMP_Text kindText,
+        TMP_Text skillText,
+        TMP_Text detailText,
+        Image image,
+        string name,
+        string kind,
+        string skill,
+        string detail,
+        Sprite icon
+    )
+    {
+        SetText(nameText, name);
+        SetText(kindText, kind);
+        SetText(skillText, skill);
+        SetText(detailText, detail);
+
+        if (image == null)
+        {
+            return;
+        }
+
+        image.sprite = icon;
+        image.enabled = icon != null;
+        image.preserveAspect = true;
+    }
+
+    private void RefreshCategoryTabLayering()
+    {
+        if (_tradeMode == TradeMode.Buy)
+        {
+            MoveCategoryTabsAroundBackground(
+                buyBackground,
+                buyWeaponTabButton,
+                buyArtifactTabButton,
+                buyGladiatorTabButton,
+                _currentCategory
+            );
+            return;
+        }
+
+        if (_tradeMode == TradeMode.Sell)
+        {
+            MoveCategoryTabsAroundBackground(
+                sellBackground,
+                sellWeaponTabButton,
+                sellArtifactTabButton,
+                sellGladiatorTabButton,
+                _currentCategory
+            );
+        }
+    }
+
+    private static void MoveCategoryTabsAroundBackground(
+        RectTransform background,
+        Button weaponButton,
+        Button artifactButton,
+        Button gladiatorButton,
+        MarketCategory activeCategory
+    )
+    {
+        if (background == null)
+        {
+            return;
+        }
+
+        Button activeButton = GetCategoryButton(weaponButton, artifactButton, gladiatorButton, activeCategory);
+        Button[] inactiveButtons = GetInactiveCategoryButtons(
+            weaponButton,
+            artifactButton,
+            gladiatorButton,
+            activeCategory
+        );
+
+        DisableSortingCanvas(background.gameObject);
+        DisableButtonSortingCanvas(weaponButton);
+        DisableButtonSortingCanvas(artifactButton);
+        DisableButtonSortingCanvas(gladiatorButton);
+
+        Transform backgroundParent = background.parent;
+        if (backgroundParent == null)
+        {
+            return;
+        }
+
+        if (
+            activeButton == null
+            || inactiveButtons[0] == null
+            || inactiveButtons[1] == null
+            || activeButton.transform.parent != backgroundParent
+            || inactiveButtons[0].transform.parent != backgroundParent
+            || inactiveButtons[1].transform.parent != backgroundParent
+        )
+        {
+            return;
+        }
+
+        // 4개 요소의 기존 묶음 위치를 기준으로 최종 순서를 한 번에 고정한다.
+        // 최종 렌더 순서: 비선택 탭 2개 -> 배경 -> 선택 탭 1개.
+        int startIndex = Mathf.Min(
+            background.GetSiblingIndex(),
+            activeButton.transform.GetSiblingIndex(),
+            inactiveButtons[0].transform.GetSiblingIndex(),
+            inactiveButtons[1].transform.GetSiblingIndex()
+        );
+
+        Transform[] orderedTransforms =
+        {
+            inactiveButtons[0].transform,
+            inactiveButtons[1].transform,
+            background,
+            activeButton.transform,
+        };
+
+        for (int i = 0; i < orderedTransforms.Length; i++)
+        {
+            orderedTransforms[i].SetSiblingIndex(Mathf.Clamp(startIndex + i, 0, backgroundParent.childCount - 1));
+        }
+    }
+
+    private static Button GetCategoryButton(
+        Button weaponButton,
+        Button artifactButton,
+        Button gladiatorButton,
+        MarketCategory category
+    )
+    {
+        return category switch
+        {
+            MarketCategory.Equipment => weaponButton,
+            MarketCategory.Artifact => artifactButton,
+            MarketCategory.Gladiator => gladiatorButton,
+            _ => null,
+        };
+    }
+
+    private static void DisableButtonSortingCanvas(Button button)
+    {
+        if (button != null)
+        {
+            DisableSortingCanvas(button.gameObject);
+        }
+    }
+
+    private static void DisableSortingCanvas(GameObject target)
+    {
+        if (target == null)
+        {
+            return;
+        }
+
+        Canvas canvas = target.GetComponent<Canvas>();
+        if (canvas == null)
+        {
+            return;
+        }
+
+        canvas.overrideSorting = false;
+    }
+
+    private static Button[] GetInactiveCategoryButtons(
+        Button weaponButton,
+        Button artifactButton,
+        Button gladiatorButton,
+        MarketCategory activeCategory
+    )
+    {
+        return activeCategory switch
+        {
+            MarketCategory.Equipment => new[] { artifactButton, gladiatorButton },
+            MarketCategory.Artifact => new[] { weaponButton, gladiatorButton },
+            MarketCategory.Gladiator => new[] { weaponButton, artifactButton },
+            _ => new[] { artifactButton, gladiatorButton },
+        };
+    }
+
+    private static void SetSelectedTabText(TMP_Text text, MarketCategory category)
+    {
+        SetText(text, GetCategoryDisplayName(category));
+    }
+
+    private static string GetCategoryDisplayName(MarketCategory category)
+    {
+        return category switch
+        {
+            MarketCategory.Equipment => "무기",
+            MarketCategory.Artifact => "장신구",
+            MarketCategory.Gladiator => "검투사",
+            _ => string.Empty,
+        };
     }
 
     private void ClearPendingSelections()
@@ -902,7 +1235,7 @@ public sealed class MarketUIManager : MonoBehaviour
         }
     }
 
-    private string BuildBuyGladiatorText(MarketGladiatorOffer offer)
+    private string BuildBuyGladiatorDetailText(MarketGladiatorOffer offer)
     {
         if (offer == null || offer.Gladiator == null)
         {
@@ -911,8 +1244,7 @@ public sealed class MarketUIManager : MonoBehaviour
 
         OwnedGladiatorData gladiator = offer.Gladiator;
 
-        return $"이름: {gladiator.DisplayName}\n"
-            + $"레벨: {gladiator.Level}\n"
+        return $"레벨: {gladiator.Level}\n"
             + $"충성도: {gladiator.Loyalty}\n"
             + $"유지비: {gladiator.Upkeep}\n"
             + $"최대체력: {Mathf.FloorToInt(gladiator.CachedMaxHealth)}\n"
@@ -922,17 +1254,17 @@ public sealed class MarketUIManager : MonoBehaviour
             + $"사거리: {gladiator.CachedAttackRange:0.##}";
     }
 
-    private string BuildBuyEquipmentText(MarketWeaponOffer offer)
+    private string BuildBuyEquipmentDetailText(MarketWeaponOffer offer)
     {
         if (offer == null || offer.Weapon == null)
         {
             return string.Empty;
         }
 
-        return BuildSellEquipmentText(offer.Weapon);
+        return BuildSellEquipmentDetailText(offer.Weapon);
     }
 
-    private static string BuildBuyArtifactText(MarketArtifactOffer offer)
+    private static string BuildBuyArtifactDetailText(MarketArtifactOffer offer)
     {
         if (offer == null || offer.Artifact == null)
         {
@@ -942,15 +1274,14 @@ public sealed class MarketUIManager : MonoBehaviour
         return BuildArtifactText(offer.Artifact);
     }
 
-    private string BuildSellGladiatorText(OwnedGladiatorData gladiator)
+    private string BuildSellGladiatorDetailText(OwnedGladiatorData gladiator)
     {
         if (gladiator == null)
         {
             return string.Empty;
         }
 
-        return $"이름: {gladiator.DisplayName}\n"
-            + $"레벨: {gladiator.Level}\n"
+        return $"레벨: {gladiator.Level}\n"
             + $"충성도: {gladiator.Loyalty}\n"
             + $"유지비: {gladiator.Upkeep}\n"
             + $"최대체력: {Mathf.FloorToInt(gladiator.CachedMaxHealth)}\n"
@@ -960,20 +1291,14 @@ public sealed class MarketUIManager : MonoBehaviour
             + $"사거리: {gladiator.CachedAttackRange:0.##}";
     }
 
-    private static string BuildSellEquipmentText(OwnedWeaponData weapon)
+    private static string BuildSellEquipmentDetailText(OwnedWeaponData weapon)
     {
         if (weapon == null)
         {
             return string.Empty;
         }
 
-        string weaponTypeText = weapon.Weapon != null ? weapon.Weapon.weaponType.ToString() : "(None)";
-        string skillName = weapon.WeaponSkill != null ? weapon.WeaponSkill.skillName : "(None)";
-
-        return $"이름: {weapon.DisplayName}\n"
-            + $"무기군: {weaponTypeText}\n"
-            + $"스킬: {skillName}\n"
-            + $"레벨: {weapon.Level}\n"
+        return $"레벨: {weapon.Level}\n"
             + $"추가공격력: {Mathf.FloorToInt(weapon.CachedAttackBonus)}\n"
             + $"추가체력: {Mathf.FloorToInt(weapon.CachedHealthBonus)}\n"
             + $"추가공격속도: {weapon.CachedAttackSpeedBonus:0.##}\n"
@@ -981,7 +1306,7 @@ public sealed class MarketUIManager : MonoBehaviour
             + $"추가사거리: {weapon.CachedAttackRangeBonus:0.##}";
     }
 
-    private static string BuildSellArtifactText(OwnedArtifactData artifact)
+    private static string BuildSellArtifactDetailText(OwnedArtifactData artifact)
     {
         if (artifact == null || artifact.Artifact == null)
         {
@@ -989,7 +1314,7 @@ public sealed class MarketUIManager : MonoBehaviour
         }
 
         string lore = string.IsNullOrWhiteSpace(artifact.Artifact.artifactLore) ? "-" : artifact.Artifact.artifactLore;
-        return $"이름: {artifact.DisplayName}\n" + $"퍼크: {artifact.Artifact.ArtifactPerkId}\n" + lore;
+        return $"퍼크: {artifact.Artifact.ArtifactPerkId}\n" + lore;
     }
 
     private static string BuildArtifactText(ArtifactSO artifact)
@@ -1000,7 +1325,29 @@ public sealed class MarketUIManager : MonoBehaviour
         }
 
         string lore = string.IsNullOrWhiteSpace(artifact.artifactLore) ? "-" : artifact.artifactLore;
-        return $"이름: {artifact.artifactName}\n" + $"퍼크: {artifact.ArtifactPerkId}\n" + lore;
+        return $"퍼크: {artifact.ArtifactPerkId}\n" + lore;
+    }
+
+    private static string GetWeaponKindText(OwnedWeaponData weapon)
+    {
+        return weapon != null && weapon.Weapon != null ? weapon.Weapon.weaponType.ToString() : string.Empty;
+    }
+
+    private static string GetWeaponSkillText(OwnedWeaponData weapon)
+    {
+        return weapon != null && weapon.WeaponSkill != null ? weapon.WeaponSkill.skillName : string.Empty;
+    }
+
+    private static string GetGladiatorKindText(OwnedGladiatorData gladiator)
+    {
+        if (gladiator == null || gladiator.GladiatorClass == null)
+        {
+            return string.Empty;
+        }
+
+        return !string.IsNullOrWhiteSpace(gladiator.GladiatorClass.className)
+            ? gladiator.GladiatorClass.className
+            : gladiator.GladiatorClass.name;
     }
 
     private void OpenCannotSellPanel()
@@ -1055,6 +1402,23 @@ public sealed class MarketUIManager : MonoBehaviour
         }
     }
 
+    private void ResolveMissingReferences()
+    {
+        if (buyBackground == null && buyModePanel != null)
+        {
+            buyBackground = FindChildTransformByName(buyModePanel.transform, "BuyBackground") as RectTransform;
+        }
+
+        if (sellBackground == null && sellModePanel != null)
+        {
+            sellBackground =
+                (
+                    FindChildTransformByName(sellModePanel.transform, "SellBackground")
+                    ?? FindChildTransformByName(sellModePanel.transform, "BuyBackground")
+                ) as RectTransform;
+        }
+    }
+
     private static Transform FindChildTransformByName(Transform parent, string childName)
     {
         if (parent == null || string.IsNullOrEmpty(childName))
@@ -1077,6 +1441,14 @@ public sealed class MarketUIManager : MonoBehaviour
         }
 
         return null;
+    }
+
+    private static void SetText(TMP_Text text, string value)
+    {
+        if (text != null)
+        {
+            text.text = value ?? string.Empty;
+        }
     }
 
     private static void BindButton(Button button, UnityEngine.Events.UnityAction action)

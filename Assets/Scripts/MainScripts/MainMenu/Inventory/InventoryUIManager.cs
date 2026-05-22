@@ -17,6 +17,9 @@ public sealed class InventoryUIManager : MonoBehaviour
     [SerializeField]
     private GameObject panelRoot;
 
+    [SerializeField]
+    private RectTransform inventoryBackground;
+
     [Header("Buttons")]
     [SerializeField]
     private Button backButton;
@@ -30,6 +33,10 @@ public sealed class InventoryUIManager : MonoBehaviour
     [Header("Viewers")]
     [SerializeField]
     private OwnedItemGridViewer itemViewer;
+
+    [Header("Tab Labels")]
+    [SerializeField]
+    private TMP_Text selectedTabText;
 
     [Header("Detail Panel")]
     [SerializeField]
@@ -50,16 +57,31 @@ public sealed class InventoryUIManager : MonoBehaviour
     [SerializeField]
     private TMP_Text helpText;
 
+    [SerializeField]
+    private TMP_Text equippedGladiatorText;
+
+    [SerializeField]
+    private Image equippedGladiatorIcon;
+
+    [SerializeField]
+    private TMP_Text equippedGladiatorName;
+
+    [SerializeField]
+    private TMP_Text equippedGladiatorLevel;
+
     private readonly List<OwnedItemViewData> _weaponViewBuffer = new List<OwnedItemViewData>();
     private readonly List<OwnedItemViewData> _artifactViewBuffer = new List<OwnedItemViewData>();
     private readonly StringBuilder _sb = new();
 
     private MainFlowManager _flow;
     private InventoryManager _inventoryManager;
+    private GladiatorManager _gladiatorManager;
     private InventoryTabMode _currentDetailMode = InventoryTabMode.Weapon;
     private OwnedWeaponData _currentSelectedWeapon;
     private OwnedArtifactData _currentSelectedArtifact;
+    private InventoryTabMode _currentTabMode = InventoryTabMode.Weapon;
     private bool _showLore;
+    private bool _hasEquippedGladiatorDetail;
     private WeaponDetailLoreToggleInput _detailLoreToggleInput;
     private bool _initialized;
 
@@ -77,7 +99,9 @@ public sealed class InventoryUIManager : MonoBehaviour
 
         _flow = flow;
         _inventoryManager = inventoryManager;
+        _gladiatorManager = gladiatorManager;
 
+        ResolveMissingReferences();
         BindButton(backButton, OnBackClicked);
         BindButton(weaponTabButton, OnWeaponTabClicked);
         BindButton(artifactTabButton, OnArtifactTabClicked);
@@ -134,11 +158,17 @@ public sealed class InventoryUIManager : MonoBehaviour
 
     private void ShowWeaponTab()
     {
+        _currentTabMode = InventoryTabMode.Weapon;
+        RefreshTabButtonLayering();
+        RefreshSelectedTabText();
         RefreshWeaponViewer();
     }
 
     private void ShowArtifactTab()
     {
+        _currentTabMode = InventoryTabMode.Artifact;
+        RefreshTabButtonLayering();
+        RefreshSelectedTabText();
         RefreshArtifactViewer();
     }
 
@@ -234,6 +264,7 @@ public sealed class InventoryUIManager : MonoBehaviour
             BuildWeaponStatsText(weapon)
         );
         SetSelectedIcon(weapon.Weapon != null ? weapon.Weapon.icon : null);
+        SetEquippedGladiator(_gladiatorManager != null ? _gladiatorManager.FindOwnerOfEquippedWeapon(weapon) : null);
         EnsureDetailLoreToggleInput();
         SetDetailPanelActive(true);
     }
@@ -252,6 +283,9 @@ public sealed class InventoryUIManager : MonoBehaviour
             BuildArtifactStatsText(artifact)
         );
         SetSelectedIcon(artifact.Artifact != null ? artifact.Artifact.icon : null);
+        SetEquippedGladiator(
+            _gladiatorManager != null ? _gladiatorManager.FindOwnerOfEquippedArtifact(artifact) : null
+        );
         EnsureDetailLoreToggleInput();
         SetDetailPanelActive(true);
     }
@@ -264,6 +298,7 @@ public sealed class InventoryUIManager : MonoBehaviour
 
         SetDetailTexts(string.Empty, string.Empty, string.Empty, string.Empty);
         SetSelectedIcon(null);
+        SetEquippedGladiator(null);
         SetDetailPanelActive(false);
     }
 
@@ -285,6 +320,40 @@ public sealed class InventoryUIManager : MonoBehaviour
         selectedItemIconImage.sprite = icon;
         selectedItemIconImage.enabled = icon != null;
         selectedItemIconImage.preserveAspect = true;
+    }
+
+    private void SetEquippedGladiator(OwnedGladiatorData gladiator)
+    {
+        bool hasGladiator = gladiator != null;
+        _hasEquippedGladiatorDetail = hasGladiator;
+        SetComponentGameObjectActive(equippedGladiatorText, hasGladiator);
+        SetComponentGameObjectActive(equippedGladiatorIcon, hasGladiator);
+        SetComponentGameObjectActive(equippedGladiatorName, hasGladiator);
+        SetComponentGameObjectActive(equippedGladiatorLevel, hasGladiator);
+
+        if (!hasGladiator)
+        {
+            if (equippedGladiatorIcon != null)
+            {
+                equippedGladiatorIcon.sprite = null;
+                equippedGladiatorIcon.enabled = false;
+            }
+
+            SetText(equippedGladiatorName, string.Empty);
+            SetText(equippedGladiatorLevel, string.Empty);
+            return;
+        }
+
+        SetText(equippedGladiatorName, gladiator.DisplayName);
+        SetText(equippedGladiatorLevel, $"Lv. {gladiator.Level}");
+
+        if (equippedGladiatorIcon != null)
+        {
+            Sprite icon = gladiator.GladiatorClass != null ? gladiator.GladiatorClass.icon : null;
+            equippedGladiatorIcon.sprite = icon;
+            equippedGladiatorIcon.enabled = icon != null;
+            equippedGladiatorIcon.preserveAspect = true;
+        }
     }
 
     private void ToggleDetailLore()
@@ -402,6 +471,11 @@ public sealed class InventoryUIManager : MonoBehaviour
             value && selectedItemIconImage != null && selectedItemIconImage.sprite != null
         );
         SetComponentGameObjectActive(helpText, value);
+        bool hasEquippedGladiator = value && _hasEquippedGladiatorDetail;
+        SetComponentGameObjectActive(equippedGladiatorText, hasEquippedGladiator);
+        SetComponentGameObjectActive(equippedGladiatorIcon, hasEquippedGladiator);
+        SetComponentGameObjectActive(equippedGladiatorName, hasEquippedGladiator);
+        SetComponentGameObjectActive(equippedGladiatorLevel, hasEquippedGladiator);
     }
 
     private void SetPanelActive(bool value)
@@ -415,6 +489,69 @@ public sealed class InventoryUIManager : MonoBehaviour
     private OwnedItemGridViewer GetActiveViewer(InventoryTabMode tabMode)
     {
         return itemViewer;
+    }
+
+    private void RefreshTabButtonLayering()
+    {
+        MoveTabButtonsAroundBackground();
+    }
+
+    private void RefreshSelectedTabText()
+    {
+        SetText(selectedTabText, _currentTabMode == InventoryTabMode.Weapon ? "무기" : "장신구");
+    }
+
+    private void MoveTabButtonsAroundBackground()
+    {
+        if (weaponTabButton == null || artifactTabButton == null || inventoryBackground == null)
+        {
+            return;
+        }
+
+        Transform backgroundParent = inventoryBackground.parent;
+        if (
+            backgroundParent == null
+            || weaponTabButton.transform.parent != backgroundParent
+            || artifactTabButton.transform.parent != backgroundParent
+        )
+        {
+            return;
+        }
+
+        DisableSortingCanvas(inventoryBackground.gameObject);
+        DisableSortingCanvas(weaponTabButton.gameObject);
+        DisableSortingCanvas(artifactTabButton.gameObject);
+
+        Button activeButton = _currentTabMode == InventoryTabMode.Weapon ? weaponTabButton : artifactTabButton;
+        Button inactiveButton = _currentTabMode == InventoryTabMode.Weapon ? artifactTabButton : weaponTabButton;
+
+        // 최종 렌더 순서: 비선택 탭 -> 배경 -> 선택 탭.
+        int startIndex = Mathf.Min(
+            inventoryBackground.GetSiblingIndex(),
+            activeButton.transform.GetSiblingIndex(),
+            inactiveButton.transform.GetSiblingIndex()
+        );
+
+        Transform[] orderedTransforms = { inactiveButton.transform, inventoryBackground, activeButton.transform };
+
+        for (int i = 0; i < orderedTransforms.Length; i++)
+        {
+            orderedTransforms[i].SetSiblingIndex(Mathf.Clamp(startIndex + i, 0, backgroundParent.childCount - 1));
+        }
+    }
+
+    private static void DisableSortingCanvas(GameObject target)
+    {
+        if (target == null)
+        {
+            return;
+        }
+
+        Canvas canvas = target.GetComponent<Canvas>();
+        if (canvas != null)
+        {
+            canvas.overrideSorting = false;
+        }
     }
 
     private static void SetText(TMP_Text text, string value)
@@ -447,6 +584,39 @@ public sealed class InventoryUIManager : MonoBehaviour
         }
 
         _detailLoreToggleInput.Initialize(ToggleDetailLore);
+    }
+
+    private void ResolveMissingReferences()
+    {
+        if (inventoryBackground == null && panelRoot != null)
+        {
+            inventoryBackground = FindChildTransform(panelRoot.transform, "InventoryBackground") as RectTransform;
+        }
+    }
+
+    private static Transform FindChildTransform(Transform root, string childName)
+    {
+        if (root == null || string.IsNullOrWhiteSpace(childName))
+        {
+            return null;
+        }
+
+        for (int i = 0; i < root.childCount; i++)
+        {
+            Transform child = root.GetChild(i);
+            if (child.name == childName)
+            {
+                return child;
+            }
+
+            Transform nested = FindChildTransform(child, childName);
+            if (nested != null)
+            {
+                return nested;
+            }
+        }
+
+        return null;
     }
 
     private static void BindButton(Button button, UnityEngine.Events.UnityAction action)

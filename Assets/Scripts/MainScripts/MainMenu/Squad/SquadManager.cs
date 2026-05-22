@@ -117,10 +117,20 @@ public sealed class SquadManager : MonoBehaviour
     // 전투 시작 시 현재 선택된 팀의 검투사 목록을 반환한다 (빈 슬롯 제외, 슬롯 순서 유지).
     public List<OwnedGladiatorData> GetAssignedGladiators()
     {
+        return GetAssignedGladiators(_activeTeamIndex);
+    }
+
+    public List<OwnedGladiatorData> GetAssignedGladiators(int teamIndex)
+    {
         var result = new List<OwnedGladiatorData>(SlotCount);
+        if (!IsValidTeamIndex(teamIndex))
+        {
+            return result;
+        }
+
         for (int i = 0; i < SlotCount; i++)
         {
-            OwnedGladiatorData gladiator = _teamSlots[_activeTeamIndex, i];
+            OwnedGladiatorData gladiator = _teamSlots[teamIndex, i];
             if (gladiator != null)
             {
                 result.Add(gladiator);

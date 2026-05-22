@@ -21,6 +21,9 @@ public sealed class SquadSlotCell : MonoBehaviour
     private Image portraitImage;
 
     [SerializeField]
+    private GladiatorModelPreviewView modelPreviewView;
+
+    [SerializeField]
     private TMP_Text levelText;
 
     [SerializeField]
@@ -85,11 +88,27 @@ public sealed class SquadSlotCell : MonoBehaviour
             clearButton.gameObject.SetActive(filled);
         }
 
+        GameObject modelPrefab =
+            filled && gladiator.GladiatorClass != null ? gladiator.GladiatorClass.previewModelPrefab : null;
+        bool useModelPreview = modelPreviewView != null && modelPrefab != null;
+
+        if (modelPreviewView != null)
+        {
+            if (useModelPreview)
+            {
+                modelPreviewView.Show(modelPrefab, gladiator.CustomizeIndicates);
+            }
+            else
+            {
+                modelPreviewView.Clear();
+            }
+        }
+
         if (portraitImage != null)
         {
             Sprite portrait = filled ? gladiator.GladiatorClass?.icon : null;
             portraitImage.sprite = portrait;
-            portraitImage.enabled = portrait != null;
+            portraitImage.enabled = !useModelPreview && portrait != null;
         }
 
         if (levelText != null)
@@ -115,6 +134,11 @@ public sealed class SquadSlotCell : MonoBehaviour
 
     private void ResolveMissingReferences()
     {
+        if (modelPreviewView == null)
+        {
+            modelPreviewView = GetComponentInChildren<GladiatorModelPreviewView>(true);
+        }
+
         if (slotButton == null)
         {
             slotButton = GetComponent<Button>();
