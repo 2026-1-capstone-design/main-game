@@ -82,6 +82,7 @@ public static class BattleBootstrapper
         if (context.SceneUI != null)
         {
             context.SceneUI.Initialize();
+            context.SceneUI.ConfigureHeader(payload, spawned.Units);
             context.SceneUI.HideAll();
         }
 
@@ -103,7 +104,10 @@ public static class BattleBootstrapper
         }
 
         if (context.SceneUI != null)
+        {
             context.SceneUI.RefreshSpeedText();
+            context.SceneUI.RefreshHeader();
+        }
     }
 
     public static SpawnResult Bootstrap(

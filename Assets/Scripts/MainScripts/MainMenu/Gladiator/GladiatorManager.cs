@@ -586,7 +586,7 @@ public sealed class GladiatorManager : SingletonBehaviour<GladiatorManager>
             return null;
         }
 
-        string displayName = sessionManager.ConsumeNextClassName(gladiatorTemplate.className);
+        string displayName = RecruitFactory.PickRandomGladiatorDisplayName(_randomManager, RandomStreamType.Recruit);
 
         //외형 추가
         int[] randomIndicates = GladiatorSkinManager.Instance.GenerateRandomSkinIndicates();

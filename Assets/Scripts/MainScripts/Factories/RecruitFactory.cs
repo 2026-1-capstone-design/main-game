@@ -4,6 +4,256 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public sealed class RecruitFactory : MonoBehaviour
 {
+    private const int MaxRandomGladiatorNameLength = 4;
+
+    private static readonly string[] GladiatorNamePool =
+    {
+        "마커스",
+        "세드릭",
+        "휴고",
+        "재스퍼",
+        "브루노",
+        "트리스탄",
+        "데이먼",
+        "펠릭스",
+        "쿠엔틴",
+        "말릭",
+        "로넌",
+        "개빈",
+        "토바이어스",
+        "레온",
+        "헥터",
+        "줄리언",
+        "오스카",
+        "라파엘",
+        "도미닉",
+        "이드리스",
+        "켈런",
+        "매그너스",
+        "레미",
+        "다리우스",
+        "베넷",
+        "자비에르",
+        "사일러스",
+        "콘래드",
+        "티아고",
+        "제인",
+        "에버렛",
+        "코맥",
+        "마테오",
+        "헨릭",
+        "본",
+        "기디언",
+        "앤설",
+        "트레버",
+        "웨슬리",
+        "파리스",
+        "파스칼",
+        "오리온",
+        "타릭",
+        "리암",
+        "알든",
+        "데클런",
+        "롤런드",
+        "스테판",
+        "알라릭",
+        "캘럼",
+        "에밀",
+        "파비안",
+        "호아킨",
+        "키건",
+        "리앤더",
+        "니콜라이",
+        "오티스",
+        "페리",
+        "로더릭",
+        "스텔란",
+        "울릭",
+        "밴스",
+        "워런",
+        "유수프",
+        "졸탄",
+        "에이브럼",
+        "캐스피언",
+        "에드거",
+        "플로리안",
+        "제리코",
+        "칼리드",
+        "로슨",
+        "메릭",
+        "나이얼",
+        "오렌",
+        "프레스턴",
+        "라스무스",
+        "설리번",
+        "태런",
+        "움베르토",
+        "윌프레드",
+        "요릭",
+        "안톤",
+        "바실",
+        "코빈",
+        "드미트리",
+        "프랑코",
+        "그레이디",
+        "브램",
+        "타데오",
+        "에즈라",
+        "루퍼트",
+        "가레스",
+        "그리핀",
+        "달턴",
+        "데스먼드",
+        "도리안",
+        "루카스",
+        "밀로",
+        "바스티안",
+        "브록",
+        "스펜서",
+        "알프레드",
+        "웬델",
+        "유진",
+        "카이우스",
+        "커티스",
+        "콜턴",
+        "클라이브",
+        "트로이",
+        "퍼거스",
+        "퍼시벌",
+        "하워드",
+        "호레이스",
+        "가웨인",
+        "세바스찬",
+        "레녹스",
+        "마빈",
+        "모건",
+        "챈들러",
+        "아이리스",
+        "나오미",
+        "비앙카",
+        "셀린",
+        "프레야",
+        "나디아",
+        "비비안",
+        "탈리아",
+        "카르멘",
+        "세레나",
+        "다프네",
+        "잉그리드",
+        "마리나",
+        "록사나",
+        "키라",
+        "조애나",
+        "이벳",
+        "노엘",
+        "사브리나",
+        "릴리스",
+        "헬레나",
+        "미레이유",
+        "오데사",
+        "발레리",
+        "지젤",
+        "타마라",
+        "엘로디",
+        "파라",
+        "이졸데",
+        "페트라",
+        "로웨나",
+        "클라우디아",
+        "네레아",
+        "조라",
+        "알리나",
+        "마엘",
+        "시몬",
+        "테레사",
+        "비올레타",
+        "셀레스트",
+        "다니카",
+        "에스텔",
+        "팔로마",
+        "모니크",
+        "자흐라",
+        "유니스",
+        "야라",
+        "플로렌스",
+        "다비나",
+        "콜레트",
+        "델핀",
+        "에이라",
+        "피오렐라",
+        "아우로라",
+        "이마니",
+        "조슬린",
+        "칼리스타",
+        "마리솔",
+        "네리사",
+        "오필리아",
+        "프리실라",
+        "라모나",
+        "태비사",
+        "우마",
+        "베리티",
+        "히메나",
+        "욜란다",
+        "지니아",
+        "아델라",
+        "브리지트",
+        "코랄리",
+        "파우스티나",
+        "제서민",
+        "라비니아",
+        "이사도라",
+        "조제트",
+        "오드리",
+        "레티시아",
+        "로레타",
+        "사빈",
+        "포샤",
+        "로저먼드",
+        "사미라",
+        "시어도라",
+        "발렌시아",
+        "세라핀",
+        "이자벨",
+        "줄레이카",
+        "마틸다",
+        "베레니스",
+        "카탈리나",
+        "엘비라",
+        "레나타",
+        "오틸리",
+        "카멜리아",
+        "마고",
+        "유도라",
+        "아그네스",
+        "카산드라",
+        "기네비어",
+        "펠리시티",
+        "그웬돌린",
+        "하이디",
+        "필리파",
+        "오거스타",
+        "샬럿",
+        "테간",
+        "코델리아",
+        "도로시",
+        "에블린",
+        "올리브",
+        "페넬로페",
+        "루실",
+        "우르술라",
+        "클레어",
+        "헨리에타",
+        "메이브",
+        "헤이즐",
+        "파이드라",
+        "모이라",
+        "그레첸",
+        "브렌나",
+    };
+
+    private static readonly string[] ShortGladiatorNamePool = BuildShortGladiatorNamePool();
+
     [SerializeField]
     private bool verboseLog = true;
 
@@ -225,7 +475,7 @@ public sealed class RecruitFactory : MonoBehaviour
                 return null;
             }
 
-            preview.DisplayName = BuildBattleEnemyDisplayName(encounterIndex, unitIndex);
+            preview.DisplayName = PickRandomGladiatorDisplayName(RandomStreamType.BattleEncounter);
 
             BattleUnitSnapshot snapshot = BattleUnitSnapshot.FromOwnedGladiator(preview, BattleTeamIds.Enemy);
             if (snapshot == null)
@@ -306,15 +556,7 @@ public sealed class RecruitFactory : MonoBehaviour
 
         int[] randomIndicates = GladiatorSkinManager.Instance.GenerateRandomSkinIndicates();
 
-        string displayName;
-        if (useSessionNameCounter && _sessionManager != null)
-        {
-            displayName = _sessionManager.ConsumeNextClassName(gladiatorTemplate.className);
-        }
-        else
-        {
-            displayName = "Enemy";
-        }
+        string displayName = PickRandomGladiatorDisplayName(streamType);
 
         OwnedGladiatorData preview = new OwnedGladiatorData(
             0,
@@ -383,15 +625,7 @@ public sealed class RecruitFactory : MonoBehaviour
 
         int[] randomIndicates = GladiatorSkinManager.Instance.GenerateRandomSkinIndicates();
 
-        string displayName;
-        if (useSessionNameCounter && _sessionManager != null)
-        {
-            displayName = _sessionManager.ConsumeNextClassName(gladiatorTemplate.className);
-        }
-        else
-        {
-            displayName = "Enemy";
-        }
+        string displayName = PickRandomGladiatorDisplayName(streamType);
 
         OwnedGladiatorData preview = new OwnedGladiatorData(
             0,
@@ -739,8 +973,38 @@ public sealed class RecruitFactory : MonoBehaviour
         return true;
     }
 
-    private static string BuildBattleEnemyDisplayName(int encounterIndex, int unitIndex)
+    public static string PickRandomGladiatorDisplayName(RandomManager randomManager, RandomStreamType streamType)
     {
-        return $"Enemy E{encounterIndex + 1}-{unitIndex + 1}";
+        string[] namePool = ShortGladiatorNamePool.Length > 0 ? ShortGladiatorNamePool : GladiatorNamePool;
+        if (namePool.Length == 0)
+        {
+            return "검투사";
+        }
+
+        int index =
+            randomManager != null
+                ? randomManager.NextInt(streamType, 0, namePool.Length)
+                : Random.Range(0, namePool.Length);
+        return namePool[index];
+    }
+
+    private string PickRandomGladiatorDisplayName(RandomStreamType streamType)
+    {
+        return PickRandomGladiatorDisplayName(_randomManager, streamType);
+    }
+
+    private static string[] BuildShortGladiatorNamePool()
+    {
+        List<string> names = new List<string>();
+        for (int i = 0; i < GladiatorNamePool.Length; i++)
+        {
+            string name = GladiatorNamePool[i];
+            if (!string.IsNullOrWhiteSpace(name) && name.Length <= MaxRandomGladiatorNameLength)
+            {
+                names.Add(name);
+            }
+        }
+
+        return names.ToArray();
     }
 }

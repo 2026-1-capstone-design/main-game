@@ -6,6 +6,9 @@ public readonly struct OwnedItemViewData
     public readonly Texture RawIcon;
     public readonly GameObject ModelPrefab;
     public readonly int[] ModelCustomizeIndicates;
+    public readonly GameObject LeftWeaponPrefab;
+    public readonly GameObject RightWeaponPrefab;
+    public readonly bool IsWeaponPreview;
     public readonly string DisplayName;
     public readonly string LevelText;
     public readonly string EquippedMarkText;
@@ -18,6 +21,9 @@ public readonly struct OwnedItemViewData
         RawIcon = null;
         ModelPrefab = null;
         ModelCustomizeIndicates = null;
+        LeftWeaponPrefab = null;
+        RightWeaponPrefab = null;
+        IsWeaponPreview = false;
         DisplayName = displayName;
         LevelText = string.Empty;
         EquippedMarkText = string.Empty;
@@ -31,6 +37,9 @@ public readonly struct OwnedItemViewData
         RawIcon = null;
         ModelPrefab = null;
         ModelCustomizeIndicates = null;
+        LeftWeaponPrefab = null;
+        RightWeaponPrefab = null;
+        IsWeaponPreview = false;
         DisplayName = displayName;
         LevelText = levelText;
         EquippedMarkText = equippedMarkText;
@@ -52,6 +61,9 @@ public readonly struct OwnedItemViewData
         RawIcon = rawIcon;
         ModelPrefab = null;
         ModelCustomizeIndicates = null;
+        LeftWeaponPrefab = null;
+        RightWeaponPrefab = null;
+        IsWeaponPreview = false;
         DisplayName = displayName;
         LevelText = levelText;
         EquippedMarkText = equippedMarkText;
@@ -62,6 +74,33 @@ public readonly struct OwnedItemViewData
     public OwnedItemViewData(
         GameObject modelPrefab,
         int[] modelCustomizeIndicates,
+        GameObject leftWeaponPrefab,
+        GameObject rightWeaponPrefab,
+        Sprite fallbackIcon,
+        string displayName,
+        string levelText,
+        string equippedMarkText,
+        object source
+    )
+        : this(
+            modelPrefab,
+            modelCustomizeIndicates,
+            leftWeaponPrefab,
+            rightWeaponPrefab,
+            false,
+            fallbackIcon,
+            displayName,
+            levelText,
+            equippedMarkText,
+            source
+        ) { }
+
+    public OwnedItemViewData(
+        GameObject modelPrefab,
+        int[] modelCustomizeIndicates,
+        GameObject leftWeaponPrefab,
+        GameObject rightWeaponPrefab,
+        bool isWeaponPreview,
         Sprite fallbackIcon,
         string displayName,
         string levelText,
@@ -73,6 +112,9 @@ public readonly struct OwnedItemViewData
         RawIcon = null;
         ModelPrefab = modelPrefab;
         ModelCustomizeIndicates = modelCustomizeIndicates;
+        LeftWeaponPrefab = leftWeaponPrefab;
+        RightWeaponPrefab = rightWeaponPrefab;
+        IsWeaponPreview = isWeaponPreview;
         DisplayName = displayName;
         LevelText = levelText;
         EquippedMarkText = equippedMarkText;
@@ -82,13 +124,57 @@ public readonly struct OwnedItemViewData
 
     public OwnedItemViewData(
         GameObject modelPrefab,
+        int[] modelCustomizeIndicates,
         Sprite fallbackIcon,
         string displayName,
         string levelText,
         string equippedMarkText,
         object source
     )
-        : this(modelPrefab, null, fallbackIcon, displayName, levelText, equippedMarkText, source) { }
+        : this(
+            modelPrefab,
+            modelCustomizeIndicates,
+            null,
+            null,
+            false,
+            fallbackIcon,
+            displayName,
+            levelText,
+            equippedMarkText,
+            source
+        ) { }
+
+    public OwnedItemViewData(
+        GameObject modelPrefab,
+        Sprite fallbackIcon,
+        string displayName,
+        string levelText,
+        string equippedMarkText,
+        object source
+    )
+        : this(modelPrefab, null, null, null, false, fallbackIcon, displayName, levelText, equippedMarkText, source) { }
+
+    public OwnedItemViewData(
+        GameObject leftWeaponPrefab,
+        GameObject rightWeaponPrefab,
+        Sprite fallbackIcon,
+        string displayName,
+        string levelText,
+        string equippedMarkText,
+        object source
+    )
+        : this(
+            null,
+            null,
+            leftWeaponPrefab,
+            rightWeaponPrefab,
+            true,
+            fallbackIcon,
+            displayName,
+            levelText,
+            equippedMarkText,
+            source
+        ) { }
 
     public static OwnedItemViewData Placeholder(Sprite icon)
     {

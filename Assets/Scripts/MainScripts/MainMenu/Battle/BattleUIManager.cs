@@ -52,22 +52,27 @@ public sealed class BattleUIManager : MonoBehaviour
     private TMP_Text rewardGoldText;
 
     [SerializeField]
-    private Image enemyIcon1;
+    private RawImage enemyIcon1;
 
     [SerializeField]
-    private Image enemyIcon2;
+    private RawImage enemyIcon2;
 
     [SerializeField]
-    private Image enemyIcon3;
+    private RawImage enemyIcon3;
 
     [SerializeField]
-    private Image enemyIcon4;
+    private RawImage enemyIcon4;
 
     [SerializeField]
-    private Image enemyIcon5;
+    private RawImage enemyIcon5;
 
     [SerializeField]
-    private Image enemyIcon6;
+    private RawImage enemyIcon6;
+
+    [SerializeField]
+    private GladiatorModelPreviewView[] enemyIconModelPreviewViews = new GladiatorModelPreviewView[
+        BattleTeamConstants.MaxUnitsPerTeam
+    ];
 
     [SerializeField]
     private TMP_Text enemyNameText1;
@@ -119,7 +124,12 @@ public sealed class BattleUIManager : MonoBehaviour
     private Button[] allySquadButtons = new Button[SquadManager.SquadTeamCount];
 
     [SerializeField]
-    private Image[] allyImages = new Image[BattleTeamConstants.MaxUnitsPerTeam];
+    private RawImage[] allyImages = new RawImage[BattleTeamConstants.MaxUnitsPerTeam];
+
+    [SerializeField]
+    private GladiatorModelPreviewView[] allyImageModelPreviewViews = new GladiatorModelPreviewView[
+        BattleTeamConstants.MaxUnitsPerTeam
+    ];
 
     [SerializeField]
     private TMP_Text[] allyNameTexts = new TMP_Text[BattleTeamConstants.MaxUnitsPerTeam];
@@ -129,6 +139,11 @@ public sealed class BattleUIManager : MonoBehaviour
 
     [SerializeField]
     private Image[] allyWeaponImages = new Image[BattleTeamConstants.MaxUnitsPerTeam];
+
+    [SerializeField]
+    private WeaponModelPreviewView[] allyWeaponPreviewViews = new WeaponModelPreviewView[
+        BattleTeamConstants.MaxUnitsPerTeam
+    ];
 
     [SerializeField]
     private Image[] allyArtifactImages = new Image[BattleTeamConstants.MaxUnitsPerTeam * 3];
@@ -141,7 +156,10 @@ public sealed class BattleUIManager : MonoBehaviour
     private Vector2 enemyTooltipOffset = new Vector2(16f, -8f);
 
     [SerializeField]
-    private Image enemyTooltipIcon;
+    private RawImage enemyTooltipIcon;
+
+    [SerializeField]
+    private GladiatorModelPreviewView enemyTooltipModelPreviewView;
 
     [SerializeField]
     private TMP_Text enemyTooltipLevelText;
@@ -200,7 +218,12 @@ public sealed class BattleUIManager : MonoBehaviour
     private Button deploymentBackButton;
 
     [SerializeField]
-    private Image[] deployEnemyIcons = new Image[BattleTeamConstants.MaxUnitsPerTeam];
+    private RawImage[] deployEnemyIcons = new RawImage[BattleTeamConstants.MaxUnitsPerTeam];
+
+    [SerializeField]
+    private GladiatorModelPreviewView[] deployEnemyModelPreviewViews = new GladiatorModelPreviewView[
+        BattleTeamConstants.MaxUnitsPerTeam
+    ];
 
     [SerializeField]
     private Image[] deployEnemyMaskImages = new Image[BattleTeamConstants.MaxUnitsPerTeam];
@@ -209,7 +232,12 @@ public sealed class BattleUIManager : MonoBehaviour
     private TMP_Text[] deployEnemyLevelTexts = new TMP_Text[BattleTeamConstants.MaxUnitsPerTeam];
 
     [SerializeField]
-    private Image[] deployAllyIcons = new Image[BattleTeamConstants.MaxUnitsPerTeam];
+    private RawImage[] deployAllyIcons = new RawImage[BattleTeamConstants.MaxUnitsPerTeam];
+
+    [SerializeField]
+    private GladiatorModelPreviewView[] deployAllyModelPreviewViews = new GladiatorModelPreviewView[
+        BattleTeamConstants.MaxUnitsPerTeam
+    ];
 
     [SerializeField]
     private Image[] deployAllyMaskImages = new Image[BattleTeamConstants.MaxUnitsPerTeam];
@@ -221,13 +249,23 @@ public sealed class BattleUIManager : MonoBehaviour
     private RectTransform[] deploymentBoardEnemyViews = new RectTransform[BattleTeamConstants.MaxUnitsPerTeam];
 
     [SerializeField]
-    private Image[] deploymentBoardEnemyIcons = new Image[BattleTeamConstants.MaxUnitsPerTeam];
+    private RawImage[] deploymentBoardEnemyIcons = new RawImage[BattleTeamConstants.MaxUnitsPerTeam];
+
+    [SerializeField]
+    private GladiatorModelPreviewView[] deploymentBoardEnemyModelPreviewViews = new GladiatorModelPreviewView[
+        BattleTeamConstants.MaxUnitsPerTeam
+    ];
 
     [SerializeField]
     private RectTransform[] deploymentBoardAllyViews = new RectTransform[BattleTeamConstants.MaxUnitsPerTeam];
 
     [SerializeField]
-    private Image[] deploymentBoardAllyIcons = new Image[BattleTeamConstants.MaxUnitsPerTeam];
+    private RawImage[] deploymentBoardAllyIcons = new RawImage[BattleTeamConstants.MaxUnitsPerTeam];
+
+    [SerializeField]
+    private GladiatorModelPreviewView[] deploymentBoardAllyModelPreviewViews = new GladiatorModelPreviewView[
+        BattleTeamConstants.MaxUnitsPerTeam
+    ];
 
     private MainFlowManager _flow;
     private BattleManager _battleManager;
@@ -244,6 +282,7 @@ public sealed class BattleUIManager : MonoBehaviour
         BattleTeamConstants.MaxUnitsPerTeam
     ];
     private readonly bool[] _isAllyBoardIconPlacedBySlot = new bool[BattleTeamConstants.MaxUnitsPerTeam];
+    private readonly Vector3[] _deploymentBoardViewWorldCorners = new Vector3[4];
     private int _currentEncounterIndex = -1;
     private int _selectedAllyInfoTeamIndex;
     private int _deploymentSquadTeamIndex;
@@ -271,6 +310,7 @@ public sealed class BattleUIManager : MonoBehaviour
         BindButton(deploymentStartButton, OnDeploymentStartClicked);
         BindButton(deploymentBackButton, OnDeploymentBackClicked);
         BindAllySquadButtons();
+        CacheModelPreviewViews();
         BindEnemyHoverTargets();
         BindAllyHoverTargets();
         BindDeploymentAllyDragTargets();
@@ -405,7 +445,7 @@ public sealed class BattleUIManager : MonoBehaviour
 
     private void RenderEnemyImages(BattleEncounterPreview encounter)
     {
-        Image[] enemyIcons = GetEnemyIcons();
+        RawImage[] enemyIcons = GetEnemyIcons();
         TMP_Text[] enemyNameTexts = GetEnemyNameTexts();
         TMP_Text[] enemyLevelTexts = GetEnemyLevelTexts();
 
@@ -420,8 +460,12 @@ public sealed class BattleUIManager : MonoBehaviour
 
             if (enemyIcons[i] != null)
             {
-                enemyIcons[i].sprite = hasEnemy ? enemy.PortraitSprite : null;
-                enemyIcons[i].enabled = hasEnemy && enemy.PortraitSprite != null;
+                SetUnitPreview(
+                    enemyIcons[i],
+                    GetArrayValue(enemyIconModelPreviewViews, i),
+                    enemy,
+                    hasEnemy ? enemy.PortraitSprite : null
+                );
             }
 
             if (enemyNameTexts[i] != null)
@@ -438,7 +482,7 @@ public sealed class BattleUIManager : MonoBehaviour
 
     private void ClearEnemySlots()
     {
-        Image[] enemyIcons = GetEnemyIcons();
+        RawImage[] enemyIcons = GetEnemyIcons();
         TMP_Text[] enemyNameTexts = GetEnemyNameTexts();
         TMP_Text[] enemyLevelTexts = GetEnemyLevelTexts();
         HideEnemyTooltip();
@@ -449,8 +493,7 @@ public sealed class BattleUIManager : MonoBehaviour
 
             if (enemyIcons[i] != null)
             {
-                enemyIcons[i].sprite = null;
-                enemyIcons[i].enabled = false;
+                SetUnitPreview(enemyIcons[i], GetArrayValue(enemyIconModelPreviewViews, i), null, null);
             }
 
             if (enemyNameTexts[i] != null)
@@ -484,11 +527,19 @@ public sealed class BattleUIManager : MonoBehaviour
                 ally != null ? BattleUnitSnapshot.FromOwnedGladiator(ally, BattleTeamIds.Player) : null;
             _visibleAllies[i] = snapshot;
 
-            Sprite portrait = snapshot != null ? snapshot.PortraitSprite : null;
-            SetImage(GetArrayValue(allyImages, i), portrait);
+            SetUnitPreview(
+                GetArrayValue(allyImages, i),
+                GetArrayValue(allyImageModelPreviewViews, i),
+                snapshot,
+                snapshot != null ? snapshot.PortraitSprite : null
+            );
             SetText(GetArrayValue(allyNameTexts, i), snapshot != null ? snapshot.DisplayName : string.Empty);
             SetText(GetArrayValue(allyLevelTexts, i), snapshot != null ? $"Lv.{snapshot.Level}" : string.Empty);
-            SetImage(GetArrayValue(allyWeaponImages, i), ally != null ? ally.EquippedWeapon?.Weapon?.icon : null);
+            SetWeaponPreview(
+                GetArrayValue(allyWeaponImages, i),
+                GetArrayValue(allyWeaponPreviewViews, i),
+                ally?.EquippedWeapon
+            );
             SetAllyArtifactImages(i, ally);
         }
     }
@@ -499,10 +550,10 @@ public sealed class BattleUIManager : MonoBehaviour
         for (int i = 0; i < _visibleAllies.Length; i++)
         {
             _visibleAllies[i] = null;
-            SetImage(GetArrayValue(allyImages, i), null);
+            SetUnitPreview(GetArrayValue(allyImages, i), GetArrayValue(allyImageModelPreviewViews, i), null, null);
             SetText(GetArrayValue(allyNameTexts, i), string.Empty);
             SetText(GetArrayValue(allyLevelTexts, i), string.Empty);
-            SetImage(GetArrayValue(allyWeaponImages, i), null);
+            SetWeaponPreview(GetArrayValue(allyWeaponImages, i), GetArrayValue(allyWeaponPreviewViews, i), null);
             SetAllyArtifactImages(i, null);
         }
     }
@@ -641,7 +692,7 @@ public sealed class BattleUIManager : MonoBehaviour
         }
     }
 
-    private Image[] GetEnemyIcons()
+    private RawImage[] GetEnemyIcons()
     {
         return new[] { enemyIcon1, enemyIcon2, enemyIcon3, enemyIcon4, enemyIcon5, enemyIcon6 };
     }
@@ -694,99 +745,102 @@ public sealed class BattleUIManager : MonoBehaviour
 
     private void BindEnemyHoverTargets()
     {
-        Image[] enemyIcons = GetEnemyIcons();
-        for (int i = 0; i < enemyIcons.Length; i++)
-        {
-            Image enemyIcon = enemyIcons[i];
-            if (enemyIcon == null)
-            {
-                continue;
-            }
-
-            enemyIcon.raycastTarget = true;
-
-            BindEnemyHoverTarget(enemyIcon, i);
-        }
+        BindUnitHoverTargets(GetEnemyIcons(), isEnemy: true);
+        BindUnitHoverTargets(deployEnemyIcons, isEnemy: true);
+        BindUnitHoverTargets(deploymentBoardEnemyIcons, isEnemy: true);
     }
 
     private void BindAllyHoverTargets()
     {
-        if (allyImages == null)
+        BindUnitHoverTargets(allyImages, isEnemy: false);
+        BindUnitHoverTargets(deployAllyIcons, isEnemy: false);
+        BindUnitHoverTargets(deploymentBoardAllyIcons, isEnemy: false);
+    }
+
+    private void BindUnitHoverTargets(RawImage[] targets, bool isEnemy)
+    {
+        if (targets == null)
         {
             return;
         }
 
-        for (int i = 0; i < allyImages.Length; i++)
+        for (int i = 0; i < targets.Length; i++)
         {
-            Image allyImage = allyImages[i];
-            if (allyImage == null)
+            RawImage target = targets[i];
+            if (target == null)
             {
                 continue;
             }
 
-            allyImage.raycastTarget = true;
-            BindAllyHoverTarget(allyImage, i);
+            target.raycastTarget = true;
+            BindUnitHoverTarget(target, i, isEnemy);
         }
     }
 
-    private void BindEnemyHoverTarget(Image enemyIcon, int enemyIndex)
+    private void BindUnitHoverTarget(RawImage target, int unitIndex, bool isEnemy)
     {
-        EventTrigger trigger = enemyIcon.GetComponent<EventTrigger>();
+        EventTrigger trigger = target.GetComponent<EventTrigger>();
         if (trigger == null)
         {
-            trigger = enemyIcon.gameObject.AddComponent<EventTrigger>();
+            trigger = target.gameObject.AddComponent<EventTrigger>();
         }
 
         trigger.triggers.RemoveAll(entry =>
             entry.eventID == EventTriggerType.PointerEnter || entry.eventID == EventTriggerType.PointerExit
         );
 
-        AddEventTriggerEntry(trigger, EventTriggerType.PointerEnter, _ => OnEnemyPointerEntered(enemyIndex));
-        AddEventTriggerEntry(trigger, EventTriggerType.PointerExit, _ => OnEnemyPointerExited(enemyIndex));
-    }
-
-    private void BindAllyHoverTarget(Image allyImage, int allyIndex)
-    {
-        EventTrigger trigger = allyImage.GetComponent<EventTrigger>();
-        if (trigger == null)
+        if (isEnemy)
         {
-            trigger = allyImage.gameObject.AddComponent<EventTrigger>();
+            AddEventTriggerEntry(trigger, EventTriggerType.PointerEnter, _ => OnEnemyPointerEntered(unitIndex));
+            AddEventTriggerEntry(trigger, EventTriggerType.PointerExit, _ => OnEnemyPointerExited(unitIndex));
         }
-
-        trigger.triggers.RemoveAll(entry =>
-            entry.eventID == EventTriggerType.PointerEnter || entry.eventID == EventTriggerType.PointerExit
-        );
-
-        AddEventTriggerEntry(trigger, EventTriggerType.PointerEnter, _ => OnAllyPointerEntered(allyIndex));
-        AddEventTriggerEntry(trigger, EventTriggerType.PointerExit, _ => OnAllyPointerExited(allyIndex));
+        else
+        {
+            AddEventTriggerEntry(trigger, EventTriggerType.PointerEnter, _ => OnAllyPointerEntered(unitIndex));
+            AddEventTriggerEntry(trigger, EventTriggerType.PointerExit, _ => OnAllyPointerExited(unitIndex));
+        }
     }
 
     private void BindDeploymentAllyDragTargets()
     {
-        if (deployAllyIcons == null)
+        if (deploymentBoardAllyIcons == null)
         {
             return;
         }
 
-        for (int i = 0; i < deployAllyIcons.Length; i++)
+        for (int i = 0; i < deploymentBoardAllyIcons.Length; i++)
         {
-            Image allyIcon = deployAllyIcons[i];
-            if (allyIcon == null)
+            RawImage allyIcon = deploymentBoardAllyIcons[i];
+            RectTransform boardView = GetDeploymentBoardView(i, true);
+            if (boardView != null)
             {
-                continue;
+                Graphic[] graphics = boardView.GetComponentsInChildren<Graphic>(true);
+                for (int j = 0; j < graphics.Length; j++)
+                {
+                    if (graphics[j] == null)
+                    {
+                        continue;
+                    }
+
+                    graphics[j].raycastTarget = true;
+                    BindDeploymentAllyDragTarget(graphics[j], i);
+                }
             }
 
-            allyIcon.raycastTarget = true;
-            BindDeploymentAllyDragTarget(allyIcon, i);
+            if (allyIcon != null)
+            {
+                allyIcon.raycastTarget = true;
+                BindDeploymentAllyDragTarget(allyIcon, i);
+            }
         }
     }
 
-    private void BindDeploymentAllyDragTarget(Image allyIcon, int slotIndex)
+    private void BindDeploymentAllyDragTarget(Graphic dragTarget, int slotIndex)
     {
-        EventTrigger trigger = allyIcon.GetComponent<EventTrigger>();
+        EventTrigger trigger = dragTarget.GetComponent<EventTrigger>();
         if (trigger == null)
         {
-            trigger = allyIcon.gameObject.AddComponent<EventTrigger>();
+            trigger = dragTarget.gameObject.AddComponent<EventTrigger>();
         }
 
         trigger.triggers.RemoveAll(entry =>
@@ -842,13 +896,12 @@ public sealed class BattleUIManager : MonoBehaviour
 
         if (enemyTooltipIcon != null)
         {
-            enemyTooltipIcon.sprite = unit.PortraitSprite;
-            enemyTooltipIcon.enabled = unit.PortraitSprite != null;
+            SetUnitPreview(enemyTooltipIcon, enemyTooltipModelPreviewView, unit, unit.PortraitSprite);
         }
 
         SetText(enemyTooltipLevelText, unit.Level.ToString());
         SetText(enemyTooltipAttackText, FormatStat(unit.Attack));
-        SetText(enemyTooltipHealthText, FormatStat(unit.MaxHealth));
+        SetText(enemyTooltipHealthText, FormatHealth(unit.MaxHealth));
         SetText(enemyTooltipAttackSpeedText, FormatStat(unit.AttackSpeed));
         SetText(enemyTooltipMoveSpeedText, FormatStat(unit.MoveSpeed));
         SetText(enemyTooltipRangeText, FormatStat(unit.AttackRange));
@@ -872,6 +925,8 @@ public sealed class BattleUIManager : MonoBehaviour
         {
             enemyTooltipRoot.gameObject.SetActive(false);
         }
+
+        SetUnitPreview(enemyTooltipIcon, enemyTooltipModelPreviewView, null, null);
     }
 
     private void RefreshEnemyTooltipHoverFallback()
@@ -905,47 +960,66 @@ public sealed class BattleUIManager : MonoBehaviour
         }
 
         Vector2 screenPosition = Mouse.current.position.ReadValue();
-        Image[] enemyIcons = GetEnemyIcons();
-        for (int i = 0; i < enemyIcons.Length; i++)
+        int hoveredIndex = GetHoveredUnitIndex(screenPosition, _visibleEnemies, GetEnemyIcons());
+        if (hoveredIndex >= 0)
         {
-            Image enemyIcon = enemyIcons[i];
-            if (enemyIcon == null || !enemyIcon.gameObject.activeInHierarchy || _visibleEnemies[i] == null)
-            {
-                continue;
-            }
-
-            RectTransform rectTransform = enemyIcon.rectTransform;
-            Canvas canvas = enemyIcon.GetComponentInParent<Canvas>();
-            Camera eventCamera =
-                canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
-            if (RectTransformUtility.RectangleContainsScreenPoint(rectTransform, screenPosition, eventCamera))
-            {
-                return i;
-            }
+            return hoveredIndex;
         }
 
-        return -1;
+        hoveredIndex = GetHoveredUnitIndex(screenPosition, _visibleEnemies, deployEnemyIcons);
+        if (hoveredIndex >= 0)
+        {
+            return hoveredIndex;
+        }
+
+        return GetHoveredUnitIndex(screenPosition, _visibleEnemies, deploymentBoardEnemyIcons);
     }
 
     private int GetHoveredAllyIndex()
     {
-        if (Mouse.current == null || allyImages == null)
+        if (Mouse.current == null)
         {
             return -1;
         }
 
         Vector2 screenPosition = Mouse.current.position.ReadValue();
-        int count = Mathf.Min(allyImages.Length, _visibleAllies.Length);
+        int hoveredIndex = GetHoveredUnitIndex(screenPosition, _visibleAllies, allyImages);
+        if (hoveredIndex >= 0)
+        {
+            return hoveredIndex;
+        }
+
+        hoveredIndex = GetHoveredUnitIndex(screenPosition, _visibleAllies, deployAllyIcons);
+        if (hoveredIndex >= 0)
+        {
+            return hoveredIndex;
+        }
+
+        return GetHoveredUnitIndex(screenPosition, _visibleAllies, deploymentBoardAllyIcons);
+    }
+
+    private static int GetHoveredUnitIndex(
+        Vector2 screenPosition,
+        BattleUnitSnapshot[] visibleUnits,
+        RawImage[] targetImages
+    )
+    {
+        if (visibleUnits == null || targetImages == null)
+        {
+            return -1;
+        }
+
+        int count = Mathf.Min(targetImages.Length, visibleUnits.Length);
         for (int i = 0; i < count; i++)
         {
-            Image allyImage = allyImages[i];
-            if (allyImage == null || !allyImage.gameObject.activeInHierarchy || _visibleAllies[i] == null)
+            RawImage targetImage = targetImages[i];
+            if (targetImage == null || !targetImage.gameObject.activeInHierarchy || visibleUnits[i] == null)
             {
                 continue;
             }
 
-            RectTransform rectTransform = allyImage.rectTransform;
-            Canvas canvas = allyImage.GetComponentInParent<Canvas>();
+            RectTransform rectTransform = targetImage.rectTransform;
+            Canvas canvas = targetImage.GetComponentInParent<Canvas>();
             Camera eventCamera =
                 canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
             if (RectTransformUtility.RectangleContainsScreenPoint(rectTransform, screenPosition, eventCamera))
@@ -1091,8 +1165,22 @@ public sealed class BattleUIManager : MonoBehaviour
         SetComponentActive(rewardGoldText, value);
         SetActive(enemyInfoPanelRoot, value);
         SetActive(allyInfoPanelRoot, value);
+        SetAllySquadButtonsActive(value);
         SetComponentActive(startButton, value);
         SetComponentActive(backButton, value);
+    }
+
+    private void SetAllySquadButtonsActive(bool value)
+    {
+        if (allySquadButtons == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < allySquadButtons.Length; i++)
+        {
+            SetComponentActive(allySquadButtons[i], value);
+        }
     }
 
     private void RefreshDeploymentAllyList()
@@ -1101,11 +1189,24 @@ public sealed class BattleUIManager : MonoBehaviour
         for (int i = 0; i < BattleTeamConstants.MaxUnitsPerTeam; i++)
         {
             OwnedGladiatorData ally = allies != null && i < allies.Count ? allies[i] : null;
-            SetImage(GetArrayValue(deployAllyIcons, i), ally != null ? ally.GladiatorClass?.icon : null);
+            BattleUnitSnapshot allySnapshot =
+                ally != null ? BattleUnitSnapshot.FromOwnedGladiator(ally, BattleTeamIds.Player) : null;
+            _visibleAllies[i] = allySnapshot;
+            SetUnitPreview(
+                GetArrayValue(deployAllyIcons, i),
+                GetArrayValue(deployAllyModelPreviewViews, i),
+                allySnapshot,
+                allySnapshot != null ? allySnapshot.PortraitSprite : null
+            );
             SetComponentActive(GetArrayValue(deployAllyMaskImages, i), ally != null);
             SetText(GetArrayValue(deployAllyLevelTexts, i), ally != null ? $"Lv.{ally.Level}" : string.Empty);
-            SetImage(GetArrayValue(deploymentBoardAllyIcons, i), ally != null ? ally.GladiatorClass?.icon : null);
-            SetDeploymentBoardViewActive(i, true, ally != null && _isAllyBoardIconPlacedBySlot[i]);
+            SetUnitPreview(
+                GetArrayValue(deploymentBoardAllyIcons, i),
+                GetArrayValue(deploymentBoardAllyModelPreviewViews, i),
+                allySnapshot,
+                allySnapshot != null ? allySnapshot.PortraitSprite : null
+            );
+            SetDeploymentBoardViewActive(i, true, ally != null);
             SetDeploymentBoardViewPosition(i, true, _allyNormalizedPositionsByDeploymentSlot[i]);
         }
     }
@@ -1119,10 +1220,21 @@ public sealed class BattleUIManager : MonoBehaviour
         for (int i = 0; i < BattleTeamConstants.MaxUnitsPerTeam; i++)
         {
             BattleUnitSnapshot enemy = i < enemyCount ? enemies[i] : null;
-            SetImage(GetArrayValue(deployEnemyIcons, i), enemy != null ? enemy.PortraitSprite : null);
+            _visibleEnemies[i] = enemy;
+            SetUnitPreview(
+                GetArrayValue(deployEnemyIcons, i),
+                GetArrayValue(deployEnemyModelPreviewViews, i),
+                enemy,
+                enemy != null ? enemy.PortraitSprite : null
+            );
             SetComponentActive(GetArrayValue(deployEnemyMaskImages, i), enemy != null);
             SetText(GetArrayValue(deployEnemyLevelTexts, i), enemy != null ? $"Lv.{enemy.Level}" : string.Empty);
-            SetImage(GetArrayValue(deploymentBoardEnemyIcons, i), enemy != null ? enemy.PortraitSprite : null);
+            SetUnitPreview(
+                GetArrayValue(deploymentBoardEnemyIcons, i),
+                GetArrayValue(deploymentBoardEnemyModelPreviewViews, i),
+                enemy,
+                enemy != null ? enemy.PortraitSprite : null
+            );
             SetDeploymentBoardViewActive(i, false, enemy != null);
             SetDeploymentBoardViewPosition(i, false, _enemyNormalizedPositionsByDeploymentSlot[i]);
         }
@@ -1230,7 +1342,20 @@ public sealed class BattleUIManager : MonoBehaviour
             center.y + normalizedPosition.y * rect.height * 0.5f
         );
         Vector3 worldPoint = deploymentBoardArea.TransformPoint(localPoint);
-        view.position = worldPoint;
+        view.position = GetPivotPositionForRectCenter(view, worldPoint);
+    }
+
+    private Vector3 GetPivotPositionForRectCenter(RectTransform rectTransform, Vector3 targetCenterWorldPosition)
+    {
+        if (rectTransform == null)
+        {
+            return targetCenterWorldPosition;
+        }
+
+        rectTransform.GetWorldCorners(_deploymentBoardViewWorldCorners);
+        Vector3 currentCenter = (_deploymentBoardViewWorldCorners[0] + _deploymentBoardViewWorldCorners[2]) * 0.5f;
+        Vector3 pivotToCenter = currentCenter - rectTransform.position;
+        return targetCenterWorldPosition - pivotToCenter;
     }
 
     private RectTransform GetDeploymentBoardView(int slotIndex, bool isPlayerTeam)
@@ -1244,7 +1369,7 @@ public sealed class BattleUIManager : MonoBehaviour
             return view;
         }
 
-        Image fallbackImage = GetArrayValue(
+        RawImage fallbackImage = GetArrayValue(
             isPlayerTeam ? deploymentBoardAllyIcons : deploymentBoardEnemyIcons,
             slotIndex
         );
@@ -1299,6 +1424,7 @@ public sealed class BattleUIManager : MonoBehaviour
                     count,
                     true
                 );
+                _isAllyBoardIconPlacedBySlot[i] = true;
             }
         }
     }
@@ -1394,7 +1520,12 @@ public sealed class BattleUIManager : MonoBehaviour
                 BattleTeamConstants.MaxUnitsPerTeam,
                 true
             );
-            SetImage(GetArrayValue(deploymentBoardAllyIcons, i), null);
+            SetUnitPreview(
+                GetArrayValue(deploymentBoardAllyIcons, i),
+                GetArrayValue(deploymentBoardAllyModelPreviewViews, i),
+                null,
+                null
+            );
             SetDeploymentBoardViewActive(i, true, false);
             _isAllyBoardIconPlacedBySlot[i] = false;
         }
@@ -1407,7 +1538,12 @@ public sealed class BattleUIManager : MonoBehaviour
                 BattleTeamConstants.MaxUnitsPerTeam,
                 false
             );
-            SetImage(GetArrayValue(deploymentBoardEnemyIcons, i), null);
+            SetUnitPreview(
+                GetArrayValue(deploymentBoardEnemyIcons, i),
+                GetArrayValue(deploymentBoardEnemyModelPreviewViews, i),
+                null,
+                null
+            );
             SetDeploymentBoardViewActive(i, false, false);
         }
 
@@ -1570,6 +1706,136 @@ public sealed class BattleUIManager : MonoBehaviour
         return array != null && index >= 0 && index < array.Length ? array[index] : null;
     }
 
+    private void CacheModelPreviewViews()
+    {
+        RawImage[] enemyIcons = GetEnemyIcons();
+        CacheModelPreviewViewArray(enemyIcons, ref enemyIconModelPreviewViews);
+        CacheModelPreviewViewArray(allyImages, ref allyImageModelPreviewViews);
+        CacheModelPreviewViewArray(deployEnemyIcons, ref deployEnemyModelPreviewViews);
+        CacheModelPreviewViewArray(deployAllyIcons, ref deployAllyModelPreviewViews);
+        CacheModelPreviewViewArray(deploymentBoardEnemyIcons, ref deploymentBoardEnemyModelPreviewViews);
+        CacheModelPreviewViewArray(deploymentBoardAllyIcons, ref deploymentBoardAllyModelPreviewViews);
+        CacheImageWeaponPreviewViewArray(allyWeaponImages, ref allyWeaponPreviewViews);
+
+        if (enemyTooltipModelPreviewView == null && enemyTooltipIcon != null)
+        {
+            enemyTooltipModelPreviewView = enemyTooltipIcon.GetComponentInChildren<GladiatorModelPreviewView>(true);
+        }
+    }
+
+    private static void CacheModelPreviewViewArray(RawImage[] images, ref GladiatorModelPreviewView[] previews)
+    {
+        if (images == null)
+        {
+            return;
+        }
+
+        if (previews == null || previews.Length != images.Length)
+        {
+            System.Array.Resize(ref previews, images.Length);
+        }
+
+        for (int i = 0; i < images.Length; i++)
+        {
+            if (previews[i] == null && images[i] != null)
+            {
+                previews[i] = images[i].GetComponentInChildren<GladiatorModelPreviewView>(true);
+            }
+        }
+    }
+
+    private static void CacheImageWeaponPreviewViewArray(Image[] images, ref WeaponModelPreviewView[] previews)
+    {
+        if (images == null)
+        {
+            return;
+        }
+
+        if (previews == null || previews.Length != images.Length)
+        {
+            System.Array.Resize(ref previews, images.Length);
+        }
+
+        for (int i = 0; i < images.Length; i++)
+        {
+            if (previews[i] == null && images[i] != null)
+            {
+                previews[i] = images[i].GetComponentInChildren<WeaponModelPreviewView>(true);
+            }
+        }
+    }
+
+    private static void SetUnitPreview(
+        RawImage fallbackImage,
+        GladiatorModelPreviewView modelPreviewView,
+        BattleUnitSnapshot unit,
+        Sprite fallbackSprite
+    )
+    {
+        GameObject modelPrefab =
+            unit != null && unit.GladiatorClass != null ? unit.GladiatorClass.previewModelPrefab : null;
+        bool useModelPreview = modelPreviewView != null && modelPrefab != null;
+
+        if (modelPreviewView != null)
+        {
+            if (useModelPreview)
+            {
+                modelPreviewView.Show(
+                    modelPrefab,
+                    unit.CustomizeIndicates,
+                    unit.LeftWeaponPrefab,
+                    unit.RightWeaponPrefab
+                );
+            }
+            else
+            {
+                modelPreviewView.Clear();
+            }
+        }
+
+        if (fallbackImage == null)
+        {
+            return;
+        }
+
+        if (useModelPreview)
+        {
+            if (!modelPreviewView.UsesTargetImage(fallbackImage))
+            {
+                SetRawImage(fallbackImage, null);
+            }
+
+            return;
+        }
+
+        SetRawImage(fallbackImage, fallbackSprite);
+    }
+
+    private static void SetWeaponPreview(
+        Image fallbackImage,
+        WeaponModelPreviewView modelPreviewView,
+        OwnedWeaponData weapon
+    )
+    {
+        GameObject leftPrefab = weapon?.Weapon?.leftWeaponPrefab;
+        GameObject rightPrefab = weapon?.Weapon?.rightWeaponPrefab;
+        bool usePreview = modelPreviewView != null && (leftPrefab != null || rightPrefab != null);
+
+        if (modelPreviewView != null)
+        {
+            if (usePreview)
+            {
+                modelPreviewView.Show(leftPrefab, rightPrefab);
+            }
+            else
+            {
+                modelPreviewView.Clear();
+            }
+        }
+
+        SetImage(fallbackImage, usePreview ? null : weapon?.Weapon?.icon);
+    }
+
     private static void SetImage(Image target, Sprite sprite)
     {
         if (target == null)
@@ -1611,6 +1877,11 @@ public sealed class BattleUIManager : MonoBehaviour
     private static string FormatStat(float value)
     {
         return value.ToString("0.#");
+    }
+
+    private static string FormatHealth(float value)
+    {
+        return Mathf.RoundToInt(value).ToString();
     }
 
     public void OnEnemyPointerEntered(int enemyIndex)

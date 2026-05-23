@@ -32,6 +32,8 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     [SerializeField]
     private TMP_Text statusText;
 
+    private bool _isStatusTextVisible = true;
+
     [SerializeField]
     private Image HPbar;
     public BattleUnitCoolBar attackCoolBar;
@@ -286,21 +288,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         if (Snapshot == null)
             return;
 
-        //넣을 떄 주석 처리 필요 -> 위치 이미 할당됨
-        if (Snapshot.LeftWeaponPrefab != null && leftHandSocket != null)
-        {
-            // Debug.Log("왼손 무기 장착");
-            _spawnedLeftWeapon = Instantiate(Snapshot.LeftWeaponPrefab, leftHandSocket);
-            //_spawnedLeftWeapon.transform.localPosition = Vector3.zero;
-            //_spawnedLeftWeapon.transform.localRotation = Quaternion.identity;
-        }
-        if (Snapshot.RightWeaponPrefab != null && rightHandSocket != null)
-        {
-            // Debug.Log("오른손 무기 장착");
-            _spawnedRightWeapon = Instantiate(Snapshot.RightWeaponPrefab, rightHandSocket);
-            //_spawnedRightWeapon.transform.localPosition = Vector3.zero;
-            //_spawnedRightWeapon.transform.localRotation = Quaternion.identity;
-        }
+        ApplyWeaponPrefabs(Snapshot.LeftWeaponPrefab, Snapshot.RightWeaponPrefab);
 
         if (_myAnimation != null && provider != null)
         {
@@ -318,6 +306,59 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         }
 
         HaveWeapon = Snapshot.WeaponType;
+    }
+
+    public void ApplyWeaponPrefabs(
+        GameObject leftWeaponPrefab,
+        GameObject rightWeaponPrefab,
+        bool matchUnitLayer = false
+    )
+    {
+        ClearSpawnedWeapon(ref _spawnedLeftWeapon);
+        ClearSpawnedWeapon(ref _spawnedRightWeapon);
+
+        if (leftWeaponPrefab != null && leftHandSocket != null)
+        {
+            _spawnedLeftWeapon = Instantiate(leftWeaponPrefab, leftHandSocket);
+            if (matchUnitLayer)
+            {
+                SetLayerRecursively(_spawnedLeftWeapon, gameObject.layer);
+            }
+        }
+
+        if (rightWeaponPrefab != null && rightHandSocket != null)
+        {
+            _spawnedRightWeapon = Instantiate(rightWeaponPrefab, rightHandSocket);
+            if (matchUnitLayer)
+            {
+                SetLayerRecursively(_spawnedRightWeapon, gameObject.layer);
+            }
+        }
+    }
+
+    private static void ClearSpawnedWeapon(ref GameObject spawnedWeapon)
+    {
+        if (spawnedWeapon == null)
+        {
+            return;
+        }
+
+        Destroy(spawnedWeapon);
+        spawnedWeapon = null;
+    }
+
+    private static void SetLayerRecursively(GameObject target, int layer)
+    {
+        if (target == null)
+        {
+            return;
+        }
+
+        target.layer = layer;
+        for (int i = 0; i < target.transform.childCount; i++)
+        {
+            SetLayerRecursively(target.transform.GetChild(i).gameObject, layer);
+        }
     }
 
     private void EquipSkillFromSnapShot(IAnimationProvider provider)
@@ -738,6 +779,16 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         if (statusText == null)
             return;
         statusText.text = $"{UnitNumber}\n{State.AgentFightMode}";
+        SetActive(statusText.gameObject, _isStatusTextVisible);
+    }
+
+    public void SetDebugStatusTextVisible(bool isVisible)
+    {
+        _isStatusTextVisible = isVisible;
+        if (statusText != null)
+        {
+            SetActive(statusText.gameObject, isVisible);
+        }
     }
 
     private void RefreshHPbar()

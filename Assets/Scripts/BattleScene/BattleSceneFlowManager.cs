@@ -37,6 +37,12 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
     private BattleStatusGridUIManager battleStatusGridUIManager;
 
     [SerializeField]
+    private BattleUnitStatusPanelUIManager battleUnitStatusPanelUIManager;
+
+    [SerializeField]
+    private BattleUnitTooltipUIManager battleUnitTooltipUIManager;
+
+    [SerializeField]
     private BattleSceneUIManager battleSceneUIManager;
 
     [SerializeField]
@@ -228,10 +234,48 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
 
         _runtimeUnits.Clear();
         if (_spawnResult != null)
+        {
             _runtimeUnits.AddRange(_spawnResult.Units);
+        }
+
+        BattleUnitStatusPanelUIManager unitStatusPanel = ResolveBattleUnitStatusPanelUIManager();
+        if (unitStatusPanel != null)
+        {
+            unitStatusPanel.Initialize(_runtimeUnits, payload);
+        }
+
+        BattleUnitTooltipUIManager unitTooltip = ResolveBattleUnitTooltipUIManager();
+        if (unitTooltip != null)
+        {
+            unitTooltip.Initialize(_runtimeUnits);
+        }
 
         OnUnitsSpawned?.Invoke();
         return true;
+    }
+
+    private BattleUnitStatusPanelUIManager ResolveBattleUnitStatusPanelUIManager()
+    {
+        if (battleUnitStatusPanelUIManager != null)
+        {
+            return battleUnitStatusPanelUIManager;
+        }
+
+        battleUnitStatusPanelUIManager = FindFirstObjectByType<BattleUnitStatusPanelUIManager>(
+            FindObjectsInactive.Include
+        );
+        return battleUnitStatusPanelUIManager;
+    }
+
+    private BattleUnitTooltipUIManager ResolveBattleUnitTooltipUIManager()
+    {
+        if (battleUnitTooltipUIManager != null)
+        {
+            return battleUnitTooltipUIManager;
+        }
+
+        battleUnitTooltipUIManager = FindFirstObjectByType<BattleUnitTooltipUIManager>(FindObjectsInactive.Include);
+        return battleUnitTooltipUIManager;
     }
 
     private Dictionary<BattleTeamId, Vector3[]> BuildSpawnPositionsByTeam(BattleStartPayload payload)
@@ -441,7 +485,10 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
             source.EnemyDeploymentSlotIndices,
             source.PlayerDeploymentNormalizedPositions,
             source.EnemyDeploymentNormalizedPositions,
-            teamSlotIndicesById
+            teamSlotIndicesById,
+            source.CurrentDay,
+            source.Difficulty,
+            source.PlayerSquadTeamIndex
         );
     }
 

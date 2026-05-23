@@ -37,6 +37,8 @@ public sealed class BattleOrdersManager : MonoBehaviour
     private bool _initialized;
     private int _requestSequence;
 
+    public event Action<BattleRuntimeUnit, string> OnAllyOrderResponseReceived;
+
     public void Initialize(IReadOnlyList<BattleRuntimeUnit> runtimeUnits)
     {
         Initialize(runtimeUnits, null, null);
@@ -190,6 +192,32 @@ public sealed class BattleOrdersManager : MonoBehaviour
         TrySendOrderToLlm("SINGLE", targetAlly, rawOrderText);
     }
 
+    public bool TryGetAllyIndex(BattleRuntimeUnit allyUnit, out int allyIndex)
+    {
+        allyIndex = -1;
+
+        if (allyUnit == null)
+        {
+            return false;
+        }
+
+        if (_rosterProjection != null && _rosterProjection.TryGetPlayerIndex(allyUnit, out allyIndex))
+        {
+            return true;
+        }
+
+        for (int i = 0; i < _allyUnits.Length; i++)
+        {
+            if (_allyUnits[i] == allyUnit)
+            {
+                allyIndex = i;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private void TrySendOrderToLlm(string orderType, BattleRuntimeUnit actorUnit, string rawOrderText)
     {
         if (!sendOrdersToLlm)
@@ -248,6 +276,11 @@ public sealed class BattleOrdersManager : MonoBehaviour
             Debug.LogWarning("[BattleOrdersManager] LLM send skipped. User payload JSON is empty.", this);
             return;
         }
+
+        Debug.Log(
+            $"[BattleOrdersManager] Order entered LLM pipeline. Type={orderType}, Actor={BuildUnitIdentityText(actorUnit)}, Raw=\"{sanitizedRawText}\"",
+            this
+        );
 
         StartCoroutine(
             SendOrderToLlmCoroutine(orderType, actorUnit, sanitizedRawText, systemInstruction, userPayloadJson)
@@ -365,6 +398,8 @@ public sealed class BattleOrdersManager : MonoBehaviour
             this
         );
 
+        RaiseAllyOrderResponse(actorUnit, parsedResponse.output?.dialog ?? string.Empty);
+
         // 검증 통과한 SLM 응답을 IR로 변환해 시뮬레이션에 명령을 활성화한다.
         if (
             !SlmDtoConverter.TryConvert(
@@ -407,6 +442,15 @@ public sealed class BattleOrdersManager : MonoBehaviour
         }
 
         BattleSimulationManager.Instance.IssueSlmCommands(actorUnit.State, slmCommands);
+    }
+
+    private void RaiseAllyOrderResponse(BattleRuntimeUnit actorUnit, string responseText)
+    {
+        string sanitizedText = SanitizeRawText(responseText);
+        if (actorUnit != null && !string.IsNullOrWhiteSpace(sanitizedText))
+        {
+            OnAllyOrderResponseReceived?.Invoke(actorUnit, sanitizedText);
+        }
     }
 
     private bool TryResolveActorFromGlobalOrder(

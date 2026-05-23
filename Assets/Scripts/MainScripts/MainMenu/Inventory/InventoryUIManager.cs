@@ -55,13 +55,19 @@ public sealed class InventoryUIManager : MonoBehaviour
     private Image selectedItemIconImage;
 
     [SerializeField]
+    private WeaponModelPreviewView selectedItemWeaponPreviewView;
+
+    [SerializeField]
     private TMP_Text helpText;
 
     [SerializeField]
     private TMP_Text equippedGladiatorText;
 
     [SerializeField]
-    private Image equippedGladiatorIcon;
+    private RawImage equippedGladiatorIcon;
+
+    [SerializeField]
+    private GladiatorModelPreviewView equippedGladiatorModelPreviewView;
 
     [SerializeField]
     private TMP_Text equippedGladiatorName;
@@ -106,6 +112,8 @@ public sealed class InventoryUIManager : MonoBehaviour
         BindButton(weaponTabButton, OnWeaponTabClicked);
         BindButton(artifactTabButton, OnArtifactTabClicked);
         EnsureDetailLoreToggleInput();
+        CacheSelectedItemPreviewView();
+        CacheEquippedGladiatorPreviewView();
 
         SetDetailPanelActive(false);
         SetPanelActive(false);
@@ -193,7 +201,17 @@ public sealed class InventoryUIManager : MonoBehaviour
                     continue;
                 }
 
-                _weaponViewBuffer.Add(new OwnedItemViewData(weapon.Weapon?.icon, weapon.DisplayName, weapon));
+                _weaponViewBuffer.Add(
+                    new OwnedItemViewData(
+                        weapon.Weapon?.leftWeaponPrefab,
+                        weapon.Weapon?.rightWeaponPrefab,
+                        weapon.Weapon?.icon,
+                        weapon.DisplayName,
+                        string.Empty,
+                        string.Empty,
+                        weapon
+                    )
+                );
             }
         }
 
@@ -263,7 +281,7 @@ public sealed class InventoryUIManager : MonoBehaviour
             weapon.WeaponSkill != null ? weapon.WeaponSkill.skillName : string.Empty,
             BuildWeaponStatsText(weapon)
         );
-        SetSelectedIcon(weapon.Weapon != null ? weapon.Weapon.icon : null);
+        SetSelectedWeaponPreview(weapon);
         SetEquippedGladiator(_gladiatorManager != null ? _gladiatorManager.FindOwnerOfEquippedWeapon(weapon) : null);
         EnsureDetailLoreToggleInput();
         SetDetailPanelActive(true);
@@ -312,6 +330,7 @@ public sealed class InventoryUIManager : MonoBehaviour
 
     private void SetSelectedIcon(Sprite icon)
     {
+        ClearSelectedItemPreview();
         if (selectedItemIconImage == null)
         {
             return;
@@ -320,6 +339,27 @@ public sealed class InventoryUIManager : MonoBehaviour
         selectedItemIconImage.sprite = icon;
         selectedItemIconImage.enabled = icon != null;
         selectedItemIconImage.preserveAspect = true;
+    }
+
+    private void SetSelectedWeaponPreview(OwnedWeaponData weapon)
+    {
+        GameObject leftPrefab = weapon?.Weapon?.leftWeaponPrefab;
+        GameObject rightPrefab = weapon?.Weapon?.rightWeaponPrefab;
+        bool usePreview = selectedItemWeaponPreviewView != null && (leftPrefab != null || rightPrefab != null);
+
+        if (selectedItemWeaponPreviewView != null)
+        {
+            if (usePreview)
+            {
+                selectedItemWeaponPreviewView.Show(leftPrefab, rightPrefab);
+            }
+            else
+            {
+                selectedItemWeaponPreviewView.Clear();
+            }
+        }
+
+        SetSelectedImageFallback(usePreview ? null : weapon?.Weapon?.icon);
     }
 
     private void SetEquippedGladiator(OwnedGladiatorData gladiator)
@@ -333,11 +373,8 @@ public sealed class InventoryUIManager : MonoBehaviour
 
         if (!hasGladiator)
         {
-            if (equippedGladiatorIcon != null)
-            {
-                equippedGladiatorIcon.sprite = null;
-                equippedGladiatorIcon.enabled = false;
-            }
+            ClearEquippedGladiatorPreview();
+            SetRawImage(equippedGladiatorIcon, null);
 
             SetText(equippedGladiatorName, string.Empty);
             SetText(equippedGladiatorLevel, string.Empty);
@@ -350,9 +387,35 @@ public sealed class InventoryUIManager : MonoBehaviour
         if (equippedGladiatorIcon != null)
         {
             Sprite icon = gladiator.GladiatorClass != null ? gladiator.GladiatorClass.icon : null;
-            equippedGladiatorIcon.sprite = icon;
-            equippedGladiatorIcon.enabled = icon != null;
-            equippedGladiatorIcon.preserveAspect = true;
+            GameObject modelPrefab =
+                gladiator.GladiatorClass != null ? gladiator.GladiatorClass.previewModelPrefab : null;
+            bool useModelPreview = equippedGladiatorModelPreviewView != null && modelPrefab != null;
+
+            if (useModelPreview)
+            {
+                equippedGladiatorModelPreviewView.Show(
+                    modelPrefab,
+                    gladiator.CustomizeIndicates,
+                    gladiator.EquippedWeapon?.Weapon?.leftWeaponPrefab,
+                    gladiator.EquippedWeapon?.Weapon?.rightWeaponPrefab
+                );
+            }
+            else
+            {
+                ClearEquippedGladiatorPreview();
+            }
+
+            if (useModelPreview)
+            {
+                if (!equippedGladiatorModelPreviewView.UsesTargetImage(equippedGladiatorIcon))
+                {
+                    SetRawImage(equippedGladiatorIcon, null);
+                }
+            }
+            else
+            {
+                SetRawImage(equippedGladiatorIcon, icon);
+            }
         }
     }
 
@@ -466,14 +529,13 @@ public sealed class InventoryUIManager : MonoBehaviour
         SetComponentGameObjectActive(equipmentKindText, value);
         SetComponentGameObjectActive(equipmentSkillText, value);
         SetComponentGameObjectActive(equipmentDetailText, value);
-        SetComponentGameObjectActive(
-            selectedItemIconImage,
-            value && selectedItemIconImage != null && selectedItemIconImage.sprite != null
-        );
+        SetSelectedItemVisualRootActive(value);
+        SetComponentGameObjectActive(selectedItemWeaponPreviewView, value && selectedItemWeaponPreviewView != null);
         SetComponentGameObjectActive(helpText, value);
         bool hasEquippedGladiator = value && _hasEquippedGladiatorDetail;
         SetComponentGameObjectActive(equippedGladiatorText, hasEquippedGladiator);
         SetComponentGameObjectActive(equippedGladiatorIcon, hasEquippedGladiator);
+        SetComponentGameObjectActive(equippedGladiatorModelPreviewView, hasEquippedGladiator);
         SetComponentGameObjectActive(equippedGladiatorName, hasEquippedGladiator);
         SetComponentGameObjectActive(equippedGladiatorLevel, hasEquippedGladiator);
     }
@@ -484,6 +546,17 @@ public sealed class InventoryUIManager : MonoBehaviour
         {
             panelRoot.SetActive(value);
         }
+    }
+
+    private void SetSelectedItemVisualRootActive(bool value)
+    {
+        if (selectedItemIconImage == null)
+        {
+            return;
+        }
+
+        selectedItemIconImage.gameObject.SetActive(value);
+        selectedItemIconImage.enabled = value && selectedItemIconImage.sprite != null;
     }
 
     private OwnedItemGridViewer GetActiveViewer(InventoryTabMode tabMode)
@@ -562,6 +635,44 @@ public sealed class InventoryUIManager : MonoBehaviour
         }
     }
 
+    private void SetSelectedImageFallback(Sprite icon)
+    {
+        if (selectedItemIconImage == null)
+        {
+            return;
+        }
+
+        selectedItemIconImage.sprite = icon;
+        selectedItemIconImage.enabled = icon != null;
+        selectedItemIconImage.preserveAspect = true;
+    }
+
+    private static void SetRawImage(RawImage image, Sprite sprite)
+    {
+        if (image == null)
+        {
+            return;
+        }
+
+        if (sprite == null || sprite.texture == null)
+        {
+            image.texture = null;
+            image.uvRect = new Rect(0f, 0f, 1f, 1f);
+            image.enabled = false;
+            return;
+        }
+
+        Rect textureRect = sprite.textureRect;
+        image.texture = sprite.texture;
+        image.uvRect = new Rect(
+            textureRect.x / sprite.texture.width,
+            textureRect.y / sprite.texture.height,
+            textureRect.width / sprite.texture.width,
+            textureRect.height / sprite.texture.height
+        );
+        image.enabled = true;
+    }
+
     private static void SetComponentGameObjectActive(Component component, bool value)
     {
         if (component != null)
@@ -584,6 +695,40 @@ public sealed class InventoryUIManager : MonoBehaviour
         }
 
         _detailLoreToggleInput.Initialize(ToggleDetailLore);
+    }
+
+    private void CacheEquippedGladiatorPreviewView()
+    {
+        if (equippedGladiatorModelPreviewView == null && equippedGladiatorIcon != null)
+        {
+            equippedGladiatorModelPreviewView = equippedGladiatorIcon.GetComponentInChildren<GladiatorModelPreviewView>(
+                true
+            );
+        }
+    }
+
+    private void CacheSelectedItemPreviewView()
+    {
+        if (selectedItemWeaponPreviewView == null && selectedItemIconImage != null)
+        {
+            selectedItemWeaponPreviewView = selectedItemIconImage.GetComponentInChildren<WeaponModelPreviewView>(true);
+        }
+    }
+
+    private void ClearSelectedItemPreview()
+    {
+        if (selectedItemWeaponPreviewView != null)
+        {
+            selectedItemWeaponPreviewView.Clear();
+        }
+    }
+
+    private void ClearEquippedGladiatorPreview()
+    {
+        if (equippedGladiatorModelPreviewView != null)
+        {
+            equippedGladiatorModelPreviewView.Clear();
+        }
     }
 
     private void ResolveMissingReferences()

@@ -130,6 +130,12 @@ public sealed class MarketUIManager : MonoBehaviour
     private Image buyEquipmentImage;
 
     [SerializeField]
+    private GladiatorModelPreviewView buyEquipmentModelPreviewView;
+
+    [SerializeField]
+    private WeaponModelPreviewView buyEquipmentWeaponPreviewView;
+
+    [SerializeField]
     private TMP_Text buyPriceText;
 
     [SerializeField]
@@ -156,6 +162,12 @@ public sealed class MarketUIManager : MonoBehaviour
 
     [SerializeField]
     private Image sellEquipmentImage;
+
+    [SerializeField]
+    private GladiatorModelPreviewView sellEquipmentModelPreviewView;
+
+    [SerializeField]
+    private WeaponModelPreviewView sellEquipmentWeaponPreviewView;
 
     [SerializeField]
     private TMP_Text sellPriceText;
@@ -244,6 +256,7 @@ public sealed class MarketUIManager : MonoBehaviour
 
         _resourceManager.GoldChanged += OnGoldChanged;
         CacheCannotSellRefsIfNull();
+        CacheDetailPreviewViews();
         CloseMarket();
         _initialized = true;
 
@@ -478,10 +491,7 @@ public sealed class MarketUIManager : MonoBehaviour
                     continue;
                 }
 
-                Sprite icon = offer.Weapon.Weapon != null ? offer.Weapon.Weapon.icon : null;
-                _buyEquipmentViewBuffer.Add(
-                    new OwnedItemViewData(icon, offer.Weapon.DisplayName, string.Empty, string.Empty, offer)
-                );
+                _buyEquipmentViewBuffer.Add(BuildWeaponViewData(offer.Weapon, string.Empty, offer));
             }
         }
 
@@ -539,10 +549,7 @@ public sealed class MarketUIManager : MonoBehaviour
                     continue;
                 }
 
-                Sprite icon = offer.Gladiator.GladiatorClass != null ? offer.Gladiator.GladiatorClass.icon : null;
-                _buyGladiatorViewBuffer.Add(
-                    new OwnedItemViewData(icon, offer.Gladiator.DisplayName, string.Empty, string.Empty, offer)
-                );
+                _buyGladiatorViewBuffer.Add(BuildGladiatorViewData(offer.Gladiator, offer));
             }
         }
 
@@ -572,10 +579,7 @@ public sealed class MarketUIManager : MonoBehaviour
                     _gladiatorManager != null && _gladiatorManager.FindOwnerOfEquippedWeapon(weapon) != null
                         ? "E"
                         : string.Empty;
-                Sprite icon = weapon.Weapon != null ? weapon.Weapon.icon : null;
-                _sellEquipmentViewBuffer.Add(
-                    new OwnedItemViewData(icon, weapon.DisplayName, string.Empty, equippedMark, weapon)
-                );
+                _sellEquipmentViewBuffer.Add(BuildWeaponViewData(weapon, equippedMark, weapon));
             }
         }
 
@@ -638,11 +642,7 @@ public sealed class MarketUIManager : MonoBehaviour
                     continue;
                 }
 
-                int price = _marketManager != null ? _marketManager.GetGladiatorSellPrice(gladiator) : 0;
-                Sprite icon = gladiator.GladiatorClass != null ? gladiator.GladiatorClass.icon : null;
-                _sellGladiatorViewBuffer.Add(
-                    new OwnedItemViewData(icon, gladiator.DisplayName, string.Empty, string.Empty, gladiator)
-                );
+                _sellGladiatorViewBuffer.Add(BuildGladiatorViewData(gladiator, gladiator));
             }
         }
 
@@ -650,6 +650,40 @@ public sealed class MarketUIManager : MonoBehaviour
         {
             sellGladiatorViewer.SetItems(_sellGladiatorViewBuffer, OnSellGladiatorItemClicked);
         }
+    }
+
+    private static OwnedItemViewData BuildGladiatorViewData(OwnedGladiatorData gladiator, object source)
+    {
+        GameObject modelPrefab =
+            gladiator != null && gladiator.GladiatorClass != null ? gladiator.GladiatorClass.previewModelPrefab : null;
+        Sprite fallbackIcon =
+            gladiator != null && gladiator.GladiatorClass != null ? gladiator.GladiatorClass.icon : null;
+
+        return new OwnedItemViewData(
+            modelPrefab,
+            gladiator?.CustomizeIndicates,
+            gladiator?.EquippedWeapon?.Weapon?.leftWeaponPrefab,
+            gladiator?.EquippedWeapon?.Weapon?.rightWeaponPrefab,
+            fallbackIcon,
+            gladiator?.DisplayName,
+            gladiator != null ? $"Lv.{gladiator.Level}" : string.Empty,
+            string.Empty,
+            source
+        );
+    }
+
+    private static OwnedItemViewData BuildWeaponViewData(OwnedWeaponData weapon, string equippedMark, object source)
+    {
+        WeaponSO weaponSo = weapon?.Weapon;
+        return new OwnedItemViewData(
+            weaponSo?.leftWeaponPrefab,
+            weaponSo?.rightWeaponPrefab,
+            weaponSo?.icon,
+            weapon?.DisplayName,
+            string.Empty,
+            equippedMark,
+            source
+        );
     }
 
     private void OnBuyEquipmentItemClicked(OwnedItemViewData data)
@@ -668,7 +702,11 @@ public sealed class MarketUIManager : MonoBehaviour
             BuildBuyEquipmentDetailText(offer),
             offer.Weapon.Weapon != null ? offer.Weapon.Weapon.icon : null,
             offer.Price,
-            GetBalanceAfterBuy(offer.Price)
+            GetBalanceAfterBuy(offer.Price),
+            null,
+            null,
+            offer.Weapon.Weapon?.leftWeaponPrefab,
+            offer.Weapon.Weapon?.rightWeaponPrefab
         );
     }
 
@@ -708,7 +746,11 @@ public sealed class MarketUIManager : MonoBehaviour
             BuildBuyGladiatorDetailText(offer),
             offer.Gladiator.GladiatorClass != null ? offer.Gladiator.GladiatorClass.icon : null,
             offer.Price,
-            GetBalanceAfterBuy(offer.Price)
+            GetBalanceAfterBuy(offer.Price),
+            offer.Gladiator.GladiatorClass != null ? offer.Gladiator.GladiatorClass.previewModelPrefab : null,
+            offer.Gladiator.CustomizeIndicates,
+            offer.Gladiator.EquippedWeapon?.Weapon?.leftWeaponPrefab,
+            offer.Gladiator.EquippedWeapon?.Weapon?.rightWeaponPrefab
         );
     }
 
@@ -737,7 +779,11 @@ public sealed class MarketUIManager : MonoBehaviour
             BuildSellEquipmentDetailText(weapon),
             weapon.Weapon != null ? weapon.Weapon.icon : null,
             price,
-            GetBalanceAfterSell(price)
+            GetBalanceAfterSell(price),
+            null,
+            null,
+            weapon.Weapon?.leftWeaponPrefab,
+            weapon.Weapon?.rightWeaponPrefab
         );
     }
 
@@ -787,7 +833,11 @@ public sealed class MarketUIManager : MonoBehaviour
             BuildSellGladiatorDetailText(gladiator),
             gladiator.GladiatorClass != null ? gladiator.GladiatorClass.icon : null,
             price,
-            GetBalanceAfterSell(price)
+            GetBalanceAfterSell(price),
+            gladiator.GladiatorClass != null ? gladiator.GladiatorClass.previewModelPrefab : null,
+            gladiator.CustomizeIndicates,
+            gladiator.EquippedWeapon?.Weapon?.leftWeaponPrefab,
+            gladiator.EquippedWeapon?.Weapon?.rightWeaponPrefab
         );
     }
 
@@ -895,7 +945,11 @@ public sealed class MarketUIManager : MonoBehaviour
         string detail,
         Sprite icon,
         int price,
-        int balanceAfterTrade
+        int balanceAfterTrade,
+        GameObject modelPrefab = null,
+        int[] modelCustomizeIndicates = null,
+        GameObject leftWeaponPrefab = null,
+        GameObject rightWeaponPrefab = null
     )
     {
         SetTradeDetailTexts(
@@ -904,11 +958,17 @@ public sealed class MarketUIManager : MonoBehaviour
             buyEquipmentSkillText,
             buyEquipmentDetailText,
             buyEquipmentImage,
+            buyEquipmentModelPreviewView,
+            buyEquipmentWeaponPreviewView,
             name,
             kind,
             skill,
             detail,
-            icon
+            icon,
+            modelPrefab,
+            modelCustomizeIndicates,
+            leftWeaponPrefab,
+            rightWeaponPrefab
         );
         if (buyPriceText != null)
         {
@@ -925,7 +985,11 @@ public sealed class MarketUIManager : MonoBehaviour
         string detail,
         Sprite icon,
         int price,
-        int balanceAfterTrade
+        int balanceAfterTrade,
+        GameObject modelPrefab = null,
+        int[] modelCustomizeIndicates = null,
+        GameObject leftWeaponPrefab = null,
+        GameObject rightWeaponPrefab = null
     )
     {
         SetTradeDetailTexts(
@@ -934,11 +998,17 @@ public sealed class MarketUIManager : MonoBehaviour
             sellEquipmentSkillText,
             sellEquipmentDetailText,
             sellEquipmentImage,
+            sellEquipmentModelPreviewView,
+            sellEquipmentWeaponPreviewView,
             name,
             kind,
             skill,
             detail,
-            icon
+            icon,
+            modelPrefab,
+            modelCustomizeIndicates,
+            leftWeaponPrefab,
+            rightWeaponPrefab
         );
         if (sellPriceText != null)
         {
@@ -956,10 +1026,16 @@ public sealed class MarketUIManager : MonoBehaviour
             buyEquipmentSkillText,
             buyEquipmentDetailText,
             buyEquipmentImage,
+            buyEquipmentModelPreviewView,
+            buyEquipmentWeaponPreviewView,
             string.Empty,
             string.Empty,
             string.Empty,
             string.Empty,
+            null,
+            null,
+            null,
+            null,
             null
         );
         if (buyPriceText != null)
@@ -978,10 +1054,16 @@ public sealed class MarketUIManager : MonoBehaviour
             sellEquipmentSkillText,
             sellEquipmentDetailText,
             sellEquipmentImage,
+            sellEquipmentModelPreviewView,
+            sellEquipmentWeaponPreviewView,
             string.Empty,
             string.Empty,
             string.Empty,
             string.Empty,
+            null,
+            null,
+            null,
+            null,
             null
         );
         if (sellPriceText != null)
@@ -1012,17 +1094,46 @@ public sealed class MarketUIManager : MonoBehaviour
         }
     }
 
+    private void CacheDetailPreviewViews()
+    {
+        if (buyEquipmentModelPreviewView == null && buyEquipmentImage != null)
+        {
+            buyEquipmentModelPreviewView = buyEquipmentImage.GetComponentInChildren<GladiatorModelPreviewView>(true);
+        }
+
+        if (buyEquipmentWeaponPreviewView == null && buyEquipmentImage != null)
+        {
+            buyEquipmentWeaponPreviewView = buyEquipmentImage.GetComponentInChildren<WeaponModelPreviewView>(true);
+        }
+
+        if (sellEquipmentModelPreviewView == null && sellEquipmentImage != null)
+        {
+            sellEquipmentModelPreviewView = sellEquipmentImage.GetComponentInChildren<GladiatorModelPreviewView>(true);
+        }
+
+        if (sellEquipmentWeaponPreviewView == null && sellEquipmentImage != null)
+        {
+            sellEquipmentWeaponPreviewView = sellEquipmentImage.GetComponentInChildren<WeaponModelPreviewView>(true);
+        }
+    }
+
     private static void SetTradeDetailTexts(
         TMP_Text nameText,
         TMP_Text kindText,
         TMP_Text skillText,
         TMP_Text detailText,
         Image image,
+        GladiatorModelPreviewView modelPreviewView,
+        WeaponModelPreviewView weaponPreviewView,
         string name,
         string kind,
         string skill,
         string detail,
-        Sprite icon
+        Sprite icon,
+        GameObject modelPrefab,
+        int[] modelCustomizeIndicates,
+        GameObject leftWeaponPrefab,
+        GameObject rightWeaponPrefab
     )
     {
         SetText(nameText, name);
@@ -1030,13 +1141,40 @@ public sealed class MarketUIManager : MonoBehaviour
         SetText(skillText, skill);
         SetText(detailText, detail);
 
+        bool hasWeaponPreview = leftWeaponPrefab != null || rightWeaponPrefab != null;
+        bool useModelPreview = modelPreviewView != null && modelPrefab != null;
+        bool useWeaponPreview = weaponPreviewView != null && !useModelPreview && hasWeaponPreview;
+        if (modelPreviewView != null)
+        {
+            if (useModelPreview)
+            {
+                modelPreviewView.Show(modelPrefab, modelCustomizeIndicates, leftWeaponPrefab, rightWeaponPrefab);
+            }
+            else
+            {
+                modelPreviewView.Clear();
+            }
+        }
+
+        if (weaponPreviewView != null)
+        {
+            if (useWeaponPreview)
+            {
+                weaponPreviewView.Show(leftWeaponPrefab, rightWeaponPrefab);
+            }
+            else
+            {
+                weaponPreviewView.Clear();
+            }
+        }
+
         if (image == null)
         {
             return;
         }
 
         image.sprite = icon;
-        image.enabled = icon != null;
+        image.enabled = !useModelPreview && !useWeaponPreview && icon != null;
         image.preserveAspect = true;
     }
 

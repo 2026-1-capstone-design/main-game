@@ -66,6 +66,9 @@ public sealed class GladiatorUIManager : MonoBehaviour
     [SerializeField]
     private Image weaponOverlayImage;
 
+    [SerializeField]
+    private WeaponModelPreviewView weaponOverlayPreviewView;
+
     [Header("Detail Artifact Slots")]
     [SerializeField]
     private Button[] artifactSlotButtons = new Button[3];
@@ -100,6 +103,9 @@ public sealed class GladiatorUIManager : MonoBehaviour
 
     [SerializeField]
     private Image selectedWeaponIconImage;
+
+    [SerializeField]
+    private WeaponModelPreviewView selectedWeaponPreviewView;
 
     [SerializeField]
     private TMP_Text helpText;
@@ -187,6 +193,7 @@ public sealed class GladiatorUIManager : MonoBehaviour
         ConfigureOverlayImage(weaponOverlayImage);
         ConfigureOverlayImage(selectedWeaponIconImage);
         ConfigureOverlayImages(artifactOverlayImages);
+        CacheWeaponPreviewViews();
         EnsureWeaponDetailLoreToggleInput();
 
         SetPanelActive(false);
@@ -248,6 +255,8 @@ public sealed class GladiatorUIManager : MonoBehaviour
                     new OwnedItemViewData(
                         gladiator.GladiatorClass.previewModelPrefab,
                         gladiator.CustomizeIndicates,
+                        gladiator.EquippedWeapon?.Weapon?.leftWeaponPrefab,
+                        gladiator.EquippedWeapon?.Weapon?.rightWeaponPrefab,
                         gladiator.GladiatorClass.icon,
                         gladiator.DisplayName,
                         $"Lv.{gladiator.Level}",
@@ -288,6 +297,8 @@ public sealed class GladiatorUIManager : MonoBehaviour
 
                 _weaponViewBuffer.Add(
                     new OwnedItemViewData(
+                        weapon.Weapon.leftWeaponPrefab,
+                        weapon.Weapon.rightWeaponPrefab,
                         weapon.Weapon.icon,
                         weapon.DisplayName,
                         $"Lv.{weapon.Level}",
@@ -551,14 +562,16 @@ public sealed class GladiatorUIManager : MonoBehaviour
         Sprite gladiatorIcon = gladiator.GladiatorClass != null ? gladiator.GladiatorClass.icon : null;
         GameObject gladiatorModelPrefab =
             gladiator.GladiatorClass != null ? gladiator.GladiatorClass.previewModelPrefab : null;
-        Sprite weaponIcon =
-            gladiator.EquippedWeapon != null && gladiator.EquippedWeapon.Weapon != null
-                ? gladiator.EquippedWeapon.Weapon.icon
-                : null;
+        OwnedWeaponData equippedWeapon = gladiator.EquippedWeapon;
 
         if (detailGladiatorPreviewView != null && gladiatorModelPrefab != null)
         {
-            detailGladiatorPreviewView.Show(gladiatorModelPrefab, gladiator.CustomizeIndicates);
+            detailGladiatorPreviewView.Show(
+                gladiatorModelPrefab,
+                gladiator.CustomizeIndicates,
+                gladiator.EquippedWeapon?.Weapon?.leftWeaponPrefab,
+                gladiator.EquippedWeapon?.Weapon?.rightWeaponPrefab
+            );
             SetComponentGameObjectActive(detailGladiatorIconImage, false);
         }
         else
@@ -571,7 +584,7 @@ public sealed class GladiatorUIManager : MonoBehaviour
             SetPassiveImage(detailGladiatorIconImage, gladiatorIcon);
         }
 
-        SetSlotVisual(weaponSlotButton, weaponOverlayImage, weaponIcon);
+        SetWeaponSlotVisual(weaponSlotButton, weaponOverlayImage, weaponOverlayPreviewView, equippedWeapon);
         RefreshArtifactSlots(gladiator);
 
         string detailDescription = BuildGladiatorDetailDescription(gladiator);
@@ -662,7 +675,7 @@ public sealed class GladiatorUIManager : MonoBehaviour
                 : artifact.Artifact.artifactLore;
         }
 
-        SetPassiveImage(selectedWeaponIconImage, artifact.Artifact.icon);
+        SetWeaponPreview(selectedWeaponIconImage, selectedWeaponPreviewView, null, artifact.Artifact.icon);
 
         if (weaponDetailEquipButton != null)
         {
@@ -704,7 +717,12 @@ public sealed class GladiatorUIManager : MonoBehaviour
             equipmentSkillText.text = skillName;
         }
 
-        SetPassiveImage(selectedWeaponIconImage, weapon.Weapon != null ? weapon.Weapon.icon : null);
+        SetWeaponPreview(
+            selectedWeaponIconImage,
+            selectedWeaponPreviewView,
+            weapon,
+            weapon.Weapon != null ? weapon.Weapon.icon : null
+        );
         RefreshEquipmentDetailText();
 
         if (weaponDetailEquipButton != null)
@@ -857,7 +875,7 @@ public sealed class GladiatorUIManager : MonoBehaviour
             equipmentDetailText.text = string.Empty;
         }
 
-        SetPassiveImage(selectedWeaponIconImage, null);
+        SetWeaponPreview(selectedWeaponIconImage, selectedWeaponPreviewView, null, null);
     }
 
     private void OnWeaponDetailEquipClicked()
@@ -1174,6 +1192,47 @@ public sealed class GladiatorUIManager : MonoBehaviour
         }
     }
 
+    private static void SetWeaponSlotVisual(
+        Button slotButton,
+        Image overlayImage,
+        WeaponModelPreviewView previewView,
+        OwnedWeaponData weapon
+    )
+    {
+        if (slotButton != null)
+        {
+            slotButton.interactable = true;
+        }
+
+        SetWeaponPreview(overlayImage, previewView, weapon, weapon?.Weapon?.icon);
+    }
+
+    private static void SetWeaponPreview(
+        Image fallbackImage,
+        WeaponModelPreviewView previewView,
+        OwnedWeaponData weapon,
+        Sprite fallbackIcon
+    )
+    {
+        GameObject leftPrefab = weapon?.Weapon?.leftWeaponPrefab;
+        GameObject rightPrefab = weapon?.Weapon?.rightWeaponPrefab;
+        bool usePreview = previewView != null && (leftPrefab != null || rightPrefab != null);
+
+        if (previewView != null)
+        {
+            if (usePreview)
+            {
+                previewView.Show(leftPrefab, rightPrefab);
+            }
+            else
+            {
+                previewView.Clear();
+            }
+        }
+
+        SetPassiveImage(fallbackImage, usePreview ? null : fallbackIcon);
+    }
+
     private static void SetPassiveImage(Image image, Sprite icon)
     {
         if (image == null)
@@ -1209,6 +1268,19 @@ public sealed class GladiatorUIManager : MonoBehaviour
         for (int i = 0; i < images.Length; i++)
         {
             ConfigureOverlayImage(images[i]);
+        }
+    }
+
+    private void CacheWeaponPreviewViews()
+    {
+        if (weaponOverlayPreviewView == null && weaponOverlayImage != null)
+        {
+            weaponOverlayPreviewView = weaponOverlayImage.GetComponentInChildren<WeaponModelPreviewView>(true);
+        }
+
+        if (selectedWeaponPreviewView == null && selectedWeaponIconImage != null)
+        {
+            selectedWeaponPreviewView = selectedWeaponIconImage.GetComponentInChildren<WeaponModelPreviewView>(true);
         }
     }
 

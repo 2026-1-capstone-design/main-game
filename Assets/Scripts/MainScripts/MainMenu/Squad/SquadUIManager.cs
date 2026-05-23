@@ -81,6 +81,9 @@ public sealed class SquadUIManager : MonoBehaviour
     private Image detailWeaponIcon;
 
     [SerializeField]
+    private WeaponModelPreviewView detailWeaponPreviewView;
+
+    [SerializeField]
     private Image[] detailArtifactIcons = new Image[3];
 
     [SerializeField]
@@ -611,7 +614,12 @@ public sealed class SquadUIManager : MonoBehaviour
         GameObject modelPrefab = gladiator.GladiatorClass != null ? gladiator.GladiatorClass.previewModelPrefab : null;
         if (detailPortraitPreviewView != null && modelPrefab != null)
         {
-            detailPortraitPreviewView.Show(modelPrefab, gladiator.CustomizeIndicates);
+            detailPortraitPreviewView.Show(
+                modelPrefab,
+                gladiator.CustomizeIndicates,
+                gladiator.EquippedWeapon?.Weapon?.leftWeaponPrefab,
+                gladiator.EquippedWeapon?.Weapon?.rightWeaponPrefab
+            );
             if (detailPortraitImage != null && detailPortraitImage.GetComponent<GladiatorModelPreviewView>() == null)
             {
                 detailPortraitImage.enabled = false;
@@ -629,13 +637,7 @@ public sealed class SquadUIManager : MonoBehaviour
             detailPortraitImage.enabled = portrait != null;
         }
 
-        if (detailWeaponIcon != null)
-        {
-            Sprite weaponIcon = gladiator.EquippedWeapon?.Weapon?.icon;
-            detailWeaponIcon.sprite = weaponIcon;
-            detailWeaponIcon.enabled = weaponIcon != null;
-            detailWeaponIcon.preserveAspect = true;
-        }
+        SetWeaponPreview(detailWeaponIcon, detailWeaponPreviewView, gladiator.EquippedWeapon);
 
         RefreshArtifactIcons(gladiator);
 
@@ -698,6 +700,36 @@ public sealed class SquadUIManager : MonoBehaviour
         }
     }
 
+    private static void SetWeaponPreview(
+        Image fallbackImage,
+        WeaponModelPreviewView previewView,
+        OwnedWeaponData weapon
+    )
+    {
+        GameObject leftPrefab = weapon?.Weapon?.leftWeaponPrefab;
+        GameObject rightPrefab = weapon?.Weapon?.rightWeaponPrefab;
+        bool usePreview = previewView != null && (leftPrefab != null || rightPrefab != null);
+
+        if (previewView != null)
+        {
+            if (usePreview)
+            {
+                previewView.Show(leftPrefab, rightPrefab);
+            }
+            else
+            {
+                previewView.Clear();
+            }
+        }
+
+        if (fallbackImage != null)
+        {
+            fallbackImage.sprite = usePreview ? null : weapon?.Weapon?.icon;
+            fallbackImage.enabled = !usePreview && weapon?.Weapon?.icon != null;
+            fallbackImage.preserveAspect = true;
+        }
+    }
+
     private void SetPanelActive(bool value)
     {
         if (panelRoot != null)
@@ -735,6 +767,11 @@ public sealed class SquadUIManager : MonoBehaviour
         if (detailPortraitPreviewView == null && detailPortraitImage != null)
         {
             detailPortraitPreviewView = detailPortraitImage.GetComponent<GladiatorModelPreviewView>();
+        }
+
+        if (detailWeaponPreviewView == null && detailWeaponIcon != null)
+        {
+            detailWeaponPreviewView = detailWeaponIcon.GetComponentInChildren<WeaponModelPreviewView>(true);
         }
     }
 

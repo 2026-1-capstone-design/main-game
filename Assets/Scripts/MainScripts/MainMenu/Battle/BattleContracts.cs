@@ -403,6 +403,9 @@ public sealed class BattleStartPayload
     public int SelectedEncounterIndex { get; }
     public float EnemyAverageLevel { get; }
     public int PreviewRewardGold { get; }
+    public int CurrentDay { get; }
+    public BattleEncounterDifficulty Difficulty { get; }
+    public int PlayerSquadTeamIndex { get; }
     public IReadOnlyList<int> PlayerDeploymentSlotIndices { get; }
     public IReadOnlyList<int> EnemyDeploymentSlotIndices { get; }
     public IReadOnlyList<Vector2> PlayerDeploymentNormalizedPositions { get; }
@@ -425,7 +428,10 @@ public sealed class BattleStartPayload
         IEnumerable<int> enemyDeploymentSlotIndices = null,
         IEnumerable<Vector2> playerDeploymentNormalizedPositions = null,
         IEnumerable<Vector2> enemyDeploymentNormalizedPositions = null,
-        IReadOnlyDictionary<BattleTeamId, IReadOnlyList<int>> teamSlotIndicesById = null
+        IReadOnlyDictionary<BattleTeamId, IReadOnlyList<int>> teamSlotIndicesById = null,
+        int currentDay = 1,
+        BattleEncounterDifficulty difficulty = BattleEncounterDifficulty.Medium,
+        int playerSquadTeamIndex = 0
     )
     {
         if (teams != null)
@@ -519,6 +525,9 @@ public sealed class BattleStartPayload
         SelectedEncounterIndex = Mathf.Max(0, selectedEncounterIndex);
         EnemyAverageLevel = Mathf.Max(0f, enemyAverageLevel);
         PreviewRewardGold = Mathf.Max(0, previewRewardGold);
+        CurrentDay = Mathf.Max(1, currentDay);
+        Difficulty = difficulty;
+        PlayerSquadTeamIndex = Mathf.Max(0, playerSquadTeamIndex);
         BattleSeed = battleSeed;
         PlayerDeploymentSlotIndices = BuildDeploymentSlotIndices(playerDeploymentSlotIndices, _playerTeam.Units.Count);
         EnemyDeploymentSlotIndices = BuildDeploymentSlotIndices(enemyDeploymentSlotIndices, _hostileTeam.Units.Count);

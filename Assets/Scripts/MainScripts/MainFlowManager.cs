@@ -116,6 +116,7 @@ public sealed class MainFlowManager : MonoBehaviour
         gladiatorManager = GladiatorManager.Instance;
         inventoryManager = InventoryManager.Instance;
         marketManager = MarketManager.Instance;
+        squadManager = SquadManager.Instance;
 
         if (!ValidateDependencies())
         {
@@ -142,6 +143,7 @@ public sealed class MainFlowManager : MonoBehaviour
         marketManager.InitializeDay(_sessionManager.CurrentDay);
 
         gladiatorManager.GrantRandomStarterGladiators(_contentDatabaseProvider, _sessionManager, 6);
+        AssignStarterGladiatorsToFirstSquadIfEmpty();
         inventoryManager.GrantRandomStarterWeapons(_contentDatabaseProvider);
         researchManager.Initialize(_contentDatabaseProvider);
 
@@ -600,7 +602,10 @@ public sealed class MainFlowManager : MonoBehaviour
             allyDeploymentSlotIndices,
             enemyDeploymentSlotIndices,
             allyDeploymentPositions,
-            enemyDeploymentPositions
+            enemyDeploymentPositions,
+            currentDay: _sessionManager != null ? _sessionManager.CurrentDay : 1,
+            difficulty: encounter.Difficulty,
+            playerSquadTeamIndex: deploymentPlan != null ? deploymentPlan.SquadTeamIndex : 0
         );
 
         return true;
@@ -1161,6 +1166,31 @@ public sealed class MainFlowManager : MonoBehaviour
         {
             Debug.Log($"[MainFlowManager] Pending battle reward granted on MainScene enter. PaidGold={paidGold}", this);
         }
+    }
+
+    private void AssignStarterGladiatorsToFirstSquadIfEmpty()
+    {
+        if (squadManager == null || gladiatorManager == null)
+        {
+            return;
+        }
+
+        for (int slotIndex = 0; slotIndex < squadManager.SlotCount; slotIndex++)
+        {
+            if (squadManager.GetSlot(0, slotIndex) != null)
+            {
+                return;
+            }
+        }
+
+        IReadOnlyList<OwnedGladiatorData> ownedGladiators = gladiatorManager.OwnedGladiators;
+        int assignCount = Mathf.Min(squadManager.SlotCount, ownedGladiators.Count);
+        for (int slotIndex = 0; slotIndex < assignCount; slotIndex++)
+        {
+            squadManager.TryAssignToSlot(0, slotIndex, ownedGladiators[slotIndex]);
+        }
+
+        squadManager.SetActiveTeam(0);
     }
 
     private void TryApplyPendingLoadedData()

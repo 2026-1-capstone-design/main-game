@@ -1,10 +1,10 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// 전투에 출전할 검투사 슬롯(최대 BattleTeamConstants.MaxUnitsPerTeam)을 관리하는 씬 레벨 매니저.
-// SaveGameService와 MainFlowManager가 참조하며, 5개 팀 프리셋을 런타임 ID 배열로 직렬화한다.
+// 전투에 출전할 검투사 슬롯(최대 BattleTeamConstants.MaxUnitsPerTeam)을 관리하는 런타임 매니저.
+// BattleScene 왕복 중 편성 상태를 유지해야 하므로 DDOL 싱글톤으로 유지하며, 저장 시에는 런타임 ID 배열로 직렬화한다.
 [DisallowMultipleComponent]
-public sealed class SquadManager : MonoBehaviour
+public sealed class SquadManager : SingletonBehaviour<SquadManager>
 {
     public const int SquadTeamCount = 5;
 
@@ -18,6 +18,18 @@ public sealed class SquadManager : MonoBehaviour
     public int SlotCount => BattleTeamConstants.MaxUnitsPerTeam;
     public int TeamCount => SquadTeamCount;
     public int ActiveTeamIndex => _activeTeamIndex;
+
+    protected override void Awake()
+    {
+        base.Awake();
+
+        if (!IsPrimaryInstance)
+        {
+            return;
+        }
+
+        DontDestroyOnLoad(gameObject);
+    }
 
     public bool SetActiveTeam(int teamIndex)
     {
@@ -68,7 +80,17 @@ public sealed class SquadManager : MonoBehaviour
 
     public bool TryAssignToSlot(int slotIndex, OwnedGladiatorData gladiator)
     {
+        return TryAssignToSlot(_activeTeamIndex, slotIndex, gladiator);
+    }
+
+    public bool TryAssignToSlot(int teamIndex, int slotIndex, OwnedGladiatorData gladiator)
+    {
         if (!IsValidSlotIndex(slotIndex) || gladiator == null)
+        {
+            return false;
+        }
+
+        if (!IsValidTeamIndex(teamIndex))
         {
             return false;
         }
@@ -76,13 +98,13 @@ public sealed class SquadManager : MonoBehaviour
         // 같은 팀 안에서는 검투사 하나가 한 슬롯에만 들어가도록 기존 배치를 먼저 제거한다.
         for (int i = 0; i < SlotCount; i++)
         {
-            if (_teamSlots[_activeTeamIndex, i] == gladiator)
+            if (_teamSlots[teamIndex, i] == gladiator)
             {
-                _teamSlots[_activeTeamIndex, i] = null;
+                _teamSlots[teamIndex, i] = null;
             }
         }
 
-        _teamSlots[_activeTeamIndex, slotIndex] = gladiator;
+        _teamSlots[teamIndex, slotIndex] = gladiator;
         return true;
     }
 

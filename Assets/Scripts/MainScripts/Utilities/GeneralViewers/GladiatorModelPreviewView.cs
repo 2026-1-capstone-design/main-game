@@ -37,6 +37,9 @@ public sealed class GladiatorModelPreviewView : MonoBehaviour
     private Vector3 lightLocalEulerAngles = new Vector3(30f, 180f, 0f);
 
     [SerializeField]
+    private float lightRange = 8f;
+
+    [SerializeField]
     private Color ambientColor = new Color(0.35f, 0.35f, 0.35f, 1f);
 
     [SerializeField]
@@ -51,9 +54,14 @@ public sealed class GladiatorModelPreviewView : MonoBehaviour
     private Transform _previewRoot;
     private GameObject _modelInstance;
     private GameObject _currentPrefab;
+    private GameObject _currentLeftWeaponPrefab;
+    private GameObject _currentRightWeaponPrefab;
     private int[] _currentCustomizeIndicates;
     private bool _hasAppliedCustomization;
     private Vector3 _previewOrigin;
+    private Animator _preparedAnimator;
+    private RuntimeAnimatorController _preparedAnimatorController;
+    private string _preparedAnimatorStateName;
 
     private void Awake()
     {
@@ -100,7 +108,32 @@ public sealed class GladiatorModelPreviewView : MonoBehaviour
         Show(modelPrefab, null);
     }
 
+    public void Show(
+        GameObject modelPrefab,
+        int[] customizeIndicates,
+        GameObject leftWeaponPrefab,
+        GameObject rightWeaponPrefab
+    )
+    {
+        ShowInternal(modelPrefab, customizeIndicates, leftWeaponPrefab, rightWeaponPrefab);
+    }
+
+    public bool UsesTargetImage(RawImage image)
+    {
+        return image != null && targetImage == image;
+    }
+
     public void Show(GameObject modelPrefab, int[] customizeIndicates)
+    {
+        ShowInternal(modelPrefab, customizeIndicates, null, null);
+    }
+
+    private void ShowInternal(
+        GameObject modelPrefab,
+        int[] customizeIndicates,
+        GameObject leftWeaponPrefab,
+        GameObject rightWeaponPrefab
+    )
     {
         EnsurePreviewObjects();
 
@@ -119,12 +152,14 @@ public sealed class GladiatorModelPreviewView : MonoBehaviour
             _modelInstance.transform.localRotation = Quaternion.Euler(modelLocalEulerAngles);
             _modelInstance.transform.localScale = Vector3.one;
             _hasAppliedCustomization = false;
+            ResetPreparedAnimator();
             SetLayerRecursively(_modelInstance, gameObject.layer);
             DisableRuntimeOnlyUi(_modelInstance);
             PrepareRenderers(_modelInstance);
         }
 
         ApplyCustomization(customizeIndicates);
+        ApplyWeaponPrefabs(leftWeaponPrefab, rightWeaponPrefab);
         PrepareAnimator(_modelInstance);
         FrameModel();
         SetVisible(true);
@@ -133,6 +168,8 @@ public sealed class GladiatorModelPreviewView : MonoBehaviour
     public void Clear()
     {
         _currentPrefab = null;
+        _currentLeftWeaponPrefab = null;
+        _currentRightWeaponPrefab = null;
         _currentCustomizeIndicates = null;
         _hasAppliedCustomization = false;
         ClearModel();
@@ -180,7 +217,7 @@ public sealed class GladiatorModelPreviewView : MonoBehaviour
         lightObject.transform.localPosition = Vector3.zero;
         lightObject.transform.localRotation = Quaternion.identity;
         _light = lightObject.AddComponent<Light>();
-        _light.type = LightType.Directional;
+        _light.type = LightType.Point;
         ApplyLightingSettings();
 
         GameObject rootObject = new GameObject($"{name}_PreviewRoot");
@@ -218,6 +255,11 @@ public sealed class GladiatorModelPreviewView : MonoBehaviour
         _camera.transform.position = cameraPosition;
         _camera.transform.LookAt(lookAtPosition);
         _camera.farClipPlane = Mathf.Max(50f, radius * 8f);
+
+        if (_light != null)
+        {
+            _light.range = Mathf.Max(lightRange, radius * 6f);
+        }
     }
 
     private void ApplyLightingSettings()
@@ -230,6 +272,8 @@ public sealed class GladiatorModelPreviewView : MonoBehaviour
         _light.intensity = Mathf.Max(0f, lightIntensity);
         _light.color = Color.white;
         _light.transform.localRotation = Quaternion.Euler(lightLocalEulerAngles);
+        _light.range = Mathf.Max(0.1f, lightRange);
+        _light.cullingMask = 1 << gameObject.layer;
         _light.renderMode = LightRenderMode.ForcePixel;
     }
 
@@ -263,6 +307,8 @@ public sealed class GladiatorModelPreviewView : MonoBehaviour
             Destroy(_modelInstance);
             _modelInstance = null;
         }
+
+        ResetPreparedAnimator();
     }
 
     private static Bounds CalculateBounds(GameObject target)
@@ -296,17 +342,62 @@ public sealed class GladiatorModelPreviewView : MonoBehaviour
             controller = AnimationManager.Instance.noneController;
         }
 
-        if (controller != null)
+        if (controller != null && animator.runtimeAnimatorController != controller)
         {
             animator.runtimeAnimatorController = controller;
         }
 
-        if (!string.IsNullOrWhiteSpace(previewAnimatorStateName) && animator.runtimeAnimatorController != null)
+        animator.applyRootMotion = false;
+        animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+
+        string stateName = string.IsNullOrWhiteSpace(previewAnimatorStateName)
+            ? string.Empty
+            : previewAnimatorStateName.Trim();
+        bool needsStateReset =
+            _preparedAnimator != animator
+            || _preparedAnimatorController != animator.runtimeAnimatorController
+            || _preparedAnimatorStateName != stateName;
+
+        if (needsStateReset && !string.IsNullOrEmpty(stateName) && animator.runtimeAnimatorController != null)
         {
-            animator.Play(previewAnimatorStateName, 0, 0f);
+            TryPlayAnimatorState(animator, stateName);
+            animator.Update(0f);
         }
 
-        animator.Update(0f);
+        _preparedAnimator = animator;
+        _preparedAnimatorController = animator.runtimeAnimatorController;
+        _preparedAnimatorStateName = stateName;
+    }
+
+    private static bool TryPlayAnimatorState(Animator animator, string stateName)
+    {
+        if (animator == null || string.IsNullOrEmpty(stateName))
+        {
+            return false;
+        }
+
+        int shortNameHash = Animator.StringToHash(stateName);
+        if (animator.HasState(0, shortNameHash))
+        {
+            animator.Play(shortNameHash, 0, 0f);
+            return true;
+        }
+
+        int fullPathHash = Animator.StringToHash($"Base Layer.{stateName}");
+        if (animator.HasState(0, fullPathHash))
+        {
+            animator.Play(fullPathHash, 0, 0f);
+            return true;
+        }
+
+        return false;
+    }
+
+    private void ResetPreparedAnimator()
+    {
+        _preparedAnimator = null;
+        _preparedAnimatorController = null;
+        _preparedAnimatorStateName = null;
     }
 
     private void ApplyCustomization(int[] customizeIndicates)
@@ -327,6 +418,29 @@ public sealed class GladiatorModelPreviewView : MonoBehaviour
         {
             runtimeUnit.ApplySkinCustomization(_currentCustomizeIndicates);
         }
+    }
+
+    private void ApplyWeaponPrefabs(GameObject leftWeaponPrefab, GameObject rightWeaponPrefab)
+    {
+        if (
+            _modelInstance == null
+            || (_currentLeftWeaponPrefab == leftWeaponPrefab && _currentRightWeaponPrefab == rightWeaponPrefab)
+        )
+        {
+            return;
+        }
+
+        _currentLeftWeaponPrefab = leftWeaponPrefab;
+        _currentRightWeaponPrefab = rightWeaponPrefab;
+
+        BattleRuntimeUnit runtimeUnit = _modelInstance.GetComponentInChildren<BattleRuntimeUnit>(true);
+        if (runtimeUnit == null)
+        {
+            return;
+        }
+
+        runtimeUnit.ApplyWeaponPrefabs(leftWeaponPrefab, rightWeaponPrefab, true);
+        PrepareRenderers(_modelInstance);
     }
 
     private static int[] BuildSafeCustomizeIndicates(int[] customizeIndicates)
