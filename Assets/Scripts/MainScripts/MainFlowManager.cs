@@ -142,7 +142,9 @@ public sealed class MainFlowManager : MonoBehaviour
         );
         marketManager.InitializeDay(_sessionManager.CurrentDay);
 
+        int ownedGladiatorCountBeforeStarterGrant = gladiatorManager.GetOwnedGladiatorCount();
         gladiatorManager.GrantRandomStarterGladiators(_contentDatabaseProvider, _sessionManager, 6);
+        GrantStarterLoadoutIfNewGame(ownedGladiatorCountBeforeStarterGrant);
         AssignStarterGladiatorsToFirstSquadIfEmpty();
         inventoryManager.GrantRandomStarterWeapons(_contentDatabaseProvider);
         researchManager.Initialize(_contentDatabaseProvider);
@@ -1191,6 +1193,122 @@ public sealed class MainFlowManager : MonoBehaviour
         }
 
         squadManager.SetActiveTeam(0);
+    }
+
+    private void GrantStarterLoadoutIfNewGame(int ownedGladiatorCountBeforeStarterGrant)
+    {
+        if (
+            ownedGladiatorCountBeforeStarterGrant > 0
+            || gladiatorManager == null
+            || inventoryManager == null
+            || equipmentFactory == null
+        )
+        {
+            return;
+        }
+
+        IReadOnlyList<OwnedGladiatorData> ownedGladiators = gladiatorManager.OwnedGladiators;
+        if (ownedGladiators == null || ownedGladiators.Count == 0)
+        {
+            return;
+        }
+
+        int equipCount = Mathf.Min(6, ownedGladiators.Count);
+        for (int i = 0; i < equipCount; i++)
+        {
+            OwnedGladiatorData gladiator = ownedGladiators[i];
+            if (gladiator == null)
+            {
+                continue;
+            }
+
+            TryGrantAndEquipStarterWeapon(gladiator);
+            TryGrantAndEquipStarterArtifact(gladiator);
+        }
+    }
+
+    private void TryGrantAndEquipStarterWeapon(OwnedGladiatorData gladiator)
+    {
+        if (gladiator == null || gladiator.EquippedWeapon != null)
+        {
+            return;
+        }
+
+        OwnedWeaponData weaponPreview = equipmentFactory.CreateRandomWeaponPreviewForDay(_sessionManager.CurrentDay);
+        if (weaponPreview == null)
+        {
+            Debug.LogError("[MainFlowManager] Failed to create starter weapon preview.", this);
+            return;
+        }
+
+        if (!inventoryManager.TryAddOwnedWeaponFromPreview(weaponPreview, out OwnedWeaponData ownedWeapon))
+        {
+            return;
+        }
+
+        if (!gladiatorManager.TryEquipWeapon(gladiator, ownedWeapon, out string failReason) && verboseLog)
+        {
+            Debug.LogWarning(
+                $"[MainFlowManager] Failed to equip starter weapon. Gladiator={gladiator.DisplayName}, Reason={failReason}",
+                this
+            );
+        }
+    }
+
+    private void TryGrantAndEquipStarterArtifact(OwnedGladiatorData gladiator)
+    {
+        if (gladiator == null || gladiator.EquippedArtifact != null)
+        {
+            return;
+        }
+
+        ArtifactSO artifact = PickRandomStarterArtifact();
+        if (artifact == null)
+        {
+            return;
+        }
+
+        if (!inventoryManager.TryAddOwnedArtifact(artifact, out OwnedArtifactData ownedArtifact))
+        {
+            return;
+        }
+
+        if (!gladiatorManager.TryEquipArtifact(gladiator, ownedArtifact, out string failReason) && verboseLog)
+        {
+            Debug.LogWarning(
+                $"[MainFlowManager] Failed to equip starter artifact. Gladiator={gladiator.DisplayName}, Reason={failReason}",
+                this
+            );
+        }
+    }
+
+    private ArtifactSO PickRandomStarterArtifact()
+    {
+        IReadOnlyList<ArtifactSO> artifacts = _contentDatabaseProvider.Artifacts;
+        if (artifacts == null || artifacts.Count == 0)
+        {
+            Debug.LogError("[MainFlowManager] No artifacts found for starter loadout.", this);
+            return null;
+        }
+
+        List<ArtifactSO> candidates = new List<ArtifactSO>(artifacts.Count);
+        for (int i = 0; i < artifacts.Count; i++)
+        {
+            ArtifactSO artifact = artifacts[i];
+            if (artifact != null)
+            {
+                candidates.Add(artifact);
+            }
+        }
+
+        if (candidates.Count == 0)
+        {
+            Debug.LogError("[MainFlowManager] No valid artifacts found for starter loadout.", this);
+            return null;
+        }
+
+        int pickedIndex = _randomManager.NextInt(RandomStreamType.Equipment, 0, candidates.Count);
+        return candidates[pickedIndex];
     }
 
     private void TryApplyPendingLoadedData()
