@@ -1,7 +1,7 @@
 // SOT parser output을 후처리하여 actor별 최종 action sequence를 확정한다.
 // 순응/거부, fallback, target/action 보정을 수행한다.
 // 대사 레이어와 실행 진입점이 읽을 중간 DTO만 만들고 실행 plan은 만들지 않는다.
-// advisor/adjustment/refusal 문구는 현재 고정 문자열을 사용한다.
+// 대사 레이어 입력용 설명 문자열은 BattleCommandInputDialogBuilder가 생성한다.
 
 using System;
 using System.Collections.Generic;
@@ -9,10 +9,6 @@ using UnityEngine;
 
 public sealed class BattleCommandPostprocessor
 {
-    private const string AdvisorLineFallback = "참모 대사를 여기에";
-    private const string ObeyedAdjustmentFallback = "순응후 보정 결과 여기에";
-    private const string RefusalSummaryFallback = "거부 요약 여기에";
-
     private const int MaxActionsPerActorFallback = 3;
 
     public bool TryProcess(
@@ -36,6 +32,7 @@ public sealed class BattleCommandPostprocessor
         {
             result = CreateFallbackResult(
                 originalCommand,
+                BattleInputDialogAdvisorReason.ParserOutputNull,
                 "parserOutput is null.",
                 parserThinking: string.Empty
             );
@@ -46,6 +43,7 @@ public sealed class BattleCommandPostprocessor
         {
             result = CreateFallbackResult(
                 originalCommand,
+                BattleInputDialogAdvisorReason.ParserActionEmpty,
                 "parserOutput.action is empty.",
                 parserOutput.thinking
             );
@@ -64,7 +62,12 @@ public sealed class BattleCommandPostprocessor
             SotActorActionDto actorAction = parserOutput.action[i];
             if (actorAction == null || string.IsNullOrWhiteSpace(actorAction.unitId))
             {
-                droppedActorSummaries.Add("actor action missing unitId.");
+                droppedActorSummaries.Add(
+                    BattleCommandInputDialogBuilder.BuildActorDropSummary(
+                        string.Empty,
+                        BattleInputDialogActorDropReason.MissingUnitId
+                    )
+                );
                 continue;
             }
 
@@ -77,13 +80,23 @@ public sealed class BattleCommandPostprocessor
 
             if (!IsValidActor(actor))
             {
-                droppedActorSummaries.Add(actorId + " actor invalid.");
+                droppedActorSummaries.Add(
+                    BattleCommandInputDialogBuilder.BuildActorDropSummary(
+                        actorId,
+                        ResolveInvalidActorDropReason(actor)
+                    )
+                );
                 continue;
             }
 
             if (actorAction.sequence == null || actorAction.sequence.Length == 0)
             {
-                droppedActorSummaries.Add(actorId + " sequence empty.");
+                droppedActorSummaries.Add(
+                    BattleCommandInputDialogBuilder.BuildActorDropSummary(
+                        actorId,
+                        BattleInputDialogActorDropReason.SequenceEmpty
+                    )
+                );
                 continue;
             }
 
@@ -91,6 +104,8 @@ public sealed class BattleCommandPostprocessor
             bool obey = RollObedience(actor, mainCategory);
 
             SotFinalActionDto[] candidateSequence;
+            string refusalSummary = string.Empty;
+
             if (obey)
             {
                 candidateSequence = CloneSequence(actorAction.sequence);
@@ -98,32 +113,80 @@ public sealed class BattleCommandPostprocessor
             else
             {
                 candidateSequence = BuildFallbackSequence(actor, mainCategory, runtime);
-                refusalSummaries.Add(actorId + " refused.");
+
+                BattleCommandActionCategory fallbackCategory = DetermineMainActionCategory(candidateSequence);
+                BattleInputDialogRefusalReason refusalReason =
+                    fallbackCategory == BattleCommandActionCategory.Wait
+                        ? BattleInputDialogRefusalReason.FallbackWaitApplied
+                        : BattleInputDialogRefusalReason.ObedienceRollFailed;
+
+                refusalSummary = BattleCommandInputDialogBuilder.BuildRefusalSummary(
+                    refusalReason,
+                    CategoryToDtoString(mainCategory),
+                    CategoryToDtoString(fallbackCategory)
+                );
+
+                refusalSummaries.Add(actorId + " " + refusalSummary);
             }
 
             bool adjusted;
+            List<string> actorAdjustmentLines;
             SotFinalActionDto[] finalSequence = ValidateAndCorrectSequence(
                 actor,
                 candidateSequence,
                 runtime,
-                out adjusted
+                out adjusted,
+                out actorAdjustmentLines
             );
 
             if (finalSequence == null || finalSequence.Length == 0)
             {
                 SotFinalActionDto[] waitFallback = BuildWaitSequence();
-                finalSequence = ValidateAndCorrectSequence(actor, waitFallback, runtime, out bool waitAdjusted);
+                finalSequence = ValidateAndCorrectSequence(
+                    actor,
+                    waitFallback,
+                    runtime,
+                    out bool waitAdjusted,
+                    out List<string> waitAdjustmentLines
+                );
+
                 adjusted = adjusted || waitAdjusted;
+
+                if (waitAdjustmentLines != null && waitAdjustmentLines.Count > 0)
+                    actorAdjustmentLines.AddRange(waitAdjustmentLines);
+
+                if (finalSequence != null && finalSequence.Length > 0)
+                {
+                    actorAdjustmentLines.Add(
+                        BattleCommandInputDialogBuilder.BuildObeyedActionAdjustment(
+                            BattleInputDialogAdjustmentReason.FallbackWaitApplied,
+                            CategoryToDtoString(mainCategory),
+                            string.Empty,
+                            string.Empty
+                        )
+                    );
+                    adjusted = true;
+                }
             }
 
             if (finalSequence == null || finalSequence.Length == 0)
             {
-                droppedActorSummaries.Add(actorId + " final sequence empty.");
+                droppedActorSummaries.Add(
+                    BattleCommandInputDialogBuilder.BuildActorDropSummary(
+                        actorId,
+                        BattleInputDialogActorDropReason.FinalSequenceEmpty
+                    )
+                );
                 continue;
             }
 
-            if (adjusted)
-                adjustmentSummaries.Add(actorId + " adjusted.");
+            string obeyedActionAdjustment =
+                obey && adjusted
+                    ? BattleCommandInputDialogBuilder.BuildCombinedObeyedActionAdjustment(actorAdjustmentLines)
+                    : string.Empty;
+
+            if (adjusted && !string.IsNullOrWhiteSpace(obeyedActionAdjustment))
+                adjustmentSummaries.Add(actorId + " " + obeyedActionAdjustment);
 
             string sourceDialog = ResolveSourceDialog(parserOutput, actorId);
 
@@ -134,8 +197,8 @@ public sealed class BattleCommandPostprocessor
                     obedienceState = obey ? "obey" : "refuse",
                     mainActionCategory = CategoryToDtoString(mainCategory),
                     sourceDialog = sourceDialog,
-                    obeyedActionAdjustment = obey && adjusted ? ObeyedAdjustmentFallback : string.Empty,
-                    refusalSummary = obey ? string.Empty : RefusalSummaryFallback,
+                    obeyedActionAdjustment = obeyedActionAdjustment,
+                    refusalSummary = obey ? string.Empty : refusalSummary,
                     finalActionSequence = finalSequence,
                 }
             );
@@ -145,6 +208,7 @@ public sealed class BattleCommandPostprocessor
         {
             result = CreateFallbackResult(
                 originalCommand,
+                BattleInputDialogAdvisorReason.AllActorsDropped,
                 "all actor sequences dropped.",
                 parserOutput.thinking
             );
@@ -174,6 +238,7 @@ public sealed class BattleCommandPostprocessor
 
     private static BattleCommandPostprocessResult CreateFallbackResult(
         string originalCommand,
+        BattleInputDialogAdvisorReason advisorReason,
         string dropReason,
         string parserThinking
     )
@@ -182,7 +247,7 @@ public sealed class BattleCommandPostprocessor
         {
             originalCommand = originalCommand ?? string.Empty,
             fallbackToDefaultMlAi = true,
-            advisorLine = AdvisorLineFallback,
+            advisorLine = BattleCommandInputDialogBuilder.BuildAdvisorLine(advisorReason),
             actors = Array.Empty<BattleCommandFinalActorDto>(),
             debug = new BattleCommandPostprocessDebugDto
             {
@@ -202,6 +267,20 @@ public sealed class BattleCommandPostprocessor
             && actor.State != null
             && !actor.IsCombatDisabled
             && !actor.State.IsStunned;
+    }
+
+    private static BattleInputDialogActorDropReason ResolveInvalidActorDropReason(BattleRuntimeUnit actor)
+    {
+        if (actor == null || actor.State == null)
+            return BattleInputDialogActorDropReason.ActorNotFound;
+
+        if (actor.IsCombatDisabled)
+            return BattleInputDialogActorDropReason.ActorDead;
+
+        if (actor.State.IsStunned)
+            return BattleInputDialogActorDropReason.ActorStunned;
+
+        return BattleInputDialogActorDropReason.Unknown;
     }
 
     private static BattleCommandActionCategory DetermineMainActionCategory(SotFinalActionDto[] sequence)
@@ -616,10 +695,12 @@ public sealed class BattleCommandPostprocessor
         BattleRuntimeUnit actor,
         SotFinalActionDto[] candidateSequence,
         PostprocessRuntime runtime,
-        out bool adjusted
+        out bool adjusted,
+        out List<string> adjustmentLines
     )
     {
         adjusted = false;
+        adjustmentLines = new List<string>();
 
         if (actor == null || candidateSequence == null || candidateSequence.Length == 0)
             return Array.Empty<SotFinalActionDto>();
@@ -633,14 +714,39 @@ public sealed class BattleCommandPostprocessor
             if (candidate == null)
                 continue;
 
-            if (TryCorrectAction(actor, candidate, runtime, out SotFinalActionDto corrected, out bool actionAdjusted))
+            if (
+                TryCorrectAction(
+                    actor,
+                    candidate,
+                    runtime,
+                    out SotFinalActionDto corrected,
+                    out bool actionAdjusted,
+                    out string actionAdjustmentLine
+                )
+            )
             {
                 if (corrected != null)
                 {
                     finalActions.Add(corrected);
                     adjusted = adjusted || actionAdjusted;
+
+                    if (!string.IsNullOrWhiteSpace(actionAdjustmentLine))
+                        adjustmentLines.Add(actionAdjustmentLine);
                 }
             }
+        }
+
+        if (candidateSequence.Length > maxActions)
+        {
+            adjusted = true;
+            adjustmentLines.Add(
+                BattleCommandInputDialogBuilder.BuildObeyedActionAdjustment(
+                    BattleInputDialogAdjustmentReason.SequenceTrimmed,
+                    string.Empty,
+                    string.Empty,
+                    string.Empty
+                )
+            );
         }
 
         return finalActions.ToArray();
@@ -656,28 +762,30 @@ public sealed class BattleCommandPostprocessor
         SotFinalActionDto candidate,
         PostprocessRuntime runtime,
         out SotFinalActionDto corrected,
-        out bool adjusted
+        out bool adjusted,
+        out string adjustmentLine
     )
     {
         corrected = null;
         adjusted = false;
+        adjustmentLine = string.Empty;
 
         switch (candidate.type)
         {
             case "attack":
-                return TryCorrectAttack(actor, candidate, runtime, out corrected, out adjusted);
+                return TryCorrectAttack(actor, candidate, runtime, out corrected, out adjusted, out adjustmentLine);
 
             case "move":
-                return TryCorrectMove(actor, candidate, runtime, out corrected, out adjusted);
+                return TryCorrectMove(actor, candidate, runtime, out corrected, out adjusted, out adjustmentLine);
 
             case "skill":
-                return TryCorrectSkill(actor, candidate, runtime, out corrected, out adjusted);
+                return TryCorrectSkill(actor, candidate, runtime, out corrected, out adjusted, out adjustmentLine);
 
             case "wait":
-                return TryCorrectWait(candidate, out corrected, out adjusted);
+                return TryCorrectWait(candidate, out corrected, out adjusted, out adjustmentLine);
 
             case "skillControl":
-                return TryCorrectSkillControl(actor, candidate, out corrected, out adjusted);
+                return TryCorrectSkillControl(actor, candidate, out corrected, out adjusted, out adjustmentLine);
 
             default:
                 return false;
@@ -689,10 +797,12 @@ public sealed class BattleCommandPostprocessor
         SotFinalActionDto candidate,
         PostprocessRuntime runtime,
         out SotFinalActionDto corrected,
-        out bool adjusted
+        out bool adjusted,
+        out string adjustmentLine
     )
     {
         adjusted = false;
+        adjustmentLine = string.Empty;
         corrected = CloneAction(candidate);
 
         BattleRuntimeUnit target = runtime.FindEnemy(candidate.target);
@@ -734,8 +844,17 @@ public sealed class BattleCommandPostprocessor
         if (replacement == null)
             return false;
 
-        corrected.target = runtime.GetUnitId(replacement);
+        string originalTargetId = candidate.target;
+        string replacementTargetId = runtime.GetUnitId(replacement);
+
+        corrected.target = replacementTargetId;
         adjusted = true;
+        adjustmentLine = BattleCommandInputDialogBuilder.BuildObeyedActionAdjustment(
+            BattleInputDialogAdjustmentReason.AttackTargetReplaced,
+            "attack",
+            originalTargetId,
+            replacementTargetId
+        );
         return true;
     }
 
@@ -744,45 +863,87 @@ public sealed class BattleCommandPostprocessor
         SotFinalActionDto candidate,
         PostprocessRuntime runtime,
         out SotFinalActionDto corrected,
-        out bool adjusted
+        out bool adjusted,
+        out string adjustmentLine
     )
     {
         corrected = CloneAction(candidate);
+        adjustmentLine = string.Empty;
+        List<string> lines = new List<string>();
 
         bool movementTypeAdjusted = false;
         if (!IsAllowedMovementType(corrected.movementType))
         {
             corrected.movementType = "direct";
             movementTypeAdjusted = true;
+            lines.Add(
+                BattleCommandInputDialogBuilder.BuildObeyedActionAdjustment(
+                    BattleInputDialogAdjustmentReason.MovementTypeDefaulted,
+                    corrected.subtype,
+                    string.Empty,
+                    string.Empty
+                )
+            );
         }
 
         bool valid;
         bool subtypeAdjusted;
+        string subtypeAdjustmentLine;
 
         switch (corrected.subtype)
         {
             case "approachOpponent":
-                valid = CorrectMoveApproach(actor, corrected, runtime, out subtypeAdjusted);
+                valid = CorrectMoveApproach(
+                    actor,
+                    corrected,
+                    runtime,
+                    out subtypeAdjusted,
+                    out subtypeAdjustmentLine
+                );
                 break;
 
             case "escape":
-                valid = CorrectMoveEscape(actor, corrected, runtime, out subtypeAdjusted);
+                valid = CorrectMoveEscape(
+                    actor,
+                    corrected,
+                    runtime,
+                    out subtypeAdjusted,
+                    out subtypeAdjustmentLine
+                );
                 break;
 
             case "help":
-                valid = CorrectMoveHelp(actor, corrected, runtime, out subtypeAdjusted);
+                valid = CorrectMoveHelp(
+                    actor,
+                    corrected,
+                    runtime,
+                    out subtypeAdjusted,
+                    out subtypeAdjustmentLine
+                );
                 break;
 
             case "holdFront":
-                valid = CorrectMoveHoldFront(actor, corrected, runtime, out subtypeAdjusted);
+                valid = CorrectMoveHoldFront(
+                    actor,
+                    corrected,
+                    runtime,
+                    out subtypeAdjusted,
+                    out subtypeAdjustmentLine
+                );
                 break;
 
             default:
                 adjusted = movementTypeAdjusted;
+                adjustmentLine = BattleCommandInputDialogBuilder.BuildCombinedObeyedActionAdjustment(lines);
                 return false;
         }
 
         adjusted = movementTypeAdjusted || subtypeAdjusted;
+
+        if (!string.IsNullOrWhiteSpace(subtypeAdjustmentLine))
+            lines.Add(subtypeAdjustmentLine);
+
+        adjustmentLine = BattleCommandInputDialogBuilder.BuildCombinedObeyedActionAdjustment(lines);
         return valid;
     }
 
@@ -790,10 +951,14 @@ public sealed class BattleCommandPostprocessor
         BattleRuntimeUnit actor,
         SotFinalActionDto corrected,
         PostprocessRuntime runtime,
-        out bool adjusted
+        out bool adjusted,
+        out string adjustmentLine
     )
     {
         adjusted = false;
+        adjustmentLine = string.Empty;
+        string originalTo = corrected.to;
+
         BattleRuntimeUnit target = runtime.FindEnemy(corrected.to);
 
         if (BattleCommandPostprocessRuntimeQueries.IsEnemyTargetableForPostprocess(target, runtime.SimulationManager))
@@ -808,8 +973,15 @@ public sealed class BattleCommandPostprocessor
         if (replacement == null)
             return false;
 
-        corrected.to = runtime.GetUnitId(replacement);
+        string replacementTo = runtime.GetUnitId(replacement);
+        corrected.to = replacementTo;
         adjusted = true;
+        adjustmentLine = BattleCommandInputDialogBuilder.BuildObeyedActionAdjustment(
+            BattleInputDialogAdjustmentReason.MoveTargetReplaced,
+            corrected.subtype,
+            originalTo,
+            replacementTo
+        );
         return true;
     }
 
@@ -817,10 +989,14 @@ public sealed class BattleCommandPostprocessor
         BattleRuntimeUnit actor,
         SotFinalActionDto corrected,
         PostprocessRuntime runtime,
-        out bool adjusted
+        out bool adjusted,
+        out string adjustmentLine
     )
     {
         adjusted = false;
+        adjustmentLine = string.Empty;
+        string originalTo = corrected.to;
+
         BattleRuntimeUnit target = runtime.FindAlly(corrected.to);
 
         if (BattleCommandPostprocessRuntimeQueries.IsValidOtherAllyTarget(actor, target))
@@ -843,8 +1019,15 @@ public sealed class BattleCommandPostprocessor
         if (replacement == null)
             return false;
 
-        corrected.to = runtime.GetUnitId(replacement);
+        string replacementTo = runtime.GetUnitId(replacement);
+        corrected.to = replacementTo;
         adjusted = true;
+        adjustmentLine = BattleCommandInputDialogBuilder.BuildObeyedActionAdjustment(
+            BattleInputDialogAdjustmentReason.MoveTargetReplaced,
+            corrected.subtype,
+            originalTo,
+            replacementTo
+        );
         return true;
     }
 
@@ -852,10 +1035,14 @@ public sealed class BattleCommandPostprocessor
         BattleRuntimeUnit actor,
         SotFinalActionDto corrected,
         PostprocessRuntime runtime,
-        out bool adjusted
+        out bool adjusted,
+        out string adjustmentLine
     )
     {
         adjusted = false;
+        adjustmentLine = string.Empty;
+        string originalTo = corrected.to;
+
         BattleRuntimeUnit target = runtime.FindAlly(corrected.to);
 
         if (BattleCommandPostprocessRuntimeQueries.IsValidOtherAllyTarget(actor, target))
@@ -870,8 +1057,15 @@ public sealed class BattleCommandPostprocessor
         if (replacement == null)
             return false;
 
-        corrected.to = runtime.GetUnitId(replacement);
+        string replacementTo = runtime.GetUnitId(replacement);
+        corrected.to = replacementTo;
         adjusted = true;
+        adjustmentLine = BattleCommandInputDialogBuilder.BuildObeyedActionAdjustment(
+            BattleInputDialogAdjustmentReason.MoveTargetReplaced,
+            corrected.subtype,
+            originalTo,
+            replacementTo
+        );
         return true;
     }
 
@@ -879,10 +1073,14 @@ public sealed class BattleCommandPostprocessor
         BattleRuntimeUnit actor,
         SotFinalActionDto corrected,
         PostprocessRuntime runtime,
-        out bool adjusted
+        out bool adjusted,
+        out string adjustmentLine
     )
     {
         adjusted = false;
+        adjustmentLine = string.Empty;
+        string originalTo = corrected.to;
+
         BattleRuntimeUnit target = runtime.FindAnyUnit(corrected.to);
 
         if (
@@ -909,8 +1107,15 @@ public sealed class BattleCommandPostprocessor
         if (replacement == null || replacement == actor)
             return false;
 
-        corrected.to = runtime.GetUnitId(replacement);
+        string replacementTo = runtime.GetUnitId(replacement);
+        corrected.to = replacementTo;
         adjusted = true;
+        adjustmentLine = BattleCommandInputDialogBuilder.BuildObeyedActionAdjustment(
+            BattleInputDialogAdjustmentReason.MoveTargetReplaced,
+            corrected.subtype,
+            originalTo,
+            replacementTo
+        );
         return true;
     }
 
@@ -919,11 +1124,14 @@ public sealed class BattleCommandPostprocessor
         SotFinalActionDto candidate,
         PostprocessRuntime runtime,
         out SotFinalActionDto corrected,
-        out bool adjusted
+        out bool adjusted,
+        out string adjustmentLine
     )
     {
         adjusted = false;
+        adjustmentLine = string.Empty;
         corrected = CloneAction(candidate);
+        List<string> adjustmentLines = new List<string>();
 
         BattleSkillRuntimeMetadata metadata = BattleOrderRuntimeQueries.ResolveSkillMetadata(actor);
         if (!CanActorUseSkill(actor, metadata))
@@ -933,6 +1141,14 @@ public sealed class BattleCommandPostprocessor
         {
             corrected.description = metadata.skillDescription ?? string.Empty;
             adjusted = true;
+            adjustmentLines.Add(
+                BattleCommandInputDialogBuilder.BuildObeyedActionAdjustment(
+                    BattleInputDialogAdjustmentReason.SkillDescriptionCorrected,
+                    "skill",
+                    string.Empty,
+                    string.Empty
+                )
+            );
         }
 
         if (metadata.isSkillOnSelf)
@@ -942,8 +1158,17 @@ public sealed class BattleCommandPostprocessor
             {
                 corrected.target = actorId;
                 adjusted = true;
+                adjustmentLines.Add(
+                    BattleCommandInputDialogBuilder.BuildObeyedActionAdjustment(
+                        BattleInputDialogAdjustmentReason.SkillTargetReplaced,
+                        "skill",
+                        candidate.target,
+                        actorId
+                    )
+                );
             }
 
+            adjustmentLine = BattleCommandInputDialogBuilder.BuildCombinedObeyedActionAdjustment(adjustmentLines);
             return true;
         }
 
@@ -958,14 +1183,27 @@ public sealed class BattleCommandPostprocessor
                 );
 
             if (valid)
+            {
+                adjustmentLine = BattleCommandInputDialogBuilder.BuildCombinedObeyedActionAdjustment(adjustmentLines);
                 return true;
+            }
 
             BattleRuntimeUnit replacement = SelectReplacementOtherAllySkillTarget(actor, metadata, runtime);
             if (replacement == null)
                 return false;
 
-            corrected.target = runtime.GetUnitId(replacement);
+            string replacementTargetId = runtime.GetUnitId(replacement);
+            corrected.target = replacementTargetId;
             adjusted = true;
+            adjustmentLines.Add(
+                BattleCommandInputDialogBuilder.BuildObeyedActionAdjustment(
+                    BattleInputDialogAdjustmentReason.SkillTargetReplaced,
+                    "skill",
+                    candidate.target,
+                    replacementTargetId
+                )
+            );
+            adjustmentLine = BattleCommandInputDialogBuilder.BuildCombinedObeyedActionAdjustment(adjustmentLines);
             return true;
         }
 
@@ -977,6 +1215,7 @@ public sealed class BattleCommandPostprocessor
             )
         )
         {
+            adjustmentLine = BattleCommandInputDialogBuilder.BuildCombinedObeyedActionAdjustment(adjustmentLines);
             return true;
         }
 
@@ -984,8 +1223,18 @@ public sealed class BattleCommandPostprocessor
         if (enemyReplacement == null)
             return false;
 
-        corrected.target = runtime.GetUnitId(enemyReplacement);
+        string enemyReplacementTargetId = runtime.GetUnitId(enemyReplacement);
+        corrected.target = enemyReplacementTargetId;
         adjusted = true;
+        adjustmentLines.Add(
+            BattleCommandInputDialogBuilder.BuildObeyedActionAdjustment(
+                BattleInputDialogAdjustmentReason.SkillTargetReplaced,
+                "skill",
+                candidate.target,
+                enemyReplacementTargetId
+            )
+        );
+        adjustmentLine = BattleCommandInputDialogBuilder.BuildCombinedObeyedActionAdjustment(adjustmentLines);
         return true;
     }
 
@@ -1059,7 +1308,8 @@ public sealed class BattleCommandPostprocessor
     private static bool TryCorrectWait(
         SotFinalActionDto candidate,
         out SotFinalActionDto corrected,
-        out bool adjusted
+        out bool adjusted,
+        out string adjustmentLine
     )
     {
         corrected = CloneAction(candidate);
@@ -1067,6 +1317,15 @@ public sealed class BattleCommandPostprocessor
         float clampedDuration = Mathf.Clamp(originalDuration, 1f, 10f);
         adjusted = !Mathf.Approximately(originalDuration, clampedDuration);
         corrected.durationSec = clampedDuration;
+
+        adjustmentLine = adjusted
+            ? BattleCommandInputDialogBuilder.BuildDurationClampSummary(
+                "wait",
+                originalDuration,
+                clampedDuration
+            )
+            : string.Empty;
+
         return true;
     }
 
@@ -1074,10 +1333,12 @@ public sealed class BattleCommandPostprocessor
         BattleRuntimeUnit actor,
         SotFinalActionDto candidate,
         out SotFinalActionDto corrected,
-        out bool adjusted
+        out bool adjusted,
+        out string adjustmentLine
     )
     {
         adjusted = false;
+        adjustmentLine = string.Empty;
         corrected = CloneAction(candidate);
 
         BattleSkillRuntimeMetadata metadata = BattleOrderRuntimeQueries.ResolveSkillMetadata(actor);
@@ -1090,6 +1351,15 @@ public sealed class BattleCommandPostprocessor
             float clampedDuration = Mathf.Clamp(originalDuration, 1f, 10f);
             adjusted = !Mathf.Approximately(originalDuration, clampedDuration);
             corrected.durationSec = clampedDuration;
+
+            adjustmentLine = adjusted
+                ? BattleCommandInputDialogBuilder.BuildDurationClampSummary(
+                    "skillControl",
+                    originalDuration,
+                    clampedDuration
+                )
+                : string.Empty;
+
             return true;
         }
 
@@ -1102,6 +1372,12 @@ public sealed class BattleCommandPostprocessor
         corrected.mode = "forbid";
         corrected.durationSec = null;
         adjusted = true;
+        adjustmentLine = BattleCommandInputDialogBuilder.BuildObeyedActionAdjustment(
+            BattleInputDialogAdjustmentReason.SkillControlModeCorrected,
+            "skillControl",
+            string.Empty,
+            string.Empty
+        );
         return true;
     }
 
