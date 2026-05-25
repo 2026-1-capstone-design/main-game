@@ -24,7 +24,9 @@ public sealed class SlmCommandTuningSO : ScriptableObject
     public float defaultWaitDurationSec = 10f;
 
     [Header("Escape")]
-    [Tooltip("도주 종료 조건: 액터와 상대(SLM 지정 적 / 가까운 적 평균 / 적 군집 중심) 사이 거리가 이 값 이상이면 종료(m).")]
+    [Tooltip(
+        "도주 종료 조건: 액터와 상대(SLM 지정 적 / 가까운 적 평균 / 적 군집 중심) 사이 거리가 이 값 이상이면 종료(m)."
+    )]
     public float escapeDistance = 10f;
 
     [Tooltip("'액터를 위협하는 가까운 적'으로 간주할 반경(m).")]

@@ -72,8 +72,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
 
     // BattleUnitCombatState에서 BattleRuntimeUnit으로의 역참조를 O(1)로 노출한다.
     // BattleCombatSystem 등 다른 시스템과 동일 dictionary를 공유한다.
-    public IReadOnlyDictionary<BattleUnitCombatState, BattleRuntimeUnit> RuntimeUnitByState =>
-        _runtimeUnitByState;
+    public IReadOnlyDictionary<BattleUnitCombatState, BattleRuntimeUnit> RuntimeUnitByState => _runtimeUnitByState;
 
     private BattleStatusGridUIManager _statusGridUIManager;
     private BattleSceneUIManager _battleSceneUIManager;

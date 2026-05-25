@@ -43,8 +43,7 @@ public sealed class SlmCommandUnitPlanner
         new Dictionary<BattleUnitCombatState, SlmActiveCommandState>();
 
     // foreach 중에 dictionary 수정할 수 없어 종료된 액터를 임시로 모았다가 루프 밖에서 제거한다.
-    private readonly List<BattleUnitCombatState> _completedThisTick =
-        new List<BattleUnitCombatState>();
+    private readonly List<BattleUnitCombatState> _completedThisTick = new List<BattleUnitCombatState>();
 
     public void IssueCommands(BattleUnitCombatState actor, IReadOnlyList<SlmUnitCommand> commands)
     {

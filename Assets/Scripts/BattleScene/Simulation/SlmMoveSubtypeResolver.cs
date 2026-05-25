@@ -83,11 +83,7 @@ public static class SlmMoveSubtypeResolver
     // BattleSimulationManager.BattlefieldCollider가 null이면 원래 방향을 그대로 반환한다.
     private const float BoundaryNearMargin = 1f;
 
-    private static Vector3 AdjustDirectionAtBoundary(
-        Vector3 actorPos,
-        Vector3 dir,
-        float bodyRadius
-    )
+    private static Vector3 AdjustDirectionAtBoundary(Vector3 actorPos, Vector3 dir, float bodyRadius)
     {
         SphereCollider battlefield = BattleSimulationManager.Instance != null
             ? BattleSimulationManager.Instance.BattlefieldCollider

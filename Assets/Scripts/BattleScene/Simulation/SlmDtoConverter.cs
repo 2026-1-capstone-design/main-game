@@ -94,7 +94,14 @@ public static class SlmDtoConverter
         if (kind == SlmCommandKind.Attack)
         {
             BattleRuntimeUnit target = FindUnitById(raw.targetUnitId, allyUnits, enemyUnits, rosterProjection);
-            command = new SlmUnitCommand(actor, SlmCommandKind.Attack, target, SlmMoveSubtype.None, SlmMoveStyle.Direct, 0f);
+            command = new SlmUnitCommand(
+                actor,
+                SlmCommandKind.Attack,
+                target,
+                SlmMoveSubtype.None,
+                SlmMoveStyle.Direct,
+                0f
+            );
             return true;
         }
 
@@ -115,7 +122,14 @@ public static class SlmDtoConverter
         if (kind == SlmCommandKind.Skill)
         {
             BattleRuntimeUnit skillTarget = FindUnitById(raw.targetUnitId, allyUnits, enemyUnits, rosterProjection);
-            command = new SlmUnitCommand(actor, SlmCommandKind.Skill, skillTarget, SlmMoveSubtype.None, SlmMoveStyle.Direct, 0f);
+            command = new SlmUnitCommand(
+                actor,
+                SlmCommandKind.Skill,
+                skillTarget,
+                SlmMoveSubtype.None,
+                SlmMoveStyle.Direct,
+                0f
+            );
             return true;
         }
 
