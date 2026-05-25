@@ -17,3 +17,9 @@ MonoBehaviour:
   description: WarCry
   weaponType: 2
   skillId: 6
+  isSkillOnSelf: 0
+  isSkillOnOtherAlly: 0
+  isSkillAoe: 0
+  canSkillTargetDead: 1
+  defaultDur: 1
+  duration: 1

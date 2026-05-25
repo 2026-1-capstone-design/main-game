@@ -29,6 +29,10 @@ public sealed class BattleOrdersManager : MonoBehaviour
     [SerializeField]
     private int requestTimeoutSeconds = 30;
 
+    [Header("SOT Layer Preview")]
+    [SerializeField]
+    private bool logSotLayerInputPreview = true;
+
     private readonly BattleRuntimeUnit[] _allyUnits = new BattleRuntimeUnit[BattleTeamConstants.MaxUnitsPerTeam];
     private readonly BattleRuntimeUnit[] _enemyUnits = new BattleRuntimeUnit[BattleTeamConstants.MaxUnitsPerTeam];
     private IBattleRosterProjection _rosterProjection;
@@ -36,6 +40,7 @@ public sealed class BattleOrdersManager : MonoBehaviour
     private SphereCollider _battlefieldCollider;
     private bool _initialized;
     private int _requestSequence;
+    private BattleOrderLayerPipeline _layerPipeline;
 
     public void Initialize(IReadOnlyList<BattleRuntimeUnit> runtimeUnits)
     {
@@ -111,83 +116,87 @@ public sealed class BattleOrdersManager : MonoBehaviour
             return;
         }
 
-        StringBuilder sb = new StringBuilder(768);
-
-        sb.AppendLine("<color=#4FC3F7><b>[GLOBAL]</b></color>");
-        sb.AppendLine("<color=#B3E5FC>Global order received.</color>");
-
-        for (int i = 0; i < _allyUnits.Length; i++)
+        string sanitizedRawText = SanitizeRawText(rawOrderText);
+        if (string.IsNullOrWhiteSpace(sanitizedRawText))
         {
-            sb.AppendLine(BuildGlobalAllyLine(i + 1, _allyUnits[i]));
-        }
-
-        sb.Append("<color=#FFCC80>Raw order:</color> \"");
-        sb.Append(SanitizeRawText(rawOrderText));
-        sb.AppendLine("\"");
-
-        if (
-            !TryResolveActorFromGlobalOrder(
-                rawOrderText,
-                out BattleRuntimeUnit resolvedActor,
-                out int matchedCount,
-                out string matchedSummary
-            )
-        )
-        {
-            sb.Append("<color=#EF9A9A>LLM skipped.</color> Matched ally count = ");
-            sb.Append(matchedCount);
-            sb.Append(". ");
-            sb.Append(matchedSummary);
-
-            Debug.Log(sb.ToString(), this);
+            Debug.LogWarning("[BattleOrdersManager] Global order ignored. Raw order text is empty.", this);
             return;
         }
 
-        sb.Append("<color=#81C784>Resolved actor:</color> ");
-        sb.Append(BuildUnitIdentityText(resolvedActor));
-        sb.Append(" / UnitId=");
-        sb.Append(BuildUnitId(resolvedActor));
+        if (verboseLog)
+        {
+            StringBuilder sb = new StringBuilder(768);
+            sb.AppendLine("<color=#4FC3F7><b>[GLOBAL]</b></color>");
+            sb.AppendLine("<color=#B3E5FC>Global order received.</color>");
 
-        Debug.Log(sb.ToString(), this);
+            for (int i = 0; i < _allyUnits.Length; i++)
+            {
+                sb.AppendLine(BuildGlobalAllyLine(i + 1, _allyUnits[i]));
+            }
 
-        TrySendOrderToLlm("GLOBAL", resolvedActor, rawOrderText);
+            sb.Append("<color=#FFCC80>Raw order:</color> \"");
+            sb.Append(sanitizedRawText);
+            sb.AppendLine("\"");
+
+            Debug.Log(sb.ToString(), this);
+        }
+
+        RunSotLayerInputPreview(sanitizedRawText);
     }
 
     public void SubmitSingleOrder(BattleRuntimeUnit targetAlly, string rawOrderText)
     {
-        if (!_initialized)
+        //deprecated
+    }
+
+    private void RunSotLayerInputPreview(string sanitizedRawText)
+    {
+        if (!logSotLayerInputPreview)
+            return;
+
+        BattleSimulationManager simulationManager = BattleSimulationManager.Instance;
+        if (simulationManager == null)
         {
-            Debug.LogError("[BattleOrdersManager] SubmitSingleOrder called before Initialize.", this);
+            Debug.LogWarning("[BattleOrdersManager] SOT layer input preview skipped. BattleSimulationManager.Instance is null.", this);
             return;
         }
 
-        if (targetAlly == null)
+        _layerPipeline ??= new BattleOrderLayerPipeline();
+
+        BattleOrderRuntimeContext context = new BattleOrderRuntimeContext(
+            _allyUnits,
+            _enemyUnits,
+            _rosterProjection,
+            simulationManager
+        );
+
+        if (
+            !_layerPipeline.TryBuildInputPreview(
+                sanitizedRawText,
+                context,
+                out BattleOrderLayerPreviewResult result,
+                out string error
+            )
+        )
         {
-            Debug.LogWarning("[BattleOrdersManager] SubmitSingleOrder ignored. Target ally is null.", this);
+            Debug.LogWarning(
+                $"[BattleOrdersManager] SOT layer input preview failed. Reason={error}",
+                this
+            );
             return;
         }
 
-        if (_rosterProjection != null && !_rosterProjection.IsPlayerUnit(targetAlly))
-        {
-            Debug.LogWarning("[BattleOrdersManager] SubmitSingleOrder ignored. Target is an enemy unit.", this);
-            return;
-        }
+        Debug.Log(
+            "<color=#4FC3F7><b>[SOT PARSER INPUT PREVIEW]</b></color>\n"
+                + result.ParserRequestJson,
+            this
+        );
 
-        StringBuilder sb = new StringBuilder(384);
-
-        sb.AppendLine("<color=#BA68C8><b>[SINGLE]</b></color>");
-        sb.AppendLine("<color=#E1BEE7>Single target order received.</color>");
-        sb.Append("<color=#81C784>Target ally:</color> ");
-        sb.AppendLine(BuildUnitIdentityText(targetAlly));
-        sb.Append("<color=#81C784>Target unitId:</color> ");
-        sb.AppendLine(BuildUnitId(targetAlly));
-        sb.Append("<color=#FFCC80>Raw order:</color> \"");
-        sb.Append(SanitizeRawText(rawOrderText));
-        sb.Append('"');
-
-        Debug.Log(sb.ToString(), this);
-
-        TrySendOrderToLlm("SINGLE", targetAlly, rawOrderText);
+        Debug.Log(
+            "<color=#BA68C8><b>[SOT DIALOG INPUT PREVIEW]</b></color>\n"
+                + result.DialogRequestJson,
+            this
+        );
     }
 
     private void TrySendOrderToLlm(string orderType, BattleRuntimeUnit actorUnit, string rawOrderText)

@@ -146,6 +146,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
     public BattleAgentControlBuffer AgentControlBuffer => _agentControlBuffer;
     public ForcedControlPlanBuffer ForcedControlPlanBuffer => _forcedControlPlanBuffer;
     public PlayerCommandControlBuffer PlayerCommandControlBuffer => _playerCommandControlBuffer;
+    public BattleArtifactSystem ArtifactSystem => _artifactSystem;
     public bool TrainingOptimizedSimulation => trainingOptimizedSimulation;
 
     public event Action<SimulationTickData> OnSimulationTicked;

@@ -102,7 +102,6 @@ public sealed class BattleSceneUIManager : MonoBehaviour
     {
         None,
         Global,
-        SingleAlly,
     }
 
     private SceneLoader _sceneLoader;
@@ -112,7 +111,6 @@ public sealed class BattleSceneUIManager : MonoBehaviour
 
     private ModalState _activeModalState = ModalState.None;
     private OrderTargetMode _currentOrderTargetMode = OrderTargetMode.None;
-    private BattleRuntimeUnit _currentOrderTargetUnit;
     private float _cachedSpeedMultiplier = 1f;
     private bool _hasCachedSpeedMultiplier;
 
@@ -335,33 +333,15 @@ public sealed class BattleSceneUIManager : MonoBehaviour
 
     public void OpenGlobalOrderPanel()
     {
-        TryOpenOrdersPanel(OrderTargetMode.Global, null);
+        TryOpenOrdersPanel(OrderTargetMode.Global);
     }
 
     public void OpenSingleOrderPanel(BattleRuntimeUnit targetUnit)
     {
-        if (targetUnit == null)
-        {
-            Debug.LogWarning("[BattleSceneUIManager] Single order open blocked. Target ally is null.", this);
-            return;
-        }
-
-        if (!targetUnit.IsPlayerOwned)
-        {
-            Debug.LogWarning("[BattleSceneUIManager] Single order open blocked. Target is an enemy unit.", this);
-            return;
-        }
-
-        if (targetUnit.IsCombatDisabled)
-        {
-            Debug.LogWarning("[BattleSceneUIManager] Single order open blocked. Target ally is disabled.", this);
-            return;
-        }
-
-        TryOpenOrdersPanel(OrderTargetMode.SingleAlly, targetUnit);
+        //deprecated
     }
 
-    private bool TryOpenOrdersPanel(OrderTargetMode targetMode, BattleRuntimeUnit targetUnit)
+    private bool TryOpenOrdersPanel(OrderTargetMode targetMode)
     {
         EnsureBattleSimulationManager();
 
@@ -387,7 +367,6 @@ public sealed class BattleSceneUIManager : MonoBehaviour
 
         _activeModalState = ModalState.Orders;
         _currentOrderTargetMode = targetMode;
-        _currentOrderTargetUnit = targetUnit;
 
         SetActive(ordersMaskRoot, true);
         SetActive(ordersPanelRoot, true);
@@ -404,9 +383,8 @@ public sealed class BattleSceneUIManager : MonoBehaviour
 
         if (verboseLog)
         {
-            string targetText = targetUnit != null ? targetUnit.DisplayName : "All Allies";
             Debug.Log(
-                $"[BattleSceneUIManager] Orders panel opened. Mode={targetMode}, Target={targetText}, ForcedSpeed={orderInputFixedSpeedMultiplier:0.##}, CachedPreviousSpeed={_cachedSpeedMultiplier:0.##}",
+                $"[BattleSceneUIManager] Orders panel opened. Mode={targetMode}, ForcedSpeed={orderInputFixedSpeedMultiplier:0.##}, CachedPreviousSpeed={_cachedSpeedMultiplier:0.##}",
                 this
             );
         }
@@ -427,26 +405,13 @@ public sealed class BattleSceneUIManager : MonoBehaviour
             return;
         }
 
-        switch (_currentOrderTargetMode)
+        if (_currentOrderTargetMode == OrderTargetMode.Global)
         {
-            case OrderTargetMode.Global:
-                battleOrdersManager.SubmitGlobalOrder(rawInput);
-                break;
-
-            case OrderTargetMode.SingleAlly:
-                if (_currentOrderTargetUnit == null)
-                {
-                    Debug.LogWarning("[BattleSceneUIManager] Order send blocked. Target ally is null.", this);
-                }
-                else
-                {
-                    battleOrdersManager.SubmitSingleOrder(_currentOrderTargetUnit, rawInput);
-                }
-                break;
-
-            default:
-                Debug.LogWarning("[BattleSceneUIManager] Order send blocked. Order target mode is None.", this);
-                break;
+            battleOrdersManager.SubmitGlobalOrder(rawInput);
+        }
+        else
+        {
+            Debug.LogWarning("[BattleSceneUIManager] Order send blocked. Order target mode is None.", this);
         }
 
         CloseTransientUi(restoreOrderSpeed: true, clearOrderInput: true);
@@ -602,7 +567,6 @@ public sealed class BattleSceneUIManager : MonoBehaviour
 
         _activeModalState = ModalState.None;
         _currentOrderTargetMode = OrderTargetMode.None;
-        _currentOrderTargetUnit = null;
 
         SetActive(surrenderMaskRoot, false);
         SetActive(surrenderPanelRoot, false);

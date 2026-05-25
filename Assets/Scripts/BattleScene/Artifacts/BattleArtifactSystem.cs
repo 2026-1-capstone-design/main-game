@@ -190,6 +190,25 @@ public sealed class BattleArtifactSystem : IBattleTargetingPolicy, IBattleMoveme
         return score.Value;
     }
 
+    public bool HasTargetingBlock(BattleRuntimeUnit candidate, BattleTargetingReason reason)
+    {
+        if (candidate == null || candidate.State == null)
+            return false;
+
+        for (int i = 0; i < _targetingModifiers.Count; i++)
+        {
+            ArtifactBinding<ITargetingModifierArtifact> binding = _targetingModifiers[i];
+
+            if (binding.Owner != candidate.State && binding.OwnerView != candidate)
+                continue;
+
+            if (!binding.Artifact.CanBeTargeted(binding.Owner, null, reason))
+                return true;
+        }
+
+        return false;
+    }
+
     public void ModifyMoveSpeed(ref BattleMoveRequest request)
     {
         for (int i = 0; i < _movementModifiers.Count; i++)

@@ -17,3 +17,9 @@ MonoBehaviour:
   description: RustyBlade
   weaponType: 6
   skillId: 8
+  isSkillOnSelf: 1
+  isSkillOnOtherAlly: 0
+  isSkillAoe: 0
+  canSkillTargetDead: 0
+  defaultDur: 1
+  duration: 1

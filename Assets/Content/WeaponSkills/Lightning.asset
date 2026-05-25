@@ -17,3 +17,9 @@ MonoBehaviour:
   description: Lightning
   weaponType: 10
   skillId: 10
+  isSkillOnSelf: 0
+  isSkillOnOtherAlly: 1
+  isSkillAoe: 0
+  canSkillTargetDead: 0
+  defaultDur: 1
+  duration: 1
