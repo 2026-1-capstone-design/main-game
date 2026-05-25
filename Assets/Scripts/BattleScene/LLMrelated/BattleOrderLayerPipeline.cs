@@ -1,4 +1,4 @@
-// Battle order의 parser/dialog 레이어 입력을 순서대로 조립한다.
+// Battle order의 parser/postprocess/dialog 레이어 입력을 순서대로 조립한다.
 // parser client, postprocessor, dialog client가 이 파이프라인에 연결됨.
 // 실행 진입점 호출은 별도 dispatcher가 담당한다.
 
@@ -8,6 +8,7 @@ using Newtonsoft.Json;
 public sealed class BattleOrderLayerPipeline
 {
     private readonly BattleParserInputBuilder _parserInputBuilder = new BattleParserInputBuilder();
+    private readonly BattleCommandPostprocessor _postprocessor = new BattleCommandPostprocessor();
     private readonly BattleDialogLayerInputBuilder _dialogInputBuilder = new BattleDialogLayerInputBuilder();
 
     private static readonly JsonSerializerSettings JsonSettings = new JsonSerializerSettings
@@ -61,11 +62,45 @@ public sealed class BattleOrderLayerPipeline
         );
         string mockParserOutputJson = JsonConvert.SerializeObject(mockParserOutput, JsonSettings);
 
-        SotDialogLayerRequestDto dialogRequest =
-            _dialogInputBuilder.BuildFromMockParserResult(command, context, mockParseResult);
-        string dialogRequestJson = JsonConvert.SerializeObject(dialogRequest, JsonSettings);
+        if (
+            !_postprocessor.TryProcess(
+                command,
+                mockParserOutput,
+                context,
+                out BattleCommandPostprocessResult postprocessResult,
+                out string postprocessError
+            )
+        )
+        {
+            error = postprocessError;
+            return false;
+        }
 
-        SotDialogLayerResponseDto dialogResponse = BuildMockDialogResponse(dialogRequest);
+        string postprocessResultJson = JsonConvert.SerializeObject(postprocessResult, JsonSettings);
+
+        SotDialogLayerRequestDto dialogRequest;
+        SotDialogLayerResponseDto dialogResponse;
+
+        if (postprocessResult != null && postprocessResult.fallbackToDefaultMlAi)
+        {
+            dialogRequest = new SotDialogLayerRequestDto
+            {
+                originalCommand = command,
+                actors = System.Array.Empty<SotDialogActorInputDto>(),
+            };
+
+            dialogResponse = new SotDialogLayerResponseDto
+            {
+                dialog = System.Array.Empty<SotDialogLineDto>(),
+            };
+        }
+        else
+        {
+            dialogRequest = _dialogInputBuilder.BuildFromPostprocessResult(postprocessResult, context);
+            dialogResponse = BuildMockDialogResponse(dialogRequest);
+        }
+
+        string dialogRequestJson = JsonConvert.SerializeObject(dialogRequest, JsonSettings);
         string dialogResponseJson = JsonConvert.SerializeObject(dialogResponse, JsonSettings);
 
         result = new BattleOrderLayerPreviewResult(
@@ -73,6 +108,8 @@ public sealed class BattleOrderLayerPipeline
             parserRequestJson,
             mockParserOutput,
             mockParserOutputJson,
+            postprocessResult,
+            postprocessResultJson,
             dialogRequest,
             dialogRequestJson,
             dialogResponse,
@@ -90,8 +127,8 @@ public sealed class BattleOrderLayerPipeline
             return new SotParserOutputDto
             {
                 thinking = string.Empty,
-                dialog = new SotDialogLineDto[0],
-                action = new SotActorActionDto[0],
+                dialog = System.Array.Empty<SotDialogLineDto>(),
+                action = System.Array.Empty<SotActorActionDto>(),
             };
         }
 
@@ -106,7 +143,7 @@ public sealed class BattleOrderLayerPipeline
     private static SotDialogLineDto[] ConvertMockParserDialog(BattleMockCommandDialogDto[] source)
     {
         if (source == null || source.Length == 0)
-            return new SotDialogLineDto[0];
+            return System.Array.Empty<SotDialogLineDto>();
 
         List<SotDialogLineDto> result = new List<SotDialogLineDto>(source.Length);
 
@@ -131,7 +168,7 @@ public sealed class BattleOrderLayerPipeline
     private static SotActorActionDto[] ConvertMockActorSequences(BattleMockActorCommandSequenceDto[] source)
     {
         if (source == null || source.Length == 0)
-            return new SotActorActionDto[0];
+            return System.Array.Empty<SotActorActionDto>();
 
         List<SotActorActionDto> result = new List<SotActorActionDto>(source.Length);
 
@@ -159,7 +196,7 @@ public sealed class BattleOrderLayerPipeline
         {
             return new SotDialogLayerResponseDto
             {
-                dialog = new SotDialogLineDto[0],
+                dialog = System.Array.Empty<SotDialogLineDto>(),
             };
         }
 

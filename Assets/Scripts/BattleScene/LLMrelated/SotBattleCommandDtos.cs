@@ -1,7 +1,7 @@
 // SOT parser/dialog 레이어의 JSON 입출력 DTO를 정의한다.
 // Newtonsoft.Json 직렬화를 기준으로 null 필드를 보존한다.
 // 실행 명령으로 변환하지 않고 입력 조립과 로그 출력에만 사용한다.
-// 후처리 단계에서 reason enum과 final action 검증 필드를 확장한다.
+// 후처리 결과 DTO는 dialog input과 미래 dispatcher의 중간 계약이다.
 
 using System;
 using Newtonsoft.Json;
@@ -181,6 +181,39 @@ public sealed class SotFinalActionDto
     public float? durationSec;
 }
 
+[Serializable]
+public sealed class BattleCommandPostprocessResult
+{
+    public string originalCommand;
+    public bool fallbackToDefaultMlAi;
+    public string advisorLine;
+    public BattleCommandFinalActorDto[] actors;
+    public BattleCommandPostprocessDebugDto debug;
+}
+
+[Serializable]
+public sealed class BattleCommandFinalActorDto
+{
+    public string unitId;
+    public string obedienceState;
+    public string mainActionCategory;
+    public string sourceDialog;
+    public string obeyedActionAdjustment;
+    public string refusalSummary;
+    public SotFinalActionDto[] finalActionSequence;
+}
+
+[Serializable]
+public sealed class BattleCommandPostprocessDebugDto
+{
+    // 후처리 내부 판단을 로그로 확인하기 위한 preview 전용 DTO다.
+    // dialog SLM input과 실행 dispatcher input으로 사용하지 않는다.
+    public string parserThinking;
+    public string[] droppedActorSummaries;
+    public string[] adjustmentSummaries;
+    public string[] refusalSummaries;
+}
+
 public sealed class BattleOrderLayerPreviewResult
 {
     public SotParserRequestDto ParserRequest { get; }
@@ -190,6 +223,8 @@ public sealed class BattleOrderLayerPreviewResult
 
     public SotParserOutputDto MockParserOutput { get; }
     public string MockParserOutputJson { get; }
+    public BattleCommandPostprocessResult PostprocessResult { get; }
+    public string PostprocessResultJson { get; }
     public SotDialogLayerResponseDto DialogResponse { get; }
     public string DialogResponseJson { get; }
     public string MockParserLog { get; }
@@ -199,6 +234,8 @@ public sealed class BattleOrderLayerPreviewResult
         string parserRequestJson,
         SotParserOutputDto mockParserOutput,
         string mockParserOutputJson,
+        BattleCommandPostprocessResult postprocessResult,
+        string postprocessResultJson,
         SotDialogLayerRequestDto dialogRequest,
         string dialogRequestJson,
         SotDialogLayerResponseDto dialogResponse,
@@ -210,6 +247,8 @@ public sealed class BattleOrderLayerPreviewResult
         ParserRequestJson = parserRequestJson;
         MockParserOutput = mockParserOutput;
         MockParserOutputJson = mockParserOutputJson;
+        PostprocessResult = postprocessResult;
+        PostprocessResultJson = postprocessResultJson;
         DialogRequest = dialogRequest;
         DialogRequestJson = dialogRequestJson;
         DialogResponse = dialogResponse;

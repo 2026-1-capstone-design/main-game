@@ -1,11 +1,76 @@
 // 대사 레이어에 넘길 입력을 만든다.
 // 대사 레이어는 finalActionSequence를 수정하지 않는다.
-// mock parser 결과의 actor sequence를 그대로 대사 레이어 입력에 반영한다.
+// 후처리 결과가 있으면 확정된 actor sequence만 대사 레이어 입력에 반영한다.
+// mock parser 직접 입력 경로는 preview 호환용으로 유지한다.
 
 using System.Collections.Generic;
 
 public sealed class BattleDialogLayerInputBuilder
 {
+    public SotDialogLayerRequestDto BuildFromPostprocessResult(
+        BattleCommandPostprocessResult postprocessResult,
+        BattleOrderRuntimeContext context
+    )
+    {
+        if (postprocessResult == null || postprocessResult.fallbackToDefaultMlAi)
+        {
+            return new SotDialogLayerRequestDto
+            {
+                originalCommand = postprocessResult != null ? postprocessResult.originalCommand : string.Empty,
+                actors = System.Array.Empty<SotDialogActorInputDto>(),
+            };
+        }
+
+        List<SotDialogActorInputDto> actors = new List<SotDialogActorInputDto>();
+
+        BattleCommandFinalActorDto[] finalActors =
+            postprocessResult.actors ?? System.Array.Empty<BattleCommandFinalActorDto>();
+
+        for (int i = 0; i < finalActors.Length; i++)
+        {
+            BattleCommandFinalActorDto finalActor = finalActors[i];
+            if (
+                finalActor == null
+                || string.IsNullOrWhiteSpace(finalActor.unitId)
+                || finalActor.finalActionSequence == null
+                || finalActor.finalActionSequence.Length == 0
+            )
+            {
+                continue;
+            }
+
+            BattleRuntimeUnit actor = FindAllyByUnitId(
+                context != null ? context.Allies : null,
+                context != null ? context.RosterProjection : null,
+                finalActor.unitId
+            );
+
+            actors.Add(
+                new SotDialogActorInputDto
+                {
+                    unitId = finalActor.unitId,
+                    speechStyle = ResolveSpeechStyle(actor),
+                    personalityDescription = ResolvePersonalityDescription(actor),
+                    sourceDialog = string.IsNullOrWhiteSpace(finalActor.sourceDialog)
+                        ? "명령을 확인했다."
+                        : finalActor.sourceDialog,
+                    obedienceState = string.IsNullOrWhiteSpace(finalActor.obedienceState)
+                        ? "obey"
+                        : finalActor.obedienceState,
+                    obeyedActionAdjustment = finalActor.obeyedActionAdjustment ?? string.Empty,
+                    refusalSummary = finalActor.refusalSummary ?? string.Empty,
+                    finalActionSequence = finalActor.finalActionSequence,
+                }
+            );
+        }
+
+        return new SotDialogLayerRequestDto
+        {
+            originalCommand = postprocessResult.originalCommand ?? string.Empty,
+            actors = actors.ToArray(),
+        };
+    }
+
     public SotDialogLayerRequestDto BuildFromMockParserResult(
         string originalCommand,
         BattleOrderRuntimeContext context,
@@ -61,23 +126,7 @@ public sealed class BattleDialogLayerInputBuilder
         string unitId
     )
     {
-        if (allies == null || string.IsNullOrWhiteSpace(unitId))
-            return null;
-
-        string normalizedUnitId = unitId.ToUpperInvariant();
-
-        for (int i = 0; i < allies.Length; i++)
-        {
-            BattleRuntimeUnit unit = allies[i];
-            if (unit == null)
-                continue;
-
-            string currentUnitId = BattleOrderRuntimeQueries.GetUnitId(unit, roster);
-            if (string.Equals(currentUnitId, normalizedUnitId, System.StringComparison.Ordinal))
-                return unit;
-        }
-
-        return null;
+        return BattleOrderRuntimeQueries.FindUnitById(allies, roster, unitId);
     }
 
     private static string ResolveSourceDialog(

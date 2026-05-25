@@ -85,6 +85,31 @@ public static class BattleOrderRuntimeQueries
         return $"U_{Mathf.Clamp(unit.UnitNumber, 0, 99):00}";
     }
 
+    public static BattleRuntimeUnit FindUnitById(
+    IReadOnlyList<BattleRuntimeUnit> units,
+    IBattleRosterProjection rosterProjection,
+    string unitId
+)
+    {
+        if (units == null || string.IsNullOrWhiteSpace(unitId))
+            return null;
+
+        string normalizedUnitId = unitId.ToUpperInvariant();
+
+        for (int i = 0; i < units.Count; i++)
+        {
+            BattleRuntimeUnit unit = units[i];
+            if (unit == null)
+                continue;
+
+            string currentUnitId = GetUnitId(unit, rosterProjection);
+            if (string.Equals(currentUnitId, normalizedUnitId, StringComparison.Ordinal))
+                return unit;
+        }
+
+        return null;
+    }
+
     public static bool IsAlive(BattleRuntimeUnit unit)
     {
         return unit != null && unit.State != null && !unit.IsCombatDisabled;

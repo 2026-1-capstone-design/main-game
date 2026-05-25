@@ -215,6 +215,18 @@ public sealed class BattleOrdersManager : MonoBehaviour
         );
 
         Debug.Log(
+            "<color=#81C784><b>[SOT MOCK PARSER OUTPUT]</b></color>\n"
+                + result.MockParserOutputJson,
+            this
+        );
+
+        Debug.Log(
+            "<color=#FFB74D><b>[SOT POSTPROCESS RESULT PREVIEW]</b></color>\n"
+                + result.PostprocessResultJson,
+            this
+        );
+
+        Debug.Log(
             "<color=#BA68C8><b>[SOT DIALOG INPUT PREVIEW]</b></color>\n"
                 + result.DialogRequestJson,
             this
