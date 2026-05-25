@@ -212,7 +212,7 @@ public sealed class BattleOrderLayerPipeline
                 new SotDialogLineDto
                 {
                     unitId = actor.unitId,
-                    text = "알겠습니다",
+                    text = actor.obedienceState == "refuse" ? "거절합니다" : "알겠습니다",
                 }
             );
         }

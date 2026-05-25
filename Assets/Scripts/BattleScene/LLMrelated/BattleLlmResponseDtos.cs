@@ -1,3 +1,4 @@
+/*
 using System;
 
 [Serializable]
@@ -32,3 +33,5 @@ public sealed class BattleLlmResponseActionDto
     // move.relative.offset = [x, y]
     public BattleLlmVector2Dto relativeOffset;
 }
+
+*/
