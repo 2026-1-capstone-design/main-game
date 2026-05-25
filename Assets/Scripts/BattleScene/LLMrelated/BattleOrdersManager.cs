@@ -219,6 +219,12 @@ public sealed class BattleOrdersManager : MonoBehaviour
                 + result.DialogRequestJson,
             this
         );
+
+        Debug.Log(
+            "<color=#CE93D8><b>[SOT DIALOG RESPONSE PREVIEW]</b></color>\n"
+                + result.DialogResponseJson,
+            this
+        );
     }
 
     private void TrySendOrderToLlm(string orderType, BattleRuntimeUnit actorUnit, string rawOrderText)
