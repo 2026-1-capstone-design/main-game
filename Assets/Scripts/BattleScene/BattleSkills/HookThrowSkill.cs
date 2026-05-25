@@ -16,27 +16,40 @@ public sealed class HookThrowSkill : IBattleSkill
 
     public void Activate(in BattleEffectContext context, IBattleEffectSink effects)
     {
-        BattleUnitCombatState caster = context.Actor?.State;
-        BattleUnitCombatState target = context.PrimaryTarget?.State;
+        BattleRuntimeUnit casterRuntime = context.Actor;
+        BattleRuntimeUnit targetRuntime = context.PrimaryTarget;
+        BattleUnitCombatState caster = casterRuntime?.State;
+        BattleUnitCombatState target = targetRuntime?.State;
 
         if (caster == null || target == null || target.IsCombatDisabled)
             return;
 
-        VFXManager.Instance.PlayEffect("CompactHit", target.Position);
-
-        effects.PullTo(caster, target, 1.5f);
-        effects.ApplyStatus(
-            new BattleStatusRequest
+        effects.ScheduleEffect(
+            1.0f,
+            casterRuntime,
+            targetRuntime,
+            context,
+            (ctx, sink) =>
             {
-                Source = caster,
-                Target = target,
-                Type = BattleStatusType.Slow,
-                Level = 50,
-                Duration = 2f,
-                IsDebuff = true,
-                IsDispelAllowed = true,
+                if (target.IsCombatDisabled)
+                    return;
+
+                VFXManager.Instance.PlayEffect("CompactHit", target.Position);
+
+                sink.PullTo(caster, target, 1.5f);
+                sink.ApplyStatus(
+                    new BattleStatusRequest
+                    {
+                        Source = caster,
+                        Target = target,
+                        Type = BattleStatusType.Slow,
+                        Level = 50,
+                        Duration = 2f,
+                        IsDebuff = true,
+                        IsDispelAllowed = true,
+                    }
+                );
             }
         );
-
     }
 }

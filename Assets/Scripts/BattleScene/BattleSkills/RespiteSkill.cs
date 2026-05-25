@@ -18,7 +18,7 @@ public sealed class RespiteSkill : IBattleSkill
         if (caster == null)
             return;
 
-        GameObject activeZoneVfx = VFXManager.Instance.PlayEffect("KindredUltZone", caster.Position);
+        GameObject activeZoneVfx = VFXManager.Instance.PlayEffect("BlueAreaStance", caster.transform);
 
         foreach (var unit in context.Units)
         {
@@ -28,7 +28,7 @@ public sealed class RespiteSkill : IBattleSkill
             {
                 effects.GrantTemporaryArtifact(unit, new RespiteArtifact(), 5f, context);
 
-                GameObject unitVfx = VFXManager.Instance.PlayEffect("RespiteSave", unit.Position);
+                GameObject unitVfx = VFXManager.Instance.PlayEffect("BlueEnhance", unit.Position);
                 effects.ScheduleEffect(
                     5f,
                     caster,

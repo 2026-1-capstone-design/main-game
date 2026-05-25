@@ -27,19 +27,7 @@ public sealed class OblivionSkill : IBattleSkill
             {
                 effects.GrantTemporaryArtifact(unit, new OblivionArtifact(), 10f, context);
 
-                GameObject activeVfx = VFXManager.Instance.PlayEffect("OblivionDebuff", unit.Position);
-
-                effects.ScheduleEffect(
-                    10f,
-                    caster,
-                    unit,
-                    context,
-                    (ctx, sink) =>
-                    {
-                        if (activeVfx != null)
-                            VFXManager.Instance.StopEffect(activeVfx);
-                    }
-                );
+                GameObject activeVfx = VFXManager.Instance.PlayEffect("DarkHit", unit.Position + Vector3.up);
             }
         }
     }

@@ -18,29 +18,47 @@ public sealed class RevolverFanningSkill : IBattleSkill
 
     public void Activate(in BattleEffectContext context, IBattleEffectSink effects)
     {
-        BattleUnitCombatState caster = context.Actor != null ? context.Actor.State : null;
-        BattleUnitCombatState target = context.PrimaryTarget != null ? context.PrimaryTarget.State : null;
-        if (target == null)
+        BattleRuntimeUnit casterRuntime = context.Actor;
+        BattleRuntimeUnit targetRuntime = context.PrimaryTarget;
+
+        BattleUnitCombatState caster = casterRuntime != null ? casterRuntime.State : null;
+        BattleUnitCombatState target = targetRuntime != null ? targetRuntime.State : null;
+
+        if (casterRuntime == null || caster == null || targetRuntime == null || target == null)
             return;
 
-        for (int i = 0; i < 6; i++)
+
+        for(int i = 0; i < 6; i++)
         {
-            float newX = Random.Range(-1f, 1f);
-            float newY = Random.Range(0f, 1f);
-            float newZ = Random.Range(-1f, 1f);
-            VFXManager.Instance.PlayEffect("CompactHit", target.Position + new Vector3(newX, newY, newZ));
-            effects.DealDamage(
-                new BattleDamageRequest
-                {
-                    Source = caster,
-                    Target = target,
-                    Amount = caster.Attack * 0.5f,
-                    SourceKind = BattleEffectSourceKind.Skill,
-                    DamageKind = BattleDamageKind.Direct,
-                    SkillId = SkillId,
-                    IsSkill = true,
-                }
-            );
+            if (caster.IsCombatDisabled || target.IsCombatDisabled)
+                    return;
+
+            effects.ScheduleEffect(
+            caster.SkillDuration + 0.1f * i,
+            casterRuntime,
+            targetRuntime,
+            context,
+            (ctx, sink) =>
+            {
+                float newX = Random.Range(-1f, 1f);
+                float newY = Random.Range(0f, 1f);
+                float newZ = Random.Range(-1f, 1f);
+                VFXManager.Instance.PlayEffect("CompactHit", target.Position + new Vector3(newX, newY, newZ));
+                sink.DealDamage(
+                    new BattleDamageRequest
+                    {
+                        Source = caster,
+                        Target = target,
+                        Amount = caster.Attack * 0.5f,
+                        SourceKind = BattleEffectSourceKind.Skill,
+                        DamageKind = BattleDamageKind.Direct,
+                        SkillId = SkillId,
+                        IsSkill = true,
+                    }
+                );
+            }
+        );
         }
+
     }
 }

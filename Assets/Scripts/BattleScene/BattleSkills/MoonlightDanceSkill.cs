@@ -29,7 +29,7 @@ public sealed class MoonlightDanceSkill : IBattleSkill
 
         // 1.5초 동안 절대 타겟으로 잡히지 않는 아티팩트 부여 (유체화 로직 대체)
         effects.GrantTemporaryArtifact(caster, new UntargetableDanceArtifact(), 1.5f, context);
-        GameObject activeVfx = VFXManager.Instance.PlayEffect("MoonlightGhost", caster.Position);
+        GameObject activeVfx = VFXManager.Instance.PlayEffect("VanishEffect", caster.Position + Vector3.up);
 
         for (int i = 0; i < 3; i++)
         {
@@ -57,6 +57,8 @@ public sealed class MoonlightDanceSkill : IBattleSkill
                                 IsSkill = true,
                             }
                         );
+                        VFXManager.Instance.PlayEffect("CompactHit", tgt.Position + Vector3.up);
+
                     }
                 }
             );

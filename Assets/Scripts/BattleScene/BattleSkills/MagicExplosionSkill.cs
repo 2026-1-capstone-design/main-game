@@ -20,7 +20,7 @@ public sealed class MagicExplosionSkill : IBattleSkill
 
         effects.GrantTemporaryArtifact(caster, new MagicExplosionArtifact(AreaRadius, context.Units), 10f, context);
 
-        GameObject activeVfx = VFXManager.Instance.PlayEffect("MagicExplosionBuff", caster.Position);
+        GameObject activeVfx = VFXManager.Instance.PlayEffect("BlueEnhance", caster.Position);
 
         effects.ScheduleEffect(
             10f,
@@ -41,6 +41,9 @@ public sealed class MagicExplosionSkill : IBattleSkill
         private readonly float _radius;
         private readonly IReadOnlyList<BattleRuntimeUnit> _units;
 
+        // [추가됨] 무한 루프(연쇄 폭발)를 막기 위한 안전장치
+        private bool _isProcessing = false;
+
         public MagicExplosionArtifact(float radius, IReadOnlyList<BattleRuntimeUnit> units)
         {
             _radius = radius;
@@ -51,10 +54,15 @@ public sealed class MagicExplosionSkill : IBattleSkill
 
         public void AfterDamage(BattleUnitCombatState owner, in BattleDamageResult result, IBattleEffectSink effects)
         {
+            // [핵심] 현재 폭발 데미지를 처리 중이라면, 또 다른 폭발을 일으키지 않고 무시합니다.
+            if (_isProcessing) return;
+
             if (result.Source == owner && result.Target != null)
             {
-                // 공격한 타겟의 위치 주변으로 데미지를 뿌림 (실제 구현시 타겟의 위치 정보 필요)
-                Vector3 targetPos = Vector3.zero; // Target State를 View로 변환하여 위치 획득
+                // 폭발 처리 시작! (이 아래에서 발생하는 데미지는 AfterDamage를 트리거하지 않음)
+                _isProcessing = true;
+
+                Vector3 targetPos = result.Target.Position;
 
                 foreach (BattleRuntimeUnit unitView in _units)
                 {
@@ -64,20 +72,27 @@ public sealed class MagicExplosionSkill : IBattleSkill
                     )
                         continue;
 
-                    // 타겟 주변 거리 계산 후 데미지
-                    effects.DealDamage(
-                        new BattleDamageRequest
-                        {
-                            Source = owner,
-                            Target = unitView.State,
-                            Amount = owner.Attack * 0.5f,
-                            SourceKind = BattleEffectSourceKind.Skill,
-                            DamageKind = BattleDamageKind.Area,
-                            IsArea = true,
-                            IsSkill = true,
-                        }
-                    );
+                    if (Vector3.Distance(targetPos, unitView.State.Position) <= _radius)
+                    {
+                        effects.DealDamage(
+                            new BattleDamageRequest
+                            {
+                                Source = owner,
+                                Target = unitView.State,
+                                Amount = owner.Attack * 0.5f,
+                                SourceKind = BattleEffectSourceKind.Skill,
+                                DamageKind = BattleDamageKind.Area,
+                                IsArea = true,
+                                IsSkill = true,
+                            }
+                        );
+
+                        VFXManager.Instance.PlayEffect("LightHit", result.Target.Position + Vector3.up);
+                    }
                 }
+
+                // 폭발 처리가 무사히 끝났으므로 다음 평타를 위해 안전장치 해제
+                _isProcessing = false;
             }
         }
     }

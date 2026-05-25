@@ -41,7 +41,7 @@ public sealed class ContinuousSlashSkill : IBattleSkill
         {
             float delay = i * 0.5f;
             effects.ScheduleEffect(
-                delay,
+                casterState.SkillDuration * 0.4f + delay,
                 casterRuntime,
                 targetRuntime,
                 context,

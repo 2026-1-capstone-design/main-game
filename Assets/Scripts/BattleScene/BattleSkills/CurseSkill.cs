@@ -30,7 +30,7 @@ public sealed class CurseSkill : IBattleSkill
         );
 
         effects.GrantTemporaryArtifact(target, new CurseArtifact(), 10f, context);
-        GameObject activeVfx = VFXManager.Instance.PlayEffect("CurseEffect", target.Position);
+        GameObject activeVfx = VFXManager.Instance.PlayEffect("DarkHit", target.Position);
 
         effects.ScheduleEffect(
             10f,

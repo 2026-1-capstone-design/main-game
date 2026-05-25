@@ -429,7 +429,7 @@ public sealed class BattleUnitCombatState
     public void AddKnockback(Vector3 forceDirection, float forcePower)
     {
         Vector3 force = forceDirection.normalized * forcePower;
-        force.y = 0f;
+        //force.y = 0f;
         CurrentKnockback += force;
     }
 
@@ -437,16 +437,39 @@ public sealed class BattleUnitCombatState
     // BattleRuntimeUnit이 반환값을 transform에 직접 적용한다.
     public Vector3 ConsumeKnockbackDelta(float deltaTime, float friction = 10f)
     {
-        if (CurrentKnockback.sqrMagnitude <= 0.01f)
+        //바닥(y=10)에 있고 넉백 힘도 거의 없으면 연산 종료
+        if (CurrentKnockback.sqrMagnitude <= 0.01f && Position.y <= 10.05f)
         {
             CurrentKnockback = Vector3.zero;
             return Vector3.zero;
         }
 
+        // 1. 현재 넉백 속도(CurrentKnockback)에 따른 프레임당 이동량 계산
         Vector3 delta = CurrentKnockback * deltaTime;
-        CurrentKnockback = Vector3.Lerp(CurrentKnockback, Vector3.zero, friction * deltaTime);
+
+        // 2. X, Z축(수평)은 마찰력(friction)에 의해 서서히 멈추도록 기존처럼 Lerp 적용
+        float newX = Mathf.Lerp(CurrentKnockback.x, 0f, friction * deltaTime);
+        float newZ = Mathf.Lerp(CurrentKnockback.z, 0f, friction * deltaTime);
+
+        // 3. Y축(수직)은 중력을 적용해 아래로 떨어지게 만듦 (초당 -40f 정도의 중력 가속도)
+        float newY = CurrentKnockback.y - (40f * deltaTime);
+
+        CurrentKnockback = new Vector3(newX, newY, newZ);
+
+        // 4. 바닥 충돌 처리: 만약 이번 프레임에 이동(delta)했을 때 바닥(y=0)을 뚫고 내려간다면?
+        if (Position.y + delta.y <= 10f)
+        {
+            // 땅 밑으로 꺼지지 않고 정확히 바닥(y=10)에 착지하도록 delta 보정
+            delta.y = 10f - Position.y;
+            // 수직 낙하 속도를 0으로 초기화 (땅에 닿았으므로)
+            CurrentKnockback = new Vector3(newX, 0f, newZ);
+        }
+
         return delta;
     }
+
+
+
 
     // ── 버프 시스템 ────────────────────────────────────────────────
     public void BuffApply(BuffType type, int level, float cool)

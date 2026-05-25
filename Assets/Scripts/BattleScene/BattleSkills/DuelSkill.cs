@@ -20,7 +20,7 @@ public sealed class DuelSkill : IBattleSkill
             return;
 
         effects.GrantTemporaryArtifact(caster, new DuelArtifact(target.State), 10f, context);
-        GameObject activeVfx = VFXManager.Instance.PlayEffect("DuelMark", target.Position);
+        GameObject activeVfx = VFXManager.Instance.PlayEffect("BrokenHeart", target.Position + Vector3.up);
 
         effects.ScheduleEffect(
             10f,

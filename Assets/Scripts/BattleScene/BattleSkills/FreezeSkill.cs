@@ -19,7 +19,7 @@ public sealed class FreezeSkill : IBattleSkill
             return;
 
         contextEffects.GrantTemporaryArtifact(caster, new FreezeAuraArtifact(AreaRadius), 8f, context);
-        GameObject activeVfx = VFXManager.Instance.PlayEffect("FreezeZoneAura", caster.Position);
+        GameObject activeVfx = VFXManager.Instance.PlayEffect("BlueStance", caster.transform);
 
         contextEffects.ScheduleEffect(
             8f,
@@ -79,7 +79,7 @@ public sealed class FreezeSkill : IBattleSkill
                                 IsSkill = true,
                             }
                         );
-                        VFXManager.Instance.PlayEffect("SniperShot", unit.Position);
+                        VFXManager.Instance.PlayEffect("CriticalHit", unit.Position);
                         _cooldowns[unit] = context.BattleTime + 0.5f;
                     }
                 }

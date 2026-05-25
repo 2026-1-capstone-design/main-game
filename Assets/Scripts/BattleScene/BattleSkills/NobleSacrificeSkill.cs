@@ -20,7 +20,8 @@ public sealed class NobleSacrificeSkill : IBattleSkill
             return;
 
         effects.GrantTemporaryArtifact(ally, new SacrificeArtifact(caster.State), 10f, context);
-        GameObject activeVfx = VFXManager.Instance.PlayEffect("SacrificeLink", ally.Position);
+        GameObject activeVfx1 = VFXManager.Instance.PlayEffect("ShinyStance", caster.transform);
+        GameObject activeVfx2 = VFXManager.Instance.PlayEffect("ShinyStance", ally.transform);
 
         effects.ScheduleEffect(
             10f,
@@ -29,8 +30,12 @@ public sealed class NobleSacrificeSkill : IBattleSkill
             context,
             (ctx, sink) =>
             {
-                if (activeVfx != null)
-                    VFXManager.Instance.StopEffect(activeVfx);
+                if (activeVfx1 != null && activeVfx2 != null)
+                {
+                    VFXManager.Instance.StopEffect(activeVfx1);
+                    VFXManager.Instance.StopEffect(activeVfx2);
+                }
+
             }
         );
     }

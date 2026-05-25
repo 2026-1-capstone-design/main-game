@@ -16,6 +16,20 @@ MonoBehaviour:
   allyTeam:
   - classSO: {fileID: 11400000, guid: 6846407ed22928941b371aab2d355ecf, type: 2}
     level: 0
+    weaponData: {fileID: 11400000, guid: dbdb181f9c76fca4d932bbbdbf2ded9b, type: 2}
+    weaponSkillId: 56
+    healthOverride: 100000
+    attackOverride: 0
+    attackSpeedOverride: 0
+    moveSpeedOverride: 0
+    attackRangeOverride: 8
+    overrideWeaponSettings: 0
+    isRanged: 0
+    useProjectile: 0
+    statMultiplier: 0
+  enemyTeam:
+  - classSO: {fileID: 11400000, guid: 6846407ed22928941b371aab2d355ecf, type: 2}
+    level: 0
     weaponData: {fileID: 11400000, guid: 1125cefdf7e96c04cb5c836ceef728b5, type: 2}
     weaponSkillId: 0
     healthOverride: 10000
@@ -27,11 +41,49 @@ MonoBehaviour:
     isRanged: 0
     useProjectile: 0
     statMultiplier: 0
-  enemyTeam:
   - classSO: {fileID: 11400000, guid: 6846407ed22928941b371aab2d355ecf, type: 2}
     level: 0
-    weaponData: {fileID: 11400000, guid: 8f15a2a951e32fa44914883dd11d291f, type: 2}
-    weaponSkillId: 7
+    weaponData: {fileID: 11400000, guid: 1125cefdf7e96c04cb5c836ceef728b5, type: 2}
+    weaponSkillId: 0
+    healthOverride: 10000
+    attackOverride: 0
+    attackSpeedOverride: 0
+    moveSpeedOverride: 0
+    attackRangeOverride: 0
+    overrideWeaponSettings: 0
+    isRanged: 0
+    useProjectile: 0
+    statMultiplier: 0
+  - classSO: {fileID: 11400000, guid: 6846407ed22928941b371aab2d355ecf, type: 2}
+    level: 0
+    weaponData: {fileID: 11400000, guid: 1125cefdf7e96c04cb5c836ceef728b5, type: 2}
+    weaponSkillId: 0
+    healthOverride: 10000
+    attackOverride: 0
+    attackSpeedOverride: 0
+    moveSpeedOverride: 0
+    attackRangeOverride: 0
+    overrideWeaponSettings: 0
+    isRanged: 0
+    useProjectile: 0
+    statMultiplier: 0
+  - classSO: {fileID: 11400000, guid: 6846407ed22928941b371aab2d355ecf, type: 2}
+    level: 0
+    weaponData: {fileID: 11400000, guid: 1125cefdf7e96c04cb5c836ceef728b5, type: 2}
+    weaponSkillId: 0
+    healthOverride: 10000
+    attackOverride: 0
+    attackSpeedOverride: 0
+    moveSpeedOverride: 0
+    attackRangeOverride: 0
+    overrideWeaponSettings: 0
+    isRanged: 0
+    useProjectile: 0
+    statMultiplier: 0
+  - classSO: {fileID: 11400000, guid: 6846407ed22928941b371aab2d355ecf, type: 2}
+    level: 0
+    weaponData: {fileID: 11400000, guid: 1125cefdf7e96c04cb5c836ceef728b5, type: 2}
+    weaponSkillId: 0
     healthOverride: 10000
     attackOverride: 0
     attackSpeedOverride: 0

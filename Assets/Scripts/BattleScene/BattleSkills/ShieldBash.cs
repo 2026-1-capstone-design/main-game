@@ -24,22 +24,32 @@ public sealed class ShieldBashSkill : IBattleSkill
             return;
 
 
-        VFXManager.Instance.PlayEffect("LightHit", target.Position + Vector3.up * 1f);
-        effects.DealDamage(
-            new BattleDamageRequest
+
+        effects.ScheduleEffect(
+            caster.SkillDuration,
+            context.Actor,
+            context.PrimaryTarget,
+            context,
+            (ctx, sink) =>
             {
-                Source = caster,
-                Target = target,
-                Amount = caster.Attack * 1.0f,
-                SourceKind = BattleEffectSourceKind.Skill,
-                DamageKind = BattleDamageKind.Direct,
-                SkillId = SkillId,
-                IsSkill = true,
+                VFXManager.Instance.PlayEffect("LightHit", target.Position + Vector3.up * 1f);
+                effects.DealDamage(
+                    new BattleDamageRequest
+                    {
+                        Source = caster,
+                        Target = target,
+                        Amount = caster.Attack * 1.0f,
+                        SourceKind = BattleEffectSourceKind.Skill,
+                        DamageKind = BattleDamageKind.Direct,
+                        SkillId = SkillId,
+                        IsSkill = true,
+                    }
+                );
+            Vector3 pushDir = target.Position - caster.Position;
+            effects.AddKnockback(target, pushDir, 120f); // 강력한 넉백
+
+            effects.ApplyBuff(caster, target, BuffType.AttackDamage, -3, 6f);
             }
         );
-        Vector3 pushDir = target.Position - caster.Position;
-        effects.AddKnockback(target, pushDir, 120f); // 강력한 넉백
-
-        effects.ApplyBuff(caster, target, BuffType.AttackDamage, -3, 6f);
     }
 }
