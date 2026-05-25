@@ -29,13 +29,11 @@ public sealed class SlmCommandUnitPlanner
 
     public void SetTuning(SlmCommandTuningSO tuning) => _tuning = tuning;
 
-    private float CommandCompletionGraceSec =>
-        _tuning != null ? _tuning.commandCompletionGraceSec : 0.5f;
+    private float CommandCompletionGraceSec => _tuning != null ? _tuning.commandCompletionGraceSec : 0.5f;
     private float AttackDurationSec => _tuning != null ? _tuning.attackDurationSec : 10f;
     private float MoveTimeoutSec => _tuning != null ? _tuning.moveTimeoutSec : 10f;
     private float SkillTimeoutSec => _tuning != null ? _tuning.skillTimeoutSec : 10f;
-    private float DefaultWaitDurationSec =>
-        _tuning != null ? _tuning.defaultWaitDurationSec : 10f;
+    private float DefaultWaitDurationSec => _tuning != null ? _tuning.defaultWaitDurationSec : 10f;
     private float EscapeDistance => _tuning != null ? _tuning.escapeDistance : 10f;
     private int HelpThreatThreshold => _tuning != null ? _tuning.helpThreatThreshold : 1;
     private float WaitMinSec => _tuning != null ? _tuning.waitMinSec : 1f;

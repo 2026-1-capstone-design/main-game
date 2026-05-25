@@ -70,9 +70,7 @@ public static class SlmMoveSubtypeResolver
         toReference.y = 0f;
 
         Vector3 awayDirection =
-            toReference.sqrMagnitude < 0.0001f
-                ? GetFallbackForwardDirection(actor)
-                : -toReference.normalized;
+            toReference.sqrMagnitude < 0.0001f ? GetFallbackForwardDirection(actor) : -toReference.normalized;
 
         // 경기장 경계 처리: actor가 경계 근처에서 외부 향한 도주 방향이면 접선 방향으로 보정.
         awayDirection = AdjustDirectionAtBoundary(actorPos, awayDirection, actor.State.BodyRadius);
