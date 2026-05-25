@@ -6,6 +6,34 @@
 using System;
 using Newtonsoft.Json;
 
+[System.Serializable]
+public sealed class SotParserOutputDto
+{
+    public string thinking;
+    public SotDialogLineDto[] dialog;
+    public SotActorActionDto[] action;
+}
+
+[System.Serializable]
+public sealed class SotDialogLineDto
+{
+    public string unitId;
+    public string text;
+}
+
+[System.Serializable]
+public sealed class SotActorActionDto
+{
+    public string unitId;
+    public SotFinalActionDto[] sequence;
+}
+
+[System.Serializable]
+public sealed class SotDialogLayerResponseDto
+{
+    public SotDialogLineDto[] dialog;
+}
+
 [Serializable]
 public struct BattleSkillRuntimeMetadata
 {
@@ -160,16 +188,32 @@ public sealed class BattleOrderLayerPreviewResult
     public SotDialogLayerRequestDto DialogRequest { get; }
     public string DialogRequestJson { get; }
 
+    public SotParserOutputDto MockParserOutput { get; }
+    public string MockParserOutputJson { get; }
+    public SotDialogLayerResponseDto DialogResponse { get; }
+    public string DialogResponseJson { get; }
+    public string MockParserLog { get; }
+
     public BattleOrderLayerPreviewResult(
         SotParserRequestDto parserRequest,
         string parserRequestJson,
+        SotParserOutputDto mockParserOutput,
+        string mockParserOutputJson,
         SotDialogLayerRequestDto dialogRequest,
-        string dialogRequestJson
+        string dialogRequestJson,
+        SotDialogLayerResponseDto dialogResponse,
+        string dialogResponseJson,
+        string mockParserLog
     )
     {
         ParserRequest = parserRequest;
         ParserRequestJson = parserRequestJson;
+        MockParserOutput = mockParserOutput;
+        MockParserOutputJson = mockParserOutputJson;
         DialogRequest = dialogRequest;
         DialogRequestJson = dialogRequestJson;
+        DialogResponse = dialogResponse;
+        DialogResponseJson = dialogResponseJson;
+        MockParserLog = mockParserLog;
     }
 }

@@ -175,15 +175,37 @@ public sealed class BattleOrdersManager : MonoBehaviour
                 sanitizedRawText,
                 context,
                 out BattleOrderLayerPreviewResult result,
+                out string mockParserLog,
                 out string error
             )
         )
         {
-            Debug.LogWarning(
-                $"[BattleOrdersManager] SOT layer input preview failed. Reason={error}",
+            if (error == "invalidinput")
+            {
+                Debug.LogWarning(
+                    "<color=#FF8A80><b>[SOT MOCK PARSER]</b></color> invalidinput\n"
+                        + (string.IsNullOrWhiteSpace(mockParserLog) ? string.Empty : mockParserLog),
+                    this
+                );
+            }
+            else
+            {
+                Debug.LogWarning(
+                    $"[BattleOrdersManager] SOT layer input preview failed. Reason={error}",
+                    this
+                );
+            }
+
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(mockParserLog))
+        {
+            Debug.Log(
+                "<color=#AED581><b>[SOT MOCK PARSER]</b></color>\n"
+                    + mockParserLog,
                 this
             );
-            return;
         }
 
         Debug.Log(

@@ -1,35 +1,49 @@
 // 대사 레이어에 넘길 입력을 만든다.
 // 대사 레이어는 finalActionSequence를 수정하지 않는다.
+// mock parser 결과의 actor sequence를 그대로 대사 레이어 입력에 반영한다.
 
 using System.Collections.Generic;
 
 public sealed class BattleDialogLayerInputBuilder
 {
-    public SotDialogLayerRequestDto BuildDummy(string originalCommand, BattleOrderRuntimeContext context)
+    public SotDialogLayerRequestDto BuildFromMockParserResult(
+        string originalCommand,
+        BattleOrderRuntimeContext context,
+        BattleMockCommandParseResult mockParseResult
+    )
     {
         List<SotDialogActorInputDto> actors = new List<SotDialogActorInputDto>();
 
-        BattleRuntimeUnit actor = FindFirstAliveAlly(context != null ? context.Allies : null);
-        if (actor != null)
+        BattleMockActorCommandSequenceDto[] actorSequences =
+            mockParseResult != null
+            && mockParseResult.parserOutput != null
+            && mockParseResult.parserOutput.action != null
+                ? mockParseResult.parserOutput.action
+                : System.Array.Empty<BattleMockActorCommandSequenceDto>();
+
+        for (int i = 0; i < actorSequences.Length; i++)
         {
+            BattleMockActorCommandSequenceDto actorSequence = actorSequences[i];
+            if (actorSequence == null || string.IsNullOrWhiteSpace(actorSequence.unitId))
+                continue;
+
+            BattleRuntimeUnit actor = FindAllyByUnitId(
+                context != null ? context.Allies : null,
+                context != null ? context.RosterProjection : null,
+                actorSequence.unitId
+            );
+
             actors.Add(
                 new SotDialogActorInputDto
                 {
-                    unitId = BattleOrderRuntimeQueries.GetUnitId(actor, context.RosterProjection),
+                    unitId = actorSequence.unitId,
                     speechStyle = ResolveSpeechStyle(actor),
                     personalityDescription = ResolvePersonalityDescription(actor),
-                    sourceDialog = "명령을 확인했다.",
+                    sourceDialog = ResolveSourceDialog(mockParseResult, actorSequence.unitId),
                     obedienceState = "obey",
                     obeyedActionAdjustment = string.Empty,
                     refusalSummary = string.Empty,
-                    finalActionSequence = new[]
-                    {
-                        new SotFinalActionDto
-                        {
-                            type = "wait",
-                            durationSec = 1f,
-                        },
-                    },
+                    finalActionSequence = BattleMockCommandParser.ToFinalActionSequence(actorSequence),
                 }
             );
         }
@@ -41,19 +55,61 @@ public sealed class BattleDialogLayerInputBuilder
         };
     }
 
-    private static BattleRuntimeUnit FindFirstAliveAlly(BattleRuntimeUnit[] allies)
+    private static BattleRuntimeUnit FindAllyByUnitId(
+        BattleRuntimeUnit[] allies,
+        IBattleRosterProjection roster,
+        string unitId
+    )
     {
-        if (allies == null)
+        if (allies == null || string.IsNullOrWhiteSpace(unitId))
             return null;
+
+        string normalizedUnitId = unitId.ToUpperInvariant();
 
         for (int i = 0; i < allies.Length; i++)
         {
             BattleRuntimeUnit unit = allies[i];
-            if (BattleOrderRuntimeQueries.IsAlive(unit))
+            if (unit == null)
+                continue;
+
+            string currentUnitId = BattleOrderRuntimeQueries.GetUnitId(unit, roster);
+            if (string.Equals(currentUnitId, normalizedUnitId, System.StringComparison.Ordinal))
                 return unit;
         }
 
         return null;
+    }
+
+    private static string ResolveSourceDialog(
+        BattleMockCommandParseResult mockParseResult,
+        string unitId
+    )
+    {
+        if (
+            mockParseResult == null
+            || mockParseResult.parserOutput == null
+            || mockParseResult.parserOutput.dialog == null
+            || string.IsNullOrWhiteSpace(unitId)
+        )
+        {
+            return "명령을 확인했다.";
+        }
+
+        for (int i = 0; i < mockParseResult.parserOutput.dialog.Length; i++)
+        {
+            BattleMockCommandDialogDto dialog = mockParseResult.parserOutput.dialog[i];
+            if (dialog == null)
+                continue;
+
+            if (!string.Equals(dialog.unitId, unitId, System.StringComparison.Ordinal))
+                continue;
+
+            return string.IsNullOrWhiteSpace(dialog.text)
+                ? "명령을 확인했다."
+                : dialog.text;
+        }
+
+        return "명령을 확인했다.";
     }
 
     private static string ResolvePersonalityDescription(BattleRuntimeUnit unit)
