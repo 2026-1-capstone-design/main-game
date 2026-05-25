@@ -33,7 +33,9 @@ public sealed class SlmCommandTuningSO : ScriptableObject
     public float threatNearRadius = 10f;
 
     [Header("Help")]
-    [Tooltip("도움이 필요하다고 간주할 위협 수 threshold. SLM 지정 아군을 PlannedTargetEnemy로 타겟팅하는 적이 이 수 미만이면 명령 종료.")]
+    [Tooltip(
+        "도움이 필요하다고 간주할 위협 수 threshold. SLM 지정 아군을 PlannedTargetEnemy로 타겟팅하는 적이 이 수 미만이면 명령 종료."
+    )]
     public int helpThreatThreshold = 1;
 
     [Header("Wait Clamp")]

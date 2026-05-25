@@ -680,10 +680,7 @@ public sealed class BattleSimulationManager : MonoBehaviour
     // 검증된 SLM 명령 시퀀스를 액터에 활성화한다. BattleOrdersManager에서 호출되는 진입점.
     // 명령이 끝나면 SlmCommandUnitPlanner.Tick이 PlayerCommandControlBuffer를 비우고,
     // controller stack이 다음 우선순위(ML 또는 BuiltInAi)로 자동 fallback한다.
-    public void IssueSlmCommands(
-        BattleUnitCombatState actor,
-        IReadOnlyList<SlmUnitCommand> commands
-    )
+    public void IssueSlmCommands(BattleUnitCombatState actor, IReadOnlyList<SlmUnitCommand> commands)
     {
         if (actor == null || commands == null || commands.Count == 0)
             return;

@@ -61,8 +61,7 @@ public sealed class SlmCommandUnitPlanner
         };
     }
 
-    public bool HasActiveCommand(BattleUnitCombatState state) =>
-        state != null && _activeByState.ContainsKey(state);
+    public bool HasActiveCommand(BattleUnitCombatState state) => state != null && _activeByState.ContainsKey(state);
 
     public void Clear(BattleUnitCombatState state)
     {
@@ -213,14 +212,10 @@ public sealed class SlmCommandUnitPlanner
     // ---------- 액션별 plan 생성 ----------
 
     // attack: 사거리 안이면 공격, 밖이면 그 적 방향으로 이동한다.
-    private static BattleControlPlan BuildAttackPlan(
-        BattleUnitCombatState self,
-        SlmUnitCommand cmd
-    )
+    private static BattleControlPlan BuildAttackPlan(BattleUnitCombatState self, SlmUnitCommand cmd)
     {
         BattleUnitCombatState target = cmd.Target != null ? cmd.Target.State : null;
-        bool hasValidTarget =
-            target != null && BattleFieldSnapshot.IsValidEnemyTarget(self, target);
+        bool hasValidTarget = target != null && BattleFieldSnapshot.IsValidEnemyTarget(self, target);
         // 모든 액션이 BattleFieldSnapshot.GetEffectiveAttackDistance로 사거리를 판정해 일관성을 유지한다.
         bool inRange = false;
         if (hasValidTarget)
@@ -234,9 +229,7 @@ public sealed class SlmCommandUnitPlanner
         BattleMoveIntent moveIntent = inRange
             ? BattleMoveIntent.Hold
             : (hasValidTarget ? BattleMoveIntent.MoveToTarget : BattleMoveIntent.Hold);
-        BattleCombatIntent combatIntent = inRange
-            ? BattleCombatIntent.Attack
-            : BattleCombatIntent.None;
+        BattleCombatIntent combatIntent = inRange ? BattleCombatIntent.Attack : BattleCombatIntent.None;
         BattleFacingIntent facingIntent = hasValidTarget
             ? BattleFacingIntent.TargetEnemy
             : BattleFacingIntent.KeepCurrent;
@@ -282,11 +275,7 @@ public sealed class SlmCommandUnitPlanner
 
             if (!entry.FlankInitialized)
             {
-                entry.FlankSign = SlmMoveSubtypeResolver.ComputeFlankSign(
-                    actor,
-                    cmd.Target,
-                    context.Units
-                );
+                entry.FlankSign = SlmMoveSubtypeResolver.ComputeFlankSign(actor, cmd.Target, context.Units);
                 entry.FlankStartActorPos = actor.Position;
                 entry.FlankInitialized = true;
             }
@@ -308,9 +297,7 @@ public sealed class SlmCommandUnitPlanner
 
         // flank는 곡선 이동 + 이동 방향 시선 동기화
         BattleFacingIntent facing =
-            cmd.MoveStyle == SlmMoveStyle.Flank
-                ? BattleFacingIntent.MoveDirection
-                : BattleFacingIntent.DesiredPosition;
+            cmd.MoveStyle == SlmMoveStyle.Flank ? BattleFacingIntent.MoveDirection : BattleFacingIntent.DesiredPosition;
 
         return new BattleControlPlan(
             null,
@@ -358,12 +345,8 @@ public sealed class SlmCommandUnitPlanner
             inRange = diff.sqrMagnitude <= threshold * threshold;
         }
 
-        BattleMoveIntent moveIntent = inRange
-            ? BattleMoveIntent.Hold
-            : BattleMoveIntent.MoveToTarget;
-        BattleCombatIntent combatIntent = inRange
-            ? BattleCombatIntent.Attack
-            : BattleCombatIntent.None;
+        BattleMoveIntent moveIntent = inRange ? BattleMoveIntent.Hold : BattleMoveIntent.MoveToTarget;
+        BattleCombatIntent combatIntent = inRange ? BattleCombatIntent.Attack : BattleCombatIntent.None;
 
         return new BattleControlPlan(
             threatState,
@@ -408,12 +391,8 @@ public sealed class SlmCommandUnitPlanner
         diff.y = 0f;
         bool inRange = diff.sqrMagnitude <= effectiveRange * effectiveRange;
 
-        BattleMoveIntent moveIntent = inRange
-            ? BattleMoveIntent.Hold
-            : BattleMoveIntent.MoveToTarget;
-        BattleCombatIntent combatIntent = inRange
-            ? BattleCombatIntent.Skill
-            : BattleCombatIntent.None;
+        BattleMoveIntent moveIntent = inRange ? BattleMoveIntent.Hold : BattleMoveIntent.MoveToTarget;
+        BattleCombatIntent combatIntent = inRange ? BattleCombatIntent.Skill : BattleCombatIntent.None;
 
         // 사거리 안에서 Skill intent를 발동한 tick에 SkillFired를 켜두고, 다음 tick에 종료시킨다.
         if (inRange)
@@ -499,11 +478,7 @@ public sealed class SlmCommandUnitPlanner
                         return IsApproachOpponentInRange(actor, current.Target);
 
                     case SlmMoveSubtype.Help:
-                        int count = SlmMoveSubtypeResolver.CountAttackersOf(
-                            current.Target,
-                            context.Units,
-                            out _
-                        );
+                        int count = SlmMoveSubtypeResolver.CountAttackersOf(current.Target, context.Units, out _);
                         return count < HelpThreatThreshold;
 
                     case SlmMoveSubtype.HoldFront:
@@ -566,9 +541,7 @@ public sealed class SlmCommandUnitPlanner
         BattleSimulationManager sim = BattleSimulationManager.Instance;
         if (sim != null && sim.RuntimeUnitByState != null)
         {
-            return sim.RuntimeUnitByState.TryGetValue(state, out BattleRuntimeUnit runtime)
-                ? runtime
-                : null;
+            return sim.RuntimeUnitByState.TryGetValue(state, out BattleRuntimeUnit runtime) ? runtime : null;
         }
 
         // Fallback: BattleSimulationManager 미초기화 상태 등 예외 시 선형 검색.

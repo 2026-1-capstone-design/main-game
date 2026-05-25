@@ -85,9 +85,8 @@ public static class SlmMoveSubtypeResolver
 
     private static Vector3 AdjustDirectionAtBoundary(Vector3 actorPos, Vector3 dir, float bodyRadius)
     {
-        SphereCollider battlefield = BattleSimulationManager.Instance != null
-            ? BattleSimulationManager.Instance.BattlefieldCollider
-            : null;
+        SphereCollider battlefield =
+            BattleSimulationManager.Instance != null ? BattleSimulationManager.Instance.BattlefieldCollider : null;
         if (battlefield == null)
             return dir;
 
@@ -130,10 +129,7 @@ public static class SlmMoveSubtypeResolver
 
     // 목표 좌표를 적 위치 그 자체로 둔다.
     // PhysicsSystem의 stop distance가 사거리 안에서 actor를 멈춰주고, Planner가 종료를 판정한다.
-    private static ResolvedTarget ResolveApproachOpponent(
-        BattleRuntimeUnit actor,
-        BattleRuntimeUnit target
-    )
+    private static ResolvedTarget ResolveApproachOpponent(BattleRuntimeUnit actor, BattleRuntimeUnit target)
     {
         if (target == null || target.IsCombatDisabled)
             return Invalid();
@@ -158,10 +154,7 @@ public static class SlmMoveSubtypeResolver
 
     // holdFront의 아군 분기에서만 호출되는 wrapper.
     // GetEffectiveAttackDistance가 team 검증을 안 하므로 ResolveApproachOpponent를 그대로 사용한다.
-    private static ResolvedTarget ResolveApproachTeam(
-        BattleRuntimeUnit actor,
-        BattleRuntimeUnit ally
-    )
+    private static ResolvedTarget ResolveApproachTeam(BattleRuntimeUnit actor, BattleRuntimeUnit ally)
     {
         return ResolveApproachOpponent(actor, ally);
     }
@@ -233,8 +226,7 @@ public static class SlmMoveSubtypeResolver
         // 경기장 boundary 보정: actor 위치 기준 진행 방향을 접선으로 클램프.
         Vector3 toWaypoint = candidateWaypoint - actorPos;
         toWaypoint.y = 0f;
-        Vector3 dir =
-            toWaypoint.sqrMagnitude < 0.0001f ? tangent : toWaypoint.normalized;
+        Vector3 dir = toWaypoint.sqrMagnitude < 0.0001f ? tangent : toWaypoint.normalized;
         dir = AdjustDirectionAtBoundary(actorPos, dir, actor.State.BodyRadius);
 
         Vector3 waypoint = actorPos + dir * FlankStepDistance;
@@ -301,8 +293,7 @@ public static class SlmMoveSubtypeResolver
             if (u.State.TeamId.Equals(actorTeam))
                 continue;
 
-            bool isTargetingActor =
-                u.State.PlannedTargetEnemy != null && u.State.PlannedTargetEnemy == actor.State;
+            bool isTargetingActor = u.State.PlannedTargetEnemy != null && u.State.PlannedTargetEnemy == actor.State;
 
             Vector3 diff = u.Position - actorPos;
             diff.y = 0f;
@@ -414,6 +405,5 @@ public static class SlmMoveSubtypeResolver
         return forward.normalized;
     }
 
-    private static ResolvedTarget Invalid() =>
-        new ResolvedTarget { Position = Vector3.zero, HasPosition = false };
+    private static ResolvedTarget Invalid() => new ResolvedTarget { Position = Vector3.zero, HasPosition = false };
 }

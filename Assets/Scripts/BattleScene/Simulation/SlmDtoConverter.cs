@@ -143,7 +143,14 @@ public static class SlmDtoConverter
 
         if (kind == SlmCommandKind.NoSkill)
         {
-            command = new SlmUnitCommand(actor, SlmCommandKind.NoSkill, null, SlmMoveSubtype.None, SlmMoveStyle.Direct, 0f);
+            command = new SlmUnitCommand(
+                actor,
+                SlmCommandKind.NoSkill,
+                null,
+                SlmMoveSubtype.None,
+                SlmMoveStyle.Direct,
+                0f
+            );
             return true;
         }
 
@@ -214,14 +221,20 @@ public static class SlmDtoConverter
         for (int i = 0; i < allyUnits.Count; i++)
         {
             BattleRuntimeUnit unit = allyUnits[i];
-            if (unit != null && string.Equals(rosterProjection.GetDisplayUnitId(unit), unitId, System.StringComparison.Ordinal))
+            if (
+                unit != null
+                && string.Equals(rosterProjection.GetDisplayUnitId(unit), unitId, System.StringComparison.Ordinal)
+            )
                 return unit;
         }
 
         for (int i = 0; i < enemyUnits.Count; i++)
         {
             BattleRuntimeUnit unit = enemyUnits[i];
-            if (unit != null && string.Equals(rosterProjection.GetDisplayUnitId(unit), unitId, System.StringComparison.Ordinal))
+            if (
+                unit != null
+                && string.Equals(rosterProjection.GetDisplayUnitId(unit), unitId, System.StringComparison.Ordinal)
+            )
                 return unit;
         }
 
