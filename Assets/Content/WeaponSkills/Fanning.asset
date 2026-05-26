@@ -18,7 +18,7 @@ MonoBehaviour:
   weaponType: 7
   skillId: 12
   isSkillOnSelf: 0
-  isSkillOnOtherAlly: 1
+  isSkillOnOtherAlly: 0
   isSkillAoe: 0
   canSkillTargetDead: 0
   defaultDur: 1

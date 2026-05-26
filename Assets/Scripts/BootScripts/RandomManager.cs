@@ -7,6 +7,7 @@ public enum RandomStreamType
     Equipment = 1,
     BattleEncounter = 2,
     BattleSimulation = 3,
+    CommandObedience = 4,
 }
 
 [DisallowMultipleComponent]
@@ -19,6 +20,7 @@ public sealed class RandomManager : SingletonBehaviour<RandomManager>
     private System.Random _equipmentRng; // 장비 난수
     private System.Random _battleEncounterRng; //전투 상대 난수
     private System.Random _battleSimulationRng; // 실제 전투 난수
+    private System.Random _commandObedienceRng; // 명령 순응/거부 난수
 
     private bool _initialized;
     private bool _loggedAutoInitWarning;
@@ -36,6 +38,7 @@ public sealed class RandomManager : SingletonBehaviour<RandomManager>
         _equipmentRng = new System.Random(HashSeed(SessionSeed, 202));
         _battleEncounterRng = new System.Random(HashSeed(SessionSeed, 303));
         _battleSimulationRng = new System.Random(HashSeed(SessionSeed, 404));
+        _commandObedienceRng = new System.Random(HashSeed(SessionSeed, 505));
 
         _initialized = true;
         _loggedAutoInitWarning = false;
@@ -120,6 +123,7 @@ public sealed class RandomManager : SingletonBehaviour<RandomManager>
             RandomStreamType.Equipment => _equipmentRng,
             RandomStreamType.BattleEncounter => _battleEncounterRng,
             RandomStreamType.BattleSimulation => _battleSimulationRng,
+            RandomStreamType.CommandObedience => _commandObedienceRng,
             _ => _recruitRng,
         };
     }

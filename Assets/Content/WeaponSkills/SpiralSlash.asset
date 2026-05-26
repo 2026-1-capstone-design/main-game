@@ -17,7 +17,7 @@ MonoBehaviour:
   description: SpiralSlash
   weaponType: 1
   skillId: 16
-  isSkillOnSelf: 0
+  isSkillOnSelf: 1
   isSkillOnOtherAlly: 0
   isSkillAoe: 1
   canSkillTargetDead: 0

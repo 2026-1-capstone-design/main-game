@@ -17,7 +17,7 @@ MonoBehaviour:
   description: HeartAttack
   weaponType: 11
   skillId: 5
-  isSkillOnSelf: 1
+  isSkillOnSelf: 0
   isSkillOnOtherAlly: 0
   isSkillAoe: 0
   canSkillTargetDead: 0

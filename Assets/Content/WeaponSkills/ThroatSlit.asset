@@ -19,7 +19,7 @@ MonoBehaviour:
   skillId: 7
   isSkillOnSelf: 0
   isSkillOnOtherAlly: 0
-  isSkillAoe: 1
+  isSkillAoe: 0
   canSkillTargetDead: 0
   defaultDur: 1
   duration: 1

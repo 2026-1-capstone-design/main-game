@@ -17,9 +17,9 @@ MonoBehaviour:
   description: Long Grip
   weaponType: 4
   skillId: 3
-  isSkillOnSelf: 0
+  isSkillOnSelf: 1
   isSkillOnOtherAlly: 0
-  isSkillAoe: 1
+  isSkillAoe: 0
   canSkillTargetDead: 0
   defaultDur: 1
   duration: 1

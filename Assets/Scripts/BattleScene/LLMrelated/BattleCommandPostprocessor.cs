@@ -383,7 +383,7 @@ public sealed class BattleCommandPostprocessor
     private static bool RollObedience(BattleRuntimeUnit actor, BattleCommandActionCategory category)
     {
         int rate = ResolveObedienceRate(actor, category);
-        int roll = UnityEngine.Random.Range(0, 100);
+        int roll = RandomManager.Instance.NextInt(RandomStreamType.CommandObedience, 0, 100);
         return roll < rate;
     }
 
@@ -458,7 +458,12 @@ public sealed class BattleCommandPostprocessor
         if (totalWeight <= 0)
             return BattleCommandActionCategory.Wait;
 
-        int roll = UnityEngine.Random.Range(0, totalWeight);
+        int roll = RandomManager.Instance.NextInt(
+            RandomStreamType.CommandObedience,
+            0,
+            totalWeight
+        );
+
         int cursor = 0;
 
         for (int i = 0; i < 8; i++)

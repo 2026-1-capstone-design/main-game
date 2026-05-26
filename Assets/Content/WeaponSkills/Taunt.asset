@@ -17,8 +17,8 @@ MonoBehaviour:
   description: Taunt
   weaponType: 5
   skillId: 4
-  isSkillOnSelf: 0
-  isSkillOnOtherAlly: 1
+  isSkillOnSelf: 1
+  isSkillOnOtherAlly: 0
   isSkillAoe: 0
   canSkillTargetDead: 0
   defaultDur: 1

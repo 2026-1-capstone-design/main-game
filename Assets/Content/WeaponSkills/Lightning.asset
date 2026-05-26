@@ -18,8 +18,8 @@ MonoBehaviour:
   weaponType: 10
   skillId: 10
   isSkillOnSelf: 0
-  isSkillOnOtherAlly: 1
-  isSkillAoe: 0
+  isSkillOnOtherAlly: 0
+  isSkillAoe: 1
   canSkillTargetDead: 0
   defaultDur: 1
   duration: 1

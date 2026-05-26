@@ -17,9 +17,9 @@ MonoBehaviour:
   description: Stimpack
   weaponType: 9
   skillId: 11
-  isSkillOnSelf: 0
+  isSkillOnSelf: 1
   isSkillOnOtherAlly: 0
   isSkillAoe: 0
-  canSkillTargetDead: 1
+  canSkillTargetDead: 0
   defaultDur: 1
   duration: 1
