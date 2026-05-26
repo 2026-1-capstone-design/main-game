@@ -34,11 +34,7 @@ public readonly struct BattleOrderFormationInfo
     public readonly bool CrossedOpponentCenter;
     public readonly bool HoldFrontAnchorEligible;
 
-    public BattleOrderFormationInfo(
-        string role,
-        bool crossedOpponentCenter,
-        bool holdFrontAnchorEligible
-    )
+    public BattleOrderFormationInfo(string role, bool crossedOpponentCenter, bool holdFrontAnchorEligible)
     {
         Role = role;
         CrossedOpponentCenter = crossedOpponentCenter;
@@ -86,9 +82,9 @@ public static class BattleOrderRuntimeQueries
     }
 
     public static BattleRuntimeUnit FindUnitById(
-    IReadOnlyList<BattleRuntimeUnit> units,
-    IBattleRosterProjection rosterProjection,
-    string unitId
+        IReadOnlyList<BattleRuntimeUnit> units,
+        IBattleRosterProjection rosterProjection,
+        string unitId
     )
     {
         if (units == null || string.IsNullOrWhiteSpace(unitId))
@@ -170,10 +166,7 @@ public static class BattleOrderRuntimeQueries
         return !HasTargetingBlock(candidate, simulationManager);
     }
 
-    public static int CountEngagedByOpponents(
-        BattleRuntimeUnit unit,
-        IReadOnlyList<BattleRuntimeUnit> opponents
-    )
+    public static int CountEngagedByOpponents(BattleRuntimeUnit unit, IReadOnlyList<BattleRuntimeUnit> opponents)
     {
         if (unit == null || unit.State == null || opponents == null)
             return 0;
@@ -187,8 +180,7 @@ public static class BattleOrderRuntimeQueries
                 continue;
 
             bool directlyTargeting =
-                opponent.State.CurrentTarget == unit.State
-                || opponent.State.PlannedTargetEnemy == unit.State;
+                opponent.State.CurrentTarget == unit.State || opponent.State.PlannedTargetEnemy == unit.State;
 
             bool closeEnough = false;
             float effectiveRange = BattleFieldSnapshot.GetEffectiveAttackDistance(opponent.State, unit.State);
@@ -363,23 +355,9 @@ public static class BattleOrderRuntimeQueries
         else
             axis.Normalize();
 
-        FillTeamFormationInfo(
-            result,
-            livingAllies,
-            axis,
-            allyCenter,
-            enemyCenter,
-            isPlayerSide: true
-        );
+        FillTeamFormationInfo(result, livingAllies, axis, allyCenter, enemyCenter, isPlayerSide: true);
 
-        FillTeamFormationInfo(
-            result,
-            livingEnemies,
-            axis,
-            allyCenter,
-            enemyCenter,
-            isPlayerSide: false
-        );
+        FillTeamFormationInfo(result, livingEnemies, axis, allyCenter, enemyCenter, isPlayerSide: false);
 
         return result;
     }
@@ -485,11 +463,7 @@ public static class BattleOrderRuntimeQueries
 
             bool holdFrontAnchorEligible = !crossedOpponentCenter;
 
-            result[unit] = new BattleOrderFormationInfo(
-                role,
-                crossedOpponentCenter,
-                holdFrontAnchorEligible
-            );
+            result[unit] = new BattleOrderFormationInfo(role, crossedOpponentCenter, holdFrontAnchorEligible);
         }
     }
 
@@ -576,26 +550,9 @@ public static class BattleOrderRuntimeQueries
         return new SotActionPolicyDto
         {
             maxActionsPerActor = 3,
-            allowedActionTypes = new[]
-            {
-                "move",
-                "attack",
-                "skill",
-                "wait",
-                "skillControl",
-            },
-            allowedMoveSubtypes = new[]
-            {
-                "approachOpponent",
-                "escape",
-                "help",
-                "holdFront",
-            },
-            allowedMovementTypes = new[]
-            {
-                "direct",
-                "flank",
-            },
+            allowedActionTypes = new[] { "move", "attack", "skill", "wait", "skillControl" },
+            allowedMoveSubtypes = new[] { "approachOpponent", "escape", "help", "holdFront" },
+            allowedMovementTypes = new[] { "direct", "flank" },
             waitDurationSecMin = 1f,
             waitDurationSecMax = 10f,
             skillControlDeferSecMin = 1f,
@@ -606,9 +563,7 @@ public static class BattleOrderRuntimeQueries
     public static BattleSkillRuntimeMetadata ResolveSkillMetadata(BattleRuntimeUnit unit)
     {
         WeaponSkillId skillId =
-            unit != null && unit.Snapshot != null
-                ? unit.Snapshot.WeaponSkillId
-                : WeaponSkillId.None;
+            unit != null && unit.Snapshot != null ? unit.Snapshot.WeaponSkillId : WeaponSkillId.None;
 
         return ResolveSkillMetadata(skillId);
     }

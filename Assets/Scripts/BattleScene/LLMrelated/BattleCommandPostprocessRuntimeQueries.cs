@@ -26,18 +26,12 @@ public static class BattleCommandPostprocessRuntimeQueries
 
     public static bool IsValidOtherAllyTarget(BattleRuntimeUnit actor, BattleRuntimeUnit target)
     {
-        return actor != null
-            && target != null
-            && target != actor
-            && BattleOrderRuntimeQueries.IsAlive(target);
+        return actor != null && target != null && target != actor && BattleOrderRuntimeQueries.IsAlive(target);
     }
 
     public static bool IsValidDeadAllyTarget(BattleRuntimeUnit actor, BattleRuntimeUnit target)
     {
-        return actor != null
-            && target != null
-            && target != actor
-            && target.IsCombatDisabled;
+        return actor != null && target != null && target != actor && target.IsCombatDisabled;
     }
 
     public static bool IsHoldFrontAnchorValid(
@@ -52,10 +46,7 @@ public static class BattleCommandPostprocessRuntimeQueries
         if (BattleOrderRuntimeQueries.HasTargetingBlock(anchor, simulationManager))
             return false;
 
-        if (
-            formationMap != null
-            && formationMap.TryGetValue(anchor, out BattleOrderFormationInfo formation)
-        )
+        if (formationMap != null && formationMap.TryGetValue(anchor, out BattleOrderFormationInfo formation))
         {
             return formation.HoldFrontAnchorEligible;
         }
@@ -164,22 +155,16 @@ public static class BattleCommandPostprocessRuntimeQueries
         for (int i = 0; i < enemies.Count; i++)
         {
             BattleRuntimeUnit enemy = enemies[i];
-            if (
-                enemy == null
-                || enemy.State == null
-                || !IsEnemyTargetableForPostprocess(enemy, simulationManager)
-            )
+            if (enemy == null || enemy.State == null || !IsEnemyTargetableForPostprocess(enemy, simulationManager))
             {
                 continue;
             }
 
             bool enemyTargetsActor =
-                enemy.State.CurrentTarget == actor.State
-                || enemy.State.PlannedTargetEnemy == actor.State;
+                enemy.State.CurrentTarget == actor.State || enemy.State.PlannedTargetEnemy == actor.State;
 
             bool actorTargetsEnemy =
-                actor.State.CurrentTarget == enemy.State
-                || actor.State.PlannedTargetEnemy == enemy.State;
+                actor.State.CurrentTarget == enemy.State || actor.State.PlannedTargetEnemy == enemy.State;
 
             if (!enemyTargetsActor && !actorTargetsEnemy)
                 continue;
@@ -216,14 +201,9 @@ public static class BattleCommandPostprocessRuntimeQueries
                 continue;
 
             int clusterCount = CountTargetableEnemiesAround(candidate, enemies, simulationManager, radiusSqr);
-            float distanceSqr = actor != null
-                ? HorizontalDistanceSqr(actor.Position, candidate.Position)
-                : 0f;
+            float distanceSqr = actor != null ? HorizontalDistanceSqr(actor.Position, candidate.Position) : 0f;
 
-            if (
-                clusterCount > bestClusterCount
-                || (clusterCount == bestClusterCount && distanceSqr < bestDistanceSqr)
-            )
+            if (clusterCount > bestClusterCount || (clusterCount == bestClusterCount && distanceSqr < bestDistanceSqr))
             {
                 bestClusterCount = clusterCount;
                 bestDistanceSqr = distanceSqr;
@@ -362,10 +342,7 @@ public static class BattleCommandPostprocessRuntimeQueries
         return best;
     }
 
-    public static BattleRuntimeUnit FindDeadAllyTarget(
-        BattleRuntimeUnit actor,
-        IReadOnlyList<BattleRuntimeUnit> allies
-    )
+    public static BattleRuntimeUnit FindDeadAllyTarget(BattleRuntimeUnit actor, IReadOnlyList<BattleRuntimeUnit> allies)
     {
         if (actor == null || allies == null)
             return null;

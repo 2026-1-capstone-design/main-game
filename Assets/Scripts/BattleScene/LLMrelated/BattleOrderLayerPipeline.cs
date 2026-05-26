@@ -89,10 +89,7 @@ public sealed class BattleOrderLayerPipeline
                 actors = System.Array.Empty<SotDialogActorInputDto>(),
             };
 
-            dialogResponse = new SotDialogLayerResponseDto
-            {
-                dialog = System.Array.Empty<SotDialogLineDto>(),
-            };
+            dialogResponse = new SotDialogLayerResponseDto { dialog = System.Array.Empty<SotDialogLineDto>() };
         }
         else
         {
@@ -194,10 +191,7 @@ public sealed class BattleOrderLayerPipeline
     {
         if (dialogRequest == null || dialogRequest.actors == null)
         {
-            return new SotDialogLayerResponseDto
-            {
-                dialog = System.Array.Empty<SotDialogLineDto>(),
-            };
+            return new SotDialogLayerResponseDto { dialog = System.Array.Empty<SotDialogLineDto>() };
         }
 
         List<SotDialogLineDto> lines = new List<SotDialogLineDto>(dialogRequest.actors.Length);
@@ -217,9 +211,6 @@ public sealed class BattleOrderLayerPipeline
             );
         }
 
-        return new SotDialogLayerResponseDto
-        {
-            dialog = lines.ToArray(),
-        };
+        return new SotDialogLayerResponseDto { dialog = lines.ToArray() };
     }
 }

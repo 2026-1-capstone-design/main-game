@@ -129,10 +129,7 @@ public sealed class BattleDialogLayerInputBuilder
         return BattleOrderRuntimeQueries.FindUnitById(allies, roster, unitId);
     }
 
-    private static string ResolveSourceDialog(
-        BattleMockCommandParseResult mockParseResult,
-        string unitId
-    )
+    private static string ResolveSourceDialog(BattleMockCommandParseResult mockParseResult, string unitId)
     {
         if (
             mockParseResult == null
@@ -153,9 +150,7 @@ public sealed class BattleDialogLayerInputBuilder
             if (!string.Equals(dialog.unitId, unitId, System.StringComparison.Ordinal))
                 continue;
 
-            return string.IsNullOrWhiteSpace(dialog.text)
-                ? "명령을 확인했다."
-                : dialog.text;
+            return string.IsNullOrWhiteSpace(dialog.text) ? "명령을 확인했다." : dialog.text;
         }
 
         return "명령을 확인했다.";

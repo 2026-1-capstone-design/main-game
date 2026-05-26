@@ -212,12 +212,7 @@ public static class SlmDtoConverter
         command = default;
         errorReason = null;
 
-        BattleRuntimeUnit target = FindAnyUnitById(
-            raw.target,
-            allyUnits,
-            enemyUnits,
-            rosterProjection
-        );
+        BattleRuntimeUnit target = FindAnyUnitById(raw.target, allyUnits, enemyUnits, rosterProjection);
 
         if (target == null)
         {
@@ -279,12 +274,7 @@ public static class SlmDtoConverter
             return true;
         }
 
-        BattleRuntimeUnit target = FindAnyUnitById(
-            raw.to,
-            allyUnits,
-            enemyUnits,
-            rosterProjection
-        );
+        BattleRuntimeUnit target = FindAnyUnitById(raw.to, allyUnits, enemyUnits, rosterProjection);
 
         if (target == null)
         {
@@ -314,12 +304,7 @@ public static class SlmDtoConverter
         command = default;
         errorReason = null;
 
-        BattleRuntimeUnit target = FindAnyUnitById(
-            raw.target,
-            allyUnits,
-            enemyUnits,
-            rosterProjection
-        );
+        BattleRuntimeUnit target = FindAnyUnitById(raw.target, allyUnits, enemyUnits, rosterProjection);
 
         if (target == null)
         {
@@ -327,14 +312,7 @@ public static class SlmDtoConverter
             return false;
         }
 
-        command = new SlmUnitCommand(
-            actor,
-            SlmCommandKind.Skill,
-            target,
-            SlmMoveSubtype.None,
-            SlmMoveStyle.Direct,
-            0f
-        );
+        command = new SlmUnitCommand(actor, SlmCommandKind.Skill, target, SlmMoveSubtype.None, SlmMoveStyle.Direct, 0f);
         return true;
     }
 
@@ -438,11 +416,7 @@ public static class SlmDtoConverter
         IBattleRosterProjection rosterProjection
     )
     {
-        BattleRuntimeUnit unit = BattleOrderRuntimeQueries.FindUnitById(
-            allyUnits,
-            rosterProjection,
-            unitId
-        );
+        BattleRuntimeUnit unit = BattleOrderRuntimeQueries.FindUnitById(allyUnits, rosterProjection, unitId);
 
         if (unit != null)
             return unit;

@@ -115,10 +115,7 @@ public static class BattleCommandInputDialogBuilder
         return EmptySourceDialog;
     }
 
-    public static string BuildActorDropSummary(
-        string unitId,
-        BattleInputDialogActorDropReason reason
-    )
+    public static string BuildActorDropSummary(string unitId, BattleInputDialogActorDropReason reason)
     {
         string actorText = NormalizeUnitIdForText(unitId);
 
@@ -213,11 +210,7 @@ public static class BattleCommandInputDialogBuilder
             case BattleInputDialogAdjustmentReason.AttackTargetReplaced:
             case BattleInputDialogAdjustmentReason.MoveTargetReplaced:
             case BattleInputDialogAdjustmentReason.SkillTargetReplaced:
-                return BuildTargetReplacementText(
-                    originalText,
-                    finalActionText,
-                    targetIssue
-                );
+                return BuildTargetReplacementText(originalText, finalActionText, targetIssue);
 
             case BattleInputDialogAdjustmentReason.MovementTypeDefaulted:
                 return "이동 방식이 맞지 않아 직접 이동한다.";
@@ -285,14 +278,7 @@ public static class BattleCommandInputDialogBuilder
         string originalTarget = ResolveActionPrimaryUnitId(originalAction);
         string correctedTarget = ResolveActionPrimaryUnitId(correctedAction);
 
-        return BuildObeyedActionAdjustment(
-            reason,
-            category,
-            originalTarget,
-            correctedTarget,
-            targetIssue,
-            actorUnitId
-        );
+        return BuildObeyedActionAdjustment(reason, category, originalTarget, correctedTarget, targetIssue, actorUnitId);
     }
 
     public static string BuildCombinedObeyedActionAdjustment(IReadOnlyList<string> adjustmentLines)
@@ -306,13 +292,7 @@ public static class BattleCommandInputDialogBuilder
         string fallbackCategory
     )
     {
-        return BuildRefusalSummary(
-            reason,
-            originalCategory,
-            fallbackCategory,
-            null,
-            string.Empty
-        );
+        return BuildRefusalSummary(reason, originalCategory, fallbackCategory, null, string.Empty);
     }
 
     public static string BuildRefusalSummary(
@@ -362,7 +342,11 @@ public static class BattleCommandInputDialogBuilder
             case BattleInputDialogFallbackReason.AttackTargetInvalid:
             case BattleInputDialogFallbackReason.MoveTargetInvalid:
             case BattleInputDialogFallbackReason.SkillTargetInvalid:
-                return BuildTargetReplacementText(targetText, finalText, BattleInputDialogTargetIssue.TargetNotFoundOrUntargetable);
+                return BuildTargetReplacementText(
+                    targetText,
+                    finalText,
+                    BattleInputDialogTargetIssue.TargetNotFoundOrUntargetable
+                );
 
             case BattleInputDialogFallbackReason.SkillUnavailable:
                 return "지금은 스킬을 쓸 수 없어 " + finalText;
@@ -380,7 +364,10 @@ public static class BattleCommandInputDialogBuilder
 
     public static string BuildTargetInvalidSummary(string actionCategory, string targetUnitId)
     {
-        return NormalizeUnitIdForText(targetUnitId) + "를 찾지 못해 " + BuildActionNoun(actionCategory) + " 행동을 조정한다.";
+        return NormalizeUnitIdForText(targetUnitId)
+            + "를 찾지 못해 "
+            + BuildActionNoun(actionCategory)
+            + " 행동을 조정한다.";
     }
 
     public static string BuildTargetDeadSummary(string targetUnitId)
@@ -620,11 +607,7 @@ public static class BattleCommandInputDialogBuilder
                 return "스킬을 쓰지 않는다.";
 
             case "move":
-                return BuildFinalActionText(
-                    ResolveActionCategory(action),
-                    action.to,
-                    actorUnitId
-                );
+                return BuildFinalActionText(ResolveActionCategory(action), action.to, actorUnitId);
 
             default:
                 return string.Empty;
@@ -639,11 +622,7 @@ public static class BattleCommandInputDialogBuilder
         bool isSelfTarget =
             hasTarget
             && !string.IsNullOrWhiteSpace(actorUnitId)
-            && string.Equals(
-                targetUnitId.Trim(),
-                actorUnitId.Trim(),
-                StringComparison.OrdinalIgnoreCase
-            );
+            && string.Equals(targetUnitId.Trim(), actorUnitId.Trim(), StringComparison.OrdinalIgnoreCase);
 
         switch (normalizedCategory)
         {

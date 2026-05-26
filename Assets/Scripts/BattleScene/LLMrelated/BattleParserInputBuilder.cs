@@ -20,14 +20,7 @@ public sealed class BattleParserInputBuilder
         float allyAverageAttack = BattleOrderRuntimeQueries.ComputeLivingAverageAttack(allies);
         float enemyAverageAttack = BattleOrderRuntimeQueries.ComputeLivingAverageAttack(enemies);
 
-        SotAllyUnitDto[] allyDtos = BuildAllyDtos(
-            allies,
-            enemies,
-            roster,
-            simulation,
-            formationMap,
-            allyAverageAttack
-        );
+        SotAllyUnitDto[] allyDtos = BuildAllyDtos(allies, enemies, roster, simulation, formationMap, allyAverageAttack);
 
         SotEnemyUnitDto[] enemyDtos = BuildEnemyDtos(
             enemies,
@@ -43,18 +36,9 @@ public sealed class BattleParserInputBuilder
             input = new SotParserInputDto
             {
                 command = rawCommand ?? string.Empty,
-                area_situation = new SotAreaSituationDto
-                {
-                    allies = allyDtos,
-                    enemies = enemyDtos,
-                },
+                area_situation = new SotAreaSituationDto { allies = allyDtos, enemies = enemyDtos },
             },
-            commandAnalysis = BattleOrderRuntimeQueries.BuildCommandAnalysis(
-                allies,
-                enemies,
-                roster,
-                simulation
-            ),
+            commandAnalysis = BattleOrderRuntimeQueries.BuildCommandAnalysis(allies, enemies, roster, simulation),
         };
     }
 
@@ -88,8 +72,7 @@ public sealed class BattleParserInputBuilder
                 livingAverageAttack
             );
 
-            BattleSkillRuntimeMetadata skillMetadata =
-                BattleOrderRuntimeQueries.ResolveSkillMetadata(unit);
+            BattleSkillRuntimeMetadata skillMetadata = BattleOrderRuntimeQueries.ResolveSkillMetadata(unit);
 
             result.Add(
                 new SotAllyUnitDto

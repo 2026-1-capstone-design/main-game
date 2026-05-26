@@ -51,6 +51,7 @@ public sealed class BattleOrdersManager : MonoBehaviour
 
     private SphereCollider _battlefieldCollider;
     private bool _initialized;
+
     // 구형 BattleLlmResponseDto 기반 요청 sequence라 주석처리함. 나중에 실제 SOT LLM 호출 재연결 시 다시 써야 함.
     // private int _requestSequence;
     private BattleOrderLayerPipeline _layerPipeline;
@@ -213,10 +214,7 @@ public sealed class BattleOrdersManager : MonoBehaviour
                 }
                 else
                 {
-                    Debug.LogWarning(
-                        $"[BattleOrdersManager] SOT layer pipeline failed. Reason={error}",
-                        this
-                    );
+                    Debug.LogWarning($"[BattleOrdersManager] SOT layer pipeline failed. Reason={error}", this);
                 }
             }
 
@@ -227,40 +225,22 @@ public sealed class BattleOrdersManager : MonoBehaviour
         {
             if (!string.IsNullOrWhiteSpace(mockParserLog))
             {
-                Debug.Log(
-                    "<color=#AED581><b>[SOT MOCK PARSER]</b></color>\n"
-                        + mockParserLog,
-                    this
-                );
+                Debug.Log("<color=#AED581><b>[SOT MOCK PARSER]</b></color>\n" + mockParserLog, this);
             }
 
+            Debug.Log("<color=#4FC3F7><b>[SOT PARSER INPUT PREVIEW]</b></color>\n" + result.ParserRequestJson, this);
+
+            Debug.Log("<color=#81C784><b>[SOT MOCK PARSER OUTPUT]</b></color>\n" + result.MockParserOutputJson, this);
+
             Debug.Log(
-                "<color=#4FC3F7><b>[SOT PARSER INPUT PREVIEW]</b></color>\n"
-                    + result.ParserRequestJson,
+                "<color=#FFB74D><b>[SOT POSTPROCESS RESULT PREVIEW]</b></color>\n" + result.PostprocessResultJson,
                 this
             );
 
-            Debug.Log(
-                "<color=#81C784><b>[SOT MOCK PARSER OUTPUT]</b></color>\n"
-                    + result.MockParserOutputJson,
-                this
-            );
+            Debug.Log("<color=#BA68C8><b>[SOT DIALOG INPUT PREVIEW]</b></color>\n" + result.DialogRequestJson, this);
 
             Debug.Log(
-                "<color=#FFB74D><b>[SOT POSTPROCESS RESULT PREVIEW]</b></color>\n"
-                    + result.PostprocessResultJson,
-                this
-            );
-
-            Debug.Log(
-                "<color=#BA68C8><b>[SOT DIALOG INPUT PREVIEW]</b></color>\n"
-                    + result.DialogRequestJson,
-                this
-            );
-
-            Debug.Log(
-                "<color=#CE93D8><b>[SOT DIALOG RESPONSE PREVIEW]</b></color>\n"
-                    + result.DialogResponseJson,
+                "<color=#CE93D8><b>[SOT DIALOG RESPONSE PREVIEW]</b></color>\n" + result.DialogResponseJson,
                 this
             );
         }
@@ -309,7 +289,10 @@ public sealed class BattleOrdersManager : MonoBehaviour
         BattleSimulationManager simulationManager = BattleSimulationManager.Instance;
         if (simulationManager == null)
         {
-            Debug.LogError("[BattleOrdersManager] SOT command execution skipped. BattleSimulationManager.Instance is null.", this);
+            Debug.LogError(
+                "[BattleOrdersManager] SOT command execution skipped. BattleSimulationManager.Instance is null.",
+                this
+            );
             return;
         }
 
@@ -322,7 +305,10 @@ public sealed class BattleOrdersManager : MonoBehaviour
             if (finalActor == null)
             {
                 failedCount++;
-                Debug.LogWarning("[BattleOrdersManager] SOT command execution skipped for actor entry. Final actor is null.", this);
+                Debug.LogWarning(
+                    "[BattleOrdersManager] SOT command execution skipped for actor entry. Final actor is null.",
+                    this
+                );
                 continue;
             }
 

@@ -455,10 +455,7 @@ public sealed class BattleSceneUIManager : MonoBehaviour
 
         if (verboseLog)
         {
-            Debug.Log(
-                "[BattleSceneUIManager] Single order is deprecated. Opening global order input instead.",
-                this
-            );
+            Debug.Log("[BattleSceneUIManager] Single order is deprecated. Opening global order input instead.", this);
         }
     }
 

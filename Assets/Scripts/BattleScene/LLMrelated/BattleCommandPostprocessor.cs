@@ -81,10 +81,7 @@ public sealed class BattleCommandPostprocessor
             if (!IsValidActor(actor))
             {
                 droppedActorSummaries.Add(
-                    BattleCommandInputDialogBuilder.BuildActorDropSummary(
-                        actorId,
-                        ResolveInvalidActorDropReason(actor)
-                    )
+                    BattleCommandInputDialogBuilder.BuildActorDropSummary(actorId, ResolveInvalidActorDropReason(actor))
                 );
                 continue;
             }
@@ -269,8 +266,8 @@ public sealed class BattleCommandPostprocessor
     }
 
     private static BattleInputDialogTargetIssue ResolveTargetIssue(
-    BattleRuntimeUnit target,
-    BattleSimulationManager simulationManager
+        BattleRuntimeUnit target,
+        BattleSimulationManager simulationManager
     )
     {
         if (target == null || target.State == null)
@@ -287,10 +284,7 @@ public sealed class BattleCommandPostprocessor
 
     private static bool IsValidActor(BattleRuntimeUnit actor)
     {
-        return actor != null
-            && actor.State != null
-            && !actor.IsCombatDisabled
-            && !actor.State.IsStunned;
+        return actor != null && actor.State != null && !actor.IsCombatDisabled && !actor.State.IsStunned;
     }
 
     private static BattleInputDialogActorDropReason ResolveInvalidActorDropReason(BattleRuntimeUnit actor)
@@ -414,9 +408,9 @@ public sealed class BattleCommandPostprocessor
     }
 
     private static SotFinalActionDto[] BuildFallbackSequence(
-    BattleRuntimeUnit actor,
-    BattleCommandActionCategory originalCategory,
-    PostprocessRuntime runtime
+        BattleRuntimeUnit actor,
+        BattleCommandActionCategory originalCategory,
+        PostprocessRuntime runtime
     )
     {
         PersonalitySO personality = ResolvePersonality(actor);
@@ -458,11 +452,7 @@ public sealed class BattleCommandPostprocessor
         if (totalWeight <= 0)
             return BattleCommandActionCategory.Wait;
 
-        int roll = RandomManager.Instance.NextInt(
-            RandomStreamType.CommandObedience,
-            0,
-            totalWeight
-        );
+        int roll = RandomManager.Instance.NextInt(RandomStreamType.CommandObedience, 0, totalWeight);
 
         int cursor = 0;
 
@@ -520,10 +510,7 @@ public sealed class BattleCommandPostprocessor
         }
     }
 
-    private static SotFinalActionDto[] BuildFallbackApproach(
-        BattleRuntimeUnit actor,
-        PostprocessRuntime runtime
-    )
+    private static SotFinalActionDto[] BuildFallbackApproach(BattleRuntimeUnit actor, PostprocessRuntime runtime)
     {
         BattleRuntimeUnit target = BattleCommandPostprocessRuntimeQueries.FindClosestTargetableEnemy(
             actor,
@@ -545,10 +532,7 @@ public sealed class BattleCommandPostprocessor
         );
     }
 
-    private static SotFinalActionDto[] BuildFallbackEscape(
-    BattleRuntimeUnit actor,
-    PostprocessRuntime runtime
-    )
+    private static SotFinalActionDto[] BuildFallbackEscape(BattleRuntimeUnit actor, PostprocessRuntime runtime)
     {
         BattleRuntimeUnit target = BattleCommandPostprocessRuntimeQueries.FindEligibleBacklineAlly(
             actor,
@@ -558,10 +542,7 @@ public sealed class BattleCommandPostprocessor
 
         if (target == null)
         {
-            target = BattleCommandPostprocessRuntimeQueries.FindFarthestLivingAlly(
-                actor,
-                runtime.Allies
-            );
+            target = BattleCommandPostprocessRuntimeQueries.FindFarthestLivingAlly(actor, runtime.Allies);
         }
 
         return One(
@@ -575,10 +556,7 @@ public sealed class BattleCommandPostprocessor
         );
     }
 
-    private static SotFinalActionDto[] BuildFallbackHelp(
-        BattleRuntimeUnit actor,
-        PostprocessRuntime runtime
-    )
+    private static SotFinalActionDto[] BuildFallbackHelp(BattleRuntimeUnit actor, PostprocessRuntime runtime)
     {
         BattleRuntimeUnit target = BattleCommandPostprocessRuntimeQueries.FindMostPressuredAlly(
             actor,
@@ -600,10 +578,7 @@ public sealed class BattleCommandPostprocessor
         );
     }
 
-    private static SotFinalActionDto[] BuildFallbackHoldFront(
-    BattleRuntimeUnit actor,
-    PostprocessRuntime runtime
-    )
+    private static SotFinalActionDto[] BuildFallbackHoldFront(BattleRuntimeUnit actor, PostprocessRuntime runtime)
     {
         BattleRuntimeUnit target = BattleCommandPostprocessRuntimeQueries.FindBestHoldFrontAnchor(
             actor,
@@ -627,10 +602,7 @@ public sealed class BattleCommandPostprocessor
         );
     }
 
-    private static SotFinalActionDto[] BuildFallbackAttack(
-        BattleRuntimeUnit actor,
-        PostprocessRuntime runtime
-    )
+    private static SotFinalActionDto[] BuildFallbackAttack(BattleRuntimeUnit actor, PostprocessRuntime runtime)
     {
         BattleRuntimeUnit target = BattleCommandPostprocessRuntimeQueries.FindClosestTargetableEnemy(
             actor,
@@ -641,19 +613,10 @@ public sealed class BattleCommandPostprocessor
         if (target == null)
             return null;
 
-        return One(
-            new SotFinalActionDto
-            {
-                type = "attack",
-                target = runtime.GetUnitId(target),
-            }
-        );
+        return One(new SotFinalActionDto { type = "attack", target = runtime.GetUnitId(target) });
     }
 
-    private static SotFinalActionDto[] BuildFallbackSkill(
-        BattleRuntimeUnit actor,
-        PostprocessRuntime runtime
-    )
+    private static SotFinalActionDto[] BuildFallbackSkill(BattleRuntimeUnit actor, PostprocessRuntime runtime)
     {
         BattleSkillRuntimeMetadata metadata = BattleOrderRuntimeQueries.ResolveSkillMetadata(actor);
         if (!CanActorUseSkill(actor, metadata))
@@ -673,11 +636,7 @@ public sealed class BattleCommandPostprocessor
 
         if (metadata.isSkillOnOtherAlly)
         {
-            BattleRuntimeUnit target = SelectReplacementOtherAllySkillTarget(
-                actor,
-                metadata,
-                runtime
-            );
+            BattleRuntimeUnit target = SelectReplacementOtherAllySkillTarget(actor, metadata, runtime);
 
             if (target == null)
                 return null;
@@ -700,24 +659,12 @@ public sealed class BattleCommandPostprocessor
         if (metadata.skillId == WeaponSkillId.None)
             return null;
 
-        return One(
-            new SotFinalActionDto
-            {
-                type = "skillControl",
-                mode = "forbid",
-            }
-        );
+        return One(new SotFinalActionDto { type = "skillControl", mode = "forbid" });
     }
 
     private static SotFinalActionDto[] BuildWaitSequence()
     {
-        return One(
-            new SotFinalActionDto
-            {
-                type = "wait",
-                durationSec = 1f,
-            }
-        );
+        return One(new SotFinalActionDto { type = "wait", durationSec = 1f });
     }
 
     private static SotFinalActionDto[] ValidateAndCorrectSequence(
@@ -938,43 +885,19 @@ public sealed class BattleCommandPostprocessor
         switch (corrected.subtype)
         {
             case "approachOpponent":
-                valid = CorrectMoveApproach(
-                    actor,
-                    corrected,
-                    runtime,
-                    out subtypeAdjusted,
-                    out subtypeAdjustmentLine
-                );
+                valid = CorrectMoveApproach(actor, corrected, runtime, out subtypeAdjusted, out subtypeAdjustmentLine);
                 break;
 
             case "escape":
-                valid = CorrectMoveEscape(
-                    actor,
-                    corrected,
-                    runtime,
-                    out subtypeAdjusted,
-                    out subtypeAdjustmentLine
-                );
+                valid = CorrectMoveEscape(actor, corrected, runtime, out subtypeAdjusted, out subtypeAdjustmentLine);
                 break;
 
             case "help":
-                valid = CorrectMoveHelp(
-                    actor,
-                    corrected,
-                    runtime,
-                    out subtypeAdjusted,
-                    out subtypeAdjustmentLine
-                );
+                valid = CorrectMoveHelp(actor, corrected, runtime, out subtypeAdjusted, out subtypeAdjustmentLine);
                 break;
 
             case "holdFront":
-                valid = CorrectMoveHoldFront(
-                    actor,
-                    corrected,
-                    runtime,
-                    out subtypeAdjusted,
-                    out subtypeAdjustmentLine
-                );
+                valid = CorrectMoveHoldFront(actor, corrected, runtime, out subtypeAdjusted, out subtypeAdjustmentLine);
                 break;
 
             default:
@@ -1033,11 +956,11 @@ public sealed class BattleCommandPostprocessor
     }
 
     private static bool CorrectMoveEscape(
-    BattleRuntimeUnit actor,
-    SotFinalActionDto corrected,
-    PostprocessRuntime runtime,
-    out bool adjusted,
-    out string adjustmentLine
+        BattleRuntimeUnit actor,
+        SotFinalActionDto corrected,
+        PostprocessRuntime runtime,
+        out bool adjusted,
+        out string adjustmentLine
     )
     {
         adjusted = false;
@@ -1057,10 +980,7 @@ public sealed class BattleCommandPostprocessor
 
         if (replacement == null)
         {
-            replacement = BattleCommandPostprocessRuntimeQueries.FindFarthestLivingAlly(
-                actor,
-                runtime.Allies
-            );
+            replacement = BattleCommandPostprocessRuntimeQueries.FindFarthestLivingAlly(actor, runtime.Allies);
         }
 
         if (replacement == null)
@@ -1097,11 +1017,11 @@ public sealed class BattleCommandPostprocessor
     }
 
     private static bool CorrectMoveHelp(
-    BattleRuntimeUnit actor,
-    SotFinalActionDto corrected,
-    PostprocessRuntime runtime,
-    out bool adjusted,
-    out string adjustmentLine
+        BattleRuntimeUnit actor,
+        SotFinalActionDto corrected,
+        PostprocessRuntime runtime,
+        out bool adjusted,
+        out string adjustmentLine
     )
     {
         adjusted = false;
@@ -1323,29 +1243,19 @@ public sealed class BattleCommandPostprocessor
         PostprocessRuntime runtime
     )
     {
-        BattleRuntimeUnit target = BattleCommandPostprocessRuntimeQueries.FindLowestHpLivingAlly(
-            actor,
-            runtime.Allies
-        );
+        BattleRuntimeUnit target = BattleCommandPostprocessRuntimeQueries.FindLowestHpLivingAlly(actor, runtime.Allies);
 
         if (target != null)
             return target;
 
-        target = BattleCommandPostprocessRuntimeQueries.FindMostPressuredAlly(
-            actor,
-            runtime.Allies,
-            runtime.Enemies
-        );
+        target = BattleCommandPostprocessRuntimeQueries.FindMostPressuredAlly(actor, runtime.Allies, runtime.Enemies);
 
         if (target != null)
             return target;
 
         if (metadata.canSkillTargetDead)
         {
-            target = BattleCommandPostprocessRuntimeQueries.FindDeadAllyTarget(
-                actor,
-                runtime.Allies
-            );
+            target = BattleCommandPostprocessRuntimeQueries.FindDeadAllyTarget(actor, runtime.Allies);
         }
 
         return target;
@@ -1398,11 +1308,7 @@ public sealed class BattleCommandPostprocessor
         corrected.durationSec = clampedDuration;
 
         adjustmentLine = adjusted
-            ? BattleCommandInputDialogBuilder.BuildDurationClampSummary(
-                "wait",
-                originalDuration,
-                clampedDuration
-            )
+            ? BattleCommandInputDialogBuilder.BuildDurationClampSummary("wait", originalDuration, clampedDuration)
             : string.Empty;
 
         return true;
@@ -1460,10 +1366,7 @@ public sealed class BattleCommandPostprocessor
         return true;
     }
 
-    private static bool CanActorUseSkill(
-        BattleRuntimeUnit actor,
-        BattleSkillRuntimeMetadata metadata
-    )
+    private static bool CanActorUseSkill(BattleRuntimeUnit actor, BattleSkillRuntimeMetadata metadata)
     {
         return actor != null
             && actor.State != null
@@ -1519,11 +1422,7 @@ public sealed class BattleCommandPostprocessor
 
     private static string ResolveSourceDialog(SotParserOutputDto parserOutput, string unitId)
     {
-        if (
-            parserOutput == null
-            || parserOutput.dialog == null
-            || string.IsNullOrWhiteSpace(unitId)
-        )
+        if (parserOutput == null || parserOutput.dialog == null || string.IsNullOrWhiteSpace(unitId))
         {
             return "명령을 확인했다.";
         }
@@ -1536,9 +1435,7 @@ public sealed class BattleCommandPostprocessor
 
             if (string.Equals(dialog.unitId, unitId, StringComparison.Ordinal))
             {
-                return string.IsNullOrWhiteSpace(dialog.text)
-                    ? "명령을 확인했다."
-                    : dialog.text;
+                return string.IsNullOrWhiteSpace(dialog.text) ? "명령을 확인했다." : dialog.text;
             }
         }
 

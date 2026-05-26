@@ -31,10 +31,7 @@ public static class BattleMockCommandParser
     private const string DirectMovementType = "direct";
     private const string FlankMovementType = "flank";
 
-    private static readonly Regex UnitIdRegex = new Regex(
-        "^[AaEe]_[0-9]{2}$",
-        RegexOptions.Compiled
-    );
+    private static readonly Regex UnitIdRegex = new Regex("^[AaEe]_[0-9]{2}$", RegexOptions.Compiled);
 
     public static bool TryParse(
         SotParserRequestDto parserRequest,
@@ -63,8 +60,10 @@ public static class BattleMockCommandParser
 
         List<BattleMockCommandDebugEntry> debugEntries = new List<BattleMockCommandDebugEntry>();
         List<BattleMockActorCommandSequenceDto> actorSequences = new List<BattleMockActorCommandSequenceDto>();
-        Dictionary<string, BattleMockActorCommandSequenceDto> sequenceByActor =
-            new Dictionary<string, BattleMockActorCommandSequenceDto>(StringComparer.Ordinal);
+        Dictionary<string, BattleMockActorCommandSequenceDto> sequenceByActor = new Dictionary<
+            string,
+            BattleMockActorCommandSequenceDto
+        >(StringComparer.Ordinal);
 
         int cursor = 0;
         int maxActionsPerActor = context.MaxActionsPerActor;
@@ -113,10 +112,7 @@ public static class BattleMockCommandParser
         return true;
     }
 
-
-    public static SotFinalActionDto[] ToFinalActionSequence(
-        BattleMockActorCommandSequenceDto actorSequence
-    )
+    public static SotFinalActionDto[] ToFinalActionSequence(BattleMockActorCommandSequenceDto actorSequence)
     {
         if (actorSequence == null || actorSequence.sequence == null)
             return System.Array.Empty<SotFinalActionDto>();
@@ -135,16 +131,12 @@ public static class BattleMockCommandParser
         return result.ToArray();
     }
 
-    public static BattleMockDialogLayerOutputDto BuildMockDialogOutput(
-        BattleMockCommandParseResult parseResult
-    )
+    public static BattleMockDialogLayerOutputDto BuildMockDialogOutput(BattleMockCommandParseResult parseResult)
     {
         List<BattleMockDialogLayerLineDto> dialogs = new List<BattleMockDialogLayerLineDto>();
 
         BattleMockActorCommandSequenceDto[] actorSequences =
-            parseResult != null
-            && parseResult.parserOutput != null
-            && parseResult.parserOutput.action != null
+            parseResult != null && parseResult.parserOutput != null && parseResult.parserOutput.action != null
                 ? parseResult.parserOutput.action
                 : System.Array.Empty<BattleMockActorCommandSequenceDto>();
 
@@ -154,19 +146,10 @@ public static class BattleMockCommandParser
             if (sequence == null || string.IsNullOrWhiteSpace(sequence.unitId))
                 continue;
 
-            dialogs.Add(
-                new BattleMockDialogLayerLineDto
-                {
-                    unitId = sequence.unitId,
-                    text = "알겠습니다",
-                }
-            );
+            dialogs.Add(new BattleMockDialogLayerLineDto { unitId = sequence.unitId, text = "알겠습니다" });
         }
 
-        return new BattleMockDialogLayerOutputDto
-        {
-            dialog = dialogs.ToArray(),
-        };
+        return new BattleMockDialogLayerOutputDto { dialog = dialogs.ToArray() };
     }
 
     private static SotFinalActionDto ToFinalAction(BattleMockCommandActionDto source)
@@ -315,11 +298,7 @@ public static class BattleMockCommandParser
             return false;
         }
 
-        BattleMockCommandActionDto action = new BattleMockCommandActionDto
-        {
-            type = "attack",
-            target = targetId,
-        };
+        BattleMockCommandActionDto action = new BattleMockCommandActionDto { type = "attack", target = targetId };
 
         if (!AddAction(actorId, action, actorSequences, sequenceByActor, maxActionsPerActor, out error))
             return false;
@@ -434,11 +413,7 @@ public static class BattleMockCommandParser
         if (!TryConsumeInt(tokens, ref cursor, out int durationSec, out error))
             return false;
 
-        BattleMockCommandActionDto action = new BattleMockCommandActionDto
-        {
-            type = "wait",
-            durationSec = durationSec,
-        };
+        BattleMockCommandActionDto action = new BattleMockCommandActionDto { type = "wait", durationSec = durationSec };
 
         if (!AddAction(actorId, action, actorSequences, sequenceByActor, maxActionsPerActor, out error))
             return false;
@@ -520,11 +495,7 @@ public static class BattleMockCommandParser
             return false;
         }
 
-        BattleMockCommandActionDto action = new BattleMockCommandActionDto
-        {
-            type = "skillControl",
-            mode = "forbid",
-        };
+        BattleMockCommandActionDto action = new BattleMockCommandActionDto { type = "skillControl", mode = "forbid" };
 
         if (!AddAction(actorId, action, actorSequences, sequenceByActor, maxActionsPerActor, out error))
             return false;
@@ -739,12 +710,7 @@ public static class BattleMockCommandParser
         return false;
     }
 
-    private static bool TryConsumeUnitId(
-        string[] tokens,
-        ref int cursor,
-        out string unitId,
-        out string error
-    )
+    private static bool TryConsumeUnitId(string[] tokens, ref int cursor, out string unitId, out string error)
     {
         unitId = null;
         error = string.Empty;
@@ -768,12 +734,7 @@ public static class BattleMockCommandParser
         return true;
     }
 
-    private static bool TryConsumeInt(
-        string[] tokens,
-        ref int cursor,
-        out int value,
-        out string error
-    )
+    private static bool TryConsumeInt(string[] tokens, ref int cursor, out int value, out string error)
     {
         value = 0;
         error = string.Empty;
@@ -829,9 +790,7 @@ public static class BattleMockCommandParser
         return true;
     }
 
-    private static BattleMockCommandDialogDto[] BuildDialogDtos(
-        List<BattleMockActorCommandSequenceDto> actorSequences
-    )
+    private static BattleMockCommandDialogDto[] BuildDialogDtos(List<BattleMockActorCommandSequenceDto> actorSequences)
     {
         List<BattleMockCommandDialogDto> dialogs = new List<BattleMockCommandDialogDto>();
 
@@ -841,13 +800,7 @@ public static class BattleMockCommandParser
             if (sequence == null || string.IsNullOrWhiteSpace(sequence.unitId))
                 continue;
 
-            dialogs.Add(
-                new BattleMockCommandDialogDto
-                {
-                    unitId = sequence.unitId,
-                    text = "명령을 확인했다.",
-                }
-            );
+            dialogs.Add(new BattleMockCommandDialogDto { unitId = sequence.unitId, text = "명령을 확인했다." });
         }
 
         return dialogs.ToArray();
@@ -878,15 +831,12 @@ public static class BattleMockCommandParser
         return sb.ToString().TrimEnd();
     }
 
-        private static string[] SplitTokens(string text)
+    private static string[] SplitTokens(string text)
     {
         if (string.IsNullOrWhiteSpace(text))
             return Array.Empty<string>();
 
-        return text.Split(
-            new[] { ' ', '\t', '\r', '\n' },
-            StringSplitOptions.RemoveEmptyEntries
-        );
+        return text.Split(new[] { ' ', '\t', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
     }
 
     private static bool HasSkill(SotAllyUnitDto actor)
@@ -940,28 +890,25 @@ public static class BattleMockCommandParser
 
     private sealed class BattleMockCommandParserContext
     {
-        private readonly Dictionary<string, SotAllyUnitDto> _allies =
-            new Dictionary<string, SotAllyUnitDto>(StringComparer.Ordinal);
+        private readonly Dictionary<string, SotAllyUnitDto> _allies = new Dictionary<string, SotAllyUnitDto>(
+            StringComparer.Ordinal
+        );
 
-        private readonly Dictionary<string, SotEnemyUnitDto> _enemies =
-            new Dictionary<string, SotEnemyUnitDto>(StringComparer.Ordinal);
+        private readonly Dictionary<string, SotEnemyUnitDto> _enemies = new Dictionary<string, SotEnemyUnitDto>(
+            StringComparer.Ordinal
+        );
 
-        private readonly HashSet<string> _allowedActors =
-            new HashSet<string>(StringComparer.Ordinal);
+        private readonly HashSet<string> _allowedActors = new HashSet<string>(StringComparer.Ordinal);
 
-        private readonly HashSet<string> _allowedAttackTargets =
-            new HashSet<string>(StringComparer.Ordinal);
+        private readonly HashSet<string> _allowedAttackTargets = new HashSet<string>(StringComparer.Ordinal);
 
-        private readonly HashSet<string> _deadAllies =
-            new HashSet<string>(StringComparer.Ordinal);
+        private readonly HashSet<string> _deadAllies = new HashSet<string>(StringComparer.Ordinal);
 
         public int MaxActionsPerActor { get; }
 
         public BattleMockCommandParserContext(SotParserRequestDto request)
         {
-            SotAreaSituationDto area = request != null && request.input != null
-                ? request.input.area_situation
-                : null;
+            SotAreaSituationDto area = request != null && request.input != null ? request.input.area_situation : null;
 
             if (area != null && area.allies != null)
             {
@@ -996,9 +943,7 @@ public static class BattleMockCommandParser
             AddAll(_deadAllies, analysis != null ? analysis.deadAllies : null);
 
             MaxActionsPerActor =
-                analysis != null
-                && analysis.actionPolicy != null
-                && analysis.actionPolicy.maxActionsPerActor > 0
+                analysis != null && analysis.actionPolicy != null && analysis.actionPolicy.maxActionsPerActor > 0
                     ? analysis.actionPolicy.maxActionsPerActor
                     : 3;
         }
