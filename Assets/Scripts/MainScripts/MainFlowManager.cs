@@ -140,6 +140,8 @@ public sealed class MainFlowManager : MonoBehaviour
             _contentDatabaseProvider,
             researchManager
         );
+        ResetGladiatorNameReservations();
+        ReserveMarketGladiatorOfferNames();
         marketManager.InitializeDay(_sessionManager.CurrentDay);
 
         int ownedGladiatorCountBeforeStarterGrant = gladiatorManager.GetOwnedGladiatorCount();
@@ -1101,6 +1103,8 @@ public sealed class MainFlowManager : MonoBehaviour
         }
 
         _sessionManager.AdvanceDay();
+        ResetGladiatorNameReservations();
+        ReserveMarketGladiatorOfferNames();
         marketManager.InitializeDay(_sessionManager.CurrentDay);
         battleManager.InitializeDay(_sessionManager.CurrentDay);
 
@@ -1109,6 +1113,56 @@ public sealed class MainFlowManager : MonoBehaviour
         if (verboseLog)
         {
             Debug.Log($"[MainFlowManager] EOD complete. CurrentDay={_sessionManager.CurrentDay}", this);
+        }
+    }
+
+    private void ResetGladiatorNameReservations()
+    {
+        RecruitFactory.ResetReservedGladiatorDisplayNames();
+
+        if (gladiatorManager == null)
+        {
+            return;
+        }
+
+        IReadOnlyList<OwnedGladiatorData> ownedGladiators = gladiatorManager.OwnedGladiators;
+        for (int i = 0; i < ownedGladiators.Count; i++)
+        {
+            OwnedGladiatorData gladiator = ownedGladiators[i];
+            if (gladiator == null)
+            {
+                continue;
+            }
+
+            gladiator.DisplayName = RecruitFactory.ReserveOrCreateUniqueGladiatorDisplayName(
+                gladiator.DisplayName,
+                _randomManager,
+                RandomStreamType.Recruit
+            );
+        }
+    }
+
+    private void ReserveMarketGladiatorOfferNames()
+    {
+        if (marketManager == null)
+        {
+            return;
+        }
+
+        IReadOnlyList<MarketGladiatorOffer> offers = marketManager.GladiatorOffers;
+        for (int i = 0; i < offers.Count; i++)
+        {
+            OwnedGladiatorData gladiator = offers[i]?.Gladiator;
+            if (gladiator == null)
+            {
+                continue;
+            }
+
+            gladiator.DisplayName = RecruitFactory.ReserveOrCreateUniqueGladiatorDisplayName(
+                gladiator.DisplayName,
+                _randomManager,
+                RandomStreamType.Recruit
+            );
         }
     }
 

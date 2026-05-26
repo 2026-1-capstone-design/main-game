@@ -254,6 +254,9 @@ public sealed class RecruitFactory : MonoBehaviour
 
     private static readonly string[] ShortGladiatorNamePool = BuildShortGladiatorNamePool();
 
+    // 자연어 명령은 검투사 이름을 식별자로 사용하므로, 같은 메인씬 세션에서 생성되는 이름을 예약해 중복을 피한다.
+    private static readonly HashSet<string> ReservedGladiatorDisplayNames = new HashSet<string>();
+
     [SerializeField]
     private bool verboseLog = true;
 
@@ -978,14 +981,77 @@ public sealed class RecruitFactory : MonoBehaviour
         string[] namePool = ShortGladiatorNamePool.Length > 0 ? ShortGladiatorNamePool : GladiatorNamePool;
         if (namePool.Length == 0)
         {
-            return "검투사";
+            return ReserveFallbackGladiatorDisplayName();
         }
 
-        int index =
+        int startIndex =
             randomManager != null
                 ? randomManager.NextInt(streamType, 0, namePool.Length)
                 : Random.Range(0, namePool.Length);
-        return namePool[index];
+        for (int offset = 0; offset < namePool.Length; offset++)
+        {
+            int index = (startIndex + offset) % namePool.Length;
+            string candidate = namePool[index];
+            if (TryReserveGladiatorDisplayName(candidate))
+            {
+                return candidate;
+            }
+        }
+
+        return ReserveFallbackGladiatorDisplayName();
+    }
+
+    public static void ResetReservedGladiatorDisplayNames()
+    {
+        ReservedGladiatorDisplayNames.Clear();
+    }
+
+    public static void ReserveGladiatorDisplayName(string displayName)
+    {
+        TryReserveGladiatorDisplayName(displayName);
+    }
+
+    public static string ReserveOrCreateUniqueGladiatorDisplayName(
+        string displayName,
+        RandomManager randomManager,
+        RandomStreamType streamType
+    )
+    {
+        if (!string.IsNullOrWhiteSpace(displayName))
+        {
+            string trimmedName = displayName.Trim();
+            if (TryReserveGladiatorDisplayName(trimmedName))
+            {
+                return trimmedName;
+            }
+        }
+
+        return PickRandomGladiatorDisplayName(randomManager, streamType);
+    }
+
+    private static bool TryReserveGladiatorDisplayName(string displayName)
+    {
+        if (string.IsNullOrWhiteSpace(displayName))
+        {
+            return false;
+        }
+
+        return ReservedGladiatorDisplayNames.Add(displayName.Trim());
+    }
+
+    private static string ReserveFallbackGladiatorDisplayName()
+    {
+        int index = ReservedGladiatorDisplayNames.Count + 1;
+        while (true)
+        {
+            string candidate = $"검투사{index}";
+            if (TryReserveGladiatorDisplayName(candidate))
+            {
+                return candidate;
+            }
+
+            index++;
+        }
     }
 
     private string PickRandomGladiatorDisplayName(RandomStreamType streamType)

@@ -315,6 +315,8 @@ public static class SaveGameService
                 gladiatorManager.RestoreOwnedGladiatorsForLoad(ownedGladiators, nextGladiatorRuntimeId);
             }
 
+            ResetGladiatorNameReservationsForLoad(ownedGladiators, randomManager);
+
             if (marketManager != null)
             {
                 List<MarketWeaponOffer> marketWeaponOffers = BuildMarketWeaponOffersFromSave(
@@ -329,6 +331,8 @@ public static class SaveGameService
                     data.marketArtifactOffers,
                     contentDatabaseProvider
                 );
+
+                ReserveMarketGladiatorOfferNames(marketGladiatorOffers, randomManager);
 
                 if (marketWeaponOffers.Count > 0 || marketGladiatorOffers.Count > 0 || marketArtifactOffers.Count > 0)
                 {
@@ -376,6 +380,60 @@ public static class SaveGameService
         }
 
         return true;
+    }
+
+    private static void ResetGladiatorNameReservationsForLoad(
+        List<OwnedGladiatorData> ownedGladiators,
+        RandomManager randomManager
+    )
+    {
+        RecruitFactory.ResetReservedGladiatorDisplayNames();
+
+        if (ownedGladiators == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < ownedGladiators.Count; i++)
+        {
+            OwnedGladiatorData gladiator = ownedGladiators[i];
+            if (gladiator == null)
+            {
+                continue;
+            }
+
+            gladiator.DisplayName = RecruitFactory.ReserveOrCreateUniqueGladiatorDisplayName(
+                gladiator.DisplayName,
+                randomManager,
+                RandomStreamType.Recruit
+            );
+        }
+    }
+
+    private static void ReserveMarketGladiatorOfferNames(
+        List<MarketGladiatorOffer> marketGladiatorOffers,
+        RandomManager randomManager
+    )
+    {
+        if (marketGladiatorOffers == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < marketGladiatorOffers.Count; i++)
+        {
+            OwnedGladiatorData gladiator = marketGladiatorOffers[i]?.Gladiator;
+            if (gladiator == null)
+            {
+                continue;
+            }
+
+            gladiator.DisplayName = RecruitFactory.ReserveOrCreateUniqueGladiatorDisplayName(
+                gladiator.DisplayName,
+                randomManager,
+                RandomStreamType.Recruit
+            );
+        }
     }
 
     private static int[] BuildSquadSlotRuntimeIdsSnapshot(SquadManager squadManager)
