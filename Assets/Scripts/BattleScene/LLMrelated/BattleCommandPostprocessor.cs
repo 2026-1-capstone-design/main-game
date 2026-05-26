@@ -1108,18 +1108,6 @@ public sealed class BattleCommandPostprocessor
         adjustmentLine = string.Empty;
         string originalTo = corrected.to;
 
-        if (corrected.movementType != "direct")
-        {
-            corrected.movementType = "direct";
-            adjusted = true;
-            adjustmentLine = BattleCommandInputDialogBuilder.BuildObeyedActionAdjustment(
-                BattleInputDialogAdjustmentReason.MovementTypeDefaulted,
-                corrected.subtype,
-                string.Empty,
-                string.Empty
-            );
-        }
-
         BattleRuntimeUnit target = runtime.FindAlly(corrected.to);
 
         if (BattleCommandPostprocessRuntimeQueries.IsValidOtherAllyTarget(actor, target))
@@ -1138,7 +1126,7 @@ public sealed class BattleCommandPostprocessor
         corrected.to = replacementTo;
         adjusted = true;
 
-        string targetAdjustmentLine = BattleCommandInputDialogBuilder.BuildObeyedActionAdjustment(
+        adjustmentLine = BattleCommandInputDialogBuilder.BuildObeyedActionAdjustment(
             BattleInputDialogAdjustmentReason.MoveTargetReplaced,
             corrected.subtype,
             originalTo,
@@ -1146,11 +1134,6 @@ public sealed class BattleCommandPostprocessor
             ResolveTargetIssue(target, runtime.SimulationManager),
             runtime.GetUnitId(actor)
         );
-
-        if (string.IsNullOrWhiteSpace(adjustmentLine))
-            adjustmentLine = targetAdjustmentLine;
-        else if (!string.IsNullOrWhiteSpace(targetAdjustmentLine))
-            adjustmentLine = adjustmentLine + " " + targetAdjustmentLine;
 
         return true;
     }

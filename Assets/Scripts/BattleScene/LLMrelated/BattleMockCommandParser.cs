@@ -878,12 +878,15 @@ public static class BattleMockCommandParser
         return sb.ToString().TrimEnd();
     }
 
-    private static string[] SplitTokens(string text)
+        private static string[] SplitTokens(string text)
     {
         if (string.IsNullOrWhiteSpace(text))
             return Array.Empty<string>();
 
-        return Regex.Split(text.Trim(), "\\s+");
+        return text.Split(
+            new[] { ' ', '\t', '\r', '\n' },
+            StringSplitOptions.RemoveEmptyEntries
+        );
     }
 
     private static bool HasSkill(SotAllyUnitDto actor)

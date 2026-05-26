@@ -89,12 +89,12 @@ public static class BattleOrderRuntimeQueries
     IReadOnlyList<BattleRuntimeUnit> units,
     IBattleRosterProjection rosterProjection,
     string unitId
-)
+    )
     {
         if (units == null || string.IsNullOrWhiteSpace(unitId))
             return null;
 
-        string normalizedUnitId = unitId.ToUpperInvariant();
+        string normalizedUnitId = unitId.Trim();
 
         for (int i = 0; i < units.Count; i++)
         {
@@ -103,7 +103,7 @@ public static class BattleOrderRuntimeQueries
                 continue;
 
             string currentUnitId = GetUnitId(unit, rosterProjection);
-            if (string.Equals(currentUnitId, normalizedUnitId, StringComparison.Ordinal))
+            if (string.Equals(currentUnitId, normalizedUnitId, StringComparison.OrdinalIgnoreCase))
                 return unit;
         }
 

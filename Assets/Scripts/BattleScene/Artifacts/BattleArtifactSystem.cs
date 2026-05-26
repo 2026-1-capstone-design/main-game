@@ -192,6 +192,15 @@ public sealed class BattleArtifactSystem : IBattleTargetingPolicy, IBattleMoveme
 
     public bool HasTargetingBlock(BattleRuntimeUnit candidate, BattleTargetingReason reason)
     {
+        return HasTargetingBlock(candidate, null, reason);
+    }
+
+    public bool HasTargetingBlock(
+        BattleRuntimeUnit candidate,
+        BattleRuntimeUnit requester,
+        BattleTargetingReason reason
+    )
+    {
         if (candidate == null || candidate.State == null)
             return false;
 
@@ -202,7 +211,7 @@ public sealed class BattleArtifactSystem : IBattleTargetingPolicy, IBattleMoveme
             if (binding.Owner != candidate.State && binding.OwnerView != candidate)
                 continue;
 
-            if (!binding.Artifact.CanBeTargeted(binding.Owner, null, reason))
+            if (!binding.Artifact.CanBeTargeted(binding.Owner, requester, reason))
                 return true;
         }
 

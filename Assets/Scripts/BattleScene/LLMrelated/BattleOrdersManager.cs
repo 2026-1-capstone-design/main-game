@@ -164,13 +164,19 @@ public sealed class BattleOrdersManager : MonoBehaviour
 
     private void RunSotLayerPipeline(string sanitizedRawText)
     {
-        if (!logSotLayerInputPreview)
-            return;
+        bool shouldLogPreview = logSotLayerInputPreview;
 
         BattleSimulationManager simulationManager = BattleSimulationManager.Instance;
         if (simulationManager == null)
         {
-            Debug.LogWarning("[BattleOrdersManager] SOT layer pipeline skipped. BattleSimulationManager.Instance is null.", this);
+            if (shouldLogPreview)
+            {
+                Debug.LogWarning(
+                    "[BattleOrdersManager] SOT layer pipeline skipped. BattleSimulationManager.Instance is null.",
+                    this
+                );
+            }
+
             return;
         }
 
@@ -193,63 +199,69 @@ public sealed class BattleOrdersManager : MonoBehaviour
             )
         )
         {
-            if (error == "invalidinput")
+            if (shouldLogPreview)
             {
-                Debug.LogWarning(
-                    "<color=#FF8A80><b>[SOT MOCK PARSER]</b></color> invalidinput\n"
-                        + (string.IsNullOrWhiteSpace(mockParserLog) ? string.Empty : mockParserLog),
-                    this
-                );
-            }
-            else
-            {
-                Debug.LogWarning(
-                    $"[BattleOrdersManager] SOT layer pipeline failed. Reason={error}",
-                    this
-                );
+                if (error == "invalidinput")
+                {
+                    Debug.LogWarning(
+                        "<color=#FF8A80><b>[SOT MOCK PARSER]</b></color> invalidinput\n"
+                            + (string.IsNullOrWhiteSpace(mockParserLog) ? string.Empty : mockParserLog),
+                        this
+                    );
+                }
+                else
+                {
+                    Debug.LogWarning(
+                        $"[BattleOrdersManager] SOT layer pipeline failed. Reason={error}",
+                        this
+                    );
+                }
             }
 
             return;
         }
 
-        if (!string.IsNullOrWhiteSpace(mockParserLog))
+        if (shouldLogPreview)
         {
+            if (!string.IsNullOrWhiteSpace(mockParserLog))
+            {
+                Debug.Log(
+                    "<color=#AED581><b>[SOT MOCK PARSER]</b></color>\n"
+                        + mockParserLog,
+                    this
+                );
+            }
+
             Debug.Log(
-                "<color=#AED581><b>[SOT MOCK PARSER]</b></color>\n"
-                    + mockParserLog,
+                "<color=#4FC3F7><b>[SOT PARSER INPUT PREVIEW]</b></color>\n"
+                    + result.ParserRequestJson,
+                this
+            );
+
+            Debug.Log(
+                "<color=#81C784><b>[SOT MOCK PARSER OUTPUT]</b></color>\n"
+                    + result.MockParserOutputJson,
+                this
+            );
+
+            Debug.Log(
+                "<color=#FFB74D><b>[SOT POSTPROCESS RESULT PREVIEW]</b></color>\n"
+                    + result.PostprocessResultJson,
+                this
+            );
+
+            Debug.Log(
+                "<color=#BA68C8><b>[SOT DIALOG INPUT PREVIEW]</b></color>\n"
+                    + result.DialogRequestJson,
+                this
+            );
+
+            Debug.Log(
+                "<color=#CE93D8><b>[SOT DIALOG RESPONSE PREVIEW]</b></color>\n"
+                    + result.DialogResponseJson,
                 this
             );
         }
-
-        Debug.Log(
-            "<color=#4FC3F7><b>[SOT PARSER INPUT PREVIEW]</b></color>\n"
-                + result.ParserRequestJson,
-            this
-        );
-
-        Debug.Log(
-            "<color=#81C784><b>[SOT MOCK PARSER OUTPUT]</b></color>\n"
-                + result.MockParserOutputJson,
-            this
-        );
-
-        Debug.Log(
-            "<color=#FFB74D><b>[SOT POSTPROCESS RESULT PREVIEW]</b></color>\n"
-                + result.PostprocessResultJson,
-            this
-        );
-
-        Debug.Log(
-            "<color=#BA68C8><b>[SOT DIALOG INPUT PREVIEW]</b></color>\n"
-                + result.DialogRequestJson,
-            this
-        );
-
-        Debug.Log(
-            "<color=#CE93D8><b>[SOT DIALOG RESPONSE PREVIEW]</b></color>\n"
-                + result.DialogResponseJson,
-            this
-        );
 
         TryIssuePostprocessedSlmCommands(result.PostprocessResult);
     }
