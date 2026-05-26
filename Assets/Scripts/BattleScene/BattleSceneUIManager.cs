@@ -180,7 +180,6 @@ public sealed class BattleSceneUIManager : MonoBehaviour
 
     private ModalState _activeModalState = ModalState.None;
     private OrderTargetMode _currentOrderTargetMode = OrderTargetMode.Global;
-    private BattleRuntimeUnit _currentOrderTargetUnit;
     private float _cachedOrderInputSpeedMultiplier = 1f;
     private bool _hasCachedOrderInputSpeedMultiplier;
     private bool _isOrderInputSpeedApplied;
@@ -451,34 +450,21 @@ public sealed class BattleSceneUIManager : MonoBehaviour
 
     public void OpenSingleOrderPanel(BattleRuntimeUnit targetUnit)
     {
-        if (targetUnit == null)
-        {
-            Debug.LogWarning("[BattleSceneUIManager] Single order open blocked. Target ally is null.", this);
-            return;
-        }
-
-        if (!targetUnit.IsPlayerOwned)
-        {
-            Debug.LogWarning("[BattleSceneUIManager] Single order open blocked. Target is an enemy unit.", this);
-            return;
-        }
-
-        if (targetUnit.IsCombatDisabled)
-        {
-            Debug.LogWarning("[BattleSceneUIManager] Single order open blocked. Target ally is disabled.", this);
-            return;
-        }
-
-        _currentOrderTargetMode = OrderTargetMode.SingleAlly;
-        _currentOrderTargetUnit = targetUnit;
-        EnsureOrderInputVisible();
+        SetGlobalOrderTarget();
         FocusCurrentOrderInput();
+
+        if (verboseLog)
+        {
+            Debug.Log(
+                "[BattleSceneUIManager] Single order is deprecated. Opening global order input instead.",
+                this
+            );
+        }
     }
 
     private void SetGlobalOrderTarget()
     {
         _currentOrderTargetMode = OrderTargetMode.Global;
-        _currentOrderTargetUnit = null;
         EnsureOrderInputVisible();
     }
 
@@ -505,7 +491,7 @@ public sealed class BattleSceneUIManager : MonoBehaviour
         }
 
         EnsureOrderInputVisible();
-
+        SetGlobalOrderTarget();
         EnsureBattleOrdersManager();
 
         if (battleOrdersManager == null)
@@ -521,34 +507,15 @@ public sealed class BattleSceneUIManager : MonoBehaviour
             return;
         }
 
-        Debug.Log(
-            $"[BattleSceneUIManager] CurrentOrderText submitted. Mode={_currentOrderTargetMode}, Text=\"{sanitizedInput}\"",
-            this
-        );
-
-        switch (_currentOrderTargetMode)
+        if (verboseLog)
         {
-            case OrderTargetMode.Global:
-                battleOrdersManager.SubmitGlobalOrder(sanitizedInput);
-                break;
-
-            case OrderTargetMode.SingleAlly:
-                if (_currentOrderTargetUnit == null)
-                {
-                    Debug.LogWarning("[BattleSceneUIManager] Order send blocked. Target ally is null.", this);
-                    SetGlobalOrderTarget();
-                }
-                else
-                {
-                    battleOrdersManager.SubmitSingleOrder(_currentOrderTargetUnit, sanitizedInput);
-                }
-                break;
-
-            default:
-                Debug.LogWarning("[BattleSceneUIManager] Order send blocked. Order target mode is None.", this);
-                SetGlobalOrderTarget();
-                break;
+            Debug.Log(
+                $"[BattleSceneUIManager] CurrentOrderText submitted. Mode={_currentOrderTargetMode}, Text=\"{sanitizedInput}\"",
+                this
+            );
         }
+
+        battleOrdersManager.SubmitGlobalOrder(sanitizedInput);
 
         ClearAndRefocusCurrentOrderInput();
     }
@@ -1101,8 +1068,38 @@ public sealed class BattleSceneUIManager : MonoBehaviour
             return false;
         }
 
-        EnsureBattleOrdersManager();
-        return battleOrdersManager != null && battleOrdersManager.TryGetAllyIndex(allyUnit, out allyIndex);
+        IReadOnlyList<BattleRuntimeUnit> runtimeUnits = ResolveHeaderRuntimeUnits();
+        if (runtimeUnits == null)
+        {
+            return false;
+        }
+
+        int playerUnitIndex = 0;
+
+        for (int i = 0; i < runtimeUnits.Count; i++)
+        {
+            BattleRuntimeUnit unit = runtimeUnits[i];
+            if (unit == null || !unit.IsPlayerOwned)
+            {
+                continue;
+            }
+
+            if (ReferenceEquals(unit, allyUnit))
+            {
+                if (playerUnitIndex < 0 || playerUnitIndex >= BattleTeamConstants.MaxUnitsPerTeam)
+                {
+                    allyIndex = -1;
+                    return false;
+                }
+
+                allyIndex = playerUnitIndex;
+                return true;
+            }
+
+            playerUnitIndex++;
+        }
+
+        return false;
     }
 
     private bool TryGetAllyResponseText(int allyIndex, out TMP_Text responseText)
