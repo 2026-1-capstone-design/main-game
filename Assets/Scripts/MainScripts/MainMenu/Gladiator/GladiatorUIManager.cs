@@ -1,11 +1,25 @@
+﻿using System;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 [DisallowMultipleComponent]
 public sealed class GladiatorUIManager : MonoBehaviour
 {
+    private enum GladiatorListSortMode
+    {
+        RecentAcquired,
+        Level,
+    }
+
+    private enum DetailInventoryMode
+    {
+        Weapon,
+        Artifact,
+    }
+
     [Header("List Panel")]
     [SerializeField]
     private GameObject panelRoot;
@@ -14,21 +28,20 @@ public sealed class GladiatorUIManager : MonoBehaviour
     [SerializeField]
     private Button backButton;
 
+    [SerializeField]
+    private Button recentAcquiredSortButton;
+
+    [SerializeField]
+    private Button levelSortButton;
+
+    [SerializeField]
+    private RectTransform gladiatorBackground;
+
     [Header("List Viewer")]
     [SerializeField]
     private OwnedItemGridViewer gladiatorViewer;
 
-    [Header("List Labels")]
-    [SerializeField]
-    private TMP_Text headerText;
-
-    [SerializeField]
-    private TMP_Text statusText;
-
     [Header("Detail Layer")]
-    [SerializeField]
-    private Button detailMaskButton;
-
     [SerializeField]
     private GameObject detailPanelRoot;
 
@@ -36,16 +49,15 @@ public sealed class GladiatorUIManager : MonoBehaviour
     [SerializeField]
     private TMP_Text detailText;
 
+    [SerializeField]
+    private Button detailBackButton;
+
     [Header("Detail Gladiator Icon")]
     [SerializeField]
     private Image detailGladiatorIconImage;
 
-    [Header("Detail Trait Slot")]
     [SerializeField]
-    private Button traitSlotButton;
-
-    [SerializeField]
-    private Image traitOverlayImage;
+    private GladiatorModelPreviewView detailGladiatorPreviewView;
 
     [Header("Detail Weapon Slot")]
     [SerializeField]
@@ -54,17 +66,17 @@ public sealed class GladiatorUIManager : MonoBehaviour
     [SerializeField]
     private Image weaponOverlayImage;
 
-    [Header("Detail Artifact Slot")]
     [SerializeField]
-    private Button artifactSlotButton;
+    private WeaponModelPreviewView weaponOverlayPreviewView;
+
+    [Header("Detail Artifact Slots")]
+    [SerializeField]
+    private Button[] artifactSlotButtons = new Button[3];
 
     [SerializeField]
-    private Image artifactOverlayImage;
+    private Image[] artifactOverlayImages = new Image[3];
 
     [Header("Inventory Layer")]
-    [SerializeField]
-    private Button inventoryMaskButton;
-
     [SerializeField]
     private GameObject inventoryPanelRoot;
 
@@ -76,21 +88,27 @@ public sealed class GladiatorUIManager : MonoBehaviour
     [SerializeField]
     private TMP_Text inventoryHeaderText;
 
-    [SerializeField]
-    private TMP_Text inventoryStatusText;
-
     [Header("Weapon Detail Layer")]
     [SerializeField]
-    private Button weaponDetailMaskButton;
+    private TMP_Text equipmentHeaderText;
 
     [SerializeField]
-    private GameObject weaponDetailPanelRoot;
+    private TMP_Text equipmentKindText;
 
     [SerializeField]
-    private TMP_Text weaponDetailText;
+    private TMP_Text equipmentSkillText;
 
     [SerializeField]
-    private Button weaponDetailBackButton;
+    private TMP_Text equipmentDetailText;
+
+    [SerializeField]
+    private Image selectedWeaponIconImage;
+
+    [SerializeField]
+    private WeaponModelPreviewView selectedWeaponPreviewView;
+
+    [SerializeField]
+    private TMP_Text helpText;
 
     [SerializeField]
     private Button weaponDetailEquipButton;
@@ -100,26 +118,49 @@ public sealed class GladiatorUIManager : MonoBehaviour
 
     [Header("Already Equipped Popup")]
     [SerializeField]
-    private Button alreadyEquippedMaskButton;
-
-    [SerializeField]
     private GameObject alreadyEquippedPanelRoot;
 
     [SerializeField]
     private TMP_Text alreadyEquippedText;
 
     [SerializeField]
-    private Button alreadyEquippedOkButton;
+    private Button alreadyEquippedEquipButton;
 
+    [SerializeField]
+    private Button alreadyEquippedCancelButton;
+
+    private readonly List<OwnedGladiatorData> _sortedGladiatorBuffer = new List<OwnedGladiatorData>();
     private readonly List<OwnedItemViewData> _gladiatorViewBuffer = new List<OwnedItemViewData>();
     private readonly List<OwnedItemViewData> _weaponViewBuffer = new List<OwnedItemViewData>();
+    private readonly List<OwnedItemViewData> _artifactViewBuffer = new List<OwnedItemViewData>();
 
     private MainFlowManager _flow;
     private GladiatorManager _gladiatorManager;
     private InventoryManager _inventoryManager;
     private OwnedGladiatorData _currentDetailGladiator;
     private OwnedWeaponData _currentSelectedWeapon;
+    private OwnedArtifactData _currentSelectedArtifact;
+    private DetailInventoryMode _inventoryMode = DetailInventoryMode.Weapon;
+    private bool _showWeaponLore;
+    private GladiatorListSortMode _currentSortMode = GladiatorListSortMode.RecentAcquired;
+    private Transform[] _sortButtonOriginalParents;
+    private int[] _sortButtonOriginalSiblingIndices;
     private bool _initialized;
+    private WeaponDetailLoreToggleInput _weaponDetailLoreToggleInput;
+
+    private void ToggleWeaponDetailLore()
+    {
+        if (_currentSelectedWeapon == null || !IsWeaponDetailActive())
+        {
+            return;
+        }
+
+        Debug.Log(
+            $"Left Alt 입력 감지됨: {_currentSelectedWeapon.DisplayName} 무기 상세 표시를 {(_showWeaponLore ? "스탯" : "로어")}로 전환"
+        );
+        _showWeaponLore = !_showWeaponLore;
+        RefreshEquipmentDetailText();
+    }
 
     public void Initialize(MainFlowManager flow, GladiatorManager gladiatorManager, InventoryManager inventoryManager)
     {
@@ -132,31 +173,34 @@ public sealed class GladiatorUIManager : MonoBehaviour
         _gladiatorManager = gladiatorManager;
         _inventoryManager = inventoryManager;
 
+        ResolveMissingListReferences();
+        CaptureSortButtonLayout();
         BindButton(backButton, OnBackClicked);
-        BindButton(detailMaskButton, OnDetailMaskClicked);
-        BindButton(inventoryMaskButton, OnInventoryMaskClicked);
+        BindButton(recentAcquiredSortButton, OnRecentAcquiredSortClicked);
+        BindButton(levelSortButton, OnLevelSortClicked);
+        CacheDetailPresetControls();
+        BindButton(detailBackButton, OnDetailBackClicked);
         BindButton(weaponSlotButton, OnWeaponSlotClicked);
+        BindButtons(artifactSlotButtons, OnArtifactSlotClicked);
 
-        BindButton(weaponDetailMaskButton, OnWeaponDetailBackClicked);
-        BindButton(weaponDetailBackButton, OnWeaponDetailBackClicked);
         BindButton(weaponDetailEquipButton, OnWeaponDetailEquipClicked);
         BindButton(weaponDetailUnequipButton, OnWeaponDetailUnequipClicked);
 
-        BindButton(alreadyEquippedMaskButton, OnAlreadyEquippedOkClicked);
-        BindButton(alreadyEquippedOkButton, OnAlreadyEquippedOkClicked);
+        BindButton(alreadyEquippedEquipButton, OnAlreadyEquippedEquipClicked);
+        BindButton(alreadyEquippedCancelButton, OnAlreadyEquippedCancelClicked);
 
         ConfigureOverlayImage(detailGladiatorIconImage);
-        ConfigureOverlayImage(traitOverlayImage);
         ConfigureOverlayImage(weaponOverlayImage);
-        ConfigureOverlayImage(artifactOverlayImage);
+        ConfigureOverlayImage(selectedWeaponIconImage);
+        ConfigureOverlayImages(artifactOverlayImages);
+        CacheWeaponPreviewViews();
+        EnsureWeaponDetailLoreToggleInput();
 
         SetPanelActive(false);
         SetDetailActive(false);
         SetInventoryActive(false);
         SetWeaponDetailActive(false);
         SetAlreadyEquippedPopupActive(false);
-
-        RefreshTexts();
 
         _initialized = true;
     }
@@ -170,7 +214,7 @@ public sealed class GladiatorUIManager : MonoBehaviour
         SetAlreadyEquippedPopupActive(false);
         _currentSelectedWeapon = null;
 
-        RefreshTexts();
+        RefreshSortButtons();
         RefreshGladiatorViewer();
     }
 
@@ -197,9 +241,11 @@ public sealed class GladiatorUIManager : MonoBehaviour
         if (_gladiatorManager != null)
         {
             IReadOnlyList<OwnedGladiatorData> gladiators = _gladiatorManager.OwnedGladiators;
-            for (int i = 0; i < gladiators.Count; i++)
+            BuildSortedGladiatorBuffer(gladiators);
+
+            for (int i = 0; i < _sortedGladiatorBuffer.Count; i++)
             {
-                OwnedGladiatorData gladiator = gladiators[i];
+                OwnedGladiatorData gladiator = _sortedGladiatorBuffer[i];
                 if (gladiator == null || gladiator.GladiatorClass == null)
                 {
                     continue;
@@ -207,6 +253,10 @@ public sealed class GladiatorUIManager : MonoBehaviour
 
                 _gladiatorViewBuffer.Add(
                     new OwnedItemViewData(
+                        gladiator.GladiatorClass.previewModelPrefab,
+                        gladiator.CustomizeIndicates,
+                        gladiator.EquippedWeapon?.Weapon?.leftWeaponPrefab,
+                        gladiator.EquippedWeapon?.Weapon?.rightWeaponPrefab,
                         gladiator.GladiatorClass.icon,
                         gladiator.DisplayName,
                         $"Lv.{gladiator.Level}",
@@ -219,11 +269,6 @@ public sealed class GladiatorUIManager : MonoBehaviour
 
         Canvas.ForceUpdateCanvases();
         gladiatorViewer.SetItems(_gladiatorViewBuffer, OnGladiatorCellClicked);
-
-        if (statusText != null)
-        {
-            statusText.text = $"Owned Gladiators: {_gladiatorViewBuffer.Count}";
-        }
     }
 
     private void RefreshInventoryWeaponViewer()
@@ -252,6 +297,8 @@ public sealed class GladiatorUIManager : MonoBehaviour
 
                 _weaponViewBuffer.Add(
                     new OwnedItemViewData(
+                        weapon.Weapon.leftWeaponPrefab,
+                        weapon.Weapon.rightWeaponPrefab,
                         weapon.Weapon.icon,
                         weapon.DisplayName,
                         $"Lv.{weapon.Level}",
@@ -267,13 +314,214 @@ public sealed class GladiatorUIManager : MonoBehaviour
 
         if (inventoryHeaderText != null)
         {
-            inventoryHeaderText.text = $"Weapons";
+            inventoryHeaderText.text = $"무기";
         }
 
-        if (inventoryStatusText != null)
+        ClearEquipmentDetailTexts();
+    }
+
+    private void RefreshInventoryArtifactViewer()
+    {
+        if (inventoryWeaponViewer == null)
         {
-            inventoryStatusText.text = $"Owned Weapons: {_weaponViewBuffer.Count}";
+            Debug.LogWarning("[GladiatorUIManager] inventoryWeaponViewer is not assigned.", this);
+            return;
         }
+
+        _artifactViewBuffer.Clear();
+
+        if (_inventoryManager != null)
+        {
+            IReadOnlyList<OwnedArtifactData> artifacts = _inventoryManager.OwnedArtifacts;
+            for (int i = 0; i < artifacts.Count; i++)
+            {
+                OwnedArtifactData artifact = artifacts[i];
+                if (artifact == null || artifact.Artifact == null)
+                {
+                    continue;
+                }
+
+                OwnedGladiatorData owner =
+                    _gladiatorManager != null ? _gladiatorManager.FindOwnerOfEquippedArtifact(artifact) : null;
+
+                _artifactViewBuffer.Add(
+                    new OwnedItemViewData(
+                        artifact.Artifact.icon,
+                        artifact.DisplayName,
+                        string.Empty,
+                        owner != null ? "E" : string.Empty,
+                        artifact
+                    )
+                );
+            }
+        }
+
+        Canvas.ForceUpdateCanvases();
+        inventoryWeaponViewer.SetItems(_artifactViewBuffer, OnInventoryArtifactCellClicked);
+
+        if (inventoryHeaderText != null)
+        {
+            inventoryHeaderText.text = "장신구";
+        }
+
+        ClearEquipmentDetailTexts();
+    }
+
+    private void BuildSortedGladiatorBuffer(IReadOnlyList<OwnedGladiatorData> gladiators)
+    {
+        _sortedGladiatorBuffer.Clear();
+
+        if (gladiators == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < gladiators.Count; i++)
+        {
+            if (gladiators[i] != null)
+            {
+                _sortedGladiatorBuffer.Add(gladiators[i]);
+            }
+        }
+
+        _sortedGladiatorBuffer.Sort(CompareGladiatorsForCurrentSort);
+    }
+
+    private int CompareGladiatorsForCurrentSort(OwnedGladiatorData left, OwnedGladiatorData right)
+    {
+        if (left == right)
+        {
+            return 0;
+        }
+
+        if (left == null)
+        {
+            return 1;
+        }
+
+        if (right == null)
+        {
+            return -1;
+        }
+
+        if (_currentSortMode == GladiatorListSortMode.Level)
+        {
+            int levelCompare = right.Level.CompareTo(left.Level);
+            if (levelCompare != 0)
+            {
+                return levelCompare;
+            }
+        }
+
+        return right.RuntimeId.CompareTo(left.RuntimeId);
+    }
+
+    private void OnRecentAcquiredSortClicked()
+    {
+        SetSortMode(GladiatorListSortMode.RecentAcquired);
+    }
+
+    private void OnLevelSortClicked()
+    {
+        SetSortMode(GladiatorListSortMode.Level);
+    }
+
+    private void SetSortMode(GladiatorListSortMode sortMode)
+    {
+        _currentSortMode = sortMode;
+        RefreshSortButtons();
+        RefreshGladiatorViewer();
+    }
+
+    private void RefreshSortButtons()
+    {
+        Button activeButton =
+            _currentSortMode == GladiatorListSortMode.Level ? levelSortButton : recentAcquiredSortButton;
+        Button inactiveButton =
+            _currentSortMode == GladiatorListSortMode.Level ? recentAcquiredSortButton : levelSortButton;
+
+        MoveSortButtonAroundBackground(inactiveButton, false);
+        MoveSortButtonAroundBackground(activeButton, true);
+    }
+
+    private void MoveSortButtonAroundBackground(Button sortButton, bool isActive)
+    {
+        if (sortButton == null || gladiatorBackground == null)
+        {
+            return;
+        }
+
+        sortButton.interactable = true;
+
+        RectTransform buttonTransform = sortButton.transform as RectTransform;
+        if (buttonTransform == null)
+        {
+            return;
+        }
+
+        int buttonIndex = GetSortButtonIndex(sortButton);
+        if (!isActive)
+        {
+            RestoreSortButtonParent(buttonTransform, buttonIndex);
+            return;
+        }
+
+        Transform backgroundParent = gladiatorBackground.parent;
+        if (backgroundParent == null)
+        {
+            return;
+        }
+
+        // GladiatorBackground와 정렬 버튼 컨테이너가 형제인 배치에서 선택 버튼만 배경 위로 올린다.
+        buttonTransform.SetParent(backgroundParent, true);
+        int backgroundIndex = gladiatorBackground.GetSiblingIndex();
+        buttonTransform.SetSiblingIndex(Mathf.Min(backgroundIndex + 1, backgroundParent.childCount - 1));
+    }
+
+    private void RestoreSortButtonParent(RectTransform buttonTransform, int buttonIndex)
+    {
+        if (buttonTransform == null || _sortButtonOriginalParents == null || _sortButtonOriginalSiblingIndices == null)
+        {
+            return;
+        }
+
+        if (buttonIndex < 0 || buttonIndex >= _sortButtonOriginalParents.Length)
+        {
+            return;
+        }
+
+        Transform originalParent = _sortButtonOriginalParents[buttonIndex];
+        if (originalParent == null)
+        {
+            return;
+        }
+
+        if (buttonTransform.parent != originalParent)
+        {
+            buttonTransform.SetParent(originalParent, true);
+        }
+
+        int siblingIndex = Mathf.Clamp(
+            _sortButtonOriginalSiblingIndices[buttonIndex],
+            0,
+            originalParent.childCount - 1
+        );
+        buttonTransform.SetSiblingIndex(siblingIndex);
+    }
+
+    private int GetSortButtonIndex(Button sortButton)
+    {
+        if (sortButton == recentAcquiredSortButton)
+        {
+            return 0;
+        }
+
+        if (sortButton == levelSortButton)
+        {
+            return 1;
+        }
+
+        return -1;
     }
 
     private void OnGladiatorCellClicked(OwnedItemViewData data)
@@ -295,17 +543,13 @@ public sealed class GladiatorUIManager : MonoBehaviour
 
         _currentDetailGladiator = gladiator;
         _currentSelectedWeapon = null;
+        _currentSelectedArtifact = null;
 
         RefreshDetail(gladiator);
         SetDetailActive(true);
         SetInventoryActive(false);
         SetWeaponDetailActive(false);
         SetAlreadyEquippedPopupActive(false);
-
-        if (statusText != null)
-        {
-            statusText.text = $"Selected Gladiator: {gladiator.DisplayName}";
-        }
     }
 
     private void RefreshDetail(OwnedGladiatorData gladiator)
@@ -316,33 +560,38 @@ public sealed class GladiatorUIManager : MonoBehaviour
         }
 
         Sprite gladiatorIcon = gladiator.GladiatorClass != null ? gladiator.GladiatorClass.icon : null;
-        Sprite traitIcon = gladiator.Trait != null ? gladiator.Trait.icon : null;
-        Sprite weaponIcon =
-            gladiator.EquippedWeapon != null && gladiator.EquippedWeapon.Weapon != null
-                ? gladiator.EquippedWeapon.Weapon.icon
-                : null;
-        Sprite artifactIcon = gladiator.EquippedArtifact != null ? gladiator.EquippedArtifact.icon : null;
+        GameObject gladiatorModelPrefab =
+            gladiator.GladiatorClass != null ? gladiator.GladiatorClass.previewModelPrefab : null;
+        OwnedWeaponData equippedWeapon = gladiator.EquippedWeapon;
 
-        SetPassiveImage(detailGladiatorIconImage, gladiatorIcon);
-        SetSlotVisual(traitSlotButton, traitOverlayImage, traitIcon);
-        SetSlotVisual(weaponSlotButton, weaponOverlayImage, weaponIcon);
-        SetSlotVisual(artifactSlotButton, artifactOverlayImage, artifactIcon);
+        if (detailGladiatorPreviewView != null && gladiatorModelPrefab != null)
+        {
+            detailGladiatorPreviewView.Show(
+                gladiatorModelPrefab,
+                gladiator.CustomizeIndicates,
+                gladiator.EquippedWeapon?.Weapon?.leftWeaponPrefab,
+                gladiator.EquippedWeapon?.Weapon?.rightWeaponPrefab
+            );
+            SetComponentGameObjectActive(detailGladiatorIconImage, false);
+        }
+        else
+        {
+            if (detailGladiatorPreviewView != null)
+            {
+                detailGladiatorPreviewView.Clear();
+            }
+
+            SetPassiveImage(detailGladiatorIconImage, gladiatorIcon);
+        }
+
+        SetWeaponSlotVisual(weaponSlotButton, weaponOverlayImage, weaponOverlayPreviewView, equippedWeapon);
+        RefreshArtifactSlots(gladiator);
+
+        string detailDescription = BuildGladiatorDetailDescription(gladiator);
 
         if (detailText != null)
         {
-            string className = gladiator.GladiatorClass != null ? gladiator.GladiatorClass.className : "(None)";
-
-            detailText.text =
-                $"Name: {gladiator.DisplayName}\r\n"
-                + $"Level: {gladiator.Level}\r\n"
-                + $"Experience: {gladiator.Exp}\r\n"
-                + $"Loyalty: {gladiator.Loyalty}\r\n"
-                + $"Upkeep: {gladiator.Upkeep}\r\n"
-                + $"Health: {gladiator.CurrentHealth:0.##} / {gladiator.CachedMaxHealth:0.##}\r\n"
-                + $"Attack: {gladiator.CachedAttack:0.##}\r\n"
-                + $"Attack Speed: {gladiator.CachedAttackSpeed:0.##}\r\n"
-                + $"Move Speed: {gladiator.CachedMoveSpeed:0.##}\r\n"
-                + $"Range: {gladiator.CachedAttackRange:0.##}";
+            detailText.text = detailDescription;
         }
     }
 
@@ -356,6 +605,16 @@ public sealed class GladiatorUIManager : MonoBehaviour
         OpenWeaponDetail(weapon);
     }
 
+    private void OnInventoryArtifactCellClicked(OwnedItemViewData data)
+    {
+        if (data.Source is not OwnedArtifactData artifact)
+        {
+            return;
+        }
+
+        OpenArtifactDetail(artifact);
+    }
+
     private void OpenWeaponDetail(OwnedWeaponData weapon)
     {
         if (weapon == null || _currentDetailGladiator == null)
@@ -364,9 +623,69 @@ public sealed class GladiatorUIManager : MonoBehaviour
         }
 
         _currentSelectedWeapon = weapon;
+        _currentSelectedArtifact = null;
+        _showWeaponLore = false;
+        EnsureWeaponDetailLoreToggleInput();
         RefreshWeaponDetail(weapon);
         SetWeaponDetailActive(true);
         SetAlreadyEquippedPopupActive(false);
+    }
+
+    private void OpenArtifactDetail(OwnedArtifactData artifact)
+    {
+        if (artifact == null || artifact.Artifact == null || _currentDetailGladiator == null)
+        {
+            return;
+        }
+
+        _currentSelectedWeapon = null;
+        _currentSelectedArtifact = artifact;
+        _showWeaponLore = false;
+        RefreshArtifactDetail(artifact);
+        SetWeaponDetailActive(true);
+        SetAlreadyEquippedPopupActive(false);
+    }
+
+    private void RefreshArtifactDetail(OwnedArtifactData artifact)
+    {
+        OwnedGladiatorData owner =
+            _gladiatorManager != null ? _gladiatorManager.FindOwnerOfEquippedArtifact(artifact) : null;
+
+        bool equippedByCurrent = owner != null && owner == _currentDetailGladiator;
+
+        if (equipmentHeaderText != null)
+        {
+            equipmentHeaderText.text = artifact.DisplayName;
+        }
+
+        if (equipmentKindText != null)
+        {
+            equipmentKindText.text = artifact.Artifact.ArtifactPerkId.ToString();
+        }
+
+        if (equipmentSkillText != null)
+        {
+            equipmentSkillText.text = string.Empty;
+        }
+
+        if (equipmentDetailText != null)
+        {
+            equipmentDetailText.text = string.IsNullOrWhiteSpace(artifact.Artifact.artifactLore)
+                ? "-"
+                : artifact.Artifact.artifactLore;
+        }
+
+        SetWeaponPreview(selectedWeaponIconImage, selectedWeaponPreviewView, null, artifact.Artifact.icon);
+
+        if (weaponDetailEquipButton != null)
+        {
+            weaponDetailEquipButton.gameObject.SetActive(!equippedByCurrent);
+        }
+
+        if (weaponDetailUnequipButton != null)
+        {
+            weaponDetailUnequipButton.gameObject.SetActive(equippedByCurrent);
+        }
     }
 
     private void RefreshWeaponDetail(OwnedWeaponData weapon)
@@ -382,22 +701,29 @@ public sealed class GladiatorUIManager : MonoBehaviour
         bool equippedByCurrent = owner != null && owner == _currentDetailGladiator;
         string weaponTypeText = weapon.Weapon != null ? weapon.Weapon.weaponType.ToString() : "(None)";
         string skillName = weapon.WeaponSkill != null ? weapon.WeaponSkill.skillName : "(None)";
-        string ownerText = owner != null ? owner.DisplayName : "(None)";
 
-        if (weaponDetailText != null)
+        if (equipmentHeaderText != null)
         {
-            weaponDetailText.text =
-                $"Name: {weapon.DisplayName}\n"
-                + $"Type: {weaponTypeText}\n"
-                + $"Skill: {skillName}\n"
-                + $"Equipped By: {ownerText}\n"
-                + $"Level: {weapon.Level}\n"
-                + $"Attack Bonus: {weapon.CachedAttackBonus:0.##}\n"
-                + $"Health Bonus: {weapon.CachedHealthBonus:0.##}\n"
-                + $"Attack Speed Bonus: {weapon.CachedAttackSpeedBonus:0.##}\n"
-                + $"Move Speed Bonus: {weapon.CachedMoveSpeedBonus:0.##}\n"
-                + $"Range Bonus: {weapon.CachedAttackRangeBonus:0.##}";
+            equipmentHeaderText.text = weapon.DisplayName;
         }
+
+        if (equipmentKindText != null)
+        {
+            equipmentKindText.text = weaponTypeText;
+        }
+
+        if (equipmentSkillText != null)
+        {
+            equipmentSkillText.text = skillName;
+        }
+
+        SetWeaponPreview(
+            selectedWeaponIconImage,
+            selectedWeaponPreviewView,
+            weapon,
+            weapon.Weapon != null ? weapon.Weapon.icon : null
+        );
+        RefreshEquipmentDetailText();
 
         if (weaponDetailEquipButton != null)
         {
@@ -410,13 +736,156 @@ public sealed class GladiatorUIManager : MonoBehaviour
         }
     }
 
-    private void OnWeaponDetailBackClicked()
+    private void RefreshEquipmentDetailText()
     {
-        CloseWeaponDetail();
+        if (equipmentDetailText == null)
+        {
+            return;
+        }
+
+        equipmentDetailText.text = _showWeaponLore
+            ? BuildWeaponLoreText(_currentSelectedWeapon)
+            : BuildWeaponComparisonText(_currentDetailGladiator, _currentSelectedWeapon);
+    }
+
+    private bool IsWeaponDetailActive()
+    {
+        return equipmentDetailText != null && equipmentDetailText.gameObject.activeInHierarchy;
+    }
+
+    private static string BuildWeaponLoreText(OwnedWeaponData weapon)
+    {
+        string lore = weapon != null && weapon.Weapon != null ? weapon.Weapon.lore : string.Empty;
+        return string.IsNullOrWhiteSpace(lore) ? "로어가 없습니다." : lore;
+    }
+
+    private static string BuildWeaponComparisonText(OwnedGladiatorData gladiator, OwnedWeaponData nextWeapon)
+    {
+        if (gladiator == null || nextWeapon == null)
+        {
+            return string.Empty;
+        }
+
+        OwnedWeaponData currentWeapon = gladiator.EquippedWeapon;
+
+        float nextHealth = SwapWeaponBonus(
+            gladiator.CachedMaxHealth,
+            GetWeaponHealthBonus(currentWeapon),
+            GetWeaponHealthBonus(nextWeapon)
+        );
+        float nextAttack = SwapWeaponBonus(
+            gladiator.CachedAttack,
+            GetWeaponAttackBonus(currentWeapon),
+            GetWeaponAttackBonus(nextWeapon)
+        );
+        float nextAttackSpeed = SwapWeaponBonus(
+            gladiator.CachedAttackSpeed,
+            GetWeaponAttackSpeedBonus(currentWeapon),
+            GetWeaponAttackSpeedBonus(nextWeapon)
+        );
+        float nextMoveSpeed = SwapWeaponBonus(
+            gladiator.CachedMoveSpeed,
+            GetWeaponMoveSpeedBonus(currentWeapon),
+            GetWeaponMoveSpeedBonus(nextWeapon)
+        );
+        float nextAttackRange = SwapWeaponBonus(
+            gladiator.CachedAttackRange,
+            GetWeaponAttackRangeBonus(currentWeapon),
+            GetWeaponAttackRangeBonus(nextWeapon)
+        );
+
+        return BuildStatComparisonLine("체력", nextHealth, nextHealth - gladiator.CachedMaxHealth)
+            + "\n"
+            + BuildStatComparisonLine("공격력", nextAttack, nextAttack - gladiator.CachedAttack)
+            + "\n"
+            + BuildStatComparisonLine("공격속도", nextAttackSpeed, nextAttackSpeed - gladiator.CachedAttackSpeed)
+            + "\n"
+            + BuildStatComparisonLine("이동속도", nextMoveSpeed, nextMoveSpeed - gladiator.CachedMoveSpeed)
+            + "\n"
+            + BuildStatComparisonLine("공격 사거리", nextAttackRange, nextAttackRange - gladiator.CachedAttackRange);
+    }
+
+    private static string BuildStatComparisonLine(string label, float value, float delta)
+    {
+        string deltaText = FormatStatDelta(delta);
+        return string.IsNullOrEmpty(deltaText) ? $"{label} : {value:0.##}" : $"{label} : {value:0.##} {deltaText}";
+    }
+
+    private static string FormatStatDelta(float delta)
+    {
+        if (Mathf.Abs(delta) < 0.005f)
+        {
+            return string.Empty;
+        }
+
+        string color = delta > 0f ? "#FF3333" : "#3366FF";
+        string sign = delta > 0f ? "+" : string.Empty;
+        return $"<color={color}>({sign}{delta:0.##})</color>";
+    }
+
+    private static float SwapWeaponBonus(float currentValue, float currentWeaponBonus, float nextWeaponBonus)
+    {
+        return Mathf.Max(0f, currentValue - currentWeaponBonus + nextWeaponBonus);
+    }
+
+    private static float GetWeaponHealthBonus(OwnedWeaponData weapon)
+    {
+        return weapon != null ? Mathf.Max(0f, weapon.CachedHealthBonus) : 0f;
+    }
+
+    private static float GetWeaponAttackBonus(OwnedWeaponData weapon)
+    {
+        return weapon != null ? Mathf.Max(0f, weapon.CachedAttackBonus) : 0f;
+    }
+
+    private static float GetWeaponAttackSpeedBonus(OwnedWeaponData weapon)
+    {
+        return weapon != null ? Mathf.Max(0f, weapon.CachedAttackSpeedBonus) : 0f;
+    }
+
+    private static float GetWeaponMoveSpeedBonus(OwnedWeaponData weapon)
+    {
+        return weapon != null ? Mathf.Max(0f, weapon.CachedMoveSpeedBonus) : 0f;
+    }
+
+    private static float GetWeaponAttackRangeBonus(OwnedWeaponData weapon)
+    {
+        return weapon != null ? Mathf.Max(0f, weapon.CachedAttackRangeBonus) : 0f;
+    }
+
+    private void ClearEquipmentDetailTexts()
+    {
+        if (equipmentHeaderText != null)
+        {
+            equipmentHeaderText.text = string.Empty;
+        }
+
+        if (equipmentKindText != null)
+        {
+            equipmentKindText.text = string.Empty;
+        }
+
+        if (equipmentSkillText != null)
+        {
+            equipmentSkillText.text = string.Empty;
+        }
+
+        if (equipmentDetailText != null)
+        {
+            equipmentDetailText.text = string.Empty;
+        }
+
+        SetWeaponPreview(selectedWeaponIconImage, selectedWeaponPreviewView, null, null);
     }
 
     private void OnWeaponDetailEquipClicked()
     {
+        if (_inventoryMode == DetailInventoryMode.Artifact)
+        {
+            TryEquipSelectedArtifactAndCloseInventory();
+            return;
+        }
+
         if (_currentDetailGladiator == null || _currentSelectedWeapon == null || _gladiatorManager == null)
         {
             return;
@@ -426,6 +895,111 @@ public sealed class GladiatorUIManager : MonoBehaviour
         if (owner != null && owner != _currentDetailGladiator)
         {
             OpenAlreadyEquippedPopup();
+            return;
+        }
+
+        TryEquipSelectedWeaponAndCloseInventory();
+    }
+
+    private void OnWeaponDetailUnequipClicked()
+    {
+        if (_currentDetailGladiator == null || _gladiatorManager == null)
+        {
+            return;
+        }
+
+        string failReason;
+        bool succeeded =
+            _inventoryMode == DetailInventoryMode.Artifact
+                ? _gladiatorManager.TryUnequipArtifact(_currentDetailGladiator, out failReason)
+                : _gladiatorManager.TryUnequipWeapon(_currentDetailGladiator, out failReason);
+
+        if (!succeeded)
+        {
+            if (!string.IsNullOrEmpty(failReason))
+            {
+                Debug.LogWarning("[GladiatorUIManager] " + failReason, this);
+            }
+            return;
+        }
+
+        CloseInventoryPanel();
+    }
+
+    private void TryEquipSelectedArtifactAndCloseInventory()
+    {
+        if (_currentDetailGladiator == null || _currentSelectedArtifact == null || _gladiatorManager == null)
+        {
+            return;
+        }
+
+        string failReason;
+        bool succeeded = _gladiatorManager.TryEquipArtifact(
+            _currentDetailGladiator,
+            _currentSelectedArtifact,
+            out failReason
+        );
+
+        if (!succeeded)
+        {
+            if (!string.IsNullOrEmpty(failReason))
+            {
+                Debug.LogWarning("[GladiatorUIManager] " + failReason, this);
+            }
+            return;
+        }
+
+        CloseInventoryPanel();
+    }
+
+    private void OpenAlreadyEquippedPopup()
+    {
+        if (alreadyEquippedText != null)
+        {
+            OwnedGladiatorData owner =
+                _gladiatorManager != null ? _gladiatorManager.FindOwnerOfEquippedWeapon(_currentSelectedWeapon) : null;
+            string ownerName = owner != null ? owner.DisplayName : "다른 검투사";
+            string subjectParticle = HasFinalConsonant(ownerName) ? "이" : "가";
+
+            alreadyEquippedText.text =
+                $"{ownerName}{subjectParticle} 장착중인 무기입니다.\n"
+                + $"이 장비를 장착하면 기존 장착중이던 {ownerName}의 장비를 해제합니다.";
+        }
+
+        SetAlreadyEquippedPopupActive(true);
+    }
+
+    private void OnAlreadyEquippedEquipClicked()
+    {
+        SetAlreadyEquippedPopupActive(false);
+        TryEquipSelectedWeaponAndCloseInventory();
+    }
+
+    private void OnAlreadyEquippedCancelClicked()
+    {
+        SetAlreadyEquippedPopupActive(false);
+    }
+
+    private static bool HasFinalConsonant(string value)
+    {
+        if (string.IsNullOrEmpty(value))
+        {
+            return false;
+        }
+
+        char lastCharacter = value[value.Length - 1];
+        if (lastCharacter < '가' || lastCharacter > '힣')
+        {
+            return false;
+        }
+
+        return (lastCharacter - '가') % 28 != 0;
+    }
+
+    private void TryEquipSelectedWeaponAndCloseInventory()
+    {
+        if (_currentDetailGladiator == null || _currentSelectedWeapon == null || _gladiatorManager == null)
+        {
             return;
         }
 
@@ -445,54 +1019,14 @@ public sealed class GladiatorUIManager : MonoBehaviour
             return;
         }
 
-        RefreshDetail(_currentDetailGladiator);
-        RefreshInventoryWeaponViewer();
-        CloseWeaponDetail();
-    }
-
-    private void OnWeaponDetailUnequipClicked()
-    {
-        if (_currentDetailGladiator == null || _gladiatorManager == null)
-        {
-            return;
-        }
-
-        string failReason;
-        bool succeeded = _gladiatorManager.TryUnequipWeapon(_currentDetailGladiator, out failReason);
-
-        if (!succeeded)
-        {
-            if (!string.IsNullOrEmpty(failReason))
-            {
-                Debug.LogWarning("[GladiatorUIManager] " + failReason, this);
-            }
-            return;
-        }
-
-        RefreshDetail(_currentDetailGladiator);
-        RefreshInventoryWeaponViewer();
-        CloseWeaponDetail();
-    }
-
-    private void OpenAlreadyEquippedPopup()
-    {
-        if (alreadyEquippedText != null)
-        {
-            alreadyEquippedText.text = "already equipped to somebody!";
-        }
-
-        SetAlreadyEquippedPopupActive(true);
-    }
-
-    private void OnAlreadyEquippedOkClicked()
-    {
-        SetAlreadyEquippedPopupActive(false);
-        CloseWeaponDetail();
+        CloseInventoryPanel();
     }
 
     private void CloseWeaponDetail()
     {
         _currentSelectedWeapon = null;
+        _currentSelectedArtifact = null;
+        _showWeaponLore = false;
         SetWeaponDetailActive(false);
     }
 
@@ -503,12 +1037,25 @@ public sealed class GladiatorUIManager : MonoBehaviour
             return;
         }
 
-        OpenInventoryPanel();
+        OpenInventoryPanel(DetailInventoryMode.Weapon);
     }
 
-    private void OpenInventoryPanel()
+    private void OnArtifactSlotClicked()
     {
+        if (_currentDetailGladiator == null)
+        {
+            return;
+        }
+
+        OpenInventoryPanel(DetailInventoryMode.Artifact);
+    }
+
+    private void OpenInventoryPanel(DetailInventoryMode mode)
+    {
+        _inventoryMode = mode;
         _currentSelectedWeapon = null;
+        _currentSelectedArtifact = null;
+        _showWeaponLore = false;
         SetWeaponDetailActive(false);
         SetAlreadyEquippedPopupActive(false);
 
@@ -517,7 +1064,14 @@ public sealed class GladiatorUIManager : MonoBehaviour
             RefreshDetail(_currentDetailGladiator);
         }
 
-        RefreshInventoryWeaponViewer();
+        if (_inventoryMode == DetailInventoryMode.Artifact)
+        {
+            RefreshInventoryArtifactViewer();
+        }
+        else
+        {
+            RefreshInventoryWeaponViewer();
+        }
         SetInventoryActive(true);
     }
 
@@ -525,6 +1079,7 @@ public sealed class GladiatorUIManager : MonoBehaviour
     private void CloseInventoryPanel()
     {
         _currentSelectedWeapon = null;
+        _currentSelectedArtifact = null;
         SetAlreadyEquippedPopupActive(false);
         SetWeaponDetailActive(false);
         SetInventoryActive(false);
@@ -543,45 +1098,21 @@ public sealed class GladiatorUIManager : MonoBehaviour
         }
     }
 
-    private void OnDetailMaskClicked()
+    private void OnDetailBackClicked()
     {
         CloseDetail();
-    }
-
-    private void OnInventoryMaskClicked()
-    {
-        CloseInventoryPanel();
     }
 
     private void CloseDetail()
     {
         _currentDetailGladiator = null;
         _currentSelectedWeapon = null;
+        _currentSelectedArtifact = null;
 
         SetAlreadyEquippedPopupActive(false);
         SetWeaponDetailActive(false);
         SetInventoryActive(false);
         SetDetailActive(false);
-
-        if (statusText != null)
-        {
-            int gladiatorCount = _gladiatorManager != null ? _gladiatorManager.GetOwnedGladiatorCount() : 0;
-            statusText.text = $"Owned Gladiators: {gladiatorCount}";
-        }
-    }
-
-    private void RefreshTexts()
-    {
-        if (headerText != null)
-        {
-            int gladiatorCount = _gladiatorManager != null ? _gladiatorManager.GetOwnedGladiatorCount() : 0;
-            headerText.text = $"Gladiators (Owned: {gladiatorCount})";
-        }
-
-        if (statusText != null && string.IsNullOrEmpty(statusText.text))
-        {
-            statusText.text = "Entered Gladiator Panel";
-        }
     }
 
     private void SetPanelActive(bool value)
@@ -594,11 +1125,6 @@ public sealed class GladiatorUIManager : MonoBehaviour
 
     private void SetDetailActive(bool value)
     {
-        if (detailMaskButton != null)
-        {
-            detailMaskButton.gameObject.SetActive(value);
-        }
-
         if (detailPanelRoot != null)
         {
             detailPanelRoot.SetActive(value);
@@ -607,11 +1133,6 @@ public sealed class GladiatorUIManager : MonoBehaviour
 
     private void SetInventoryActive(bool value)
     {
-        if (inventoryMaskButton != null)
-        {
-            inventoryMaskButton.gameObject.SetActive(value);
-        }
-
         if (inventoryPanelRoot != null)
         {
             inventoryPanelRoot.SetActive(value);
@@ -620,27 +1141,38 @@ public sealed class GladiatorUIManager : MonoBehaviour
 
     private void SetWeaponDetailActive(bool value)
     {
-        if (weaponDetailMaskButton != null)
-        {
-            weaponDetailMaskButton.gameObject.SetActive(value);
-        }
+        SetComponentGameObjectActive(equipmentHeaderText, value);
+        SetComponentGameObjectActive(equipmentKindText, value);
+        SetComponentGameObjectActive(equipmentSkillText, value);
+        SetComponentGameObjectActive(equipmentDetailText, value);
+        SetComponentGameObjectActive(selectedWeaponIconImage, value);
+        SetComponentGameObjectActive(helpText, value);
 
-        if (weaponDetailPanelRoot != null)
+        if (!value)
         {
-            weaponDetailPanelRoot.SetActive(value);
+            SetComponentGameObjectActive(weaponDetailEquipButton, false);
+            SetComponentGameObjectActive(weaponDetailUnequipButton, false);
         }
     }
 
     private void SetAlreadyEquippedPopupActive(bool value)
     {
-        if (alreadyEquippedMaskButton != null)
-        {
-            alreadyEquippedMaskButton.gameObject.SetActive(value);
-        }
-
         if (alreadyEquippedPanelRoot != null)
         {
             alreadyEquippedPanelRoot.SetActive(value);
+        }
+
+        if (selectedWeaponIconImage != null)
+        {
+            selectedWeaponIconImage.gameObject.SetActive(!value && IsWeaponDetailActive());
+        }
+    }
+
+    private static void SetComponentGameObjectActive(Component component, bool value)
+    {
+        if (component != null)
+        {
+            component.gameObject.SetActive(value);
         }
     }
 
@@ -658,6 +1190,47 @@ public sealed class GladiatorUIManager : MonoBehaviour
             overlayImage.preserveAspect = true;
             overlayImage.raycastTarget = false;
         }
+    }
+
+    private static void SetWeaponSlotVisual(
+        Button slotButton,
+        Image overlayImage,
+        WeaponModelPreviewView previewView,
+        OwnedWeaponData weapon
+    )
+    {
+        if (slotButton != null)
+        {
+            slotButton.interactable = true;
+        }
+
+        SetWeaponPreview(overlayImage, previewView, weapon, weapon?.Weapon?.icon);
+    }
+
+    private static void SetWeaponPreview(
+        Image fallbackImage,
+        WeaponModelPreviewView previewView,
+        OwnedWeaponData weapon,
+        Sprite fallbackIcon
+    )
+    {
+        GameObject leftPrefab = weapon?.Weapon?.leftWeaponPrefab;
+        GameObject rightPrefab = weapon?.Weapon?.rightWeaponPrefab;
+        bool usePreview = previewView != null && (leftPrefab != null || rightPrefab != null);
+
+        if (previewView != null)
+        {
+            if (usePreview)
+            {
+                previewView.Show(leftPrefab, rightPrefab);
+            }
+            else
+            {
+                previewView.Clear();
+            }
+        }
+
+        SetPassiveImage(fallbackImage, usePreview ? null : fallbackIcon);
     }
 
     private static void SetPassiveImage(Image image, Sprite icon)
@@ -685,6 +1258,94 @@ public sealed class GladiatorUIManager : MonoBehaviour
         image.preserveAspect = true;
     }
 
+    private static void ConfigureOverlayImages(Image[] images)
+    {
+        if (images == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < images.Length; i++)
+        {
+            ConfigureOverlayImage(images[i]);
+        }
+    }
+
+    private void CacheWeaponPreviewViews()
+    {
+        if (weaponOverlayPreviewView == null && weaponOverlayImage != null)
+        {
+            weaponOverlayPreviewView = weaponOverlayImage.GetComponentInChildren<WeaponModelPreviewView>(true);
+        }
+
+        if (selectedWeaponPreviewView == null && selectedWeaponIconImage != null)
+        {
+            selectedWeaponPreviewView = selectedWeaponIconImage.GetComponentInChildren<WeaponModelPreviewView>(true);
+        }
+    }
+
+    private void ResolveMissingListReferences()
+    {
+        if (panelRoot == null)
+        {
+            return;
+        }
+
+        Transform root = panelRoot.transform;
+
+        if (gladiatorBackground == null)
+        {
+            gladiatorBackground = FindChildTransform(root, "GladiatorBackground") as RectTransform;
+        }
+
+        if (recentAcquiredSortButton == null)
+        {
+            recentAcquiredSortButton = FindChildComponent<Button>(root, "SortButton1");
+        }
+
+        if (levelSortButton == null)
+        {
+            levelSortButton = FindChildComponent<Button>(root, "SortButton2");
+        }
+    }
+
+    private void CaptureSortButtonLayout()
+    {
+        _sortButtonOriginalParents = new Transform[2];
+        _sortButtonOriginalSiblingIndices = new int[2];
+
+        CaptureSortButtonLayout(recentAcquiredSortButton, 0);
+        CaptureSortButtonLayout(levelSortButton, 1);
+    }
+
+    private void CaptureSortButtonLayout(Button sortButton, int index)
+    {
+        if (sortButton == null || index < 0 || index >= _sortButtonOriginalParents.Length)
+        {
+            return;
+        }
+
+        Transform buttonTransform = sortButton.transform;
+        _sortButtonOriginalParents[index] = buttonTransform.parent;
+        _sortButtonOriginalSiblingIndices[index] = buttonTransform.GetSiblingIndex();
+    }
+
+    private void EnsureWeaponDetailLoreToggleInput()
+    {
+        if (equipmentDetailText == null)
+        {
+            return;
+        }
+
+        _weaponDetailLoreToggleInput = equipmentDetailText.GetComponent<WeaponDetailLoreToggleInput>();
+        if (_weaponDetailLoreToggleInput == null)
+        {
+            _weaponDetailLoreToggleInput = equipmentDetailText.gameObject.AddComponent<WeaponDetailLoreToggleInput>();
+        }
+
+        _weaponDetailLoreToggleInput.Initialize(ToggleWeaponDetailLore);
+    }
+
     private static void BindButton(Button button, UnityEngine.Events.UnityAction action)
     {
         if (button == null)
@@ -694,5 +1355,142 @@ public sealed class GladiatorUIManager : MonoBehaviour
 
         button.onClick.RemoveAllListeners();
         button.onClick.AddListener(action);
+    }
+
+    private static void BindButtons(Button[] buttons, UnityEngine.Events.UnityAction action)
+    {
+        if (buttons == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < buttons.Length; i++)
+        {
+            BindButton(buttons[i], action);
+        }
+    }
+
+    private void CacheDetailPresetControls()
+    {
+        if (detailPanelRoot == null)
+        {
+            return;
+        }
+
+        Transform root = detailPanelRoot.transform;
+
+        if (detailBackButton == null)
+        {
+            detailBackButton = FindChildComponent<Button>(root, "DetailBackButton");
+        }
+
+        if (detailBackButton == null)
+        {
+            detailBackButton = FindChildComponent<Button>(root, "CloseButton");
+        }
+
+        if (detailGladiatorIconImage == null)
+        {
+            detailGladiatorIconImage = FindChildComponent<Image>(root, "DetailIcon");
+        }
+    }
+
+    private void RefreshArtifactSlots(OwnedGladiatorData gladiator)
+    {
+        Sprite equippedArtifactIcon =
+            gladiator.EquippedArtifact != null && gladiator.EquippedArtifact.Artifact != null
+                ? gladiator.EquippedArtifact.Artifact.icon
+                : null;
+        int slotCount = Mathf.Max(GetArrayLength(artifactSlotButtons), GetArrayLength(artifactOverlayImages));
+
+        for (int i = 0; i < slotCount; i++)
+        {
+            Sprite slotIcon = i == 0 ? equippedArtifactIcon : null;
+            Button slotButton =
+                artifactSlotButtons != null && i < artifactSlotButtons.Length ? artifactSlotButtons[i] : null;
+            Image overlayImage =
+                artifactOverlayImages != null && i < artifactOverlayImages.Length ? artifactOverlayImages[i] : null;
+
+            SetSlotVisual(slotButton, overlayImage, slotIcon);
+        }
+    }
+
+    private static int GetArrayLength<T>(T[] values)
+    {
+        return values != null ? values.Length : 0;
+    }
+
+    private static string BuildGladiatorDetailDescription(OwnedGladiatorData gladiator)
+    {
+        return $"이름: {gladiator.DisplayName}\r\n"
+            + $"레벨: {gladiator.Level}\r\n"
+            + $"경험치: {gladiator.Exp}\r\n"
+            + $"충성도: {gladiator.Loyalty}\r\n"
+            + $"유지비: {gladiator.Upkeep}\r\n"
+            + $"최대체력: {gladiator.CurrentHealth:0.##} / {gladiator.CachedMaxHealth:0.##}\r\n"
+            + $"공격력: {gladiator.CachedAttack:0.##}\r\n"
+            + $"공격속도: {gladiator.CachedAttackSpeed:0.##}\r\n"
+            + $"이동속도: {gladiator.CachedMoveSpeed:0.##}\r\n"
+            + $"사거리: {gladiator.CachedAttackRange:0.##}";
+    }
+
+    private static Transform FindChildTransform(Transform parent, string childName)
+    {
+        if (parent == null || string.IsNullOrWhiteSpace(childName))
+        {
+            return null;
+        }
+
+        foreach (Transform child in parent)
+        {
+            if (child.name == childName)
+            {
+                return child;
+            }
+
+            Transform nestedChild = FindChildTransform(child, childName);
+            if (nestedChild != null)
+            {
+                return nestedChild;
+            }
+        }
+
+        return null;
+    }
+
+    private static T FindChildComponent<T>(Transform parent, string childName)
+        where T : Component
+    {
+        Transform child = FindChildTransform(parent, childName);
+        if (child == null)
+        {
+            return null;
+        }
+
+        return child.GetComponent<T>();
+    }
+}
+
+// Equipment detail text가 실제로 활성화된 동안 Left Alt 입력을 감지해 스탯/lore 표시 전환을 요청한다.
+[DisallowMultipleComponent]
+public sealed class WeaponDetailLoreToggleInput : MonoBehaviour
+{
+    private Action _toggleRequested;
+
+    public void Initialize(Action toggleRequested)
+    {
+        _toggleRequested = toggleRequested;
+    }
+
+    private void Update()
+    {
+        Keyboard keyboard = Keyboard.current;
+        if (keyboard == null || !keyboard.leftAltKey.wasPressedThisFrame)
+        {
+            return;
+        }
+
+        Debug.Log("Left Alt 입력 감지됨: 무기 상세 lore 토글 요청");
+        _toggleRequested?.Invoke();
     }
 }

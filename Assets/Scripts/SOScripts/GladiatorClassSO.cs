@@ -4,6 +4,7 @@ using UnityEngine;
 public sealed class GladiatorClassSO : ScriptableObject
 {
     public Sprite icon;
+    public GameObject previewModelPrefab;
     public string className = "Gladiator";
 
     public float baseHealth = 1000f;

@@ -1,12 +1,18 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 [CreateAssetMenu(menuName = "Prototype/Content/Artifact")]
 public sealed class ArtifactSO : ScriptableObject
 {
     public Sprite icon;
     public string artifactName;
-    public ArtifactId artifactId;
+
+    [FormerlySerializedAs("artifactId")]
+    public ArtifactId artifactPerkId;
 
     [TextArea]
-    public string description;
+    [FormerlySerializedAs("description")]
+    public string artifactLore;
+
+    public ArtifactId ArtifactPerkId => artifactPerkId;
 }

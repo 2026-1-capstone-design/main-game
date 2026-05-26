@@ -530,7 +530,7 @@ public sealed class TitleSceneUIManager : MonoBehaviour
         SaveGameService.SaveSlotPreview preview = SaveGameService.GetSlotPreview(slotNumber);
         if (!preview.hasData)
         {
-            return "Empty Slot";
+            return "빈 슬롯";
         }
 
         string savedTimeText = "-";
@@ -546,7 +546,7 @@ public sealed class TitleSceneUIManager : MonoBehaviour
             savedTimeText = savedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
         }
 
-        return $"SLOT {slotNumber}  |  DAY: {preview.day}  |  GOLD: {preview.gold}  |  SAVED: {savedTimeText}";
+        return $"슬롯 {slotNumber}  |  일차: {preview.day}  |  골드: {preview.gold}  |  저장일시: {savedTimeText}";
     }
 
     private void OnLoadGameSlotClicked(int slotNumber)

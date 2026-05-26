@@ -32,6 +32,8 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     [SerializeField]
     private TMP_Text statusText;
 
+    private bool _isStatusTextVisible = true;
+
     [SerializeField]
     private Image HPbar;
     public BattleUnitCoolBar attackCoolBar;
@@ -286,21 +288,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         if (Snapshot == null)
             return;
 
-        //넣을 떄 주석 처리 필요 -> 위치 이미 할당됨
-        if (Snapshot.LeftWeaponPrefab != null && leftHandSocket != null)
-        {
-            // Debug.Log("왼손 무기 장착");
-            _spawnedLeftWeapon = Instantiate(Snapshot.LeftWeaponPrefab, leftHandSocket);
-            //_spawnedLeftWeapon.transform.localPosition = Vector3.zero;
-            //_spawnedLeftWeapon.transform.localRotation = Quaternion.identity;
-        }
-        if (Snapshot.RightWeaponPrefab != null && rightHandSocket != null)
-        {
-            // Debug.Log("오른손 무기 장착");
-            _spawnedRightWeapon = Instantiate(Snapshot.RightWeaponPrefab, rightHandSocket);
-            //_spawnedRightWeapon.transform.localPosition = Vector3.zero;
-            //_spawnedRightWeapon.transform.localRotation = Quaternion.identity;
-        }
+        ApplyWeaponPrefabs(Snapshot.LeftWeaponPrefab, Snapshot.RightWeaponPrefab);
 
         if (_myAnimation != null && provider != null)
         {
@@ -318,6 +306,59 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         }
 
         HaveWeapon = Snapshot.WeaponType;
+    }
+
+    public void ApplyWeaponPrefabs(
+        GameObject leftWeaponPrefab,
+        GameObject rightWeaponPrefab,
+        bool matchUnitLayer = false
+    )
+    {
+        ClearSpawnedWeapon(ref _spawnedLeftWeapon);
+        ClearSpawnedWeapon(ref _spawnedRightWeapon);
+
+        if (leftWeaponPrefab != null && leftHandSocket != null)
+        {
+            _spawnedLeftWeapon = Instantiate(leftWeaponPrefab, leftHandSocket);
+            if (matchUnitLayer)
+            {
+                SetLayerRecursively(_spawnedLeftWeapon, gameObject.layer);
+            }
+        }
+
+        if (rightWeaponPrefab != null && rightHandSocket != null)
+        {
+            _spawnedRightWeapon = Instantiate(rightWeaponPrefab, rightHandSocket);
+            if (matchUnitLayer)
+            {
+                SetLayerRecursively(_spawnedRightWeapon, gameObject.layer);
+            }
+        }
+    }
+
+    private static void ClearSpawnedWeapon(ref GameObject spawnedWeapon)
+    {
+        if (spawnedWeapon == null)
+        {
+            return;
+        }
+
+        Destroy(spawnedWeapon);
+        spawnedWeapon = null;
+    }
+
+    private static void SetLayerRecursively(GameObject target, int layer)
+    {
+        if (target == null)
+        {
+            return;
+        }
+
+        target.layer = layer;
+        for (int i = 0; i < target.transform.childCount; i++)
+        {
+            SetLayerRecursively(target.transform.GetChild(i).gameObject, layer);
+        }
     }
 
     private void EquipSkillFromSnapShot(IAnimationProvider provider)
@@ -403,7 +444,16 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
 
         Debug.Log("값은 들어옴");
 
-        int[] indicates = Snapshot.CustomizeIndicates;
+        ApplySkinCustomization(Snapshot.CustomizeIndicates);
+    }
+
+    // 메인 메뉴의 3D 프리뷰도 전투 프리팹을 그대로 쓰므로, 전투 Snapshot 없이 스킨 파츠만 적용할 수 있게 열어둔다.
+    public void ApplySkinCustomization(int[] indicates)
+    {
+        if (indicates == null || indicates.Length <= (int)SkinPart.Feet)
+        {
+            indicates = BuildDefaultSkinCustomization();
+        }
 
         // 1. 머리 및 세부 얼굴 파츠 토글
         ActivateSpecificSkinPart(rootFullHead, indicates[(int)SkinPart.FullHead]);
@@ -420,6 +470,24 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         ActivateSpecificSkinPart(rootBelt, indicates[(int)SkinPart.Belt]);
         ActivateSpecificSkinPart(rootLegs, indicates[(int)SkinPart.Legs]);
         ActivateSpecificSkinPart(rootFeet, indicates[(int)SkinPart.Feet]);
+    }
+
+    private static int[] BuildDefaultSkinCustomization()
+    {
+        int[] indicates = new int[(int)SkinPart.TotalCount];
+        indicates[(int)SkinPart.FullHead] = -1;
+        indicates[(int)SkinPart.Nose] = 0;
+        indicates[(int)SkinPart.Hair] = 0;
+        indicates[(int)SkinPart.Face] = 0;
+        indicates[(int)SkinPart.Eyes] = 0;
+        indicates[(int)SkinPart.Eyebrows] = 0;
+        indicates[(int)SkinPart.Ears] = 0;
+        indicates[(int)SkinPart.Chest] = 0;
+        indicates[(int)SkinPart.Arms] = 0;
+        indicates[(int)SkinPart.Belt] = 0;
+        indicates[(int)SkinPart.Legs] = 0;
+        indicates[(int)SkinPart.Feet] = 0;
+        return indicates;
     }
 
     private void ActivateSpecificSkinPart(Transform parentRoot, int targetIndex)
@@ -711,6 +779,16 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         if (statusText == null)
             return;
         statusText.text = $"{UnitNumber}\n{State.AgentFightMode}";
+        SetActive(statusText.gameObject, _isStatusTextVisible);
+    }
+
+    public void SetDebugStatusTextVisible(bool isVisible)
+    {
+        _isStatusTextVisible = isVisible;
+        if (statusText != null)
+        {
+            SetActive(statusText.gameObject, isVisible);
+        }
     }
 
     private void RefreshHPbar()

@@ -12,5 +12,6 @@
   "files.exclude": {
     "**/*.meta": true
   },
-  "dotnet.defaultSolution": "main-game.sln"
+  "dotnet.defaultSolution": "main-game.sln",
+  "dotnet.preferCSharpExtension": true
 }
