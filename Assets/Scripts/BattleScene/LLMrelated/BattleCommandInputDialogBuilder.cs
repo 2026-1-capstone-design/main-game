@@ -1,6 +1,6 @@
-// 후처리 결과를 대사 레이어 입력용 짧은 설명 문자열로 만든다.
+// 후처리 결과를 대사 레이어 입력용 자연어 설명 문자열로 만든다.
 // advisorLine, obeyedActionAdjustment, refusalSummary, debug summary 문장을 생성한다.
-// 자연어 품질이 아니라 실행/검증용 진단 문장 생성을 담당한다.
+// 대사 SLM이 내부 용어를 복사하지 않도록 실행 의미 중심 문장을 만든다.
 // finalActionSequence와 SlmUnitCommand는 수정하지 않는다.
 
 using System;
@@ -70,6 +70,15 @@ public enum BattleInputDialogFallbackReason
     NoValidFallbackAction = 7,
 }
 
+public enum BattleInputDialogTargetIssue
+{
+    Unknown = 0,
+    TargetDead = 1,
+    TargetNotFoundOrUntargetable = 2,
+    NoValidTarget = 3,
+    SkillTargetMismatch = 4,
+}
+
 public static class BattleCommandInputDialogBuilder
 {
     public const string EmptySourceDialog = "명령을 확인했다.";
@@ -79,33 +88,30 @@ public static class BattleCommandInputDialogBuilder
         switch (reason)
         {
             case BattleInputDialogAdvisorReason.ParserOutputNull:
-                return "parser output이 없음.";
+                return "우리 애들이 방금 명령을 못 들은 모양입니다!";
 
             case BattleInputDialogAdvisorReason.ParserActionEmpty:
-                return "parser action이 비어 있음.";
+                return "단장님! 지금은 그걸 할 수 없잖아요!";
 
             case BattleInputDialogAdvisorReason.ContextInvalid:
-                return "전장 context가 유효하지 않음.";
+                return "전장 상황을 확인하지 못했습니다.";
 
             case BattleInputDialogAdvisorReason.AllActorsDropped:
-                return "최종 실행 가능한 actor가 없음.";
+                return "지금 명령을 수행할 수 있는 아군이 없습니다.";
 
             case BattleInputDialogAdvisorReason.InvalidInput:
-                return "입력이 유효하지 않음.";
+                return "명령을 제대로 알아듣지 못했습니다.";
 
             case BattleInputDialogAdvisorReason.FallbackToDefaultMlAi:
-                return "기본 ML 행동으로 fallback.";
+                return "지금은 각자 판단에 맡기겠습니다.";
 
             default:
-                return "참모 대사를 여기에.";
+                return "지금은 명령을 처리하기 어렵습니다.";
         }
     }
 
     public static string BuildSourceDialogFallback(string unitId)
     {
-        if (string.IsNullOrWhiteSpace(unitId))
-            return EmptySourceDialog;
-
         return EmptySourceDialog;
     }
 
@@ -119,34 +125,34 @@ public static class BattleCommandInputDialogBuilder
         switch (reason)
         {
             case BattleInputDialogActorDropReason.MissingUnitId:
-                return "actor unitId가 없음.";
+                return "명령을 받을 유닛을 확인하지 못했다.";
 
             case BattleInputDialogActorDropReason.ActorNotFound:
-                return actorText + " actor를 찾을 수 없음.";
+                return actorText + "를 찾지 못했다.";
 
             case BattleInputDialogActorDropReason.ActorDead:
-                return actorText + " actor가 죽음.";
+                return actorText + "는 이미 전투 불가 상태다.";
 
             case BattleInputDialogActorDropReason.ActorStunned:
-                return actorText + " actor가 기절 상태.";
+                return actorText + "는 지금 움직일 수 없다.";
 
             case BattleInputDialogActorDropReason.ActorNotPlayerAlly:
-                return actorText + " actor가 플레이어 아군이 아님.";
+                return actorText + "는 명령 가능한 아군이 아니다.";
 
             case BattleInputDialogActorDropReason.SequenceEmpty:
-                return actorText + " action sequence가 비어 있음.";
+                return actorText + "에게 실행할 행동이 없다.";
 
             case BattleInputDialogActorDropReason.SequenceInvalid:
-                return actorText + " action sequence가 유효하지 않음.";
+                return actorText + "의 행동을 실행하기 어렵다.";
 
             case BattleInputDialogActorDropReason.FinalSequenceEmpty:
-                return actorText + " finalActionSequence가 비어 있음.";
+                return actorText + "가 수행할 수 있는 행동이 없다.";
 
             case BattleInputDialogActorDropReason.ConversionFailed:
-                return actorText + " SlmUnitCommand 변환 실패.";
+                return actorText + "의 행동을 실행 명령으로 바꾸지 못했다.";
 
             default:
-                return actorText + " actor drop.";
+                return actorText + "의 명령을 처리하지 못했다.";
         }
     }
 
@@ -157,9 +163,47 @@ public static class BattleCommandInputDialogBuilder
         string replacementUnitId
     )
     {
+        return BuildObeyedActionAdjustment(
+            reason,
+            actionCategory,
+            originalUnitId,
+            replacementUnitId,
+            BattleInputDialogTargetIssue.Unknown,
+            string.Empty
+        );
+    }
+
+    public static string BuildObeyedActionAdjustment(
+        BattleInputDialogAdjustmentReason reason,
+        string actionCategory,
+        string originalUnitId,
+        string replacementUnitId,
+        BattleInputDialogTargetIssue targetIssue
+    )
+    {
+        return BuildObeyedActionAdjustment(
+            reason,
+            actionCategory,
+            originalUnitId,
+            replacementUnitId,
+            targetIssue,
+            string.Empty
+        );
+    }
+
+    public static string BuildObeyedActionAdjustment(
+        BattleInputDialogAdjustmentReason reason,
+        string actionCategory,
+        string originalUnitId,
+        string replacementUnitId,
+        BattleInputDialogTargetIssue targetIssue,
+        string actorUnitId
+    )
+    {
         string categoryText = NormalizeCategoryForText(actionCategory);
         string originalText = NormalizeUnitIdForText(originalUnitId);
         string replacementText = NormalizeUnitIdForText(replacementUnitId);
+        string finalActionText = BuildFinalActionText(categoryText, replacementUnitId, actorUnitId);
 
         switch (reason)
         {
@@ -167,43 +211,47 @@ public static class BattleCommandInputDialogBuilder
                 return string.Empty;
 
             case BattleInputDialogAdjustmentReason.AttackTargetReplaced:
-                return "공격 대상 변경: " + originalText + " -> " + replacementText + ".";
-
             case BattleInputDialogAdjustmentReason.MoveTargetReplaced:
-                return "이동 기준점 변경: " + originalText + " -> " + replacementText + ".";
-
             case BattleInputDialogAdjustmentReason.SkillTargetReplaced:
-                return "스킬 대상 변경: " + originalText + " -> " + replacementText + ".";
+                return BuildTargetReplacementText(
+                    originalText,
+                    finalActionText,
+                    targetIssue
+                );
 
             case BattleInputDialogAdjustmentReason.MovementTypeDefaulted:
-                return "movementType이 유효하지 않아 direct로 보정.";
+                return "이동 방식이 맞지 않아 직접 이동한다.";
 
             case BattleInputDialogAdjustmentReason.SkillDescriptionCorrected:
-                return "skill description을 actor skillDescription과 일치시킴.";
+                return "스킬 내용이 실제 보유 스킬과 달라 보유한 스킬을 사용한다.";
 
             case BattleInputDialogAdjustmentReason.WaitDurationClamped:
-                return "wait durationSec를 허용 범위로 보정.";
+                return "대기 시간이 허용 범위를 벗어나 조정된 시간만 대기한다.";
 
             case BattleInputDialogAdjustmentReason.SkillControlDurationClamped:
-                return "skillControl durationSec를 허용 범위로 보정.";
+                return "스킬을 미루는 시간이 허용 범위를 벗어나 조정된 시간만 미룬다.";
 
             case BattleInputDialogAdjustmentReason.SkillControlModeCorrected:
-                return "skillControl mode가 유효하지 않아 forbid로 보정.";
+                return "스킬 통제 방식이 맞지 않아 스킬을 쓰지 않는다.";
 
             case BattleInputDialogAdjustmentReason.InvalidActionDropped:
-                return categoryText + " action이 유효하지 않아 제거.";
+                return BuildActionNoun(categoryText) + " 행동은 지금 실행하기 어려워 제외한다.";
 
             case BattleInputDialogAdjustmentReason.FallbackWaitApplied:
-                return "유효한 fallback이 없어 wait로 보정.";
+                return "실행할 행동을 찾지 못해 잠시 대기한다.";
 
             case BattleInputDialogAdjustmentReason.SequenceTrimmed:
-                return "action sequence가 최대 길이를 넘어 잘림.";
+                return "행동이 너무 많아 앞의 가능한 행동만 수행한다.";
 
             case BattleInputDialogAdjustmentReason.Generic:
-                return "순응후 보정 결과 여기에.";
+                return string.IsNullOrWhiteSpace(finalActionText)
+                    ? "명령을 현재 전장 상황에 맞게 조정한다."
+                    : "현재 전장 상황에 맞춰 " + finalActionText;
 
             default:
-                return "순응후 보정 결과 여기에.";
+                return string.IsNullOrWhiteSpace(finalActionText)
+                    ? "명령을 현재 전장 상황에 맞게 조정한다."
+                    : "현재 전장 상황에 맞춰 " + finalActionText;
         }
     }
 
@@ -213,14 +261,38 @@ public static class BattleCommandInputDialogBuilder
         SotFinalActionDto correctedAction
     )
     {
+        return BuildObeyedActionAdjustment(
+            reason,
+            originalAction,
+            correctedAction,
+            BattleInputDialogTargetIssue.Unknown,
+            string.Empty
+        );
+    }
+
+    public static string BuildObeyedActionAdjustment(
+        BattleInputDialogAdjustmentReason reason,
+        SotFinalActionDto originalAction,
+        SotFinalActionDto correctedAction,
+        BattleInputDialogTargetIssue targetIssue,
+        string actorUnitId
+    )
+    {
         if (reason == BattleInputDialogAdjustmentReason.None)
             return string.Empty;
 
-        string category = ResolveActionCategory(originalAction);
+        string category = ResolveActionCategory(correctedAction ?? originalAction);
         string originalTarget = ResolveActionPrimaryUnitId(originalAction);
         string correctedTarget = ResolveActionPrimaryUnitId(correctedAction);
 
-        return BuildObeyedActionAdjustment(reason, category, originalTarget, correctedTarget);
+        return BuildObeyedActionAdjustment(
+            reason,
+            category,
+            originalTarget,
+            correctedTarget,
+            targetIssue,
+            actorUnitId
+        );
     }
 
     public static string BuildCombinedObeyedActionAdjustment(IReadOnlyList<string> adjustmentLines)
@@ -234,25 +306,39 @@ public static class BattleCommandInputDialogBuilder
         string fallbackCategory
     )
     {
+        return BuildRefusalSummary(
+            reason,
+            originalCategory,
+            fallbackCategory,
+            null,
+            string.Empty
+        );
+    }
+
+    public static string BuildRefusalSummary(
+        BattleInputDialogRefusalReason reason,
+        string originalCategory,
+        string fallbackCategory,
+        SotFinalActionDto[] finalActionSequence,
+        string actorUnitId
+    )
+    {
         string originalText = NormalizeCategoryForText(originalCategory);
         string fallbackText = NormalizeCategoryForText(fallbackCategory);
 
         switch (reason)
         {
-            case BattleInputDialogRefusalReason.ObedienceRollFailed:
-                return "명령 거부: " + originalText + " 대신 " + fallbackText + " 수행.";
-
-            case BattleInputDialogRefusalReason.FallbackActionBuilt:
-                return "유효한 fallback 선택: " + fallbackText + ".";
-
             case BattleInputDialogRefusalReason.FallbackWaitApplied:
-                return "유효한 fallback이 없어 wait 수행.";
+                return BuildRefusalPrefix(originalText) + "잠시 대기한다.";
 
             case BattleInputDialogRefusalReason.NoFallbackAvailable:
-                return "유효한 fallback이 없음.";
+                return BuildRefusalPrefix(originalText) + "지금은 다른 행동도 고르지 못한다.";
 
+            case BattleInputDialogRefusalReason.FallbackActionBuilt:
+            case BattleInputDialogRefusalReason.ObedienceRollFailed:
             default:
-                return "거부 요약 여기에.";
+                string finalText = BuildFinalSequenceText(finalActionSequence, fallbackText, actorUnitId);
+                return BuildRefusalPrefix(originalText) + finalText;
         }
     }
 
@@ -266,64 +352,59 @@ public static class BattleCommandInputDialogBuilder
         string originalText = NormalizeCategoryForText(originalCategory);
         string fallbackText = NormalizeCategoryForText(fallbackCategory);
         string targetText = NormalizeUnitIdForText(fallbackTargetUnitId);
+        string finalText = BuildFinalActionText(fallbackText, fallbackTargetUnitId, string.Empty);
 
         switch (reason)
         {
             case BattleInputDialogFallbackReason.RefusedOriginalAction:
-                return "원래 " + originalText + " 명령을 거부하여 fallback은 " + fallbackText + "다.";
+                return BuildRefusalPrefix(originalText) + finalText;
 
             case BattleInputDialogFallbackReason.AttackTargetInvalid:
-                return "공격 대상이 유효하지 않아 fallback은 " + fallbackText + "다.";
-
             case BattleInputDialogFallbackReason.MoveTargetInvalid:
-                return "이동 기준점이 유효하지 않아 fallback은 " + fallbackText + "다.";
-
             case BattleInputDialogFallbackReason.SkillTargetInvalid:
-                return "스킬 대상이 유효하지 않아 fallback은 " + fallbackText + "다.";
+                return BuildTargetReplacementText(targetText, finalText, BattleInputDialogTargetIssue.TargetNotFoundOrUntargetable);
 
             case BattleInputDialogFallbackReason.SkillUnavailable:
-                return "스킬을 사용할 수 없어 fallback은 " + fallbackText + "다.";
+                return "지금은 스킬을 쓸 수 없어 " + finalText;
 
             case BattleInputDialogFallbackReason.NoValidPrimaryAction:
-                return "유효한 주요 action이 없어 fallback은 " + fallbackText + "다.";
+                return "원래 행동을 실행하기 어려워 " + finalText;
 
             case BattleInputDialogFallbackReason.NoValidFallbackAction:
-                return "유효한 fallback action이 없어 wait 수행.";
+                return "실행할 행동을 찾지 못해 잠시 대기한다.";
 
             default:
-                if (!string.IsNullOrWhiteSpace(fallbackTargetUnitId))
-                    return "fallback은 " + fallbackText + "이고 대상은 " + targetText + "다.";
-
-                return "fallback은 " + fallbackText + "다.";
+                return finalText;
         }
     }
 
     public static string BuildTargetInvalidSummary(string actionCategory, string targetUnitId)
     {
-        return NormalizeCategoryForText(actionCategory)
-            + " 대상이 유효하지 않음: "
-            + NormalizeUnitIdForText(targetUnitId)
-            + ".";
+        return NormalizeUnitIdForText(targetUnitId) + "를 찾지 못해 " + BuildActionNoun(actionCategory) + " 행동을 조정한다.";
     }
 
     public static string BuildTargetDeadSummary(string targetUnitId)
     {
-        return "타겟이 죽음: " + NormalizeUnitIdForText(targetUnitId) + ".";
+        return NormalizeUnitIdForText(targetUnitId) + "는 이미 전투 불가 상태다.";
     }
 
     public static string BuildNoValidTargetSummary(string actionCategory)
     {
-        return "유효한 " + NormalizeCategoryForText(actionCategory) + " 대상이 없음.";
+        return BuildActionNoun(actionCategory) + "할 대상을 찾지 못했다.";
     }
 
     public static string BuildDurationClampSummary(string actionCategory, float before, float after)
     {
-        return NormalizeCategoryForText(actionCategory)
-            + " durationSec 보정: "
-            + before.ToString("0.##")
-            + " -> "
-            + after.ToString("0.##")
-            + ".";
+        string category = NormalizeCategoryForText(actionCategory);
+        string afterText = FormatSeconds(after);
+
+        if (category == "wait")
+            return "대기 시간이 허용 범위를 벗어나 " + afterText + "만 대기한다.";
+
+        if (category == "skillControl")
+            return "스킬을 미루는 시간이 허용 범위를 벗어나 " + afterText + "만 미룬다.";
+
+        return "시간이 허용 범위를 벗어나 " + afterText + "로 조정한다.";
     }
 
     public static string ResolveActionCategory(SotFinalActionDto action)
@@ -420,6 +501,220 @@ public static class BattleCommandInputDialogBuilder
         }
 
         return sb.ToString();
+    }
+
+    private static string BuildTargetReplacementText(
+        string originalText,
+        string finalActionText,
+        BattleInputDialogTargetIssue targetIssue
+    )
+    {
+        if (string.IsNullOrWhiteSpace(finalActionText))
+            finalActionText = "다른 행동을 수행한다.";
+
+        switch (targetIssue)
+        {
+            case BattleInputDialogTargetIssue.TargetDead:
+                return originalText + "는 이미 전투 불가 상태라 " + finalActionText;
+
+            case BattleInputDialogTargetIssue.SkillTargetMismatch:
+                return "스킬 대상이 맞지 않아 " + finalActionText;
+
+            case BattleInputDialogTargetIssue.NoValidTarget:
+                return "맞는 대상을 찾지 못해 " + finalActionText;
+
+            case BattleInputDialogTargetIssue.TargetNotFoundOrUntargetable:
+            case BattleInputDialogTargetIssue.Unknown:
+            default:
+                if (originalText == "unknown")
+                    return "대상을 찾지 못해 " + finalActionText;
+
+                return originalText + "를 찾지 못해 " + finalActionText;
+        }
+    }
+
+    private static string BuildRefusalPrefix(string originalCategory)
+    {
+        switch (NormalizeCategoryForText(originalCategory))
+        {
+            case "attack":
+                return "원래 공격 명령이었지만, 지금은 공격보다는 ";
+
+            case "wait":
+                return "원래 대기 명령이었지만, 기다리지 않고 ";
+
+            case "escape":
+                return "원래 후퇴 명령이었지만, 물러서지 않고 ";
+
+            case "approachOpponent":
+                return "원래 접근 명령이었지만, 무리해서 붙기보다 ";
+
+            case "help":
+                return "원래 지원 명령이었지만, 지금은 지원보다는 ";
+
+            case "holdFront":
+                return "원래 전열 유지 명령이었지만, 버티기보다 ";
+
+            case "skill":
+                return "원래 스킬 명령이었지만, 스킬보다는 ";
+
+            case "skillControl":
+                return "원래 스킬을 아끼라는 명령이었지만, 지금은 ";
+
+            default:
+                return "원래 명령과 달리 ";
+        }
+    }
+
+    private static string BuildFinalSequenceText(
+        SotFinalActionDto[] finalActionSequence,
+        string fallbackCategory,
+        string actorUnitId
+    )
+    {
+        if (finalActionSequence != null)
+        {
+            for (int i = 0; i < finalActionSequence.Length; i++)
+            {
+                SotFinalActionDto action = finalActionSequence[i];
+                if (action == null)
+                    continue;
+
+                string actionText = BuildFinalActionText(action, actorUnitId);
+                if (!string.IsNullOrWhiteSpace(actionText))
+                    return actionText;
+            }
+        }
+
+        return BuildFinalActionText(fallbackCategory, string.Empty, actorUnitId);
+    }
+
+    private static string BuildFinalActionText(SotFinalActionDto action, string actorUnitId)
+    {
+        if (action == null)
+            return string.Empty;
+
+        string type = NormalizeToken(action.type);
+
+        switch (type)
+        {
+            case "attack":
+                return BuildFinalActionText("attack", action.target, actorUnitId);
+
+            case "skill":
+                return BuildFinalActionText("skill", action.target, actorUnitId);
+
+            case "wait":
+                return action.durationSec.HasValue
+                    ? FormatSeconds(action.durationSec.Value) + " 대기한다."
+                    : "잠시 대기한다.";
+
+            case "skillcontrol":
+                if (NormalizeToken(action.mode) == "defer")
+                {
+                    return action.durationSec.HasValue
+                        ? "스킬 사용을 " + FormatSeconds(action.durationSec.Value) + " 미룬다."
+                        : "스킬 사용을 잠시 미룬다.";
+                }
+
+                return "스킬을 쓰지 않는다.";
+
+            case "move":
+                return BuildFinalActionText(
+                    ResolveActionCategory(action),
+                    action.to,
+                    actorUnitId
+                );
+
+            default:
+                return string.Empty;
+        }
+    }
+
+    private static string BuildFinalActionText(string category, string targetUnitId, string actorUnitId)
+    {
+        string normalizedCategory = NormalizeCategoryForText(category);
+        string targetText = NormalizeUnitIdForText(targetUnitId);
+        bool hasTarget = !string.IsNullOrWhiteSpace(targetUnitId);
+        bool isSelfTarget =
+            hasTarget
+            && !string.IsNullOrWhiteSpace(actorUnitId)
+            && string.Equals(
+                targetUnitId.Trim(),
+                actorUnitId.Trim(),
+                StringComparison.OrdinalIgnoreCase
+            );
+
+        switch (normalizedCategory)
+        {
+            case "attack":
+                return hasTarget ? targetText + "을 공격한다." : "가까운 적을 공격한다.";
+
+            case "approachOpponent":
+                return hasTarget ? targetText + "에게 접근한다." : "가까운 적에게 접근한다.";
+
+            case "escape":
+                return hasTarget ? targetText + " 쪽으로 물러난다." : "위험에서 벗어난다.";
+
+            case "help":
+                return hasTarget
+                    ? "도움이 필요한 " + targetText + "을 도와 주변 적을 공격한다."
+                    : "도움이 필요한 아군을 도와 주변 적을 공격한다.";
+
+            case "holdFront":
+                return isSelfTarget ? "내 자리를 지킨다." : "전열을 지킨다.";
+
+            case "skill":
+                if (isSelfTarget)
+                    return "자신에게 스킬을 쓴다.";
+
+                return hasTarget ? targetText + "에게 스킬을 쓴다." : "스킬을 쓴다.";
+
+            case "wait":
+                return "잠시 대기한다.";
+
+            case "skillControl":
+            case "noSkill":
+                return "스킬을 쓰지 않는다.";
+
+            case "deferSkill":
+                return "스킬 사용을 잠시 미룬다.";
+
+            default:
+                return "다른 행동을 수행한다.";
+        }
+    }
+
+    private static string BuildActionNoun(string category)
+    {
+        switch (NormalizeCategoryForText(category))
+        {
+            case "attack":
+                return "공격";
+            case "approachOpponent":
+                return "접근";
+            case "escape":
+                return "후퇴";
+            case "help":
+                return "지원";
+            case "holdFront":
+                return "전열 유지";
+            case "skill":
+                return "스킬 사용";
+            case "wait":
+                return "대기";
+            case "skillControl":
+            case "deferSkill":
+            case "noSkill":
+                return "스킬 통제";
+            default:
+                return "명령";
+        }
+    }
+
+    private static string FormatSeconds(float seconds)
+    {
+        return seconds.ToString("0.##") + "초";
     }
 
     private static string NormalizeToken(string token)

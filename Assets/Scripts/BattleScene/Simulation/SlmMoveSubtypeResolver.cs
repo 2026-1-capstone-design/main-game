@@ -272,7 +272,8 @@ public static class SlmMoveSubtypeResolver
         if (actor == null || units == null)
             return false;
 
-        // 1) SLM 지정 적이 살아있으면 최우선.
+        // 1) 실행층에 명시 target이 들어온 경우 그 위치를 위협 기준점으로 사용한다.
+        // 현재 SOT escape는 converter에서 target을 null로 넘기므로, 일반 실행에서는 아래 위협/적 군집 fallback을 사용한다.
         if (slmTarget != null && !slmTarget.IsCombatDisabled)
         {
             centroid = slmTarget.Position;

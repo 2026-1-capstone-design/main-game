@@ -16,8 +16,8 @@ public sealed class SlmCommandUnitPlanner
         // skill 액션이 1회 시전됐는지 표시 (ShouldAdvance가 종료 판정에 사용).
         public bool SkillFired;
 
-        // noSkill 액션이 status 부여를 1회 처리했는지 표시.
-        public bool NoSkillStatusApplied;
+        // skillControl 액션이 SkillDisabled status 부여를 1회 처리했는지 표시.
+        public bool SkillDisabledStatusApplied;
 
         // flank 명령 상태. 호 부호와 시작점을 명령 시작 시 1회 고정해 진행 방향 흔들림을 막는다.
         public bool FlankInitialized;
@@ -57,7 +57,7 @@ public sealed class SlmCommandUnitPlanner
             ElapsedSecOnCurrent = 0f,
             GraceRemainingSec = 0f,
             SkillFired = false,
-            NoSkillStatusApplied = false,
+            SkillDisabledStatusApplied = false,
         };
     }
 
@@ -102,9 +102,25 @@ public sealed class SlmCommandUnitPlanner
             }
 
             SlmUnitCommand current = entry.Sequence[entry.CurrentIndex];
+            BattleRuntimeUnit actorRuntime = FindRuntimeUnit(actor, context.Units);
 
-            // 공통 종료: 타겟이 필요한 액션에서 타겟이 사망/null이면 즉시 다음 액션으로
-            if (IsTargetInvalidForCurrent(current))
+            if (IsHoldFrontSelfCommand(current, actorRuntime))
+            {
+                if (entry.CurrentIndex + 1 >= entry.Sequence.Count)
+                {
+                    _completedThisTick.Add(actor);
+                    buffer.Clear(actor);
+                    continue;
+                }
+
+                AdvanceOrEndSequence(entry);
+                buffer.Clear(actor);
+                continue;
+            }
+
+            // 공통 종료: 타겟이 필요한 액션에서 타겟이 사망/null이면 즉시 다음 액션으로.
+            // skill은 canSkillTargetDead=true인 죽은 아군 target을 예외로 허용한다.
+            if (IsTargetInvalidForCurrent(actorRuntime, current))
             {
                 AdvanceOrEndSequence(entry);
                 buffer.SetPlan(actor, BuildHoldPlan());
@@ -113,10 +129,11 @@ public sealed class SlmCommandUnitPlanner
 
             entry.ElapsedSecOnCurrent += context.TickDeltaTime;
 
-            // noSkill 특수: status 부여 + buffer 비움 (ML/BuiltInAi 자율 행동)
-            if (current.Kind == SlmCommandKind.NoSkill)
+            // skillControl 특수: SkillDisabled status 부여 + buffer 비움.
+            // NoSkill과 DeferSkill 모두 일정 시간 스킬 사용을 막고, 이동/공격 주도권은 하위 controller로 넘긴다.
+            if (current.Kind == SlmCommandKind.NoSkill || current.Kind == SlmCommandKind.DeferSkill)
             {
-                if (!entry.NoSkillStatusApplied)
+                if (!entry.SkillDisabledStatusApplied)
                 {
                     float duration = ClampWaitSec(current.DurationSec);
                     actor.ApplyStatus(
@@ -131,9 +148,9 @@ public sealed class SlmCommandUnitPlanner
                             IsDispelAllowed = false,
                         }
                     );
-                    entry.NoSkillStatusApplied = true;
+                    entry.SkillDisabledStatusApplied = true;
                 }
-                // buffer를 비우면 PlayerCommandControlPlanner가 비활성화되고 controller stack이 ML/BuiltInAi로 넘어간다.
+
                 buffer.Clear(actor);
             }
             else
@@ -142,7 +159,7 @@ public sealed class SlmCommandUnitPlanner
                 {
                     SlmCommandKind.Attack => BuildAttackPlan(actor, current),
                     SlmCommandKind.Move => BuildMovePlan(actor, current, in context),
-                    SlmCommandKind.Skill => BuildSkillPlan(actor, current, entry),
+                    SlmCommandKind.Skill => BuildSkillPlan(actor, current, entry, actorRuntime),
                     SlmCommandKind.Wait => BuildHoldPlan(),
                     SlmCommandKind.DeferSkill => BuildHoldPlan(),
                     _ => BuildHoldPlan(),
@@ -172,7 +189,7 @@ public sealed class SlmCommandUnitPlanner
         entry.CurrentIndex++;
         entry.ElapsedSecOnCurrent = 0f;
         entry.SkillFired = false;
-        entry.NoSkillStatusApplied = false;
+        entry.SkillDisabledStatusApplied = false;
 
         // flank 상태 초기화. 다음 명령이 또 flank여도 새 호로 재시작한다.
         entry.FlankInitialized = false;
@@ -192,21 +209,57 @@ public sealed class SlmCommandUnitPlanner
     }
 
     // 타겟이 필요한 액션에서 타겟 null/사망 검사 (공통 종료 조건).
-    private static bool IsTargetInvalidForCurrent(in SlmUnitCommand cmd)
+    private static bool IsTargetInvalidForCurrent(BattleRuntimeUnit actorRuntime, in SlmUnitCommand cmd)
     {
         switch (cmd.Kind)
         {
             case SlmCommandKind.Attack:
-            case SlmCommandKind.Skill:
                 return cmd.Target == null || cmd.Target.IsCombatDisabled;
+
+            case SlmCommandKind.Skill:
+                if (cmd.Target == null)
+                    return true;
+
+                if (!cmd.Target.IsCombatDisabled)
+                    return false;
+
+                return !CanSkillTargetDeadAlly(actorRuntime, cmd.Target);
+
             case SlmCommandKind.Move:
-                // escape는 target null OK (적 군집 중심으로 fallback). 그 외 subtype은 target 필요.
                 if (cmd.MoveSubtype == SlmMoveSubtype.Escape)
                     return false;
+
                 return cmd.Target == null || cmd.Target.IsCombatDisabled;
+
             default:
                 return false;
         }
+    }
+
+    private static bool IsHoldFrontSelfCommand(in SlmUnitCommand cmd, BattleRuntimeUnit actorRuntime)
+    {
+        return actorRuntime != null
+            && cmd.Kind == SlmCommandKind.Move
+            && cmd.MoveSubtype == SlmMoveSubtype.HoldFront
+            && cmd.Target == actorRuntime;
+    }
+
+    private static bool CanSkillTargetDeadAlly(BattleRuntimeUnit actorRuntime, BattleRuntimeUnit targetRuntime)
+    {
+        if (actorRuntime == null || actorRuntime.State == null)
+            return false;
+
+        if (targetRuntime == null || targetRuntime.State == null)
+            return false;
+
+        if (!targetRuntime.IsCombatDisabled)
+            return false;
+
+        if (!targetRuntime.State.TeamId.Equals(actorRuntime.State.TeamId))
+            return false;
+
+        BattleSkillRuntimeMetadata metadata = BattleOrderRuntimeQueries.ResolveSkillMetadata(actorRuntime);
+        return metadata.canSkillTargetDead;
     }
 
     // ---------- 액션별 plan 생성 ----------
@@ -259,15 +312,19 @@ public sealed class SlmCommandUnitPlanner
         if (actor == null)
             return BuildHoldPlan();
 
-        // help는 좌표 산출 안 함. 위협 적 직접 attack.
-        if (cmd.MoveSubtype == SlmMoveSubtype.Help && cmd.MoveStyle != SlmMoveStyle.Flank)
+        // help는 좌표 산출 안 함. movementType과 무관하게 위협 적 직접 attack.
+        if (cmd.MoveSubtype == SlmMoveSubtype.Help)
         {
             return BuildHelpAttackPlan(self, cmd, context);
         }
 
         SlmMoveSubtypeResolver.ResolvedTarget resolved;
 
-        if (cmd.MoveStyle == SlmMoveStyle.Flank)
+        if (cmd.MoveSubtype == SlmMoveSubtype.Escape)
+        {
+            resolved = SlmMoveSubtypeResolver.Resolve(actor, cmd, context.Units);
+        }
+        else if (cmd.MoveStyle == SlmMoveStyle.Flank)
         {
             // flank 명령 시작 시 1회 초기화: 적 군집 중심 반대편 호 부호 + 시작 actor 위치 고정
             if (!_activeByState.TryGetValue(self, out SlmActiveCommandState entry))
@@ -361,31 +418,33 @@ public sealed class SlmCommandUnitPlanner
         );
     }
 
-    // skill: cooldown 또는 SkillDisabled status면 Hold (ShouldAdvance가 즉시 종료),
-    // 사거리 안이면 Skill 발동 + entry.SkillFired = true,
-    // 사거리 부족이면 MoveToTarget으로 자동 접근.
+    // skill: cooldown 또는 SkillDisabled status면 Hold.
+    // 사거리 안이면 Skill 발동 + entry.SkillFired = true.
+    // 사거리 부족이면 MoveToTarget으로 자동 접근한다.
+    // canSkillTargetDead=true인 스킬은 죽은 아군 target도 실행 대상에서 제거하지 않는다.
     private static BattleControlPlan BuildSkillPlan(
         BattleUnitCombatState self,
         SlmUnitCommand cmd,
-        SlmActiveCommandState entry
+        SlmActiveCommandState entry,
+        BattleRuntimeUnit actorRuntime
     )
     {
         if (self == null)
             return BuildHoldPlan();
 
-        // noSkill 명령이 부여한 SkillDisabled 상태에서는 시도를 차단하고 Hold로 두어 즉시 종료한다.
         if (self.IsSkillDisabled)
             return BuildHoldPlan();
 
-        // cooldown 중이면 Hold. ShouldAdvance가 즉시 종료한다.
         if (self.SkillCooldownRemaining > 0f)
             return BuildHoldPlan();
 
         BattleUnitCombatState target = cmd.Target != null ? cmd.Target.State : null;
-        if (target == null || target.IsCombatDisabled)
+        if (target == null)
             return BuildHoldPlan();
 
-        // 스킬별 자체 CastRange는 실제로 사용되지 않으므로 평타 사거리(GetEffectiveAttackDistance)를 그대로 쓴다.
+        if (target.IsCombatDisabled && !CanSkillTargetDeadAlly(actorRuntime, cmd.Target))
+            return BuildHoldPlan();
+
         float effectiveRange = BattleFieldSnapshot.GetEffectiveAttackDistance(self, target);
         Vector3 diff = target.Position - self.Position;
         diff.y = 0f;
@@ -394,7 +453,6 @@ public sealed class SlmCommandUnitPlanner
         BattleMoveIntent moveIntent = inRange ? BattleMoveIntent.Hold : BattleMoveIntent.MoveToTarget;
         BattleCombatIntent combatIntent = inRange ? BattleCombatIntent.Skill : BattleCombatIntent.None;
 
-        // 사거리 안에서 Skill intent를 발동한 tick에 SkillFired를 켜두고, 다음 tick에 종료시킨다.
         if (inRange)
             entry.SkillFired = true;
 
@@ -502,12 +560,10 @@ public sealed class SlmCommandUnitPlanner
 
             case SlmCommandKind.Wait:
             case SlmCommandKind.NoSkill:
+            case SlmCommandKind.DeferSkill:
+                // 일단 noskill과 비슷하게 처리. 나중에 실제 쿨타임 연장 필요
                 float duration = ClampWaitSec(current.DurationSec);
                 return elapsedSec >= duration;
-
-            case SlmCommandKind.DeferSkill:
-                // deferSkill은 명세에서 제외돼 즉시 종료한다.
-                return true;
 
             default:
                 return true;

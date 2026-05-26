@@ -237,7 +237,8 @@ public static class SlmDtoConverter
     }
 
     // move.subtype, move.movementType, move.to를 SlmUnitCommand 이동 필드로 넣는다.
-    // movementType이 flank면 planner의 flank 실행 경로로 들어간다.
+    // escape는 SOT target을 실행 기준점으로 쓰지 않고, 실행층에서 적 위협/적 군집 기준으로 도망친다.
+    // help는 후처리/실행층에서 direct 보호 행동으로 해석한다.
     private static bool TryConvertMove(
         SotFinalActionDto raw,
         BattleRuntimeUnit actor,
@@ -265,6 +266,19 @@ public static class SlmDtoConverter
             return false;
         }
 
+        if (subtype == SlmMoveSubtype.Escape)
+        {
+            command = new SlmUnitCommand(
+                actor,
+                SlmCommandKind.Move,
+                null,
+                SlmMoveSubtype.Escape,
+                SlmMoveStyle.Direct,
+                0f
+            );
+            return true;
+        }
+
         BattleRuntimeUnit target = FindAnyUnitById(
             raw.to,
             allyUnits,
@@ -277,6 +291,9 @@ public static class SlmDtoConverter
             errorReason = $"Move target '{raw.to}' was not found.";
             return false;
         }
+
+        if (subtype == SlmMoveSubtype.Help)
+            style = SlmMoveStyle.Direct;
 
         command = new SlmUnitCommand(actor, SlmCommandKind.Move, target, subtype, style, 0f);
         return true;

@@ -105,6 +105,8 @@ public sealed class BattleCommandPostprocessor
 
             SotFinalActionDto[] candidateSequence;
             string refusalSummary = string.Empty;
+            bool refused = !obey;
+            BattleCommandActionCategory fallbackCategory = BattleCommandActionCategory.Unknown;
 
             if (obey)
             {
@@ -113,20 +115,7 @@ public sealed class BattleCommandPostprocessor
             else
             {
                 candidateSequence = BuildFallbackSequence(actor, mainCategory, runtime);
-
-                BattleCommandActionCategory fallbackCategory = DetermineMainActionCategory(candidateSequence);
-                BattleInputDialogRefusalReason refusalReason =
-                    fallbackCategory == BattleCommandActionCategory.Wait
-                        ? BattleInputDialogRefusalReason.FallbackWaitApplied
-                        : BattleInputDialogRefusalReason.ObedienceRollFailed;
-
-                refusalSummary = BattleCommandInputDialogBuilder.BuildRefusalSummary(
-                    refusalReason,
-                    CategoryToDtoString(mainCategory),
-                    CategoryToDtoString(fallbackCategory)
-                );
-
-                refusalSummaries.Add(actorId + " " + refusalSummary);
+                fallbackCategory = DetermineMainActionCategory(candidateSequence);
             }
 
             bool adjusted;
@@ -180,6 +169,25 @@ public sealed class BattleCommandPostprocessor
                 continue;
             }
 
+            if (refused)
+            {
+                fallbackCategory = DetermineMainActionCategory(finalSequence);
+                BattleInputDialogRefusalReason refusalReason =
+                    fallbackCategory == BattleCommandActionCategory.Wait
+                        ? BattleInputDialogRefusalReason.FallbackWaitApplied
+                        : BattleInputDialogRefusalReason.ObedienceRollFailed;
+
+                refusalSummary = BattleCommandInputDialogBuilder.BuildRefusalSummary(
+                    refusalReason,
+                    CategoryToDtoString(mainCategory),
+                    CategoryToDtoString(fallbackCategory),
+                    finalSequence,
+                    actorId
+                );
+
+                refusalSummaries.Add(actorId + " " + refusalSummary);
+            }
+
             string obeyedActionAdjustment =
                 obey && adjusted
                     ? BattleCommandInputDialogBuilder.BuildCombinedObeyedActionAdjustment(actorAdjustmentLines)
@@ -189,7 +197,6 @@ public sealed class BattleCommandPostprocessor
                 adjustmentSummaries.Add(actorId + " " + obeyedActionAdjustment);
 
             string sourceDialog = ResolveSourceDialog(parserOutput, actorId);
-
             finalActors.Add(
                 new BattleCommandFinalActorDto
                 {
@@ -259,6 +266,23 @@ public sealed class BattleCommandPostprocessor
                 refusalSummaries = Array.Empty<string>(),
             },
         };
+    }
+
+    private static BattleInputDialogTargetIssue ResolveTargetIssue(
+    BattleRuntimeUnit target,
+    BattleSimulationManager simulationManager
+    )
+    {
+        if (target == null || target.State == null)
+            return BattleInputDialogTargetIssue.TargetNotFoundOrUntargetable;
+
+        if (target.IsCombatDisabled || !BattleOrderRuntimeQueries.IsAlive(target))
+            return BattleInputDialogTargetIssue.TargetDead;
+
+        if (BattleOrderRuntimeQueries.HasTargetingBlock(target, simulationManager))
+            return BattleInputDialogTargetIssue.TargetNotFoundOrUntargetable;
+
+        return BattleInputDialogTargetIssue.Unknown;
     }
 
     private static bool IsValidActor(BattleRuntimeUnit actor)
@@ -390,15 +414,18 @@ public sealed class BattleCommandPostprocessor
     }
 
     private static SotFinalActionDto[] BuildFallbackSequence(
-        BattleRuntimeUnit actor,
-        BattleCommandActionCategory originalCategory,
-        PostprocessRuntime runtime
+    BattleRuntimeUnit actor,
+    BattleCommandActionCategory originalCategory,
+    PostprocessRuntime runtime
     )
     {
         PersonalitySO personality = ResolvePersonality(actor);
         int[] weights = personality != null ? personality.fallbackWeights : null;
 
         bool[] tried = new bool[8];
+        int originalIndex = CategoryToIndex(originalCategory);
+        if (originalIndex >= 0 && originalIndex < tried.Length)
+            tried[originalIndex] = true;
 
         for (int attempts = 0; attempts < 8; attempts++)
         {
@@ -514,8 +541,8 @@ public sealed class BattleCommandPostprocessor
     }
 
     private static SotFinalActionDto[] BuildFallbackEscape(
-        BattleRuntimeUnit actor,
-        PostprocessRuntime runtime
+    BattleRuntimeUnit actor,
+    PostprocessRuntime runtime
     )
     {
         BattleRuntimeUnit target = BattleCommandPostprocessRuntimeQueries.FindEligibleBacklineAlly(
@@ -532,16 +559,13 @@ public sealed class BattleCommandPostprocessor
             );
         }
 
-        if (target == null)
-            return null;
-
         return One(
             new SotFinalActionDto
             {
                 type = "move",
                 subtype = "escape",
                 movementType = "direct",
-                to = runtime.GetUnitId(target),
+                to = target != null ? runtime.GetUnitId(target) : null,
             }
         );
     }
@@ -572,8 +596,8 @@ public sealed class BattleCommandPostprocessor
     }
 
     private static SotFinalActionDto[] BuildFallbackHoldFront(
-        BattleRuntimeUnit actor,
-        PostprocessRuntime runtime
+    BattleRuntimeUnit actor,
+    PostprocessRuntime runtime
     )
     {
         BattleRuntimeUnit target = BattleCommandPostprocessRuntimeQueries.FindBestHoldFrontAnchor(
@@ -584,8 +608,8 @@ public sealed class BattleCommandPostprocessor
             runtime.SimulationManager
         );
 
-        if (target == null || target == actor)
-            return null;
+        if (target == null)
+            target = actor;
 
         return One(
             new SotFinalActionDto
@@ -853,7 +877,9 @@ public sealed class BattleCommandPostprocessor
             BattleInputDialogAdjustmentReason.AttackTargetReplaced,
             "attack",
             originalTargetId,
-            replacementTargetId
+            replacementTargetId,
+            ResolveTargetIssue(target, runtime.SimulationManager),
+            runtime.GetUnitId(actor)
         );
         return true;
     }
@@ -873,6 +899,20 @@ public sealed class BattleCommandPostprocessor
 
         bool movementTypeAdjusted = false;
         if (!IsAllowedMovementType(corrected.movementType))
+        {
+            corrected.movementType = "direct";
+            movementTypeAdjusted = true;
+            lines.Add(
+                BattleCommandInputDialogBuilder.BuildObeyedActionAdjustment(
+                    BattleInputDialogAdjustmentReason.MovementTypeDefaulted,
+                    corrected.subtype,
+                    string.Empty,
+                    string.Empty
+                )
+            );
+        }
+
+        if (corrected.subtype == "help" && corrected.movementType != "direct")
         {
             corrected.movementType = "direct";
             movementTypeAdjusted = true;
@@ -980,17 +1020,19 @@ public sealed class BattleCommandPostprocessor
             BattleInputDialogAdjustmentReason.MoveTargetReplaced,
             corrected.subtype,
             originalTo,
-            replacementTo
+            replacementTo,
+            ResolveTargetIssue(target, runtime.SimulationManager),
+            runtime.GetUnitId(actor)
         );
         return true;
     }
 
     private static bool CorrectMoveEscape(
-        BattleRuntimeUnit actor,
-        SotFinalActionDto corrected,
-        PostprocessRuntime runtime,
-        out bool adjusted,
-        out string adjustmentLine
+    BattleRuntimeUnit actor,
+    SotFinalActionDto corrected,
+    PostprocessRuntime runtime,
+    out bool adjusted,
+    out string adjustmentLine
     )
     {
         adjusted = false;
@@ -1017,7 +1059,23 @@ public sealed class BattleCommandPostprocessor
         }
 
         if (replacement == null)
-            return false;
+        {
+            corrected.to = null;
+            adjusted = !string.IsNullOrWhiteSpace(originalTo);
+            if (adjusted)
+            {
+                adjustmentLine = BattleCommandInputDialogBuilder.BuildObeyedActionAdjustment(
+                    BattleInputDialogAdjustmentReason.MoveTargetReplaced,
+                    corrected.subtype,
+                    originalTo,
+                    string.Empty,
+                    ResolveTargetIssue(target, runtime.SimulationManager),
+                    runtime.GetUnitId(actor)
+                );
+            }
+
+            return true;
+        }
 
         string replacementTo = runtime.GetUnitId(replacement);
         corrected.to = replacementTo;
@@ -1026,22 +1084,36 @@ public sealed class BattleCommandPostprocessor
             BattleInputDialogAdjustmentReason.MoveTargetReplaced,
             corrected.subtype,
             originalTo,
-            replacementTo
+            replacementTo,
+            ResolveTargetIssue(target, runtime.SimulationManager),
+            runtime.GetUnitId(actor)
         );
         return true;
     }
 
     private static bool CorrectMoveHelp(
-        BattleRuntimeUnit actor,
-        SotFinalActionDto corrected,
-        PostprocessRuntime runtime,
-        out bool adjusted,
-        out string adjustmentLine
+    BattleRuntimeUnit actor,
+    SotFinalActionDto corrected,
+    PostprocessRuntime runtime,
+    out bool adjusted,
+    out string adjustmentLine
     )
     {
         adjusted = false;
         adjustmentLine = string.Empty;
         string originalTo = corrected.to;
+
+        if (corrected.movementType != "direct")
+        {
+            corrected.movementType = "direct";
+            adjusted = true;
+            adjustmentLine = BattleCommandInputDialogBuilder.BuildObeyedActionAdjustment(
+                BattleInputDialogAdjustmentReason.MovementTypeDefaulted,
+                corrected.subtype,
+                string.Empty,
+                string.Empty
+            );
+        }
 
         BattleRuntimeUnit target = runtime.FindAlly(corrected.to);
 
@@ -1060,12 +1132,21 @@ public sealed class BattleCommandPostprocessor
         string replacementTo = runtime.GetUnitId(replacement);
         corrected.to = replacementTo;
         adjusted = true;
-        adjustmentLine = BattleCommandInputDialogBuilder.BuildObeyedActionAdjustment(
+
+        string targetAdjustmentLine = BattleCommandInputDialogBuilder.BuildObeyedActionAdjustment(
             BattleInputDialogAdjustmentReason.MoveTargetReplaced,
             corrected.subtype,
             originalTo,
-            replacementTo
+            replacementTo,
+            ResolveTargetIssue(target, runtime.SimulationManager),
+            runtime.GetUnitId(actor)
         );
+
+        if (string.IsNullOrWhiteSpace(adjustmentLine))
+            adjustmentLine = targetAdjustmentLine;
+        else if (!string.IsNullOrWhiteSpace(targetAdjustmentLine))
+            adjustmentLine = adjustmentLine + " " + targetAdjustmentLine;
+
         return true;
     }
 
@@ -1083,9 +1164,11 @@ public sealed class BattleCommandPostprocessor
 
         BattleRuntimeUnit target = runtime.FindAnyUnit(corrected.to);
 
+        if (target == actor)
+            return true;
+
         if (
             target != null
-            && target != actor
             && BattleCommandPostprocessRuntimeQueries.IsHoldFrontAnchorValid(
                 target,
                 runtime.FormationMap,
@@ -1104,8 +1187,8 @@ public sealed class BattleCommandPostprocessor
             runtime.SimulationManager
         );
 
-        if (replacement == null || replacement == actor)
-            return false;
+        if (replacement == null)
+            replacement = actor;
 
         string replacementTo = runtime.GetUnitId(replacement);
         corrected.to = replacementTo;
@@ -1114,7 +1197,9 @@ public sealed class BattleCommandPostprocessor
             BattleInputDialogAdjustmentReason.MoveTargetReplaced,
             corrected.subtype,
             originalTo,
-            replacementTo
+            replacementTo,
+            ResolveTargetIssue(target, runtime.SimulationManager),
+            runtime.GetUnitId(actor)
         );
         return true;
     }
@@ -1163,6 +1248,8 @@ public sealed class BattleCommandPostprocessor
                         BattleInputDialogAdjustmentReason.SkillTargetReplaced,
                         "skill",
                         candidate.target,
+                        actorId,
+                        BattleInputDialogTargetIssue.SkillTargetMismatch,
                         actorId
                     )
                 );
@@ -1200,7 +1287,9 @@ public sealed class BattleCommandPostprocessor
                     BattleInputDialogAdjustmentReason.SkillTargetReplaced,
                     "skill",
                     candidate.target,
-                    replacementTargetId
+                    replacementTargetId,
+                    ResolveTargetIssue(target, runtime.SimulationManager),
+                    runtime.GetUnitId(actor)
                 )
             );
             adjustmentLine = BattleCommandInputDialogBuilder.BuildCombinedObeyedActionAdjustment(adjustmentLines);
@@ -1231,7 +1320,9 @@ public sealed class BattleCommandPostprocessor
                 BattleInputDialogAdjustmentReason.SkillTargetReplaced,
                 "skill",
                 candidate.target,
-                enemyReplacementTargetId
+                enemyReplacementTargetId,
+                ResolveTargetIssue(enemyTarget, runtime.SimulationManager),
+                runtime.GetUnitId(actor)
             )
         );
         adjustmentLine = BattleCommandInputDialogBuilder.BuildCombinedObeyedActionAdjustment(adjustmentLines);
