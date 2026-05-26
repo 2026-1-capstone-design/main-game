@@ -18,6 +18,9 @@ public sealed class BattleUnitTooltipUIManager : MonoBehaviour
     private LayerMask unitLayerMask = ~0;
 
     [SerializeField]
+    private BattleSceneUIManager battleSceneUIManager;
+
+    [SerializeField]
     [Min(1f)]
     private float maxRaycastDistance = 500f;
 
@@ -98,6 +101,12 @@ public sealed class BattleUnitTooltipUIManager : MonoBehaviour
             return;
         }
 
+        if (IsBattleEndUiOpen())
+        {
+            HideTooltip();
+            return;
+        }
+
         BattleRuntimeUnit hoveredUnit = ResolveHoveredUnit();
         if (hoveredUnit != _hoveredUnit)
         {
@@ -152,6 +161,16 @@ public sealed class BattleUnitTooltipUIManager : MonoBehaviour
         _runtimeUnits.Clear();
         _initialized = false;
         HideTooltip();
+    }
+
+    private bool IsBattleEndUiOpen()
+    {
+        if (battleSceneUIManager == null)
+        {
+            battleSceneUIManager = FindFirstObjectByType<BattleSceneUIManager>(FindObjectsInactive.Include);
+        }
+
+        return battleSceneUIManager != null && battleSceneUIManager.IsBattleEndPanelOpen;
     }
 
     private BattleRuntimeUnit ResolveHoveredUnit()

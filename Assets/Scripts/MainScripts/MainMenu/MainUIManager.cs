@@ -27,6 +27,12 @@ public sealed class MainUIManager : MonoBehaviour
     [SerializeField]
     private Button eodButton;
 
+    [SerializeField]
+    private Button accountbookButton;
+
+    [SerializeField]
+    private Button stampButton;
+
     [Header("Escape Menu")]
     [SerializeField]
     private GameObject escapeMenuRoot;
@@ -76,6 +82,9 @@ public sealed class MainUIManager : MonoBehaviour
     private Slider brightnessSlider;
 
     [Header("Optional Labels")]
+    [SerializeField]
+    private TMP_Text dayTitleText;
+
     [SerializeField]
     private TMP_Text currentDayText;
 
@@ -201,6 +210,8 @@ public sealed class MainUIManager : MonoBehaviour
         SetButtonInteractable(inventoryButton, value);
         SetButtonInteractable(marketButton, value);
         SetButtonInteractable(eodButton, value);
+        SetButtonInteractable(accountbookButton, value);
+        SetButtonInteractable(stampButton, value);
     }
 
     public void SetBattleButtonInteractable(bool value)
@@ -216,12 +227,17 @@ public sealed class MainUIManager : MonoBehaviour
     // 현재 날짜를 메인 화면 텍스트에 반영
     public void RefreshDayText(int currentDay)
     {
+        if (dayTitleText != null)
+        {
+            dayTitleText.text = "DAY";
+        }
+
         if (currentDayText == null)
         {
             return;
         }
 
-        currentDayText.text = $"일차 {currentDay}";
+        currentDayText.text = currentDay.ToString(CultureInfo.InvariantCulture);
     }
 
     private void OnDayChanged(int currentDay)
