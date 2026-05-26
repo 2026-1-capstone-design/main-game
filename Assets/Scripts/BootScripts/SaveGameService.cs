@@ -11,6 +11,7 @@ public static class SaveGameService
     private const string PlayerPrefsSlotJsonKeyPrefix = "SaveGameService.SlotJson.";
 
     private static SaveSlotData _pendingLoadedData;
+    private static BattleManager _cachedBattleManager;
 
     public static bool HasPendingLoadedData => _pendingLoadedData != null;
 
@@ -160,7 +161,7 @@ public static class SaveGameService
         InventoryManager inventoryManager = InventoryManager.Instance;
         GladiatorManager gladiatorManager = GladiatorManager.Instance;
         MarketManager marketManager = MarketManager.Instance;
-        BattleManager battleManager = UnityEngine.Object.FindFirstObjectByType<BattleManager>();
+        BattleManager battleManager = ResolveBattleManager();
 
         SaveOwnedWeaponData[] ownedWeapons = BuildOwnedWeaponsSnapshot(inventoryManager);
         SaveOwnedArtifactData[] ownedArtifacts = BuildOwnedArtifactsSnapshot(inventoryManager);
@@ -171,7 +172,7 @@ public static class SaveGameService
         SaveMarketArtifactOfferData[] marketArtifactOffers = BuildMarketArtifactOffersSnapshot(marketManager);
 
         SaveBattleEncounterData[] battleEncounters = BuildBattleEncountersSnapshot(battleManager);
-        SquadManager squadManager = UnityEngine.Object.FindFirstObjectByType<SquadManager>();
+        SquadManager squadManager = SquadManager.Instance;
         int[] squadSlotRuntimeIds = BuildSquadSlotRuntimeIdsSnapshot(squadManager);
         int activeSquadTeamIndex = squadManager != null ? squadManager.ActiveTeamIndex : 0;
 
@@ -251,7 +252,7 @@ public static class SaveGameService
         InventoryManager inventoryManager = InventoryManager.Instance;
         GladiatorManager gladiatorManager = GladiatorManager.Instance;
         MarketManager marketManager = MarketManager.Instance;
-        BattleManager battleManager = UnityEngine.Object.FindFirstObjectByType<BattleManager>();
+        BattleManager battleManager = ResolveBattleManager();
 
         if (sessionManager != null)
         {
@@ -371,7 +372,7 @@ public static class SaveGameService
             }
 
             // 검투사 복원 이후에 스쿼드 슬롯을 복원한다.
-            SquadManager squadManager = UnityEngine.Object.FindFirstObjectByType<SquadManager>();
+            SquadManager squadManager = SquadManager.Instance;
             if (squadManager != null && gladiatorManager != null && data.squadSlotRuntimeIds != null)
             {
                 squadManager.RestoreFromSave(data.squadSlotRuntimeIds, gladiatorManager);
@@ -380,6 +381,17 @@ public static class SaveGameService
         }
 
         return true;
+    }
+
+    private static BattleManager ResolveBattleManager()
+    {
+        if (_cachedBattleManager != null)
+        {
+            return _cachedBattleManager;
+        }
+
+        _cachedBattleManager = UnityEngine.Object.FindFirstObjectByType<BattleManager>();
+        return _cachedBattleManager;
     }
 
     private static void ResetGladiatorNameReservationsForLoad(
