@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 // BattleStatusGridUIManager 책임 (전투 디버그 UI 전담 manager):
@@ -14,6 +15,10 @@ public sealed class BattleStatusGridUIManager : MonoBehaviour
     [Header("Top")]
     [SerializeField]
     private TMP_Text simulationSpeedText; // 현재 배속 텍스트
+
+    [Header("Debug Toggle")]
+    [SerializeField]
+    private Transform statusGridContentRoot;
 
     [Header("Ally Cells")]
     [SerializeField]
@@ -33,6 +38,22 @@ public sealed class BattleStatusGridUIManager : MonoBehaviour
     private readonly BattleRuntimeUnit[] _allyUnits = new BattleRuntimeUnit[BattleTeamConstants.MaxUnitsPerTeam];
     private readonly BattleRuntimeUnit[] _enemyUnits = new BattleRuntimeUnit[BattleTeamConstants.MaxUnitsPerTeam];
     private bool _initialized;
+    private bool _isStatusGridVisible = true;
+
+    private void Awake()
+    {
+        _isStatusGridVisible = ResolveInitialStatusGridVisibility();
+        ApplyStatusGridVisibility();
+    }
+
+    private void Update()
+    {
+        Keyboard keyboard = Keyboard.current;
+        if (keyboard != null && keyboard.tabKey.wasPressedThisFrame)
+        {
+            ToggleStatusGridVisibility();
+        }
+    }
 
     public void Initialize(
         BattleSimulationManager simulationManager,
@@ -99,6 +120,7 @@ public sealed class BattleStatusGridUIManager : MonoBehaviour
         }
 
         UpdateAllyOrderButtonInteractableStates();
+        ApplyStatusGridVisibility();
     }
 
     public void Refresh()
@@ -205,6 +227,58 @@ public sealed class BattleStatusGridUIManager : MonoBehaviour
         }
 
         _battleSceneUIManager.OpenSingleOrderPanel(targetUnit);
+    }
+
+    private void ToggleStatusGridVisibility()
+    {
+        _isStatusGridVisible = !_isStatusGridVisible;
+        ApplyStatusGridVisibility();
+    }
+
+    private bool ResolveInitialStatusGridVisibility()
+    {
+        if (statusGridContentRoot != null && statusGridContentRoot.gameObject != gameObject)
+        {
+            return statusGridContentRoot.gameObject.activeSelf;
+        }
+
+        return gameObject.activeSelf;
+    }
+
+    private void ApplyStatusGridVisibility()
+    {
+        if (statusGridContentRoot != null && statusGridContentRoot.gameObject != gameObject)
+        {
+            statusGridContentRoot.gameObject.SetActive(_isStatusGridVisible);
+            ApplyRuntimeUnitStatusTextVisibility();
+            return;
+        }
+
+        for (int i = 0; i < transform.childCount; i++)
+        {
+            transform.GetChild(i).gameObject.SetActive(_isStatusGridVisible);
+        }
+
+        ApplyRuntimeUnitStatusTextVisibility();
+    }
+
+    private void ApplyRuntimeUnitStatusTextVisibility()
+    {
+        for (int i = 0; i < _allyUnits.Length; i++)
+        {
+            if (_allyUnits[i] != null)
+            {
+                _allyUnits[i].SetDebugStatusTextVisible(_isStatusGridVisible);
+            }
+        }
+
+        for (int i = 0; i < _enemyUnits.Length; i++)
+        {
+            if (_enemyUnits[i] != null)
+            {
+                _enemyUnits[i].SetDebugStatusTextVisible(_isStatusGridVisible);
+            }
+        }
     }
 
     private string FormatUnit(BattleRuntimeUnit unit)

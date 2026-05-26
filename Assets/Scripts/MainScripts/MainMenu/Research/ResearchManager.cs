@@ -26,28 +26,56 @@ public sealed class ResearchManager : MonoBehaviour
         }
 
         _unlockedArtifacts.Clear();
-
-        IReadOnlyList<ArtifactSO> artifacts = contentDatabaseProvider.Artifacts;
-        for (int i = 0; i < artifacts.Count; i++)
-        {
-            ArtifactSO artifact = artifacts[i];
-            if (artifact != null)
-            {
-                _unlockedArtifacts.Add(artifact);
-            }
-        }
-
         _initialized = true;
 
         if (verboseLog)
         {
-            Debug.Log($"[ResearchManager] Initialized. UnlockedArtifactCount={_unlockedArtifacts.Count}", this);
+            Debug.Log("[ResearchManager] Initialized.", this);
         }
     }
 
     public int GetUnlockedArtifactCount()
     {
         return _unlockedArtifacts.Count;
+    }
+
+    public bool AddArtifact(ArtifactSO artifact)
+    {
+        if (artifact == null)
+        {
+            return false;
+        }
+
+        if (_unlockedArtifacts.Contains(artifact))
+        {
+            return false;
+        }
+
+        _unlockedArtifacts.Add(artifact);
+
+        if (verboseLog)
+        {
+            Debug.Log($"[ResearchManager] Artifact added. Name={artifact.artifactName}", this);
+        }
+
+        return true;
+    }
+
+    public bool RemoveArtifact(ArtifactSO artifact)
+    {
+        if (artifact == null)
+        {
+            return false;
+        }
+
+        bool removed = _unlockedArtifacts.Remove(artifact);
+
+        if (removed && verboseLog)
+        {
+            Debug.Log($"[ResearchManager] Artifact removed. Name={artifact.artifactName}", this);
+        }
+
+        return removed;
     }
 
     public void RestoreUnlockedArtifactsForLoad(List<ArtifactSO> unlockedArtifacts)

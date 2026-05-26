@@ -39,6 +39,9 @@ public sealed class WeaponSO : ScriptableObject
     public string weaponName = "Sword";
     public WeaponType weaponType = WeaponType.oneHand;
 
+    [TextArea]
+    public string lore;
+
     public GameObject leftWeaponPrefab;
     public GameObject rightWeaponPrefab;
 

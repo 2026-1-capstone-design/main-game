@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0efcbe04e3ad52a428a9f4cc079e1b31, type: 3}
   m_Name: Fanning
   m_EditorClassIdentifier: Assembly-CSharp::WeaponSkillSO
-  icon: {fileID: 21300000, guid: 30ee865651fe70342bd9f47753d1596e, type: 3}
+  icon: {fileID: 21300000, guid: 090c0cfbb8e3e3a43b85b65e2a5ccacf, type: 3}
   skillName: Fanning
   description: Fanning
   weaponType: 7

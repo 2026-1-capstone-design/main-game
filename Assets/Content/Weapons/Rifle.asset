@@ -15,6 +15,7 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: 00dd97793ab545940b2c38c8fd55a322, type: 3}
   weaponName: Rifle
   weaponType: 9
+  lore: "\uB77C\uC774\uD50C\uC774\uB2E4."
   leftWeaponPrefab: {fileID: 26744791562570188, guid: 49e6000adfc1e4947a3d1e139883ac4f, type: 3}
   rightWeaponPrefab: {fileID: 7860103617456621554, guid: 3f8a1e3f348d3774fb062c6daf69d5ee, type: 3}
   isRanged: 1

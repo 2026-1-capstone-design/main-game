@@ -2,6 +2,7 @@ using System;
 using System.Globalization;
 using TMPro;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 [DisallowMultipleComponent]
@@ -12,13 +13,13 @@ public sealed class MainUIManager : MonoBehaviour
     private Button gladiatorButton;
 
     [SerializeField]
+    private Button squadButton;
+
+    [SerializeField]
     private Button battleButton;
 
     [SerializeField]
-    private Button researchButton;
-
-    [SerializeField]
-    private Button missionButton;
+    private Button inventoryButton;
 
     [SerializeField]
     private Button marketButton;
@@ -27,7 +28,26 @@ public sealed class MainUIManager : MonoBehaviour
     private Button eodButton;
 
     [SerializeField]
-    private Button saveButton;
+    private Button accountbookButton;
+
+    [SerializeField]
+    private Button stampButton;
+
+    [Header("Escape Menu")]
+    [SerializeField]
+    private GameObject escapeMenuRoot;
+
+    [SerializeField]
+    private Button continueButton;
+
+    [SerializeField]
+    private Button settingsButton;
+
+    [SerializeField]
+    private Button escapeSaveButton;
+
+    [SerializeField]
+    private Button escapeTitleButton;
 
     [Header("Save Modal")]
     [SerializeField]
@@ -42,7 +62,29 @@ public sealed class MainUIManager : MonoBehaviour
     [SerializeField]
     private TMP_Text[] saveSlotTexts = new TMP_Text[5];
 
+    [Header("Settings Modal")]
+    [SerializeField]
+    private GameObject settingsPanelRoot;
+
+    [SerializeField]
+    private Button settingsCloseButton;
+
+    [SerializeField]
+    private Dropdown languageDropdown;
+
+    [SerializeField]
+    private Slider bgmVolumeSlider;
+
+    [SerializeField]
+    private Slider sfxVolumeSlider;
+
+    [SerializeField]
+    private Slider brightnessSlider;
+
     [Header("Optional Labels")]
+    [SerializeField]
+    private TMP_Text dayTitleText;
+
     [SerializeField]
     private TMP_Text currentDayText;
 
@@ -53,7 +95,9 @@ public sealed class MainUIManager : MonoBehaviour
     private MainFlowManager _flow; // 메인 메뉴 버튼 입력을 실제 게임 흐름 처리 함수로 넘김
     private SessionManager _sessionManager;
     private bool _initialized;
+    private bool _mainMenuInteractable = true;
     private Button _saveBackdropButton;
+    private Button _settingsBackdropButton;
 
     // 메인 버튼들을 모두 MainFlowManager 핸들러에 연결하고,
     // !!DayChanged 이벤트를 구독해!! 날짜 UI를 동기화
@@ -67,26 +111,37 @@ public sealed class MainUIManager : MonoBehaviour
         _flow = flow;
         _sessionManager = sessionManager;
 
-        if (saveButton == null)
-        {
-            saveButton = ResolveSaveButtonFromScene();
-        }
-
         BindButton(gladiatorButton, OnGladiatorClicked);
+        BindButton(squadButton, OnSquadClicked);
         BindButton(battleButton, OnBattleClicked);
-        BindButton(researchButton, OnResearchClicked);
-        BindButton(missionButton, OnMissionClicked);
+        BindButton(inventoryButton, OnInventoryClicked);
         BindButton(marketButton, OnMarketClicked);
         BindButton(eodButton, OnEodClicked);
-        BindButton(saveButton, OnSaveClicked);
+        BindButton(continueButton, OnContinueClicked);
+        BindButton(settingsButton, OnSettingsClicked);
+        BindButton(escapeSaveButton, OnSaveClicked);
+        BindButton(escapeTitleButton, OnTitleClicked);
 
         CacheSaveModalControls();
+        CacheSettingsModalControls();
         BindSaveModalControls();
+        BindSettingsModalControls();
+        SyncSettingsControlsFromGlobalValues();
         RefreshSaveSlotPreviews();
+
+        if (escapeMenuRoot != null)
+        {
+            escapeMenuRoot.SetActive(false);
+        }
 
         if (savePanelRoot != null)
         {
             savePanelRoot.SetActive(false);
+        }
+
+        if (settingsPanelRoot != null)
+        {
+            settingsPanelRoot.SetActive(false);
         }
 
         if (_sessionManager != null)
@@ -99,7 +154,7 @@ public sealed class MainUIManager : MonoBehaviour
         {
             Debug.Log(
                 "[MainUIManager] Save UI init: "
-                    + $"saveButton={(saveButton != null ? saveButton.name : "null")}, "
+                    + $"escapeSaveButton={(escapeSaveButton != null ? escapeSaveButton.name : "null")}, "
                     + $"savePanelRoot={(savePanelRoot != null ? savePanelRoot.name : "null")}, "
                     + $"saveCloseButton={(saveCloseButton != null ? saveCloseButton.name : "null")}",
                 this
@@ -122,6 +177,22 @@ public sealed class MainUIManager : MonoBehaviour
         _initialized = true;
     }
 
+    private void Update()
+    {
+        if (!_initialized)
+        {
+            return;
+        }
+
+        Keyboard keyboard = Keyboard.current;
+        if (keyboard == null || !keyboard.escapeKey.wasPressedThisFrame)
+        {
+            return;
+        }
+
+        HandleEscapePressed();
+    }
+
     private void OnDestroy()
     {
         if (_sessionManager != null)
@@ -132,13 +203,15 @@ public sealed class MainUIManager : MonoBehaviour
 
     public void SetMainMenuInteractable(bool value)
     {
+        _mainMenuInteractable = value;
         SetButtonInteractable(gladiatorButton, value);
+        SetButtonInteractable(squadButton, value);
         SetButtonInteractable(battleButton, value);
-        SetButtonInteractable(researchButton, value);
-        SetButtonInteractable(missionButton, value);
+        SetButtonInteractable(inventoryButton, value);
         SetButtonInteractable(marketButton, value);
         SetButtonInteractable(eodButton, value);
-        SetButtonInteractable(saveButton, value);
+        SetButtonInteractable(accountbookButton, value);
+        SetButtonInteractable(stampButton, value);
     }
 
     public void SetBattleButtonInteractable(bool value)
@@ -154,12 +227,17 @@ public sealed class MainUIManager : MonoBehaviour
     // 현재 날짜를 메인 화면 텍스트에 반영
     public void RefreshDayText(int currentDay)
     {
+        if (dayTitleText != null)
+        {
+            dayTitleText.text = "DAY";
+        }
+
         if (currentDayText == null)
         {
             return;
         }
 
-        currentDayText.text = $"Day {currentDay}";
+        currentDayText.text = currentDay.ToString(CultureInfo.InvariantCulture);
     }
 
     private void OnDayChanged(int currentDay)
@@ -167,11 +245,28 @@ public sealed class MainUIManager : MonoBehaviour
         RefreshDayText(currentDay);
     }
 
+    private void OnTitleClicked()
+    {
+        if (_flow != null)
+        {
+            CloseEscapeMenu();
+            _flow.HandleReturnToTitleRequested();
+        }
+    }
+
     private void OnGladiatorClicked()
     {
         if (_flow != null)
         {
             _flow.HandleGladiatorMenuRequested();
+        }
+    }
+
+    private void OnSquadClicked()
+    {
+        if (_flow != null)
+        {
+            _flow.HandleSquadMenuRequested();
         }
     }
 
@@ -183,19 +278,11 @@ public sealed class MainUIManager : MonoBehaviour
         }
     }
 
-    private void OnResearchClicked()
+    private void OnInventoryClicked()
     {
         if (_flow != null)
         {
-            _flow.HandleResearchMenuRequested();
-        }
-    }
-
-    private void OnMissionClicked()
-    {
-        if (_flow != null)
-        {
-            _flow.HandleMissionMenuRequested();
+            _flow.HandleInventoryMenuRequested();
         }
     }
 
@@ -226,6 +313,32 @@ public sealed class MainUIManager : MonoBehaviour
 
         RefreshSaveSlotPreviews();
         savePanelRoot.SetActive(true);
+    }
+
+    private void OnContinueClicked()
+    {
+        CloseEscapeMenu();
+    }
+
+    private void OnSettingsClicked()
+    {
+        if (settingsPanelRoot == null)
+        {
+            return;
+        }
+
+        SyncSettingsControlsFromGlobalValues();
+        settingsPanelRoot.SetActive(true);
+    }
+
+    private void OnCloseSettingsClicked()
+    {
+        if (settingsPanelRoot == null)
+        {
+            return;
+        }
+
+        settingsPanelRoot.SetActive(false);
     }
 
     private void OnCloseSaveClicked()
@@ -337,6 +450,151 @@ public sealed class MainUIManager : MonoBehaviour
         }
     }
 
+    private void CacheSettingsModalControls()
+    {
+        if (settingsPanelRoot == null)
+        {
+            settingsPanelRoot = FindByNameInScene("SettingsPanel") ?? FindByNameInScene("SettingsModalRoot");
+        }
+
+        if (settingsPanelRoot == null)
+        {
+            return;
+        }
+
+        Transform settingsRootTransform = settingsPanelRoot.transform;
+
+        if (settingsCloseButton == null)
+        {
+            settingsCloseButton = FindChildComponent<Button>(settingsRootTransform, "CloseButton");
+        }
+
+        if (languageDropdown == null)
+        {
+            languageDropdown = FindChildComponent<Dropdown>(settingsRootTransform, "LanguageDropdown");
+        }
+
+        if (bgmVolumeSlider == null)
+        {
+            bgmVolumeSlider = FindChildComponent<Slider>(settingsRootTransform, "BgmSlider");
+        }
+
+        if (sfxVolumeSlider == null)
+        {
+            sfxVolumeSlider = FindChildComponent<Slider>(settingsRootTransform, "SfxSlider");
+        }
+
+        if (brightnessSlider == null)
+        {
+            brightnessSlider = FindChildComponent<Slider>(settingsRootTransform, "BrightnessSlider");
+        }
+
+        Transform backdropTransform = FindChildTransform(settingsRootTransform, "DimBackground");
+        if (backdropTransform != null)
+        {
+            Image backdropImage = backdropTransform.GetComponent<Image>();
+            _settingsBackdropButton = backdropTransform.GetComponent<Button>();
+
+            if (_settingsBackdropButton == null)
+            {
+                _settingsBackdropButton = backdropTransform.gameObject.AddComponent<Button>();
+            }
+
+            _settingsBackdropButton.transition = Selectable.Transition.None;
+            _settingsBackdropButton.targetGraphic = backdropImage;
+        }
+    }
+
+    private void BindSettingsModalControls()
+    {
+        BindButton(settingsCloseButton, OnCloseSettingsClicked);
+
+        if (languageDropdown != null)
+        {
+            languageDropdown.onValueChanged.RemoveListener(OnLanguageChanged);
+            languageDropdown.onValueChanged.AddListener(OnLanguageChanged);
+        }
+
+        if (bgmVolumeSlider != null)
+        {
+            bgmVolumeSlider.onValueChanged.RemoveListener(OnBgmVolumeChanged);
+            bgmVolumeSlider.onValueChanged.AddListener(OnBgmVolumeChanged);
+        }
+
+        if (sfxVolumeSlider != null)
+        {
+            sfxVolumeSlider.onValueChanged.RemoveListener(OnSfxVolumeChanged);
+            sfxVolumeSlider.onValueChanged.AddListener(OnSfxVolumeChanged);
+        }
+
+        if (brightnessSlider != null)
+        {
+            brightnessSlider.onValueChanged.RemoveListener(OnBrightnessChanged);
+            brightnessSlider.onValueChanged.AddListener(OnBrightnessChanged);
+        }
+
+        if (_settingsBackdropButton != null)
+        {
+            _settingsBackdropButton.onClick.RemoveListener(OnCloseSettingsClicked);
+            _settingsBackdropButton.onClick.AddListener(OnCloseSettingsClicked);
+        }
+    }
+
+    private void SyncSettingsControlsFromGlobalValues()
+    {
+        if (languageDropdown != null)
+        {
+            languageDropdown.SetValueWithoutNotify((int)GameSettings.Language);
+        }
+
+        if (bgmVolumeSlider != null)
+        {
+            bgmVolumeSlider.SetValueWithoutNotify(GameSettings.BgmVolume);
+        }
+
+        if (sfxVolumeSlider != null)
+        {
+            sfxVolumeSlider.SetValueWithoutNotify(GameSettings.SfxVolume);
+        }
+
+        if (brightnessSlider != null)
+        {
+            brightnessSlider.SetValueWithoutNotify(GameSettings.Brightness);
+        }
+    }
+
+    private void OnLanguageChanged(int selectedIndex)
+    {
+        GameSettings.SetLanguage((GameLanguage)selectedIndex);
+    }
+
+    private void OnBgmVolumeChanged(float value)
+    {
+        GameSettings.SetBgmVolume(value);
+        ApplyAudioSettings();
+    }
+
+    private void OnSfxVolumeChanged(float value)
+    {
+        GameSettings.SetSfxVolume(value);
+        ApplyAudioSettings();
+    }
+
+    private void OnBrightnessChanged(float value)
+    {
+        GameSettings.SetBrightness(value);
+        GameSettings.ApplyBrightnessToCurrentScene();
+    }
+
+    private static void ApplyAudioSettings()
+    {
+        AudioManager audioManager = AudioManager.Instance;
+        if (audioManager != null)
+        {
+            audioManager.ApplyFromGlobalSettings();
+        }
+    }
+
     private void BindSaveModalControls()
     {
         // 모달 내부 버튼 이벤트를 단일 진입점으로 재바인딩한다.
@@ -372,13 +630,57 @@ public sealed class MainUIManager : MonoBehaviour
         }
     }
 
+    private void HandleEscapePressed()
+    {
+        if (settingsPanelRoot != null && settingsPanelRoot.activeSelf)
+        {
+            OnCloseSettingsClicked();
+            return;
+        }
+
+        if (savePanelRoot != null && savePanelRoot.activeSelf)
+        {
+            OnCloseSaveClicked();
+            return;
+        }
+
+        if (escapeMenuRoot != null && escapeMenuRoot.activeSelf)
+        {
+            CloseEscapeMenu();
+            return;
+        }
+
+        if (!_mainMenuInteractable)
+        {
+            return;
+        }
+
+        OpenEscapeMenu();
+    }
+
+    private void OpenEscapeMenu()
+    {
+        if (escapeMenuRoot != null)
+        {
+            escapeMenuRoot.SetActive(true);
+        }
+    }
+
+    private void CloseEscapeMenu()
+    {
+        if (escapeMenuRoot != null)
+        {
+            escapeMenuRoot.SetActive(false);
+        }
+    }
+
     private static string BuildSlotPreviewText(int slotIndex)
     {
         // 세이브 데이터가 없으면 Empty Slot, 있으면 핵심 프리뷰 문자열을 구성한다.
         SaveGameService.SaveSlotPreview preview = SaveGameService.GetSlotPreview(slotIndex);
         if (!preview.hasData)
         {
-            return "Empty Slot";
+            return "빈 슬롯";
         }
 
         string savedTimeText = "-";
@@ -394,7 +696,7 @@ public sealed class MainUIManager : MonoBehaviour
             savedTimeText = savedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
         }
 
-        return $"SLOT {slotIndex}  |  DAY: {preview.day}  |  GOLD: {preview.gold}  |  SAVED: {savedTimeText}";
+        return $"슬롯 {slotIndex}  |  일차: {preview.day}  |  골드: {preview.gold}  |  저장일시: {savedTimeText}";
     }
 
     private static Button FindSlotButton(Transform modalRootTransform, int slotIndex)
@@ -407,17 +709,6 @@ public sealed class MainUIManager : MonoBehaviour
         }
 
         return FindChildComponent<Button>(modalRootTransform, $"Slot{slotIndex}");
-    }
-
-    private Button ResolveSaveButtonFromScene()
-    {
-        GameObject saveButtonObject = FindByNameInScene("SaveButton");
-        if (saveButtonObject == null)
-        {
-            return null;
-        }
-
-        return saveButtonObject.GetComponent<Button>();
     }
 
     private GameObject ResolveSavePanelRootFromScene()

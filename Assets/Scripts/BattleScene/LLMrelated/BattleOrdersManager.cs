@@ -55,6 +55,8 @@ public sealed class BattleOrdersManager : MonoBehaviour
     // private int _requestSequence;
     private BattleOrderLayerPipeline _layerPipeline;
 
+    public event Action<BattleRuntimeUnit, string> OnAllyOrderResponseReceived;
+
     public void Initialize(IReadOnlyList<BattleRuntimeUnit> runtimeUnits)
     {
         Initialize(runtimeUnits, null, null);
@@ -443,6 +445,11 @@ public sealed class BattleOrdersManager : MonoBehaviour
             return;
         }
 
+        Debug.Log(
+            $"[BattleOrdersManager] Order entered LLM pipeline. Type={orderType}, Actor={BuildUnitIdentityText(actorUnit)}, Raw=\"{sanitizedRawText}\"",
+            this
+        );
+
         StartCoroutine(
             SendOrderToLlmCoroutine(orderType, actorUnit, sanitizedRawText, systemInstruction, userPayloadJson)
         );
@@ -559,6 +566,8 @@ public sealed class BattleOrdersManager : MonoBehaviour
             this
         );
 
+        RaiseAllyOrderResponse(actorUnit, parsedResponse.output?.dialog ?? string.Empty);
+
         // 검증 통과한 SLM 응답을 IR로 변환해 시뮬레이션에 명령을 활성화한다.
         if (
             !SlmDtoConverter.TryConvert(
@@ -601,6 +610,15 @@ public sealed class BattleOrdersManager : MonoBehaviour
         }
 
         BattleSimulationManager.Instance.IssueSlmCommands(actorUnit.State, slmCommands);
+    }
+
+    private void RaiseAllyOrderResponse(BattleRuntimeUnit actorUnit, string responseText)
+    {
+        string sanitizedText = SanitizeRawText(responseText);
+        if (actorUnit != null && !string.IsNullOrWhiteSpace(sanitizedText))
+        {
+            OnAllyOrderResponseReceived?.Invoke(actorUnit, sanitizedText);
+        }
     }
 
     private bool TryResolveActorFromGlobalOrder(

@@ -8,14 +8,17 @@ public sealed class InventoryManager : SingletonBehaviour<InventoryManager>
     private bool verboseLog = true;
 
     private readonly List<OwnedWeaponData> _ownedWeapons = new List<OwnedWeaponData>(); // 실제로 보유 중인 무기 목록
+    private readonly List<OwnedArtifactData> _ownedArtifacts = new List<OwnedArtifactData>(); // 실제로 보유 중인 장신구 목록
 
     private ContentDatabaseProvider _contentDatabaseProvider;
     private RandomManager _randomManager;
 
     private bool _initialized;
     private int _nextRuntimeId = 1; // 장비도 고유 런타임 ID
+    private int _nextArtifactRuntimeId = 1;
 
     public IReadOnlyList<OwnedWeaponData> OwnedWeapons => _ownedWeapons;
+    public IReadOnlyList<OwnedArtifactData> OwnedArtifacts => _ownedArtifacts;
 
     protected override void Awake()
     {
@@ -52,7 +55,9 @@ public sealed class InventoryManager : SingletonBehaviour<InventoryManager>
         }
 
         _ownedWeapons.Clear();
+        _ownedArtifacts.Clear();
         _nextRuntimeId = 1;
+        _nextArtifactRuntimeId = 1;
 
         _initialized = true;
 
@@ -65,6 +70,11 @@ public sealed class InventoryManager : SingletonBehaviour<InventoryManager>
     public int GetOwnedWeaponCount()
     {
         return _ownedWeapons.Count;
+    }
+
+    public int GetOwnedArtifactCount()
+    {
+        return _ownedArtifacts.Count;
     }
 
     public void RestoreOwnedWeaponsForLoad(List<OwnedWeaponData> restoredWeapons, int nextRuntimeId)
@@ -93,9 +103,70 @@ public sealed class InventoryManager : SingletonBehaviour<InventoryManager>
         }
     }
 
+    public void RestoreOwnedArtifactsForLoad(List<OwnedArtifactData> restoredArtifacts, int nextRuntimeId)
+    {
+        if (!_initialized)
+        {
+            Debug.LogError("[InventoryManager] RestoreOwnedArtifactsForLoad called before Initialize.", this);
+            return;
+        }
+
+        _ownedArtifacts.Clear();
+
+        if (restoredArtifacts != null)
+        {
+            _ownedArtifacts.AddRange(restoredArtifacts);
+        }
+
+        _nextArtifactRuntimeId = Mathf.Max(1, nextRuntimeId);
+
+        if (verboseLog)
+        {
+            Debug.Log(
+                $"[InventoryManager] Owned artifacts restored from save. Count={_ownedArtifacts.Count}, NextRuntimeId={_nextArtifactRuntimeId}",
+                this
+            );
+        }
+    }
+
     public bool AddPurchasedWeaponFromMarketPreview(OwnedWeaponData marketPreview)
     {
         return TryAddOwnedWeaponFromPreview(marketPreview, out _);
+    }
+
+    public bool AddPurchasedArtifactFromMarketOffer(ArtifactSO artifact)
+    {
+        return TryAddOwnedArtifact(artifact, out _);
+    }
+
+    public bool TryAddOwnedArtifact(ArtifactSO artifact, out OwnedArtifactData ownedArtifact)
+    {
+        ownedArtifact = null;
+
+        if (!_initialized)
+        {
+            Debug.LogError("[InventoryManager] TryAddOwnedArtifact called before Initialize.", this);
+            return false;
+        }
+
+        if (artifact == null)
+        {
+            Debug.LogError("[InventoryManager] artifact is null.", this);
+            return false;
+        }
+
+        ownedArtifact = new OwnedArtifactData(_nextArtifactRuntimeId++, artifact);
+        _ownedArtifacts.Add(ownedArtifact);
+
+        if (verboseLog)
+        {
+            Debug.Log(
+                $"[InventoryManager] Owned artifact added. Name={ownedArtifact.DisplayName}, RuntimeId={ownedArtifact.RuntimeId}",
+                this
+            );
+        }
+
+        return true;
     }
 
     // 무기 preview를 실제 보유 무기로 복사해 인벤토리에 추가한다.
@@ -201,6 +272,38 @@ public sealed class InventoryManager : SingletonBehaviour<InventoryManager>
         {
             Debug.Log(
                 $"[InventoryManager] Weapon removed. Name={weapon.DisplayName}, RuntimeId={weapon.RuntimeId}",
+                this
+            );
+        }
+
+        return true;
+    }
+
+    public bool RemoveOwnedArtifact(OwnedArtifactData artifact)
+    {
+        if (!_initialized)
+        {
+            Debug.LogError("[InventoryManager] RemoveOwnedArtifact called before Initialize.", this);
+            return false;
+        }
+
+        if (artifact == null)
+        {
+            Debug.LogError("[InventoryManager] artifact is null.", this);
+            return false;
+        }
+
+        bool removed = _ownedArtifacts.Remove(artifact);
+        if (!removed)
+        {
+            Debug.LogWarning($"[InventoryManager] RemoveOwnedArtifact failed. Name={artifact.DisplayName}", this);
+            return false;
+        }
+
+        if (verboseLog)
+        {
+            Debug.Log(
+                $"[InventoryManager] Artifact removed. Name={artifact.DisplayName}, RuntimeId={artifact.RuntimeId}",
                 this
             );
         }

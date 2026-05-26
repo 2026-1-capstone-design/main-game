@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -27,11 +27,43 @@ public sealed class OwnedItemGridViewer : MonoBehaviour
     [SerializeField]
     private int fixedColumnCount = 6;
 
+    [SerializeField]
+    private Vector2 cellSpacing = Vector2.zero;
+
+    [SerializeField]
+    private int paddingLeft;
+
+    [SerializeField]
+    private int paddingRight;
+
+    [SerializeField]
+    private int paddingTop;
+
+    [SerializeField]
+    private int paddingBottom;
+
+    [SerializeField]
+    private bool stretchRootToParent = true;
+
+    [Header("Empty Cells")]
+    [SerializeField]
+    private int minimumVisibleCellCount;
+
+    [SerializeField]
+    private Texture emptyCellRawIcon;
+
+    [SerializeField]
+    private bool useMaxCellSize;
+
+    [SerializeField]
+    private float maxCellSize = 120f;
+
     private readonly List<OwnedItemGridCell> _cellPool = new List<OwnedItemGridCell>();
     private int _activeItemCount;
     private Action<OwnedItemViewData> _onCellClicked;
 
     private RectTransform _rootRect;
+    private bool _isRefreshingLayout;
 
     private void Awake()
     {
@@ -61,7 +93,8 @@ public sealed class OwnedItemGridViewer : MonoBehaviour
         NormalizeRectTransforms();
 
         _onCellClicked = onCellClicked;
-        _activeItemCount = items != null ? items.Count : 0;
+        int itemCount = items != null ? items.Count : 0;
+        _activeItemCount = Mathf.Max(itemCount, Mathf.Max(0, minimumVisibleCellCount));
 
         EnsureCellPool(_activeItemCount);
 
@@ -73,7 +106,8 @@ public sealed class OwnedItemGridViewer : MonoBehaviour
             if (shouldShow)
             {
                 cell.gameObject.SetActive(true);
-                cell.Setup(items[i], OnCellClickedInternal);
+                OwnedItemViewData data = i < itemCount ? items[i] : OwnedItemViewData.Placeholder(emptyCellRawIcon);
+                cell.Setup(data, OnCellClickedInternal);
             }
             else
             {
@@ -106,6 +140,13 @@ public sealed class OwnedItemGridViewer : MonoBehaviour
 
     public void RefreshLayoutNow()
     {
+        if (_isRefreshingLayout)
+        {
+            return;
+        }
+
+        _isRefreshingLayout = true;
+
         ConfigureStaticLayout();
         NormalizeRectTransforms();
 
@@ -114,27 +155,46 @@ public sealed class OwnedItemGridViewer : MonoBehaviour
         if (viewportRect == null || containerRect == null || gridLayoutGroup == null)
         {
             Debug.LogError("[OwnedItemGridViewer] Required Rect/UI reference is missing.", this);
+            _isRefreshingLayout = false;
             return;
         }
 
         float viewportWidth = viewportRect.rect.width;
         if (viewportWidth <= 0f)
         {
+            _isRefreshingLayout = false;
             return;
         }
 
         int columnCount = Mathf.Max(1, fixedColumnCount);
-        float cellSize = viewportWidth / columnCount;
+        Vector2 spacing = gridLayoutGroup.spacing;
+        RectOffset padding = gridLayoutGroup.padding;
+        float availableWidth = viewportWidth - padding.left - padding.right - spacing.x * Mathf.Max(0, columnCount - 1);
+        float cellSize = Mathf.Max(1f, availableWidth) / columnCount;
+        if (useMaxCellSize)
+        {
+            cellSize = Mathf.Min(cellSize, Mathf.Max(1f, maxCellSize));
+        }
 
         gridLayoutGroup.cellSize = new Vector2(cellSize, cellSize);
 
         int rowCount = _activeItemCount <= 0 ? 0 : Mathf.CeilToInt((float)_activeItemCount / columnCount);
 
-        float contentHeight = rowCount * cellSize;
+        float contentHeight = padding.top + padding.bottom;
+        if (rowCount > 0)
+        {
+            contentHeight += rowCount * cellSize + spacing.y * Mathf.Max(0, rowCount - 1);
+        }
 
-        containerRect.sizeDelta = new Vector2(0f, contentHeight);
+        Vector2 targetSize = new Vector2(0f, contentHeight);
+        if (containerRect.sizeDelta != targetSize)
+        {
+            containerRect.sizeDelta = targetSize;
+        }
 
         LayoutRebuilder.ForceRebuildLayoutImmediate(containerRect);
+
+        _isRefreshingLayout = false;
     }
 
     private void ConfigureStaticLayout()
@@ -150,8 +210,8 @@ public sealed class OwnedItemGridViewer : MonoBehaviour
         {
             gridLayoutGroup.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
             gridLayoutGroup.constraintCount = Mathf.Max(1, fixedColumnCount);
-            gridLayoutGroup.spacing = Vector2.zero;
-            gridLayoutGroup.padding = new RectOffset(0, 0, 0, 0);
+            gridLayoutGroup.spacing = cellSpacing;
+            gridLayoutGroup.padding = new RectOffset(paddingLeft, paddingRight, paddingTop, paddingBottom);
             gridLayoutGroup.startCorner = GridLayoutGroup.Corner.UpperLeft;
             gridLayoutGroup.startAxis = GridLayoutGroup.Axis.Horizontal;
             gridLayoutGroup.childAlignment = TextAnchor.UpperLeft;
@@ -165,7 +225,7 @@ public sealed class OwnedItemGridViewer : MonoBehaviour
             _rootRect = GetComponent<RectTransform>();
         }
 
-        if (_rootRect != null)
+        if (_rootRect != null && stretchRootToParent)
         {
             _rootRect.anchorMin = Vector2.zero;
             _rootRect.anchorMax = Vector2.one;
@@ -174,7 +234,6 @@ public sealed class OwnedItemGridViewer : MonoBehaviour
             _rootRect.offsetMax = Vector2.zero;
             _rootRect.localScale = Vector3.one;
             _rootRect.localRotation = Quaternion.identity;
-            _rootRect.localPosition = Vector3.zero;
         }
 
         if (viewportRect != null)
@@ -186,7 +245,6 @@ public sealed class OwnedItemGridViewer : MonoBehaviour
             viewportRect.offsetMax = Vector2.zero;
             viewportRect.localScale = Vector3.one;
             viewportRect.localRotation = Quaternion.identity;
-            viewportRect.localPosition = Vector3.zero;
         }
 
         if (containerRect != null)
@@ -194,10 +252,11 @@ public sealed class OwnedItemGridViewer : MonoBehaviour
             containerRect.anchorMin = new Vector2(0f, 1f);
             containerRect.anchorMax = new Vector2(1f, 1f);
             containerRect.pivot = new Vector2(0.5f, 1f);
+            containerRect.offsetMin = new Vector2(0f, containerRect.offsetMin.y);
+            containerRect.offsetMax = new Vector2(0f, containerRect.offsetMax.y);
             containerRect.anchoredPosition = Vector2.zero;
             containerRect.localScale = Vector3.one;
             containerRect.localRotation = Quaternion.identity;
-            containerRect.localPosition = Vector3.zero;
 
             Vector2 sizeDelta = containerRect.sizeDelta;
             containerRect.sizeDelta = new Vector2(0f, sizeDelta.y);

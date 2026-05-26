@@ -10,6 +10,91 @@ public enum BattleEncounterDifficulty
     High = 2,
 }
 
+// 메인 씬 배치 화면에서 선택한 스쿼드와 보드 칸 정보를 전투 payload 생성까지 전달한다.
+// 런타임 ID 배열은 인덱스가 배치 칸이고 값이 해당 칸에 놓인 검투사 ID다.
+public sealed class BattleDeploymentPlan
+{
+    public int SquadTeamIndex { get; }
+    public int[] AllyRuntimeIdsBySlot { get; }
+    public int[] EnemyUnitIndicesBySlot { get; }
+    public Vector2[] AllyNormalizedPositionsBySlot { get; }
+    public Vector2[] EnemyNormalizedPositionsBySlot { get; }
+
+    public BattleDeploymentPlan(
+        int squadTeamIndex,
+        int[] allyRuntimeIdsBySlot,
+        int[] enemyUnitIndicesBySlot,
+        Vector2[] allyNormalizedPositionsBySlot = null,
+        Vector2[] enemyNormalizedPositionsBySlot = null
+    )
+    {
+        SquadTeamIndex = Mathf.Max(0, squadTeamIndex);
+        AllyRuntimeIdsBySlot = allyRuntimeIdsBySlot ?? Array.Empty<int>();
+        EnemyUnitIndicesBySlot = enemyUnitIndicesBySlot ?? Array.Empty<int>();
+        AllyNormalizedPositionsBySlot = allyNormalizedPositionsBySlot ?? Array.Empty<Vector2>();
+        EnemyNormalizedPositionsBySlot = enemyNormalizedPositionsBySlot ?? Array.Empty<Vector2>();
+    }
+}
+
+// 메인 씬의 원형 배치 UI와 전투 씬의 battlefield bounds가 같은 좌표계를 공유하도록 정규화 좌표를 만든다.
+public static class BattleDeploymentPositionUtility
+{
+    private const float BattleSceneColosseumRadius = 28f;
+    private static readonly Vector2[] EnemyPlaceholderWorldPositions =
+    {
+        new Vector2(-12f, 12f),
+        new Vector2(-9f, 12f),
+        new Vector2(-15f, 12f),
+        new Vector2(-12f, 9f),
+        new Vector2(-12f, 15f),
+        new Vector2(-9f, 9f),
+    };
+
+    public static Vector2 ClampToDeploymentHalf(Vector2 normalizedPosition, bool isPlayerTeam)
+    {
+        if (
+            float.IsNaN(normalizedPosition.x)
+            || float.IsNaN(normalizedPosition.y)
+            || float.IsInfinity(normalizedPosition.x)
+            || float.IsInfinity(normalizedPosition.y)
+        )
+        {
+            normalizedPosition = Vector2.zero;
+        }
+
+        normalizedPosition.x = Mathf.Clamp(normalizedPosition.x, -1f, 1f);
+        normalizedPosition.y = Mathf.Clamp(normalizedPosition.y, -1f, 1f);
+
+        float magnitude = normalizedPosition.magnitude;
+        if (magnitude > 1f)
+        {
+            normalizedPosition /= magnitude;
+        }
+
+        normalizedPosition.x = isPlayerTeam
+            ? Mathf.Clamp(normalizedPosition.x, 0f, 1f)
+            : Mathf.Clamp(normalizedPosition.x, -1f, 0f);
+        return normalizedPosition;
+    }
+
+    public static Vector2 BuildDefaultPosition(int index, int count, bool isPlayerTeam)
+    {
+        count = Mathf.Clamp(count, 1, BattleTeamConstants.MaxUnitsPerTeam);
+        index = Mathf.Clamp(index, 0, count - 1);
+
+        float x = isPlayerTeam ? 0.45f : -0.45f;
+        float y = count <= 1 ? 0f : Mathf.Lerp(0.65f, -0.65f, index / (float)(count - 1));
+        return ClampToDeploymentHalf(new Vector2(x, y), isPlayerTeam);
+    }
+
+    public static Vector2 BuildEnemyPlaceholderPosition(int index)
+    {
+        index = Mathf.Clamp(index, 0, EnemyPlaceholderWorldPositions.Length - 1);
+        Vector2 worldPosition = EnemyPlaceholderWorldPositions[index];
+        return ClampToDeploymentHalf(worldPosition / BattleSceneColosseumRadius, false);
+    }
+}
+
 [Serializable]
 public sealed class BattleUnitSnapshot
 {
@@ -233,7 +318,7 @@ public sealed class BattleUnitSnapshot
             source.GladiatorClass,
             source.Trait,
             source.Personality,
-            source.EquippedArtifact,
+            source.EquippedArtifact != null ? source.EquippedArtifact.Artifact : null,
             weaponType,
             leftPrefab,
             rightPrefab,
@@ -251,10 +336,10 @@ public sealed class BattleUnitSnapshot
 
     private static IReadOnlyList<ArtifactId> BuildArtifactIds(ArtifactSO equippedArtifact)
     {
-        if (equippedArtifact == null || equippedArtifact.artifactId == ArtifactId.None)
+        if (equippedArtifact == null || equippedArtifact.ArtifactPerkId == ArtifactId.None)
             return Array.Empty<ArtifactId>();
 
-        return new[] { equippedArtifact.artifactId };
+        return new[] { equippedArtifact.ArtifactPerkId };
     }
 }
 
@@ -318,6 +403,13 @@ public sealed class BattleStartPayload
     public int SelectedEncounterIndex { get; }
     public float EnemyAverageLevel { get; }
     public int PreviewRewardGold { get; }
+    public int CurrentDay { get; }
+    public BattleEncounterDifficulty Difficulty { get; }
+    public int PlayerSquadTeamIndex { get; }
+    public IReadOnlyList<int> PlayerDeploymentSlotIndices { get; }
+    public IReadOnlyList<int> EnemyDeploymentSlotIndices { get; }
+    public IReadOnlyList<Vector2> PlayerDeploymentNormalizedPositions { get; }
+    public IReadOnlyList<Vector2> EnemyDeploymentNormalizedPositions { get; }
 
     // 랜덤매니저에서 쓸 시드
     public int BattleSeed { get; }
@@ -332,7 +424,14 @@ public sealed class BattleStartPayload
         float enemyAverageLevel,
         int previewRewardGold,
         int battleSeed,
-        IReadOnlyDictionary<BattleTeamId, IReadOnlyList<int>> teamSlotIndicesById = null
+        IEnumerable<int> playerDeploymentSlotIndices = null,
+        IEnumerable<int> enemyDeploymentSlotIndices = null,
+        IEnumerable<Vector2> playerDeploymentNormalizedPositions = null,
+        IEnumerable<Vector2> enemyDeploymentNormalizedPositions = null,
+        IReadOnlyDictionary<BattleTeamId, IReadOnlyList<int>> teamSlotIndicesById = null,
+        int currentDay = 1,
+        BattleEncounterDifficulty difficulty = BattleEncounterDifficulty.Medium,
+        int playerSquadTeamIndex = 0
     )
     {
         if (teams != null)
@@ -426,7 +525,28 @@ public sealed class BattleStartPayload
         SelectedEncounterIndex = Mathf.Max(0, selectedEncounterIndex);
         EnemyAverageLevel = Mathf.Max(0f, enemyAverageLevel);
         PreviewRewardGold = Mathf.Max(0, previewRewardGold);
+        CurrentDay = Mathf.Max(1, currentDay);
+        Difficulty = difficulty;
+        PlayerSquadTeamIndex = Mathf.Max(0, playerSquadTeamIndex);
         BattleSeed = battleSeed;
+        PlayerDeploymentSlotIndices = BuildDeploymentSlotIndices(playerDeploymentSlotIndices, _playerTeam.Units.Count);
+        EnemyDeploymentSlotIndices = BuildDeploymentSlotIndices(enemyDeploymentSlotIndices, _hostileTeam.Units.Count);
+        if (teamSlotIndicesById == null)
+        {
+            _teamSlotIndexById[_playerTeam.TeamId] = BuildTeamSlotIndices(PlayerDeploymentSlotIndices, _playerTeam);
+            _teamSlotIndexById[_hostileTeam.TeamId] = BuildTeamSlotIndices(EnemyDeploymentSlotIndices, _hostileTeam);
+        }
+
+        PlayerDeploymentNormalizedPositions = BuildDeploymentNormalizedPositions(
+            playerDeploymentNormalizedPositions,
+            _playerTeam.Units.Count,
+            true
+        );
+        EnemyDeploymentNormalizedPositions = BuildDeploymentNormalizedPositions(
+            enemyDeploymentNormalizedPositions,
+            _hostileTeam.Units.Count,
+            false
+        );
     }
 
     public BattleTeamEntry GetPlayerTeam() => _playerTeam;
@@ -559,5 +679,97 @@ public sealed class BattleStartPayload
         }
 
         return slotIndices;
+    }
+
+    private static int[] BuildTeamSlotIndices(IReadOnlyList<int> deploymentSlotIndices, BattleTeamEntry team)
+    {
+        int unitCount = team != null && team.Units != null ? team.Units.Count : 0;
+        var slotIndices = new int[unitCount];
+        var usedSlots = new HashSet<int>();
+
+        for (int i = 0; i < unitCount; i++)
+        {
+            int slotIndex =
+                deploymentSlotIndices != null && i < deploymentSlotIndices.Count ? deploymentSlotIndices[i] : i;
+            if (slotIndex < 0 || slotIndex >= BattleTeamConstants.MaxUnitsPerTeam)
+            {
+                slotIndex = i;
+            }
+
+            if (!usedSlots.Add(slotIndex))
+            {
+                slotIndex = FindFirstUnusedSlot(usedSlots);
+                usedSlots.Add(slotIndex);
+            }
+
+            slotIndices[i] = slotIndex;
+        }
+
+        return slotIndices;
+    }
+
+    private static int FindFirstUnusedSlot(HashSet<int> usedSlots)
+    {
+        for (int i = 0; i < BattleTeamConstants.MaxUnitsPerTeam; i++)
+        {
+            if (!usedSlots.Contains(i))
+            {
+                return i;
+            }
+        }
+
+        return 0;
+    }
+
+    private static IReadOnlyList<int> BuildDeploymentSlotIndices(IEnumerable<int> source, int unitCount)
+    {
+        List<int> result = new List<int>(Mathf.Max(0, unitCount));
+        if (source != null)
+        {
+            foreach (int slotIndex in source)
+            {
+                if (result.Count >= unitCount)
+                {
+                    break;
+                }
+
+                result.Add(Mathf.Max(0, slotIndex));
+            }
+        }
+
+        while (result.Count < unitCount)
+        {
+            result.Add(result.Count);
+        }
+
+        return result;
+    }
+
+    private static IReadOnlyList<Vector2> BuildDeploymentNormalizedPositions(
+        IEnumerable<Vector2> source,
+        int unitCount,
+        bool isPlayerTeam
+    )
+    {
+        List<Vector2> result = new List<Vector2>(Mathf.Max(0, unitCount));
+        if (source != null)
+        {
+            foreach (Vector2 normalizedPosition in source)
+            {
+                if (result.Count >= unitCount)
+                {
+                    break;
+                }
+
+                result.Add(BattleDeploymentPositionUtility.ClampToDeploymentHalf(normalizedPosition, isPlayerTeam));
+            }
+        }
+
+        while (result.Count < unitCount)
+        {
+            result.Add(BattleDeploymentPositionUtility.BuildDefaultPosition(result.Count, unitCount, isPlayerTeam));
+        }
+
+        return result;
     }
 }

@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 251b89a55cd5a2743878f62ed275c4de, type: 3}
   m_Name: Artifact7
   m_EditorClassIdentifier: Assembly-CSharp::ArtifactSO
-  icon: {fileID: 21300000, guid: c7ed09800fe13894cabee59a46d25094, type: 3}
+  icon: {fileID: 21300000, guid: 705c6dd7b05b78a459da910bf1b2a2cb, type: 3}
   artifactName: artifact7
-  description: artifact7 des
+  artifactPerkId: 0
+  artifactLore: artifact7 des

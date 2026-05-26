@@ -37,6 +37,12 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
     private BattleStatusGridUIManager battleStatusGridUIManager;
 
     [SerializeField]
+    private BattleUnitStatusPanelUIManager battleUnitStatusPanelUIManager;
+
+    [SerializeField]
+    private BattleUnitTooltipUIManager battleUnitTooltipUIManager;
+
+    [SerializeField]
     private BattleSceneUIManager battleSceneUIManager;
 
     [SerializeField]
@@ -228,10 +234,48 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
 
         _runtimeUnits.Clear();
         if (_spawnResult != null)
+        {
             _runtimeUnits.AddRange(_spawnResult.Units);
+        }
+
+        BattleUnitStatusPanelUIManager unitStatusPanel = ResolveBattleUnitStatusPanelUIManager();
+        if (unitStatusPanel != null)
+        {
+            unitStatusPanel.Initialize(_runtimeUnits, payload);
+        }
+
+        BattleUnitTooltipUIManager unitTooltip = ResolveBattleUnitTooltipUIManager();
+        if (unitTooltip != null)
+        {
+            unitTooltip.Initialize(_runtimeUnits);
+        }
 
         OnUnitsSpawned?.Invoke();
         return true;
+    }
+
+    private BattleUnitStatusPanelUIManager ResolveBattleUnitStatusPanelUIManager()
+    {
+        if (battleUnitStatusPanelUIManager != null)
+        {
+            return battleUnitStatusPanelUIManager;
+        }
+
+        battleUnitStatusPanelUIManager = FindFirstObjectByType<BattleUnitStatusPanelUIManager>(
+            FindObjectsInactive.Include
+        );
+        return battleUnitStatusPanelUIManager;
+    }
+
+    private BattleUnitTooltipUIManager ResolveBattleUnitTooltipUIManager()
+    {
+        if (battleUnitTooltipUIManager != null)
+        {
+            return battleUnitTooltipUIManager;
+        }
+
+        battleUnitTooltipUIManager = FindFirstObjectByType<BattleUnitTooltipUIManager>(FindObjectsInactive.Include);
+        return battleUnitTooltipUIManager;
     }
 
     private Dictionary<BattleTeamId, Vector3[]> BuildSpawnPositionsByTeam(BattleStartPayload payload)
@@ -241,11 +285,29 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
         BattleTeamEntry hostileTeam = payload.GetHostileTeam();
 
         positionsByTeam[playerTeam.TeamId] =
-            TryBuildConfiguredPositions(allyPlaceholders, playerTeam.Units.Count)
+            TryBuildNormalizedPositions(
+                payload.PlayerDeploymentNormalizedPositions,
+                playerTeam.Units.Count,
+                battlefieldCollider.bounds
+            )
+            ?? TryBuildConfiguredPositions(
+                allyPlaceholders,
+                playerTeam.Units.Count,
+                payload.PlayerDeploymentSlotIndices
+            )
             ?? BuildLinePositions(playerTeam.Units.Count, battlefieldCollider.bounds, isPlayerTeam: true);
 
         positionsByTeam[hostileTeam.TeamId] =
-            TryBuildConfiguredPositions(enemyPlaceholders, hostileTeam.Units.Count)
+            TryBuildNormalizedPositions(
+                payload.EnemyDeploymentNormalizedPositions,
+                hostileTeam.Units.Count,
+                battlefieldCollider.bounds
+            )
+            ?? TryBuildConfiguredPositions(
+                enemyPlaceholders,
+                hostileTeam.Units.Count,
+                payload.EnemyDeploymentSlotIndices
+            )
             ?? BuildLinePositions(hostileTeam.Units.Count, battlefieldCollider.bounds, isPlayerTeam: false);
 
         return positionsByTeam;
@@ -253,12 +315,37 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
 
     private static Vector3[] TryBuildConfiguredPositions(Transform[] placeholders, int requiredCount)
     {
+        return TryBuildConfiguredPositions(placeholders, requiredCount, null);
+    }
+
+    private static Vector3[] TryBuildConfiguredPositions(
+        Transform[] placeholders,
+        int requiredCount,
+        IReadOnlyList<int> slotIndices
+    )
+    {
         if (placeholders == null || placeholders.Length == 0 || requiredCount <= 0)
         {
             return null;
         }
 
         List<Vector3> positions = new List<Vector3>(requiredCount);
+        if (slotIndices != null && slotIndices.Count >= requiredCount)
+        {
+            for (int i = 0; i < requiredCount; i++)
+            {
+                int slotIndex = slotIndices[i];
+                if (slotIndex < 0 || slotIndex >= placeholders.Length || placeholders[slotIndex] == null)
+                {
+                    return null;
+                }
+
+                positions.Add(placeholders[slotIndex].position);
+            }
+
+            return positions.ToArray();
+        }
+
         for (int i = 0; i < placeholders.Length && positions.Count < requiredCount; i++)
         {
             Transform placeholder = placeholders[i];
@@ -269,6 +356,41 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
         }
 
         return positions.Count >= requiredCount ? positions.ToArray() : null;
+    }
+
+    private static Vector3[] TryBuildNormalizedPositions(
+        IReadOnlyList<Vector2> normalizedPositions,
+        int requiredCount,
+        Bounds battlefieldBounds
+    )
+    {
+        if (normalizedPositions == null || normalizedPositions.Count < requiredCount || requiredCount <= 0)
+        {
+            return null;
+        }
+
+        Vector3[] positions = new Vector3[requiredCount];
+        Vector3 center = battlefieldBounds.center;
+        Vector3 extents = battlefieldBounds.extents;
+
+        for (int i = 0; i < requiredCount; i++)
+        {
+            Vector2 normalizedPosition = normalizedPositions[i];
+            normalizedPosition.x = Mathf.Clamp(normalizedPosition.x, -1f, 1f);
+            normalizedPosition.y = Mathf.Clamp(normalizedPosition.y, -1f, 1f);
+            if (normalizedPosition.magnitude > 1f)
+            {
+                normalizedPosition.Normalize();
+            }
+
+            positions[i] = new Vector3(
+                center.x + normalizedPosition.x * extents.x,
+                center.y,
+                center.z + normalizedPosition.y * extents.z
+            );
+        }
+
+        return positions;
     }
 
     private static Vector3[] BuildLinePositions(int count, Bounds battlefieldBounds, bool isPlayerTeam)
@@ -359,7 +481,14 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
             source.EnemyAverageLevel,
             source.PreviewRewardGold,
             source.BattleSeed,
-            teamSlotIndicesById
+            source.PlayerDeploymentSlotIndices,
+            source.EnemyDeploymentSlotIndices,
+            source.PlayerDeploymentNormalizedPositions,
+            source.EnemyDeploymentNormalizedPositions,
+            teamSlotIndicesById,
+            source.CurrentDay,
+            source.Difficulty,
+            source.PlayerSquadTeamIndex
         );
     }
 

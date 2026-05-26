@@ -15,6 +15,8 @@ public sealed class MainFlowManager : MonoBehaviour
         Gladiator = 3,
         Market = 4,
         BattlePreparation = 5,
+        Inventory = 6,
+        Squad = 7,
     }
 
     [Header("Scene Managers")]
@@ -32,6 +34,15 @@ public sealed class MainFlowManager : MonoBehaviour
 
     [SerializeField]
     private ResearchUIManager researchUIManager;
+
+    [SerializeField]
+    private InventoryUIManager inventoryUIManager;
+
+    [SerializeField]
+    private SquadManager squadManager;
+
+    [SerializeField]
+    private SquadUIManager squadUIManager;
 
     [SerializeField]
     private BattleManager battleManager;
@@ -63,6 +74,10 @@ public sealed class MainFlowManager : MonoBehaviour
     [Header("Battle Scene")]
     [SerializeField]
     private string battleSceneName = "BattleScene"; // 전투 시작 시 실제로 로드할 배틀씬 이름
+
+    [Header("Title Scene")]
+    [SerializeField]
+    private string titleSceneName = "TitleScene";
 
     [Header("Debug")]
     [SerializeField]
@@ -101,6 +116,7 @@ public sealed class MainFlowManager : MonoBehaviour
         gladiatorManager = GladiatorManager.Instance;
         inventoryManager = InventoryManager.Instance;
         marketManager = MarketManager.Instance;
+        squadManager = SquadManager.Instance;
 
         if (!ValidateDependencies())
         {
@@ -115,10 +131,23 @@ public sealed class MainFlowManager : MonoBehaviour
         inventoryManager.Initialize(_contentDatabaseProvider, _randomManager);
         gladiatorManager.Initialize(balance, _randomManager);
         resourceManager.Initialize(balance);
-        marketManager.Initialize(recruitFactory, equipmentFactory, gladiatorManager, inventoryManager, resourceManager);
+        marketManager.Initialize(
+            recruitFactory,
+            equipmentFactory,
+            gladiatorManager,
+            inventoryManager,
+            resourceManager,
+            _contentDatabaseProvider,
+            researchManager
+        );
+        ResetGladiatorNameReservations();
+        ReserveMarketGladiatorOfferNames();
         marketManager.InitializeDay(_sessionManager.CurrentDay);
 
+        int ownedGladiatorCountBeforeStarterGrant = gladiatorManager.GetOwnedGladiatorCount();
         gladiatorManager.GrantRandomStarterGladiators(_contentDatabaseProvider, _sessionManager, 6);
+        GrantStarterLoadoutIfNewGame(ownedGladiatorCountBeforeStarterGrant);
+        AssignStarterGladiatorsToFirstSquadIfEmpty();
         inventoryManager.GrantRandomStarterWeapons(_contentDatabaseProvider);
         researchManager.Initialize(_contentDatabaseProvider);
 
@@ -129,9 +158,21 @@ public sealed class MainFlowManager : MonoBehaviour
 
         resourceUIManager.Initialize(resourceManager);
         researchUIManager.Initialize(this, researchManager);
+        inventoryUIManager.Initialize(this, inventoryManager, researchManager, gladiatorManager);
         gladiatorUIManager.Initialize(this, gladiatorManager, inventoryManager);
-        battleUIManager.Initialize(this, battleManager);
-        marketUIManager.Initialize(this, marketManager, resourceManager, gladiatorManager, inventoryManager);
+        battleUIManager.Initialize(this, battleManager, squadManager);
+        if (squadUIManager != null)
+        {
+            squadUIManager.Initialize(this, squadManager, gladiatorManager);
+        }
+        marketUIManager.Initialize(
+            this,
+            marketManager,
+            resourceManager,
+            gladiatorManager,
+            inventoryManager,
+            researchManager
+        );
         mainUIManager.Initialize(this, _sessionManager);
 
         TryGrantPendingBattleRewardOnMainSceneEnter();
@@ -244,6 +285,12 @@ public sealed class MainFlowManager : MonoBehaviour
         if (researchUIManager == null)
         {
             Debug.LogError("[MainFlowManager] researchUIManager is missing.", this);
+            ok = false;
+        }
+
+        if (inventoryUIManager == null)
+        {
+            Debug.LogError("[MainFlowManager] inventoryUIManager is missing.", this);
             ok = false;
         }
 
@@ -434,6 +481,11 @@ public sealed class MainFlowManager : MonoBehaviour
     // 그 payload를 boot scene DDOL인 BattleSessionManager에 전달해 저장한 뒤 배틀씬 로드를 시작
     public void HandleBattleStartRequested()
     {
+        HandleBattleStartRequested(null);
+    }
+
+    public void HandleBattleStartRequested(BattleDeploymentPlan deploymentPlan)
+    {
         if (_uiOwner != UiOwner.BattlePreparation)
         {
             return;
@@ -472,7 +524,7 @@ public sealed class MainFlowManager : MonoBehaviour
             return;
         }
 
-        if (!TryBuildBattleStartPayload(out BattleStartPayload payload))
+        if (!TryBuildBattleStartPayload(deploymentPlan, out BattleStartPayload payload))
         {
             return;
         }
@@ -500,7 +552,7 @@ public sealed class MainFlowManager : MonoBehaviour
 
     // 전투 진입 직전에 아군/적군 snapshot과 battleSeed를 묶어
     // BattleStartPayload를 완성함.
-    private bool TryBuildBattleStartPayload(out BattleStartPayload payload)
+    private bool TryBuildBattleStartPayload(BattleDeploymentPlan deploymentPlan, out BattleStartPayload payload)
     {
         payload = null;
 
@@ -510,12 +562,27 @@ public sealed class MainFlowManager : MonoBehaviour
             return false;
         }
 
-        if (!TryBuildAllySnapshotsForBattle(out List<BattleUnitSnapshot> allySnapshots))
+        if (
+            !TryBuildAllySnapshotsForBattle(
+                deploymentPlan,
+                out List<BattleUnitSnapshot> allySnapshots,
+                out List<int> allyDeploymentSlotIndices,
+                out List<Vector2> allyDeploymentPositions
+            )
+        )
         {
             return false;
         }
 
-        if (!TryBuildEnemySnapshotsForBattle(encounter, out List<BattleUnitSnapshot> enemySnapshots))
+        if (
+            !TryBuildEnemySnapshotsForBattle(
+                encounter,
+                deploymentPlan,
+                out List<BattleUnitSnapshot> enemySnapshots,
+                out List<int> enemyDeploymentSlotIndices,
+                out List<Vector2> enemyDeploymentPositions
+            )
+        )
         {
             return false;
         }
@@ -535,18 +602,32 @@ public sealed class MainFlowManager : MonoBehaviour
             encounter.EncounterIndex,
             encounter.AverageLevel,
             encounter.PreviewRewardGold,
-            battleSeed
+            battleSeed,
+            allyDeploymentSlotIndices,
+            enemyDeploymentSlotIndices,
+            allyDeploymentPositions,
+            enemyDeploymentPositions,
+            currentDay: _sessionManager != null ? _sessionManager.CurrentDay : 1,
+            difficulty: encounter.Difficulty,
+            playerSquadTeamIndex: deploymentPlan != null ? deploymentPlan.SquadTeamIndex : 0
         );
 
         return true;
     }
 
-    // 현재 보유 검투사 목록의 앞 최대 BattleTeamConstants.MaxUnitsPerTeam명을 전투용 아군 snapshot으로 복사함.
-    // 프로토타입에서 전투에 들어가는 건 실제 인스턴스가 아니라, 각 유닛의 정보를 복사한 스냅샷임. (정보의 변형이나 버그를 방지, 오버헤드 감소)
-    // 즉, 실제 보유 데이터 자체를 넘기지 않고 전투 시작용 복사본을 만든다는 것
-    private bool TryBuildAllySnapshotsForBattle(out List<BattleUnitSnapshot> allySnapshots)
+    // 스쿼드 슬롯에 배치된 검투사를 전투용 아군 snapshot으로 복사한다.
+    // 슬롯이 모두 비어 있으면 보유 검투사 앞 최대 MaxUnitsPerTeam명을 폴백으로 사용한다.
+    // 실제 보유 데이터 자체를 넘기지 않고 전투 시작용 복사본을 만든다 (정보 변형 방지).
+    private bool TryBuildAllySnapshotsForBattle(
+        BattleDeploymentPlan deploymentPlan,
+        out List<BattleUnitSnapshot> allySnapshots,
+        out List<int> deploymentSlotIndices,
+        out List<Vector2> deploymentPositions
+    )
     {
         allySnapshots = new List<BattleUnitSnapshot>(BattleTeamConstants.MaxUnitsPerTeam);
+        deploymentSlotIndices = new List<int>(BattleTeamConstants.MaxUnitsPerTeam);
+        deploymentPositions = new List<Vector2>(BattleTeamConstants.MaxUnitsPerTeam);
 
         if (gladiatorManager == null)
         {
@@ -554,21 +635,60 @@ public sealed class MainFlowManager : MonoBehaviour
             return false;
         }
 
-        IReadOnlyList<OwnedGladiatorData> ownedGladiators = gladiatorManager.OwnedGladiators;
-        if (ownedGladiators == null || ownedGladiators.Count == 0)
+        List<OwnedGladiatorData> sources;
+        List<int> sourceSlotIndices = new List<int>(BattleTeamConstants.MaxUnitsPerTeam);
+        List<Vector2> sourcePositions = new List<Vector2>(BattleTeamConstants.MaxUnitsPerTeam);
+
+        if (TryBuildDeploymentPlanAllySources(deploymentPlan, out sources, out sourceSlotIndices, out sourcePositions))
         {
-            Debug.LogWarning("[MainFlowManager] Cannot start battle because there are no owned gladiators.", this);
+            // 배치 화면에서 지정한 슬롯 순서를 그대로 사용한다.
+        }
+        else if (squadManager != null)
+        {
+            sources = squadManager.GetAssignedGladiators();
+            for (int i = 0; i < sources.Count; i++)
+            {
+                sourceSlotIndices.Add(i);
+                sourcePositions.Add(BattleDeploymentPositionUtility.BuildDefaultPosition(i, sources.Count, true));
+            }
+        }
+        else
+        {
+            sources = new List<OwnedGladiatorData>();
+        }
+
+        // 스쿼드가 비어 있으면 보유 검투사 목록 앞부분으로 폴백한다.
+        if (sources.Count == 0)
+        {
+            IReadOnlyList<OwnedGladiatorData> owned = gladiatorManager.OwnedGladiators;
+            int fallbackCount = Mathf.Min(BattleTeamConstants.MaxUnitsPerTeam, owned.Count);
+            for (int i = 0; i < fallbackCount; i++)
+            {
+                if (owned[i] != null)
+                {
+                    sources.Add(owned[i]);
+                    sourceSlotIndices.Add(i);
+                    sourcePositions.Add(
+                        BattleDeploymentPositionUtility.BuildDefaultPosition(sources.Count - 1, fallbackCount, true)
+                    );
+                }
+            }
+        }
+
+        if (sources.Count == 0)
+        {
+            Debug.LogWarning(
+                "[MainFlowManager] Cannot start battle because there are no gladiators in the squad.",
+                this
+            );
             return false;
         }
 
-        int count = Mathf.Min(BattleTeamConstants.MaxUnitsPerTeam, ownedGladiators.Count);
-
-        for (int i = 0; i < count; i++)
+        for (int i = 0; i < sources.Count; i++)
         {
-            OwnedGladiatorData source = ownedGladiators[i];
+            OwnedGladiatorData source = sources[i];
             if (source == null)
             {
-                Debug.LogWarning($"[MainFlowManager] Owned gladiator at index {i} is null. Skipping.", this);
                 continue;
             }
 
@@ -576,6 +696,16 @@ public sealed class MainFlowManager : MonoBehaviour
             if (snapshot != null)
             {
                 allySnapshots.Add(snapshot);
+                deploymentSlotIndices.Add(i < sourceSlotIndices.Count ? sourceSlotIndices[i] : allySnapshots.Count - 1);
+                deploymentPositions.Add(
+                    i < sourcePositions.Count
+                        ? sourcePositions[i]
+                        : BattleDeploymentPositionUtility.BuildDefaultPosition(
+                            allySnapshots.Count - 1,
+                            sources.Count,
+                            true
+                        )
+                );
             }
         }
 
@@ -594,10 +724,15 @@ public sealed class MainFlowManager : MonoBehaviour
     // 선택된 전투 후보가 들고 있는 적 preview를 실제 전투용 적 snapshot 리스트로 복사
     private bool TryBuildEnemySnapshotsForBattle(
         BattleEncounterPreview encounter,
-        out List<BattleUnitSnapshot> enemySnapshots
+        BattleDeploymentPlan deploymentPlan,
+        out List<BattleUnitSnapshot> enemySnapshots,
+        out List<int> deploymentSlotIndices,
+        out List<Vector2> deploymentPositions
     )
     {
         enemySnapshots = new List<BattleUnitSnapshot>(BattleTeamConstants.MaxUnitsPerTeam);
+        deploymentSlotIndices = new List<int>(BattleTeamConstants.MaxUnitsPerTeam);
+        deploymentPositions = new List<Vector2>(BattleTeamConstants.MaxUnitsPerTeam);
 
         if (encounter == null)
         {
@@ -612,18 +747,51 @@ public sealed class MainFlowManager : MonoBehaviour
             return false;
         }
 
-        int count = Mathf.Min(BattleTeamConstants.MaxUnitsPerTeam, encounterUnits.Count);
-
-        for (int i = 0; i < count; i++)
+        if (deploymentPlan != null && deploymentPlan.EnemyUnitIndicesBySlot != null)
         {
-            BattleUnitSnapshot source = encounterUnits[i];
-            if (source == null)
+            for (int slotIndex = 0; slotIndex < deploymentPlan.EnemyUnitIndicesBySlot.Length; slotIndex++)
             {
-                Debug.LogWarning($"[MainFlowManager] Encounter enemy snapshot at index {i} is null. Skipping.", this);
-                continue;
-            }
+                int enemyIndex = deploymentPlan.EnemyUnitIndicesBySlot[slotIndex];
+                if (enemyIndex < 0 || enemyIndex >= encounterUnits.Count)
+                {
+                    continue;
+                }
 
-            enemySnapshots.Add(source.Clone());
+                BattleUnitSnapshot source = encounterUnits[enemyIndex];
+                if (source == null)
+                {
+                    continue;
+                }
+
+                enemySnapshots.Add(source.Clone());
+                deploymentSlotIndices.Add(slotIndex);
+                deploymentPositions.Add(
+                    GetDeploymentPositionBySlot(deploymentPlan.EnemyNormalizedPositionsBySlot, slotIndex, false)
+                );
+            }
+        }
+        else
+        {
+            int count = Mathf.Min(BattleTeamConstants.MaxUnitsPerTeam, encounterUnits.Count);
+
+            for (int i = 0; i < count; i++)
+            {
+                BattleUnitSnapshot source = encounterUnits[i];
+                if (source == null)
+                {
+                    Debug.LogWarning(
+                        $"[MainFlowManager] Encounter enemy snapshot at index {i} is null. Skipping.",
+                        this
+                    );
+                    continue;
+                }
+
+                enemySnapshots.Add(source.Clone());
+                deploymentSlotIndices.Add(i);
+                deploymentPositions.Add(
+                    BattleDeploymentPositionUtility.BuildDefaultPosition(enemySnapshots.Count - 1, count, false)
+                );
+            }
         }
 
         if (enemySnapshots.Count == 0)
@@ -636,6 +804,82 @@ public sealed class MainFlowManager : MonoBehaviour
         }
 
         return true;
+    }
+
+    private bool TryBuildDeploymentPlanAllySources(
+        BattleDeploymentPlan deploymentPlan,
+        out List<OwnedGladiatorData> sources,
+        out List<int> sourceSlotIndices,
+        out List<Vector2> sourcePositions
+    )
+    {
+        sources = new List<OwnedGladiatorData>(BattleTeamConstants.MaxUnitsPerTeam);
+        sourceSlotIndices = new List<int>(BattleTeamConstants.MaxUnitsPerTeam);
+        sourcePositions = new List<Vector2>(BattleTeamConstants.MaxUnitsPerTeam);
+
+        if (deploymentPlan == null || deploymentPlan.AllyRuntimeIdsBySlot == null)
+        {
+            return false;
+        }
+
+        HashSet<int> usedRuntimeIds = new HashSet<int>();
+        for (int slotIndex = 0; slotIndex < deploymentPlan.AllyRuntimeIdsBySlot.Length; slotIndex++)
+        {
+            int runtimeId = deploymentPlan.AllyRuntimeIdsBySlot[slotIndex];
+            if (runtimeId < 0 || usedRuntimeIds.Contains(runtimeId))
+            {
+                continue;
+            }
+
+            OwnedGladiatorData gladiator = FindOwnedGladiatorByRuntimeId(runtimeId);
+            if (gladiator == null)
+            {
+                continue;
+            }
+
+            usedRuntimeIds.Add(runtimeId);
+            sources.Add(gladiator);
+            sourceSlotIndices.Add(slotIndex);
+            sourcePositions.Add(
+                GetDeploymentPositionBySlot(deploymentPlan.AllyNormalizedPositionsBySlot, slotIndex, true)
+            );
+        }
+
+        return sources.Count > 0;
+    }
+
+    private static Vector2 GetDeploymentPositionBySlot(Vector2[] positionsBySlot, int slotIndex, bool isPlayerTeam)
+    {
+        if (positionsBySlot != null && slotIndex >= 0 && slotIndex < positionsBySlot.Length)
+        {
+            return BattleDeploymentPositionUtility.ClampToDeploymentHalf(positionsBySlot[slotIndex], isPlayerTeam);
+        }
+
+        return BattleDeploymentPositionUtility.BuildDefaultPosition(
+            slotIndex,
+            BattleTeamConstants.MaxUnitsPerTeam,
+            isPlayerTeam
+        );
+    }
+
+    private OwnedGladiatorData FindOwnedGladiatorByRuntimeId(int runtimeId)
+    {
+        if (gladiatorManager == null || runtimeId < 0)
+        {
+            return null;
+        }
+
+        IReadOnlyList<OwnedGladiatorData> owned = gladiatorManager.OwnedGladiators;
+        for (int i = 0; i < owned.Count; i++)
+        {
+            OwnedGladiatorData gladiator = owned[i];
+            if (gladiator != null && gladiator.RuntimeId == runtimeId)
+            {
+                return gladiator;
+            }
+        }
+
+        return null;
     }
 
     // 전투 payload를 BattleSessionManager에 저장하고,
@@ -694,14 +938,125 @@ public sealed class MainFlowManager : MonoBehaviour
         yield break;
     }
 
-    public void HandleMissionMenuRequested()
+    public void HandleInventoryMenuRequested()
     {
         if (_uiOwner != UiOwner.Main)
         {
             return;
         }
 
-        Debug.Log("[MainFlowManager] 임무 메뉴는 아직 이번 단계 구현 범위 아님.", this);
+        _uiOwner = UiOwner.Inventory;
+        inventoryUIManager.OpenPanel();
+        ApplyUiState();
+
+        if (verboseLog)
+        {
+            Debug.Log("[MainFlowManager] Inventory panel opened.", this);
+        }
+    }
+
+    public void HandleInventoryBackRequested()
+    {
+        if (_uiOwner != UiOwner.Inventory)
+        {
+            return;
+        }
+
+        inventoryUIManager.ClosePanel();
+        _uiOwner = UiOwner.Main;
+        ApplyUiState();
+
+        if (verboseLog)
+        {
+            Debug.Log("[MainFlowManager] Inventory panel closed. Main UI regained control.", this);
+        }
+    }
+
+    public void HandleSquadMenuRequested()
+    {
+        if (_uiOwner != UiOwner.Main)
+        {
+            return;
+        }
+
+        if (squadUIManager == null)
+        {
+            return;
+        }
+
+        _uiOwner = UiOwner.Squad;
+        squadUIManager.OpenPanel();
+        ApplyUiState();
+
+        if (verboseLog)
+        {
+            Debug.Log("[MainFlowManager] Squad panel opened.", this);
+        }
+    }
+
+    public void HandleSquadBackRequested()
+    {
+        if (_uiOwner != UiOwner.Squad)
+        {
+            return;
+        }
+
+        squadUIManager.ClosePanel();
+        _uiOwner = UiOwner.Main;
+        ApplyUiState();
+
+        if (verboseLog)
+        {
+            Debug.Log("[MainFlowManager] Squad panel closed. Main UI regained control.", this);
+        }
+    }
+
+    public void HandleReturnToTitleRequested()
+    {
+        if (_uiOwner != UiOwner.Main)
+        {
+            return;
+        }
+
+        if (_sceneLoader == null)
+        {
+            Debug.LogError("[MainFlowManager] SceneLoader is null.", this);
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(titleSceneName))
+        {
+            Debug.LogError("[MainFlowManager] titleSceneName is empty.", this);
+            return;
+        }
+
+        if (!Application.CanStreamedLevelBeLoaded(titleSceneName))
+        {
+            Debug.LogError(
+                $"[MainFlowManager] Title scene '{titleSceneName}' is not in Build Settings or cannot be loaded.",
+                this
+            );
+            return;
+        }
+
+        if (_sceneLoader.IsLoading)
+        {
+            Debug.LogWarning("[MainFlowManager] SceneLoader is already loading another scene.", this);
+            return;
+        }
+
+        bool started = _sceneLoader.TryLoadScene(titleSceneName);
+
+        if (!started)
+        {
+            Debug.LogError($"[MainFlowManager] Failed to start TitleScene load. SceneName={titleSceneName}", this);
+            return;
+        }
+
+        if (verboseLog)
+        {
+            Debug.Log("[MainFlowManager] Returning to title scene.", this);
+        }
     }
 
     public void HandleMarketMenuRequested()
@@ -748,6 +1103,8 @@ public sealed class MainFlowManager : MonoBehaviour
         }
 
         _sessionManager.AdvanceDay();
+        ResetGladiatorNameReservations();
+        ReserveMarketGladiatorOfferNames();
         marketManager.InitializeDay(_sessionManager.CurrentDay);
         battleManager.InitializeDay(_sessionManager.CurrentDay);
 
@@ -756,6 +1113,56 @@ public sealed class MainFlowManager : MonoBehaviour
         if (verboseLog)
         {
             Debug.Log($"[MainFlowManager] EOD complete. CurrentDay={_sessionManager.CurrentDay}", this);
+        }
+    }
+
+    private void ResetGladiatorNameReservations()
+    {
+        RecruitFactory.ResetReservedGladiatorDisplayNames();
+
+        if (gladiatorManager == null)
+        {
+            return;
+        }
+
+        IReadOnlyList<OwnedGladiatorData> ownedGladiators = gladiatorManager.OwnedGladiators;
+        for (int i = 0; i < ownedGladiators.Count; i++)
+        {
+            OwnedGladiatorData gladiator = ownedGladiators[i];
+            if (gladiator == null)
+            {
+                continue;
+            }
+
+            gladiator.DisplayName = RecruitFactory.ReserveOrCreateUniqueGladiatorDisplayName(
+                gladiator.DisplayName,
+                _randomManager,
+                RandomStreamType.Recruit
+            );
+        }
+    }
+
+    private void ReserveMarketGladiatorOfferNames()
+    {
+        if (marketManager == null)
+        {
+            return;
+        }
+
+        IReadOnlyList<MarketGladiatorOffer> offers = marketManager.GladiatorOffers;
+        for (int i = 0; i < offers.Count; i++)
+        {
+            OwnedGladiatorData gladiator = offers[i]?.Gladiator;
+            if (gladiator == null)
+            {
+                continue;
+            }
+
+            gladiator.DisplayName = RecruitFactory.ReserveOrCreateUniqueGladiatorDisplayName(
+                gladiator.DisplayName,
+                _randomManager,
+                RandomStreamType.Recruit
+            );
         }
     }
 
@@ -815,6 +1222,147 @@ public sealed class MainFlowManager : MonoBehaviour
         {
             Debug.Log($"[MainFlowManager] Pending battle reward granted on MainScene enter. PaidGold={paidGold}", this);
         }
+    }
+
+    private void AssignStarterGladiatorsToFirstSquadIfEmpty()
+    {
+        if (squadManager == null || gladiatorManager == null)
+        {
+            return;
+        }
+
+        for (int slotIndex = 0; slotIndex < squadManager.SlotCount; slotIndex++)
+        {
+            if (squadManager.GetSlot(0, slotIndex) != null)
+            {
+                return;
+            }
+        }
+
+        IReadOnlyList<OwnedGladiatorData> ownedGladiators = gladiatorManager.OwnedGladiators;
+        int assignCount = Mathf.Min(squadManager.SlotCount, ownedGladiators.Count);
+        for (int slotIndex = 0; slotIndex < assignCount; slotIndex++)
+        {
+            squadManager.TryAssignToSlot(0, slotIndex, ownedGladiators[slotIndex]);
+        }
+
+        squadManager.SetActiveTeam(0);
+    }
+
+    private void GrantStarterLoadoutIfNewGame(int ownedGladiatorCountBeforeStarterGrant)
+    {
+        if (
+            ownedGladiatorCountBeforeStarterGrant > 0
+            || gladiatorManager == null
+            || inventoryManager == null
+            || equipmentFactory == null
+        )
+        {
+            return;
+        }
+
+        IReadOnlyList<OwnedGladiatorData> ownedGladiators = gladiatorManager.OwnedGladiators;
+        if (ownedGladiators == null || ownedGladiators.Count == 0)
+        {
+            return;
+        }
+
+        int equipCount = Mathf.Min(6, ownedGladiators.Count);
+        for (int i = 0; i < equipCount; i++)
+        {
+            OwnedGladiatorData gladiator = ownedGladiators[i];
+            if (gladiator == null)
+            {
+                continue;
+            }
+
+            TryGrantAndEquipStarterWeapon(gladiator);
+            TryGrantAndEquipStarterArtifact(gladiator);
+        }
+    }
+
+    private void TryGrantAndEquipStarterWeapon(OwnedGladiatorData gladiator)
+    {
+        if (gladiator == null || gladiator.EquippedWeapon != null)
+        {
+            return;
+        }
+
+        OwnedWeaponData weaponPreview = equipmentFactory.CreateRandomWeaponPreviewForDay(_sessionManager.CurrentDay);
+        if (weaponPreview == null)
+        {
+            Debug.LogError("[MainFlowManager] Failed to create starter weapon preview.", this);
+            return;
+        }
+
+        if (!inventoryManager.TryAddOwnedWeaponFromPreview(weaponPreview, out OwnedWeaponData ownedWeapon))
+        {
+            return;
+        }
+
+        if (!gladiatorManager.TryEquipWeapon(gladiator, ownedWeapon, out string failReason) && verboseLog)
+        {
+            Debug.LogWarning(
+                $"[MainFlowManager] Failed to equip starter weapon. Gladiator={gladiator.DisplayName}, Reason={failReason}",
+                this
+            );
+        }
+    }
+
+    private void TryGrantAndEquipStarterArtifact(OwnedGladiatorData gladiator)
+    {
+        if (gladiator == null || gladiator.EquippedArtifact != null)
+        {
+            return;
+        }
+
+        ArtifactSO artifact = PickRandomStarterArtifact();
+        if (artifact == null)
+        {
+            return;
+        }
+
+        if (!inventoryManager.TryAddOwnedArtifact(artifact, out OwnedArtifactData ownedArtifact))
+        {
+            return;
+        }
+
+        if (!gladiatorManager.TryEquipArtifact(gladiator, ownedArtifact, out string failReason) && verboseLog)
+        {
+            Debug.LogWarning(
+                $"[MainFlowManager] Failed to equip starter artifact. Gladiator={gladiator.DisplayName}, Reason={failReason}",
+                this
+            );
+        }
+    }
+
+    private ArtifactSO PickRandomStarterArtifact()
+    {
+        IReadOnlyList<ArtifactSO> artifacts = _contentDatabaseProvider.Artifacts;
+        if (artifacts == null || artifacts.Count == 0)
+        {
+            Debug.LogError("[MainFlowManager] No artifacts found for starter loadout.", this);
+            return null;
+        }
+
+        List<ArtifactSO> candidates = new List<ArtifactSO>(artifacts.Count);
+        for (int i = 0; i < artifacts.Count; i++)
+        {
+            ArtifactSO artifact = artifacts[i];
+            if (artifact != null)
+            {
+                candidates.Add(artifact);
+            }
+        }
+
+        if (candidates.Count == 0)
+        {
+            Debug.LogError("[MainFlowManager] No valid artifacts found for starter loadout.", this);
+            return null;
+        }
+
+        int pickedIndex = _randomManager.NextInt(RandomStreamType.Equipment, 0, candidates.Count);
+        return candidates[pickedIndex];
     }
 
     private void TryApplyPendingLoadedData()

@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -7,8 +8,8 @@ using UnityEngine.UI;
 // 책임:
 // - 전투 종료 풀스크린 패널 표시 (승리/패배 텍스트, 보상 gold)
 // - confirm 버튼 처리 → MainScene 복귀 시작
-// - speed up(×2) / speed down(×0.5) 버튼 처리 → BattleSimulationManager.MultiplySimulationSpeed(...)로 조절
-// - current speed text 갱신 (결과 패널이 떠 있어도 갱신 가능)
+// - preset speed 버튼 처리 → BattleSimulationManager.SetSimulationSpeedMultiplier(...)로 조절
+// - 현재 선택된 speed 버튼 텍스트 색상 갱신
 // ※ 속도는 minSimulationSpeed ~ maxSimulationSpeed 범위로 clamp
 [DisallowMultipleComponent]
 public sealed class BattleSceneUIManager : MonoBehaviour
@@ -18,26 +19,89 @@ public sealed class BattleSceneUIManager : MonoBehaviour
     private GameObject battleEndPanelRoot;
 
     [SerializeField]
-    private TMP_Text resultTitleText;
+    private Button victoryConfirmButton;
 
     [SerializeField]
-    private TMP_Text resultRewardText;
+    private Button defeatConfirmButton;
+
+    [Header("Victory Panel")]
+    [SerializeField]
+    private GameObject victoryPanelRoot;
 
     [SerializeField]
-    private Button confirmButton;
+    private RawImage victoryBackgroundImage;
+
+    [SerializeField]
+    private RawImage victoryHeaderImage;
+
+    [SerializeField]
+    private TMP_Text victoryBattleResultTitleText;
+
+    [SerializeField]
+    private TMP_Text victoryRewardText;
+
+    [SerializeField]
+    private Button victoryBackToMainButton;
+
+    [Header("Defeat Panel")]
+    [SerializeField]
+    private GameObject defeatPanelRoot;
+
+    [SerializeField]
+    private RawImage defeatBackgroundImage;
+
+    [SerializeField]
+    private RawImage defeatHeaderImage;
+
+    [SerializeField]
+    private TMP_Text defeatBattleResultTitleText;
+
+    [SerializeField]
+    private TMP_Text defeatRewardText;
+
+    [SerializeField]
+    private Button defeatBackToMainButton;
 
     [Header("Speed UI")]
     [SerializeField]
     private BattleSimulationManager battleSimulationManager;
 
     [SerializeField]
-    private Button speedUpButton;
+    private Button speed025Button;
 
     [SerializeField]
-    private Button speedDownButton;
+    private Button speed05Button;
 
     [SerializeField]
-    private TMP_Text currentSpeedText;
+    private Button speed1Button;
+
+    [SerializeField]
+    private Button speed2Button;
+
+    [SerializeField]
+    private Button speed3Button;
+
+    [Header("Header Panel")]
+    [SerializeField]
+    private RawImage headerBackgroundImage;
+
+    [SerializeField]
+    private TMP_Text enemySquadNameText;
+
+    [SerializeField]
+    private TMP_Text allySquadNameText;
+
+    [SerializeField]
+    private TMP_Text enemyAliveCountText;
+
+    [SerializeField]
+    private TMP_Text allyAliveCountText;
+
+    [SerializeField]
+    private TMP_Text clockText;
+
+    [SerializeField]
+    private TMP_Text dayDifficultyText;
 
     [Header("Surrender UI")]
     [SerializeField]
@@ -60,19 +124,19 @@ public sealed class BattleSceneUIManager : MonoBehaviour
     private Button ordersButton;
 
     [SerializeField]
-    private GameObject ordersMaskRoot;
-
-    [SerializeField]
     private GameObject ordersPanelRoot;
 
     [SerializeField]
-    private TMP_InputField ordersInputField;
+    private GameObject orderChatBackgroundRoot;
 
     [SerializeField]
-    private Button orderSendButton;
+    private TMP_InputField currentOrderInputField;
 
     [SerializeField]
-    private Button orderBackButton;
+    private GameObject[] allyOrderResponsePanelRoots = new GameObject[BattleTeamConstants.MaxUnitsPerTeam];
+
+    [SerializeField]
+    private TMP_Text[] allyOrderResponseTexts = new TMP_Text[BattleTeamConstants.MaxUnitsPerTeam];
 
     [Header("Orders Routing")]
     [SerializeField]
@@ -82,6 +146,10 @@ public sealed class BattleSceneUIManager : MonoBehaviour
     [SerializeField]
     [Min(0.01f)]
     private float orderInputFixedSpeedMultiplier = 0.1f;
+
+    [SerializeField]
+    [Min(0f)]
+    private float allyResponseVisibleSeconds = 6f;
 
     [Header("Scene Navigation")]
     [SerializeField]
@@ -106,17 +174,28 @@ public sealed class BattleSceneUIManager : MonoBehaviour
 
     private SceneLoader _sceneLoader;
     private BattleSimulationManager _subscribedSimulationManager;
+    private BattleOrdersManager _subscribedBattleOrdersManager;
     private bool _initialized;
     private bool _isNavigating;
 
     private ModalState _activeModalState = ModalState.None;
-    private OrderTargetMode _currentOrderTargetMode = OrderTargetMode.None;
-    private float _cachedSpeedMultiplier = 1f;
-    private bool _hasCachedSpeedMultiplier;
+    private OrderTargetMode _currentOrderTargetMode = OrderTargetMode.Global;
+    private BattleRuntimeUnit _currentOrderTargetUnit;
+    private float _cachedOrderInputSpeedMultiplier = 1f;
+    private bool _hasCachedOrderInputSpeedMultiplier;
+    private bool _isOrderInputSpeedApplied;
+    private BattleStartPayload _headerPayload;
+    private IReadOnlyList<BattleRuntimeUnit> _headerRuntimeUnits;
+    private readonly Coroutine[] _allyResponseHideCoroutines = new Coroutine[BattleTeamConstants.MaxUnitsPerTeam];
+    private BattleResolution _lastResolution;
+    private bool _hasLastResolution;
 
-    public bool IsBattleEndPanelOpen => battleEndPanelRoot != null && battleEndPanelRoot.activeSelf;
+    public bool IsBattleEndPanelOpen =>
+        (battleEndPanelRoot != null && battleEndPanelRoot.activeSelf)
+        || (victoryPanelRoot != null && victoryPanelRoot.activeSelf)
+        || (defeatPanelRoot != null && defeatPanelRoot.activeSelf);
     public bool IsSurrenderPanelOpen => surrenderPanelRoot != null && surrenderPanelRoot.activeSelf;
-    public bool IsOrdersPanelOpen => ordersPanelRoot != null && ordersPanelRoot.activeSelf;
+    public bool IsOrdersPanelOpen => orderChatBackgroundRoot == null || orderChatBackgroundRoot.activeSelf;
 
     public void Initialize()
     {
@@ -130,27 +209,44 @@ public sealed class BattleSceneUIManager : MonoBehaviour
         _sceneLoader = SceneLoader.Instance;
         EnsureBattleSimulationManager();
 
-        BindButton(confirmButton, OnConfirmClicked);
-        BindButton(speedUpButton, OnSpeedUpClicked);
-        BindButton(speedDownButton, OnSpeedDownClicked);
+        BindButton(victoryConfirmButton, OnVictoryConfirmClicked);
+        BindButton(defeatConfirmButton, OnDefeatConfirmClicked);
+        BindButton(victoryBackToMainButton, ReturnToMainScene);
+        BindButton(defeatBackToMainButton, ReturnToMainScene);
+        BindSpeedPresetButtons();
 
         BindButton(surrenderButton, OnSurrenderClicked);
         BindButton(surrenderYesButton, OnSurrenderYesClicked);
         BindButton(surrenderNoButton, OnSurrenderNoClicked);
 
         BindButton(ordersButton, OnOrdersClicked);
-        BindButton(orderSendButton, OnOrderSendClicked);
-        BindButton(orderBackButton, OnOrderBackClicked);
+        BindCurrentOrderInputField();
+        EnsureBattleOrdersManager();
+        RebindBattleOrdersManagerEvents();
 
         HideAll();
+        ClearAllyOrderResponses();
         RefreshSpeedText();
         RefreshButtonStates();
 
         _initialized = true;
     }
 
+    private void Update()
+    {
+        RefreshHeader();
+    }
+
     private void OnDestroy()
     {
+        if (currentOrderInputField != null)
+        {
+            currentOrderInputField.onSubmit.RemoveListener(OnOrderInputSubmitted);
+            currentOrderInputField.onSelect.RemoveListener(HandleOrderInputSelected);
+            currentOrderInputField.onDeselect.RemoveListener(HandleOrderInputDeselected);
+        }
+
+        UnbindBattleOrdersManagerEvents();
         UnbindSimulationEvents();
     }
 
@@ -163,22 +259,19 @@ public sealed class BattleSceneUIManager : MonoBehaviour
 
         CloseTransientUi(restoreOrderSpeed: true, clearOrderInput: false);
 
+        _lastResolution = resolution;
+        _hasLastResolution = true;
+
         SetActive(battleEndPanelRoot, true);
-
-        if (resultTitleText != null)
-        {
-            resultTitleText.text = resolution.WasWin ? "Victory" : "Defeat";
-        }
-
-        if (resultRewardText != null)
-        {
-            resultRewardText.text = resolution.WasWin ? $"Reward : {resolution.PendingReward} Gold" : "Reward : 0 Gold";
-        }
-
-        if (confirmButton != null)
-        {
-            confirmButton.interactable = true;
-        }
+        SetActive(victoryPanelRoot, false);
+        SetActive(defeatPanelRoot, false);
+        SetComponentActive(victoryConfirmButton, resolution.WasWin);
+        SetComponentActive(defeatConfirmButton, !resolution.WasWin);
+        SetButtonInteractable(victoryConfirmButton, resolution.WasWin);
+        SetButtonInteractable(defeatConfirmButton, !resolution.WasWin);
+        SetButtonInteractable(victoryBackToMainButton, true);
+        SetButtonInteractable(defeatBackToMainButton, true);
+        RefreshResultDetailTexts(resolution);
 
         RefreshSpeedText();
         RefreshButtonStates();
@@ -195,82 +288,107 @@ public sealed class BattleSceneUIManager : MonoBehaviour
     public void HideAll()
     {
         CloseTransientUi(restoreOrderSpeed: true, clearOrderInput: true);
+        _hasLastResolution = false;
         SetActive(battleEndPanelRoot, false);
-
-        if (confirmButton != null)
-        {
-            confirmButton.interactable = true;
-        }
+        SetActive(victoryPanelRoot, false);
+        SetActive(defeatPanelRoot, false);
+        EnsureOrderInputVisible();
+        SetGlobalOrderTarget();
+        SetButtonInteractable(victoryConfirmButton, true);
+        SetButtonInteractable(defeatConfirmButton, true);
+        SetButtonInteractable(victoryBackToMainButton, true);
+        SetButtonInteractable(defeatBackToMainButton, true);
 
         RefreshSpeedText();
         RefreshButtonStates();
+        RefreshHeader();
+    }
+
+    public void ConfigureHeader(BattleStartPayload payload, IReadOnlyList<BattleRuntimeUnit> runtimeUnits)
+    {
+        _headerPayload = payload;
+        _headerRuntimeUnits = runtimeUnits;
+        RefreshHeaderStaticTexts();
+        RefreshHeader();
+    }
+
+    public void RefreshHeader()
+    {
+        if (_headerPayload == null && battleSimulationManager != null)
+        {
+            _headerPayload = battleSimulationManager.InitialPayload;
+        }
+
+        if (_headerRuntimeUnits == null && battleSimulationManager != null)
+        {
+            _headerRuntimeUnits = battleSimulationManager.RuntimeUnits;
+        }
+
+        RefreshHeaderStaticTexts();
+        RefreshAliveCounts();
+        RefreshClockText();
     }
 
     public void RefreshSpeedText()
     {
-        if (currentSpeedText == null)
-        {
-            return;
-        }
-
         EnsureBattleSimulationManager();
-
-        if (battleSimulationManager == null)
-        {
-            currentSpeedText.text = "Speed x0";
-            return;
-        }
-
-        if (battleSimulationManager.IsTemporarilyPaused)
-        {
-            currentSpeedText.text = "Paused";
-            return;
-        }
-
-        float speed = battleSimulationManager.SimulationSpeedMultiplier;
-        currentSpeedText.text = $"Speed x{speed:0.##}";
+        RefreshSpeedButtonTextColors();
     }
 
-    private void OnSpeedUpClicked()
+    private void BindSpeedPresetButtons()
+    {
+        Button[] buttons = GetSpeedPresetButtons();
+        float[] speedValues = GetSpeedPresetValues();
+
+        for (int i = 0; i < buttons.Length; i++)
+        {
+            Button button = buttons[i];
+            if (button == null)
+            {
+                continue;
+            }
+
+            button.onClick.RemoveAllListeners();
+            float speed = speedValues[i];
+            button.onClick.AddListener(() => OnSpeedPresetClicked(speed));
+        }
+    }
+
+    private void OnSpeedPresetClicked(float speedMultiplier)
     {
         EnsureBattleSimulationManager();
 
         if (battleSimulationManager == null)
         {
-            Debug.LogWarning("[BattleSceneUIManager] Speed up blocked. BattleSimulationManager not found.", this);
+            Debug.LogWarning("[BattleSceneUIManager] Speed preset blocked. BattleSimulationManager not found.", this);
             return;
         }
 
         if (_activeModalState != ModalState.None || battleSimulationManager.IsTemporarilyPaused)
         {
-            Debug.LogWarning("[BattleSceneUIManager] Speed up blocked. Modal UI is active.", this);
+            Debug.LogWarning("[BattleSceneUIManager] Speed preset blocked. Modal UI is active.", this);
             return;
         }
 
-        battleSimulationManager.MultiplySimulationSpeed(2f);
+        battleSimulationManager.SetSimulationSpeedMultiplier(speedMultiplier);
         RefreshSpeedText();
         RefreshButtonStates();
     }
 
-    private void OnSpeedDownClicked()
+    private void RefreshSpeedButtonTextColors()
     {
-        EnsureBattleSimulationManager();
+        float selectedSpeed = battleSimulationManager != null ? battleSimulationManager.SimulationSpeedMultiplier : -1f;
+        Button[] buttons = GetSpeedPresetButtons();
+        float[] speedValues = GetSpeedPresetValues();
 
-        if (battleSimulationManager == null)
+        for (int i = 0; i < buttons.Length; i++)
         {
-            Debug.LogWarning("[BattleSceneUIManager] Speed down blocked. BattleSimulationManager not found.", this);
-            return;
+            TMP_Text buttonText = buttons[i] != null ? buttons[i].GetComponentInChildren<TMP_Text>(true) : null;
+            if (buttonText != null)
+            {
+                buttonText.color = Mathf.Approximately(selectedSpeed, speedValues[i]) ? Color.red : Color.white;
+            }
         }
-
-        if (_activeModalState != ModalState.None || battleSimulationManager.IsTemporarilyPaused)
-        {
-            Debug.LogWarning("[BattleSceneUIManager] Speed down blocked. Modal UI is active.", this);
-            return;
-        }
-
-        battleSimulationManager.MultiplySimulationSpeed(0.5f);
-        RefreshSpeedText();
-        RefreshButtonStates();
     }
 
     private void OnSurrenderClicked()
@@ -288,18 +406,12 @@ public sealed class BattleSceneUIManager : MonoBehaviour
             return;
         }
 
-        battleSimulationManager.SetTemporaryPause(true);
-        _activeModalState = ModalState.Surrender;
-
-        SetActive(surrenderMaskRoot, true);
-        SetActive(surrenderPanelRoot, true);
-
-        RefreshSpeedText();
-        RefreshButtonStates();
+        CloseTransientUi(restoreOrderSpeed: true, clearOrderInput: false);
+        DisableEntireTeam(disableEnemies: false);
 
         if (verboseLog)
         {
-            Debug.Log("[BattleSceneUIManager] Surrender confirmation opened.", this);
+            Debug.Log("[BattleSceneUIManager] Surrender applied directly.", this);
         }
     }
 
@@ -328,106 +440,156 @@ public sealed class BattleSceneUIManager : MonoBehaviour
 
     private void OnOrdersClicked()
     {
-        OpenGlobalOrderPanel();
+        OnOrderInputSubmitted(currentOrderInputField != null ? currentOrderInputField.text : string.Empty);
     }
 
     public void OpenGlobalOrderPanel()
     {
-        TryOpenOrdersPanel(OrderTargetMode.Global);
+        SetGlobalOrderTarget();
+        FocusCurrentOrderInput();
     }
 
     public void OpenSingleOrderPanel(BattleRuntimeUnit targetUnit)
     {
-        //deprecated
+        if (targetUnit == null)
+        {
+            Debug.LogWarning("[BattleSceneUIManager] Single order open blocked. Target ally is null.", this);
+            return;
+        }
+
+        if (!targetUnit.IsPlayerOwned)
+        {
+            Debug.LogWarning("[BattleSceneUIManager] Single order open blocked. Target is an enemy unit.", this);
+            return;
+        }
+
+        if (targetUnit.IsCombatDisabled)
+        {
+            Debug.LogWarning("[BattleSceneUIManager] Single order open blocked. Target ally is disabled.", this);
+            return;
+        }
+
+        _currentOrderTargetMode = OrderTargetMode.SingleAlly;
+        _currentOrderTargetUnit = targetUnit;
+        EnsureOrderInputVisible();
+        FocusCurrentOrderInput();
     }
 
-    private bool TryOpenOrdersPanel(OrderTargetMode targetMode)
+    private void SetGlobalOrderTarget()
     {
-        EnsureBattleSimulationManager();
+        _currentOrderTargetMode = OrderTargetMode.Global;
+        _currentOrderTargetUnit = null;
+        EnsureOrderInputVisible();
+    }
 
+    private void EnsureOrderInputVisible()
+    {
+        SetActive(ordersPanelRoot, true);
+        SetActive(orderChatBackgroundRoot, true);
+    }
+
+    private void FocusCurrentOrderInput()
+    {
+        if (currentOrderInputField != null)
+        {
+            currentOrderInputField.ActivateInputField();
+            currentOrderInputField.Select();
+        }
+    }
+
+    private void OnOrderInputSubmitted(string rawInput)
+    {
         if (!CanUseBattleUiAction("Orders"))
         {
-            return false;
+            return;
         }
 
-        if (_activeModalState != ModalState.None)
-        {
-            Debug.LogWarning("[BattleSceneUIManager] Orders blocked. Another modal UI is already open.", this);
-            return false;
-        }
-
-        if (targetMode == OrderTargetMode.None)
-        {
-            Debug.LogWarning("[BattleSceneUIManager] Orders blocked. Order target mode is None.", this);
-            return false;
-        }
-
-        CacheCurrentSpeedMultiplier();
-        battleSimulationManager.SetSimulationSpeedMultiplier(orderInputFixedSpeedMultiplier);
-
-        _activeModalState = ModalState.Orders;
-        _currentOrderTargetMode = targetMode;
-
-        SetActive(ordersMaskRoot, true);
-        SetActive(ordersPanelRoot, true);
-
-        if (ordersInputField != null)
-        {
-            ordersInputField.text = string.Empty;
-            ordersInputField.ActivateInputField();
-            ordersInputField.Select();
-        }
-
-        RefreshSpeedText();
-        RefreshButtonStates();
-
-        if (verboseLog)
-        {
-            Debug.Log(
-                $"[BattleSceneUIManager] Orders panel opened. Mode={targetMode}, ForcedSpeed={orderInputFixedSpeedMultiplier:0.##}, CachedPreviousSpeed={_cachedSpeedMultiplier:0.##}",
-                this
-            );
-        }
-
-        return true;
-    }
-
-    private void OnOrderSendClicked()
-    {
-        string rawInput = ordersInputField != null ? ordersInputField.text : string.Empty;
+        EnsureOrderInputVisible();
 
         EnsureBattleOrdersManager();
 
         if (battleOrdersManager == null)
         {
             Debug.LogWarning("[BattleSceneUIManager] Order send blocked. BattleOrdersManager not found.", this);
-            CloseTransientUi(restoreOrderSpeed: true, clearOrderInput: true);
             return;
         }
 
-        if (_currentOrderTargetMode == OrderTargetMode.Global)
+        string sanitizedInput = SanitizeOrderInput(rawInput);
+        if (string.IsNullOrWhiteSpace(sanitizedInput))
         {
-            battleOrdersManager.SubmitGlobalOrder(rawInput);
-        }
-        else
-        {
-            Debug.LogWarning("[BattleSceneUIManager] Order send blocked. Order target mode is None.", this);
+            ClearAndRefocusCurrentOrderInput();
+            return;
         }
 
-        CloseTransientUi(restoreOrderSpeed: true, clearOrderInput: true);
+        Debug.Log(
+            $"[BattleSceneUIManager] CurrentOrderText submitted. Mode={_currentOrderTargetMode}, Text=\"{sanitizedInput}\"",
+            this
+        );
+
+        switch (_currentOrderTargetMode)
+        {
+            case OrderTargetMode.Global:
+                battleOrdersManager.SubmitGlobalOrder(sanitizedInput);
+                break;
+
+            case OrderTargetMode.SingleAlly:
+                if (_currentOrderTargetUnit == null)
+                {
+                    Debug.LogWarning("[BattleSceneUIManager] Order send blocked. Target ally is null.", this);
+                    SetGlobalOrderTarget();
+                }
+                else
+                {
+                    battleOrdersManager.SubmitSingleOrder(_currentOrderTargetUnit, sanitizedInput);
+                }
+                break;
+
+            default:
+                Debug.LogWarning("[BattleSceneUIManager] Order send blocked. Order target mode is None.", this);
+                SetGlobalOrderTarget();
+                break;
+        }
+
+        ClearAndRefocusCurrentOrderInput();
     }
 
-    private void OnOrderBackClicked()
+    private void OnVictoryConfirmClicked()
     {
-        CloseTransientUi(restoreOrderSpeed: true, clearOrderInput: true);
-
-        if (verboseLog)
+        if (!_hasLastResolution)
         {
-            Debug.Log("[BattleSceneUIManager] Orders canceled.", this);
+            return;
         }
+
+        SetActive(battleEndPanelRoot, false);
+        SetActive(victoryPanelRoot, true);
+        SetActive(defeatPanelRoot, false);
+        RefreshResultDetailTexts(_lastResolution);
+        RefreshButtonStates();
     }
 
-    private void OnConfirmClicked()
+    private void OnDefeatConfirmClicked()
+    {
+        if (!_hasLastResolution)
+        {
+            return;
+        }
+
+        SetActive(battleEndPanelRoot, false);
+        SetActive(victoryPanelRoot, false);
+        SetActive(defeatPanelRoot, true);
+        RefreshResultDetailTexts(_lastResolution);
+        RefreshButtonStates();
+    }
+
+    private void RefreshResultDetailTexts(BattleResolution resolution)
+    {
+        SetText(victoryRewardText, $"Reward : {resolution.PendingReward} Gold");
+        SetText(defeatRewardText, "Reward : 0 Gold");
+        SetText(victoryBattleResultTitleText, "Victory");
+        SetText(defeatBattleResultTitleText, "Defeat");
+    }
+
+    private void ReturnToMainScene()
     {
         if (_isNavigating)
         {
@@ -453,10 +615,10 @@ public sealed class BattleSceneUIManager : MonoBehaviour
 
         _isNavigating = true;
 
-        if (confirmButton != null)
-        {
-            confirmButton.interactable = false;
-        }
+        SetButtonInteractable(victoryConfirmButton, false);
+        SetButtonInteractable(defeatConfirmButton, false);
+        SetButtonInteractable(victoryBackToMainButton, false);
+        SetButtonInteractable(defeatBackToMainButton, false);
 
         RefreshButtonStates();
 
@@ -465,14 +627,105 @@ public sealed class BattleSceneUIManager : MonoBehaviour
         if (!started)
         {
             _isNavigating = false;
-
-            if (confirmButton != null)
-            {
-                confirmButton.interactable = true;
-            }
+            SetButtonInteractable(victoryConfirmButton, true);
+            SetButtonInteractable(defeatConfirmButton, true);
+            SetButtonInteractable(victoryBackToMainButton, true);
+            SetButtonInteractable(defeatBackToMainButton, true);
 
             RefreshButtonStates();
             Debug.LogWarning("[BattleSceneUIManager] Failed to start MainScene load.", this);
+        }
+    }
+
+    private void RefreshHeaderStaticTexts()
+    {
+        if (_headerPayload == null)
+        {
+            SetText(enemySquadNameText, string.Empty);
+            SetText(allySquadNameText, string.Empty);
+            SetText(dayDifficultyText, string.Empty);
+            return;
+        }
+
+        SetText(enemySquadNameText, "Enemy Squad");
+        SetText(allySquadNameText, $"Squad {_headerPayload.PlayerSquadTeamIndex + 1}");
+        SetText(
+            dayDifficultyText,
+            $"Day {_headerPayload.CurrentDay} {GetDifficultyHeaderText(_headerPayload.Difficulty)}"
+        );
+    }
+
+    private void RefreshAliveCounts()
+    {
+        int allyAliveCount = 0;
+        int enemyAliveCount = 0;
+        IReadOnlyList<BattleRuntimeUnit> units = ResolveHeaderRuntimeUnits();
+
+        if (units != null)
+        {
+            for (int i = 0; i < units.Count; i++)
+            {
+                BattleRuntimeUnit unit = units[i];
+                if (unit == null || unit.IsCombatDisabled)
+                {
+                    continue;
+                }
+
+                if (unit.IsPlayerOwned)
+                {
+                    allyAliveCount++;
+                }
+                else
+                {
+                    enemyAliveCount++;
+                }
+            }
+        }
+
+        SetText(allyAliveCountText, allyAliveCount.ToString());
+        SetText(enemyAliveCountText, enemyAliveCount.ToString());
+    }
+
+    private void RefreshClockText()
+    {
+        EnsureBattleSimulationManager();
+
+        float elapsedSeconds =
+            battleSimulationManager != null
+                ? battleSimulationManager.BattleTickCount * battleSimulationManager.TickInterval
+                : 0f;
+        int totalSeconds = Mathf.Max(0, Mathf.FloorToInt(elapsedSeconds));
+        int minutes = totalSeconds / 60;
+        int seconds = totalSeconds % 60;
+        SetText(clockText, $"{minutes:00}:{seconds:00}");
+    }
+
+    private IReadOnlyList<BattleRuntimeUnit> ResolveHeaderRuntimeUnits()
+    {
+        if (_headerRuntimeUnits != null)
+        {
+            return _headerRuntimeUnits;
+        }
+
+        EnsureBattleSimulationManager();
+        _headerRuntimeUnits = battleSimulationManager != null ? battleSimulationManager.RuntimeUnits : null;
+        return _headerRuntimeUnits;
+    }
+
+    private static string GetDifficultyHeaderText(BattleEncounterDifficulty difficulty)
+    {
+        switch (difficulty)
+        {
+            case BattleEncounterDifficulty.VeryLow:
+                return "ROOKIE";
+            case BattleEncounterDifficulty.Low:
+                return "EASY";
+            case BattleEncounterDifficulty.Medium:
+                return "NORMAL";
+            case BattleEncounterDifficulty.High:
+                return "HARD";
+            default:
+                return difficulty.ToString().ToUpperInvariant();
         }
     }
 
@@ -560,57 +813,21 @@ public sealed class BattleSceneUIManager : MonoBehaviour
             battleSimulationManager.SetTemporaryPause(false);
         }
 
-        if (_activeModalState == ModalState.Orders && battleSimulationManager != null && restoreOrderSpeed)
-        {
-            RestoreCachedSpeedMultiplier();
-        }
+        RestoreOrderInputSpeedIfNeeded();
 
         _activeModalState = ModalState.None;
-        _currentOrderTargetMode = OrderTargetMode.None;
+        SetGlobalOrderTarget();
 
         SetActive(surrenderMaskRoot, false);
         SetActive(surrenderPanelRoot, false);
 
-        SetActive(ordersMaskRoot, false);
-        SetActive(ordersPanelRoot, false);
-
-        if (clearOrderInput && ordersInputField != null)
+        if (clearOrderInput)
         {
-            ordersInputField.text = string.Empty;
+            ClearCurrentOrderInput();
         }
 
         RefreshSpeedText();
         RefreshButtonStates();
-    }
-
-    private void CacheCurrentSpeedMultiplier()
-    {
-        EnsureBattleSimulationManager();
-
-        if (battleSimulationManager == null)
-        {
-            _cachedSpeedMultiplier = 1f;
-            _hasCachedSpeedMultiplier = false;
-            return;
-        }
-
-        _cachedSpeedMultiplier = battleSimulationManager.SimulationSpeedMultiplier;
-        _hasCachedSpeedMultiplier = true;
-    }
-
-    private void RestoreCachedSpeedMultiplier()
-    {
-        EnsureBattleSimulationManager();
-
-        if (battleSimulationManager == null)
-        {
-            _hasCachedSpeedMultiplier = false;
-            return;
-        }
-
-        float restoreValue = _hasCachedSpeedMultiplier ? _cachedSpeedMultiplier : 1f;
-        battleSimulationManager.SetSimulationSpeedMultiplier(restoreValue);
-        _hasCachedSpeedMultiplier = false;
     }
 
     private void RefreshButtonStates()
@@ -621,15 +838,15 @@ public sealed class BattleSceneUIManager : MonoBehaviour
         bool paused = battleSimulationManager != null && battleSimulationManager.IsTemporarilyPaused;
         bool blockSpeedButtons = modalOpen || paused || IsBattleEndPanelOpen || _isNavigating;
         bool blockCommandButtons = modalOpen || IsBattleEndPanelOpen || _isNavigating;
+        bool blockOrderInput = modalOpen || IsBattleEndPanelOpen || _isNavigating;
 
-        if (speedUpButton != null)
+        Button[] speedButtons = GetSpeedPresetButtons();
+        for (int i = 0; i < speedButtons.Length; i++)
         {
-            speedUpButton.interactable = !blockSpeedButtons;
-        }
-
-        if (speedDownButton != null)
-        {
-            speedDownButton.interactable = !blockSpeedButtons;
+            if (speedButtons[i] != null)
+            {
+                speedButtons[i].interactable = !blockSpeedButtons;
+            }
         }
 
         if (surrenderButton != null)
@@ -639,28 +856,21 @@ public sealed class BattleSceneUIManager : MonoBehaviour
 
         if (ordersButton != null)
         {
-            ordersButton.interactable = !blockCommandButtons;
+            ordersButton.interactable = !blockOrderInput;
+        }
+
+        if (currentOrderInputField != null)
+        {
+            currentOrderInputField.interactable = !blockOrderInput;
         }
 
         if (surrenderYesButton != null)
-        {
             surrenderYesButton.interactable = _activeModalState == ModalState.Surrender;
-        }
 
         if (surrenderNoButton != null)
-        {
             surrenderNoButton.interactable = _activeModalState == ModalState.Surrender;
-        }
 
-        if (orderSendButton != null)
-        {
-            orderSendButton.interactable = _activeModalState == ModalState.Orders;
-        }
-
-        if (orderBackButton != null)
-        {
-            orderBackButton.interactable = _activeModalState == ModalState.Orders;
-        }
+        RefreshSpeedButtonTextColors();
     }
 
     private void EnsureBattleSimulationManager()
@@ -707,6 +917,235 @@ public sealed class BattleSceneUIManager : MonoBehaviour
         {
             battleOrdersManager = FindFirstObjectByType<BattleOrdersManager>();
         }
+
+        RebindBattleOrdersManagerEvents();
+    }
+
+    private void BindCurrentOrderInputField()
+    {
+        if (currentOrderInputField == null)
+        {
+            return;
+        }
+
+        currentOrderInputField.lineType = TMP_InputField.LineType.SingleLine;
+        currentOrderInputField.onSubmit.RemoveAllListeners();
+        currentOrderInputField.onSubmit.AddListener(OnOrderInputSubmitted);
+        currentOrderInputField.onSelect.RemoveListener(HandleOrderInputSelected);
+        currentOrderInputField.onSelect.AddListener(HandleOrderInputSelected);
+        currentOrderInputField.onDeselect.RemoveListener(HandleOrderInputDeselected);
+        currentOrderInputField.onDeselect.AddListener(HandleOrderInputDeselected);
+    }
+
+    private void HandleOrderInputSelected(string _)
+    {
+        ApplyOrderInputSpeedIfNeeded();
+    }
+
+    private void HandleOrderInputDeselected(string _)
+    {
+        RestoreOrderInputSpeedIfNeeded();
+    }
+
+    private void ApplyOrderInputSpeedIfNeeded()
+    {
+        EnsureBattleSimulationManager();
+
+        if (
+            _isOrderInputSpeedApplied
+            || battleSimulationManager == null
+            || IsBattleEndPanelOpen
+            || battleSimulationManager.IsBattleFinished
+        )
+        {
+            return;
+        }
+
+        _cachedOrderInputSpeedMultiplier = battleSimulationManager.SimulationSpeedMultiplier;
+        _hasCachedOrderInputSpeedMultiplier = true;
+        _isOrderInputSpeedApplied = true;
+        battleSimulationManager.SetSimulationSpeedMultiplier(orderInputFixedSpeedMultiplier);
+        RefreshSpeedText();
+    }
+
+    private void RestoreOrderInputSpeedIfNeeded()
+    {
+        if (!_isOrderInputSpeedApplied)
+        {
+            return;
+        }
+
+        EnsureBattleSimulationManager();
+
+        if (battleSimulationManager != null)
+        {
+            float restoreSpeed = _hasCachedOrderInputSpeedMultiplier ? _cachedOrderInputSpeedMultiplier : 1f;
+            battleSimulationManager.SetSimulationSpeedMultiplier(restoreSpeed);
+        }
+
+        _isOrderInputSpeedApplied = false;
+        _hasCachedOrderInputSpeedMultiplier = false;
+        RefreshSpeedText();
+    }
+
+    private void ClearAndRefocusCurrentOrderInput()
+    {
+        if (currentOrderInputField == null)
+        {
+            return;
+        }
+
+        ClearCurrentOrderInput();
+        currentOrderInputField.ActivateInputField();
+        currentOrderInputField.Select();
+    }
+
+    private void ClearCurrentOrderInput()
+    {
+        if (currentOrderInputField == null)
+        {
+            return;
+        }
+
+        currentOrderInputField.SetTextWithoutNotify(string.Empty);
+        currentOrderInputField.ForceLabelUpdate();
+    }
+
+    private void RebindBattleOrdersManagerEvents()
+    {
+        if (_subscribedBattleOrdersManager == battleOrdersManager)
+        {
+            return;
+        }
+
+        UnbindBattleOrdersManagerEvents();
+        _subscribedBattleOrdersManager = battleOrdersManager;
+
+        if (_subscribedBattleOrdersManager == null)
+        {
+            return;
+        }
+
+        _subscribedBattleOrdersManager.OnAllyOrderResponseReceived += HandleAllyOrderResponseReceived;
+    }
+
+    private void UnbindBattleOrdersManagerEvents()
+    {
+        if (_subscribedBattleOrdersManager == null)
+        {
+            return;
+        }
+
+        _subscribedBattleOrdersManager.OnAllyOrderResponseReceived -= HandleAllyOrderResponseReceived;
+        _subscribedBattleOrdersManager = null;
+    }
+
+    private void HandleAllyOrderResponseReceived(BattleRuntimeUnit allyUnit, string responseText)
+    {
+        if (!TryGetAllyResponseIndex(allyUnit, out int allyIndex))
+        {
+            Debug.LogWarning(
+                $"[BattleSceneUIManager] Ally response ignored. Could not resolve ally panel. Ally={allyUnit?.DisplayName ?? "(null)"}",
+                this
+            );
+            return;
+        }
+
+        if (!TryGetAllyResponseText(allyIndex, out TMP_Text targetText))
+        {
+            Debug.LogWarning(
+                $"[BattleSceneUIManager] Ally response ignored. AllyResponseText {allyIndex + 1} is not assigned.",
+                this
+            );
+            return;
+        }
+
+        targetText.text = responseText ?? string.Empty;
+        SetAllyResponseVisible(allyIndex, true);
+
+        if (_allyResponseHideCoroutines[allyIndex] != null)
+        {
+            StopCoroutine(_allyResponseHideCoroutines[allyIndex]);
+        }
+
+        _allyResponseHideCoroutines[allyIndex] = StartCoroutine(HideAllyResponseAfterDelay(allyIndex));
+    }
+
+    private IEnumerator HideAllyResponseAfterDelay(int allyIndex)
+    {
+        yield return new WaitForSeconds(allyResponseVisibleSeconds);
+        SetAllyResponseVisible(allyIndex, false);
+        _allyResponseHideCoroutines[allyIndex] = null;
+    }
+
+    private void ClearAllyOrderResponses()
+    {
+        for (int i = 0; i < BattleTeamConstants.MaxUnitsPerTeam; i++)
+        {
+            if (_allyResponseHideCoroutines[i] != null)
+            {
+                StopCoroutine(_allyResponseHideCoroutines[i]);
+                _allyResponseHideCoroutines[i] = null;
+            }
+
+            SetAllyResponseVisible(i, false);
+        }
+    }
+
+    private bool TryGetAllyResponseIndex(BattleRuntimeUnit allyUnit, out int allyIndex)
+    {
+        allyIndex = -1;
+
+        if (allyUnit == null)
+        {
+            return false;
+        }
+
+        EnsureBattleOrdersManager();
+        return battleOrdersManager != null && battleOrdersManager.TryGetAllyIndex(allyUnit, out allyIndex);
+    }
+
+    private bool TryGetAllyResponseText(int allyIndex, out TMP_Text responseText)
+    {
+        responseText = null;
+
+        if (allyOrderResponseTexts == null || allyIndex < 0 || allyIndex >= allyOrderResponseTexts.Length)
+        {
+            return false;
+        }
+
+        responseText = allyOrderResponseTexts[allyIndex];
+        return responseText != null;
+    }
+
+    private void SetAllyResponseVisible(int allyIndex, bool isVisible)
+    {
+        if (
+            allyOrderResponsePanelRoots == null
+            || allyIndex < 0
+            || allyIndex >= allyOrderResponsePanelRoots.Length
+            || allyOrderResponsePanelRoots[allyIndex] == null
+        )
+        {
+            return;
+        }
+
+        allyOrderResponsePanelRoots[allyIndex].SetActive(isVisible);
+    }
+
+    private static string SanitizeOrderInput(string rawInput)
+    {
+        return string.IsNullOrEmpty(rawInput) ? string.Empty : rawInput.Replace("\r", " ").Replace("\n", " ").Trim();
+    }
+
+    private Button[] GetSpeedPresetButtons()
+    {
+        return new[] { speed025Button, speed05Button, speed1Button, speed2Button, speed3Button };
+    }
+
+    private static float[] GetSpeedPresetValues()
+    {
+        return new[] { 0.25f, 0.5f, 1f, 2f, 3f };
     }
 
     private static void BindButton(Button button, UnityEngine.Events.UnityAction action)
@@ -725,6 +1164,30 @@ public sealed class BattleSceneUIManager : MonoBehaviour
         if (target != null)
         {
             target.SetActive(value);
+        }
+    }
+
+    private static void SetComponentActive(Component target, bool value)
+    {
+        if (target != null)
+        {
+            target.gameObject.SetActive(value);
+        }
+    }
+
+    private static void SetButtonInteractable(Button button, bool value)
+    {
+        if (button != null)
+        {
+            button.interactable = value;
+        }
+    }
+
+    private static void SetText(TMP_Text text, string value)
+    {
+        if (text != null)
+        {
+            text.text = value;
         }
     }
 }

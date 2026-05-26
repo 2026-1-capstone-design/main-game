@@ -14,6 +14,7 @@ public sealed class SaveSlotData
 
     public SaveClassCounterEntry[] classCounters;
     public SaveOwnedWeaponData[] ownedWeapons;
+    public SaveOwnedArtifactData[] ownedArtifacts;
     public SaveOwnedGladiatorData[] ownedGladiators;
 
     public string[] unlockedArtifactNames;
@@ -21,10 +22,14 @@ public sealed class SaveSlotData
     public int marketInitializedDay;
     public SaveMarketWeaponOfferData[] marketWeaponOffers;
     public SaveMarketGladiatorOfferData[] marketGladiatorOffers;
+    public SaveMarketArtifactOfferData[] marketArtifactOffers;
 
     public int battleEncounterGeneratedDay;
     public int selectedEncounterIndex;
     public SaveBattleEncounterData[] battleEncounters;
+
+    public int[] squadSlotRuntimeIds;
+    public int activeSquadTeamIndex;
 }
 
 [Serializable]
@@ -56,6 +61,13 @@ public sealed class SaveOwnedWeaponData
 }
 
 [Serializable]
+public sealed class SaveOwnedArtifactData
+{
+    public int runtimeId;
+    public string artifactName;
+}
+
+[Serializable]
 public sealed class SaveOwnedGladiatorData
 {
     public int runtimeId;
@@ -69,6 +81,8 @@ public sealed class SaveOwnedGladiatorData
     public string traitName;
     public string personalityName;
     public string equippedArtifactName;
+    public string equippedPerkName;
+    public int equippedArtifactRuntimeId;
     public int equippedWeaponRuntimeId;
 
     public float cachedMaxHealth;
@@ -103,6 +117,15 @@ public sealed class SaveMarketGladiatorOfferData
 }
 
 [Serializable]
+public sealed class SaveMarketArtifactOfferData
+{
+    public int slotIndex;
+    public int price;
+    public bool isSold;
+    public string artifactName;
+}
+
+[Serializable]
 public sealed class SaveBattleEncounterUnitData
 {
     public int sourceRuntimeId;
@@ -121,6 +144,7 @@ public sealed class SaveBattleEncounterUnitData
     public string traitName;
     public string personalityName;
     public string equippedArtifactName;
+    public string equippedPerkName;
 
     public int weaponType;
     public int weaponSkillId;

@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0efcbe04e3ad52a428a9f4cc079e1b31, type: 3}
   m_Name: RustyBlade
   m_EditorClassIdentifier: Assembly-CSharp::WeaponSkillSO
-  icon: {fileID: 21300000, guid: 30ee865651fe70342bd9f47753d1596e, type: 3}
+  icon: {fileID: 21300000, guid: 4ebc1d699c7e84f4ab5e0aae848eb76a, type: 3}
   skillName: RustyBlade
   description: RustyBlade
   weaponType: 6
