@@ -16,7 +16,8 @@ public sealed class AssembleSkill : IBattleSkill
     {
         BattleRuntimeUnit casterRuntime = context.Actor;
         BattleUnitCombatState casterState = casterRuntime?.State;
-        if (casterState == null || casterState.IsCombatDisabled) return;
+        if (casterState == null || casterState.IsCombatDisabled)
+            return;
 
         VFXManager.Instance.PlayEffect("BlessEnhance", casterState.Position + Vector3.up);
 
@@ -27,12 +28,14 @@ public sealed class AssembleSkill : IBattleSkill
             context,
             (ctx, sink) =>
             {
-                if (casterState.IsCombatDisabled) return;
+                if (casterState.IsCombatDisabled)
+                    return;
 
                 foreach (var unit in ctx.Units)
                 {
                     BattleUnitCombatState allyState = unit?.State;
-                    if (allyState == null || allyState.IsCombatDisabled || allyState.TeamId != casterState.TeamId) continue;
+                    if (allyState == null || allyState.IsCombatDisabled || allyState.TeamId != casterState.TeamId)
+                        continue;
 
                     // 본인이 아닌 아군들을 본인 반경 1.0f 위치까지만 끌어당김
                     if (allyState != casterState)
@@ -41,12 +44,18 @@ public sealed class AssembleSkill : IBattleSkill
                     }
 
                     // 모든 아군(본인 포함)에게 받는 피해 15% 감소 5초 적용
-                    sink.ApplyStatus(new BattleStatusRequest
-                    {
-                        Source = casterState, Target = allyState,
-                        Type = BattleStatusType.DamageReductionPercent, // 1당 1% 감소로 동작함
-                        Level = 15, Duration = 5.0f, IsDebuff = false, IsDispelAllowed = true
-                    });
+                    sink.ApplyStatus(
+                        new BattleStatusRequest
+                        {
+                            Source = casterState,
+                            Target = allyState,
+                            Type = BattleStatusType.DamageReductionPercent, // 1당 1% 감소로 동작함
+                            Level = 15,
+                            Duration = 5.0f,
+                            IsDebuff = false,
+                            IsDispelAllowed = true,
+                        }
+                    );
                 }
             }
         );

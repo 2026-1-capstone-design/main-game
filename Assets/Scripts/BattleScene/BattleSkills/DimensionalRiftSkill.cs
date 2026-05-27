@@ -16,7 +16,8 @@ public sealed class DimensionalRiftSkill : IBattleSkill
     {
         BattleRuntimeUnit casterRuntime = context.Actor;
         BattleUnitCombatState casterState = casterRuntime?.State;
-        if (casterState == null || casterState.IsCombatDisabled) return;
+        if (casterState == null || casterState.IsCombatDisabled)
+            return;
 
         BattleRuntimeUnit lowestAlly = null;
         float minHp = float.MaxValue;
@@ -25,7 +26,8 @@ public sealed class DimensionalRiftSkill : IBattleSkill
         foreach (var unit in context.Units)
         {
             BattleUnitCombatState unitState = unit?.State;
-            if (unitState == null || unitState.IsCombatDisabled) continue;
+            if (unitState == null || unitState.IsCombatDisabled)
+                continue;
             if (unitState.TeamId == casterState.TeamId && unit != casterRuntime)
             {
                 if (unitState.CurrentHealth < minHp)
@@ -46,12 +48,16 @@ public sealed class DimensionalRiftSkill : IBattleSkill
         }
 
         // 최대 체력 30% 피해 (자해)
-        effects.DealDamage(new BattleDamageRequest
-        {
-            Source = casterState, Target = casterState,
-            Amount = casterState.MaxHealth * 0.3f,
-            SourceKind = BattleEffectSourceKind.Skill, DamageKind = BattleDamageKind.Direct
-        });
+        effects.DealDamage(
+            new BattleDamageRequest
+            {
+                Source = casterState,
+                Target = casterState,
+                Amount = casterState.MaxHealth * 0.3f,
+                SourceKind = BattleEffectSourceKind.Skill,
+                DamageKind = BattleDamageKind.Direct,
+            }
+        );
 
         VFXManager.Instance.PlayEffect("DarkHit", casterState.Position + Vector3.up);
 
@@ -59,24 +65,35 @@ public sealed class DimensionalRiftSkill : IBattleSkill
         foreach (var unit in context.Units)
         {
             BattleUnitCombatState enemyState = unit?.State;
-            if (!BattleFieldSnapshot.IsValidEnemyTarget(casterState, enemyState)) continue;
-
+            if (!BattleFieldSnapshot.IsValidEnemyTarget(casterState, enemyState))
+                continue;
 
             VFXManager.Instance.PlayEffect("DarkHealEffect", casterState.Position + Vector3.up);
             if (Vector3.Distance(casterState.Position, enemyState.Position) <= AreaRadius)
             {
-                effects.DealDamage(new BattleDamageRequest
-                {
-                    Source = casterState, Target = enemyState,
-                    Amount = casterState.Attack * 3.0f,
-                    SourceKind = BattleEffectSourceKind.Skill, DamageKind = BattleDamageKind.Area
-                });
+                effects.DealDamage(
+                    new BattleDamageRequest
+                    {
+                        Source = casterState,
+                        Target = enemyState,
+                        Amount = casterState.Attack * 3.0f,
+                        SourceKind = BattleEffectSourceKind.Skill,
+                        DamageKind = BattleDamageKind.Area,
+                    }
+                );
 
-                effects.ApplyStatus(new BattleStatusRequest
-                {
-                    Source = casterState, Target = enemyState,
-                    Type = BattleStatusType.Stun, Level = 1, Duration = 2.0f, IsDebuff = true, IsDispelAllowed = true
-                });
+                effects.ApplyStatus(
+                    new BattleStatusRequest
+                    {
+                        Source = casterState,
+                        Target = enemyState,
+                        Type = BattleStatusType.Stun,
+                        Level = 1,
+                        Duration = 2.0f,
+                        IsDebuff = true,
+                        IsDispelAllowed = true,
+                    }
+                );
             }
         }
     }

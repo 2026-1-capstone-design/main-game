@@ -21,51 +21,63 @@ public sealed class BreezeCloakArtifact : IBattleStartArtifactEffect
 
     private void ScheduleCheck(BattleUnitCombatState owner, in BattleEffectContext context, IBattleEffectSink effects)
     {
-        effects.ScheduleEffect(0.5f, context.Actor, context.Actor, context, (ctx, sink) =>
-        {
-            if (owner.IsCombatDisabled) return;
-
-            bool hasAlly = false;
-            float radiusSqr = 9f;
-
-            for (int i = 0; i < ctx.Units.Count; i++)
+        effects.ScheduleEffect(
+            0.5f,
+            context.Actor,
+            context.Actor,
+            context,
+            (ctx, sink) =>
             {
-                BattleRuntimeUnit unit = ctx.Units[i];
-                if (unit == null || unit.State == null || unit.IsCombatDisabled || unit.State == owner) continue;
+                if (owner.IsCombatDisabled)
+                    return;
 
-                if (unit.TeamId == owner.TeamId && (unit.Position - owner.Position).sqrMagnitude <= radiusSqr)
+                bool hasAlly = false;
+                float radiusSqr = 9f;
+
+                for (int i = 0; i < ctx.Units.Count; i++)
                 {
-                    hasAlly = true;
-                    break;
+                    BattleRuntimeUnit unit = ctx.Units[i];
+                    if (unit == null || unit.State == null || unit.IsCombatDisabled || unit.State == owner)
+                        continue;
+
+                    if (unit.TeamId == owner.TeamId && (unit.Position - owner.Position).sqrMagnitude <= radiusSqr)
+                    {
+                        hasAlly = true;
+                        break;
+                    }
                 }
-            }
 
-            if (!hasAlly)
-            {
-                sink.ApplyStatus(new BattleStatusRequest
+                if (!hasAlly)
                 {
-                    Source = owner,
-                    Target = owner,
-                    Type = BattleStatusType.MoveSpeed,
-                    Level = _level * 2,
-                    Duration = 0.6f,
-                    IsDebuff = false,
-                    IsDispelAllowed = true
-                });
+                    sink.ApplyStatus(
+                        new BattleStatusRequest
+                        {
+                            Source = owner,
+                            Target = owner,
+                            Type = BattleStatusType.MoveSpeed,
+                            Level = _level * 2,
+                            Duration = 0.6f,
+                            IsDebuff = false,
+                            IsDispelAllowed = true,
+                        }
+                    );
 
-                sink.ApplyStatus(new BattleStatusRequest
-                {
-                    Source = owner,
-                    Target = owner,
-                    Type = BattleStatusType.AttackSpeed,
-                    Level = _level * 2,
-                    Duration = 0.6f,
-                    IsDebuff = false,
-                    IsDispelAllowed = true
-                });
+                    sink.ApplyStatus(
+                        new BattleStatusRequest
+                        {
+                            Source = owner,
+                            Target = owner,
+                            Type = BattleStatusType.AttackSpeed,
+                            Level = _level * 2,
+                            Duration = 0.6f,
+                            IsDebuff = false,
+                            IsDispelAllowed = true,
+                        }
+                    );
+                }
+
+                ScheduleCheck(owner, ctx, sink);
             }
-
-            ScheduleCheck(owner, ctx, sink);
-        });
+        );
     }
 }

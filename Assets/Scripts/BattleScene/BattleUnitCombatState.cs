@@ -76,6 +76,7 @@ public sealed class BattleUnitCombatState
     {
         Position = worldPosition;
     }
+
     public void SyncTransform(Transform unitTransform)
     {
         transform = unitTransform;
@@ -478,9 +479,6 @@ public sealed class BattleUnitCombatState
 
         return delta;
     }
-
-
-
 
     // ── 버프 시스템 ────────────────────────────────────────────────
     public void BuffApply(BuffType type, int level, float cool)

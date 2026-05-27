@@ -23,7 +23,7 @@ public sealed class MaleficStarGazeArtifact : IBattleStartArtifactEffect
                 Level = _level * 15,
                 Duration = 9999f,
                 IsDebuff = true,
-                IsDispelAllowed = false
+                IsDispelAllowed = false,
             }
         );
 
@@ -36,7 +36,7 @@ public sealed class MaleficStarGazeArtifact : IBattleStartArtifactEffect
                 Level = _level * 2,
                 Duration = 9999f,
                 IsDebuff = false,
-                IsDispelAllowed = false
+                IsDispelAllowed = false,
             }
         );
     }

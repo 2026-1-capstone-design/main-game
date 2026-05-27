@@ -19,25 +19,31 @@ public sealed class TacticalMagnetArtifact : IBattleStartArtifactEffect
 
     private void SchedulePull(BattleUnitCombatState owner, in BattleEffectContext context, IBattleEffectSink effects)
     {
-        effects.ScheduleEffect(1f, context.Actor, context.Actor, context, (ctx, sink) =>
-        {
-            if (owner.IsCombatDisabled)
-                return;
-
-            float pullRange = owner.AttackRange + (_level * 2f);
-
-            foreach (var unit in ctx.Units)
+        effects.ScheduleEffect(
+            1f,
+            context.Actor,
+            context.Actor,
+            context,
+            (ctx, sink) =>
             {
-                if (unit.State == null || unit.State.IsCombatDisabled || unit.TeamId == owner.TeamId)
-                    continue;
+                if (owner.IsCombatDisabled)
+                    return;
 
-                if (Vector3.Distance(owner.Position, unit.Position) <= pullRange)
+                float pullRange = owner.AttackRange + (_level * 2f);
+
+                foreach (var unit in ctx.Units)
                 {
-                    sink.PullTo(owner, unit.State, 1.5f);
-                }
-            }
+                    if (unit.State == null || unit.State.IsCombatDisabled || unit.TeamId == owner.TeamId)
+                        continue;
 
-            SchedulePull(owner, ctx, sink);
-        });
+                    if (Vector3.Distance(owner.Position, unit.Position) <= pullRange)
+                    {
+                        sink.PullTo(owner, unit.State, 1.5f);
+                    }
+                }
+
+                SchedulePull(owner, ctx, sink);
+            }
+        );
     }
 }

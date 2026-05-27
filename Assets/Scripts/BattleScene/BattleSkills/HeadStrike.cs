@@ -21,7 +21,7 @@ public sealed class HeadStrikeSkill : IBattleSkill
         BattleUnitCombatState caster = context.Actor != null ? context.Actor.State : null;
         BattleUnitCombatState target = context.PrimaryTarget != null ? context.PrimaryTarget.State : null;
 
-        if(target == null)
+        if (target == null)
             return;
 
         VFXManager.Instance.PlayEffect("CriticalHit", target.Position + Vector3.up);

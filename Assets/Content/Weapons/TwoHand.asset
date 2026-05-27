@@ -12,15 +12,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: df9d8b62f4a040845a470ef2178797ef, type: 3}
   m_Name: TwoHand
   m_EditorClassIdentifier: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 7ab74e659e1f0a34d9cfec21c478fc12, type: 3}
   weaponName: TwoHandSword
   weaponType: 2
-  leftWeaponPrefab: {fileID: 0}
+  lore: 
+  leftWeaponPrefab: {fileID: 26744791562570188, guid: 49e6000adfc1e4947a3d1e139883ac4f, type: 3}
   rightWeaponPrefab: {fileID: 5466430804045106773, guid: b71e840eddbaaae42bf3068cef3eac99, type: 3}
   isRanged: 0
   useProjectile: 0
+  defaultDur: 0
+  duration: 1
   baseAttackBonus: 5
   baseHealthBonus: 0
   baseAttackSpeedBonus: 0
   baseMoveSpeedBonus: 0
   baseAttackRangeBonus: 0
+  calculatedPrice: 1250
+  weaponGrade: 0

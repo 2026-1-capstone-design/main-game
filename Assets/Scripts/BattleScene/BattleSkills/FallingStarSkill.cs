@@ -16,7 +16,8 @@ public sealed class FallingStarSkill : IBattleSkill
     {
         BattleRuntimeUnit casterRuntime = context.Actor;
         BattleUnitCombatState casterState = casterRuntime?.State;
-        if (casterState == null || casterState.IsCombatDisabled) return;
+        if (casterState == null || casterState.IsCombatDisabled)
+            return;
 
         effects.ScheduleEffect(
             0.8f,
@@ -25,7 +26,8 @@ public sealed class FallingStarSkill : IBattleSkill
             context,
             (ctx, sink) =>
             {
-                if (casterState.IsCombatDisabled) return;
+                if (casterState.IsCombatDisabled)
+                    return;
 
                 BattleRuntimeUnit furthestEnemy = null;
                 float maxDist = -1f;
@@ -33,7 +35,8 @@ public sealed class FallingStarSkill : IBattleSkill
                 // 가장 먼 적 찾기
                 foreach (var unit in ctx.Units)
                 {
-                    if (!BattleFieldSnapshot.IsValidEnemyTarget(casterState, unit?.State)) continue;
+                    if (!BattleFieldSnapshot.IsValidEnemyTarget(casterState, unit?.State))
+                        continue;
                     float dist = Vector3.Distance(casterState.Position, unit.State.Position);
                     if (dist > maxDist)
                     {
@@ -42,7 +45,8 @@ public sealed class FallingStarSkill : IBattleSkill
                     }
                 }
 
-                if (furthestEnemy == null) return;
+                if (furthestEnemy == null)
+                    return;
 
                 Vector3 startPos = casterState.Position;
                 Vector3 endPos = furthestEnemy.State.Position;
@@ -53,7 +57,8 @@ public sealed class FallingStarSkill : IBattleSkill
                 foreach (var unit in ctx.Units)
                 {
                     BattleUnitCombatState enemyState = unit?.State;
-                    if (!BattleFieldSnapshot.IsValidEnemyTarget(casterState, enemyState)) continue;
+                    if (!BattleFieldSnapshot.IsValidEnemyTarget(casterState, enemyState))
+                        continue;
 
                     Vector3 point = enemyState.Position;
                     float t = Vector3.Dot(point - startPos, dashDir); // 선분 위로의 투영 위치
@@ -64,11 +69,16 @@ public sealed class FallingStarSkill : IBattleSkill
                         Vector3 projectedPoint = startPos + (dashDir * t);
                         if (Vector3.Distance(point, projectedPoint) <= AreaRadius)
                         {
-                            sink.DealDamage(new BattleDamageRequest
-                            {
-                                Source = casterState, Target = enemyState, Amount = casterState.Attack * 2.5f,
-                                SourceKind = BattleEffectSourceKind.Skill, DamageKind = BattleDamageKind.Direct
-                            });
+                            sink.DealDamage(
+                                new BattleDamageRequest
+                                {
+                                    Source = casterState,
+                                    Target = enemyState,
+                                    Amount = casterState.Attack * 2.5f,
+                                    SourceKind = BattleEffectSourceKind.Skill,
+                                    DamageKind = BattleDamageKind.Direct,
+                                }
+                            );
 
                             sink.AddKnockback(enemyState, dashDir, 10f); // 밀쳐냄
                         }

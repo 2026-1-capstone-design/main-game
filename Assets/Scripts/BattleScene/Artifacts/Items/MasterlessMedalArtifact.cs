@@ -13,7 +13,11 @@ public sealed class MasterlessMedalArtifact : ISkillCastReactionArtifact, IDamag
         _level = level;
     }
 
-    public void OnSkillCast(BattleUnitCombatState owner, in BattleSkillCastEvent skillCastEvent, IBattleEffectSink effects)
+    public void OnSkillCast(
+        BattleUnitCombatState owner,
+        in BattleSkillCastEvent skillCastEvent,
+        IBattleEffectSink effects
+    )
     {
         if (skillCastEvent.Caster == owner)
         {

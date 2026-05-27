@@ -68,8 +68,6 @@ public sealed class LeapOfFaithSkill : IBattleSkill
                     IsDispelAllowed = true,
                 }
             );
-
-
         }
     }
 }

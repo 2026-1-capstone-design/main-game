@@ -12,6 +12,7 @@ public sealed class WarcrySkill : IBattleSkill
     public float AreaRadius => 0f;
 
     public bool CanActivate(in BattleEffectContext context) => context.Actor != null;
+
     public void Activate(in BattleEffectContext context, IBattleEffectSink effects)
     {
         BattleUnitCombatState caster = context.Actor != null ? context.Actor.State : null;

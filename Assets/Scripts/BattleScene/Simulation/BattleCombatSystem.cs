@@ -65,9 +65,7 @@ public sealed class BattleCombatSystem
                 new DeathWhirlpoolSkill(),
                 new RetributionSkill(),
                 new SurgeSkill(),
-
                 new MagicExplosionSkill(),
-
                 new CurseSkill(),
                 new GlyphOfCounterattackSkill(),
                 new NobleSacrificeSkill(),
@@ -84,7 +82,7 @@ public sealed class BattleCombatSystem
                 new FallingStarSkill(),
                 new BanishmentSkill(),
                 new AssembleSkill(),
-                new ScatteredStarlightSkill()
+                new ScatteredStarlightSkill(),
             }
         );
     }

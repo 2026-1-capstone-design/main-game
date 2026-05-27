@@ -70,7 +70,6 @@ public sealed class FanaticalObsessionSkill : IBattleSkill
                     );
                     VFXManager.Instance.PlayEffect("CriticalHit", owner.Position);
 
-
                     _lastDashTime = context.BattleTime;
                 }
             }

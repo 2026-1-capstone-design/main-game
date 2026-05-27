@@ -12,11 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: df9d8b62f4a040845a470ef2178797ef, type: 3}
   m_Name: OldBow
   m_EditorClassIdentifier: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 7ab74e659e1f0a34d9cfec21c478fc12, type: 3}
   weaponName: OldBow
   weaponType: 11
+  lore: 
   leftWeaponPrefab: {fileID: 9024806707909862384, guid: 224f1e772bf15404aad234c389bd6c3d, type: 3}
-  rightWeaponPrefab: {fileID: 0}
+  rightWeaponPrefab: {fileID: 26744791562570188, guid: 49e6000adfc1e4947a3d1e139883ac4f, type: 3}
   isRanged: 1
   useProjectile: 1
   defaultDur: 0

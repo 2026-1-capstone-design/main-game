@@ -32,16 +32,18 @@ public sealed class GiantsHeaddressArtifact : IBattleStartArtifactEffect, IDamag
         {
             int hpBuffPercent = _missingAllies * _missingAllies * 5 * _level;
 
-            effects.ApplyStatus(new BattleStatusRequest
-            {
-                Source = owner,
-                Target = owner,
-                Type = BattleStatusType.HP,
-                Level = hpBuffPercent,
-                Duration = 9999f,
-                IsDebuff = false,
-                IsDispelAllowed = false
-            });
+            effects.ApplyStatus(
+                new BattleStatusRequest
+                {
+                    Source = owner,
+                    Target = owner,
+                    Type = BattleStatusType.HP,
+                    Level = hpBuffPercent,
+                    Duration = 9999f,
+                    IsDebuff = false,
+                    IsDispelAllowed = false,
+                }
+            );
         }
     }
 

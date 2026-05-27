@@ -55,7 +55,8 @@ public sealed class MagicExplosionSkill : IBattleSkill
         public void AfterDamage(BattleUnitCombatState owner, in BattleDamageResult result, IBattleEffectSink effects)
         {
             // [핵심] 현재 폭발 데미지를 처리 중이라면, 또 다른 폭발을 일으키지 않고 무시합니다.
-            if (_isProcessing) return;
+            if (_isProcessing)
+                return;
 
             if (result.Source == owner && result.Target != null)
             {

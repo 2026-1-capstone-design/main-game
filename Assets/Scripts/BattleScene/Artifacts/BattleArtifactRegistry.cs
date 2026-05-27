@@ -8,7 +8,6 @@ public sealed class BattleArtifactRegistry
     private readonly Dictionary<ArtifactId, Func<IBattleArtifact>> _factories =
         new Dictionary<ArtifactId, Func<IBattleArtifact>>();
 
-
     public BattleArtifactRegistry()
     {
         Register(ArtifactId.GreenAmber, () => new GreenAmberArtifact());

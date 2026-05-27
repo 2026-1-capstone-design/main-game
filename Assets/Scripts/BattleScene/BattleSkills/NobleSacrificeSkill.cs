@@ -35,7 +35,6 @@ public sealed class NobleSacrificeSkill : IBattleSkill
                     VFXManager.Instance.StopEffect(activeVfx1);
                     VFXManager.Instance.StopEffect(activeVfx2);
                 }
-
             }
         );
     }

@@ -16,7 +16,8 @@ public sealed class BanishmentSkill : IBattleSkill
     {
         BattleRuntimeUnit casterRuntime = context.Actor;
         BattleUnitCombatState casterState = casterRuntime?.State;
-        if (casterState == null || casterState.IsCombatDisabled) return;
+        if (casterState == null || casterState.IsCombatDisabled)
+            return;
 
         effects.ScheduleEffect(
             1.0f,
@@ -25,7 +26,8 @@ public sealed class BanishmentSkill : IBattleSkill
             context,
             (ctx, sink) =>
             {
-                if (casterState.IsCombatDisabled) return;
+                if (casterState.IsCombatDisabled)
+                    return;
 
                 BattleRuntimeUnit highestAtkEnemy = null;
                 float maxAtk = -1f;
@@ -34,7 +36,8 @@ public sealed class BanishmentSkill : IBattleSkill
                 foreach (var unit in ctx.Units)
                 {
                     BattleUnitCombatState enemyState = unit?.State;
-                    if (!BattleFieldSnapshot.IsValidEnemyTarget(casterState, enemyState)) continue;
+                    if (!BattleFieldSnapshot.IsValidEnemyTarget(casterState, enemyState))
+                        continue;
 
                     if (enemyState.Attack > maxAtk)
                     {

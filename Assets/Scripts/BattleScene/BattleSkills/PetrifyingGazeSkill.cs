@@ -16,14 +16,16 @@ public sealed class PetrifyingGazeSkill : IBattleSkill
     {
         BattleRuntimeUnit casterRuntime = context.Actor;
         BattleUnitCombatState casterState = casterRuntime?.State;
-        if (casterState == null || casterState.IsCombatDisabled) return;
+        if (casterState == null || casterState.IsCombatDisabled)
+            return;
 
         VFXManager.Instance.PlayEffect("GazeEffect", casterState.Position + Vector3.up * 2f);
 
         foreach (var unit in context.Units)
         {
             BattleUnitCombatState enemyState = unit?.State;
-            if (!BattleFieldSnapshot.IsValidEnemyTarget(casterState, enemyState)) continue;
+            if (!BattleFieldSnapshot.IsValidEnemyTarget(casterState, enemyState))
+                continue;
 
             if (Vector3.Distance(casterState.Position, enemyState.Position) <= AreaRadius)
             {
@@ -33,17 +35,29 @@ public sealed class PetrifyingGazeSkill : IBattleSkill
                 // 유닛의 transform.forward와 시전자 방향이 90도 이내(> 0)인지 확인
                 if (Vector3.Dot(enemyState.transform.forward, dirToCaster) > 0f)
                 {
-                    effects.DealDamage(new BattleDamageRequest
-                    {
-                        Source = casterState, Target = enemyState, Amount = casterState.Attack * 1.5f,
-                        SourceKind = BattleEffectSourceKind.Skill, DamageKind = BattleDamageKind.Area
-                    });
+                    effects.DealDamage(
+                        new BattleDamageRequest
+                        {
+                            Source = casterState,
+                            Target = enemyState,
+                            Amount = casterState.Attack * 1.5f,
+                            SourceKind = BattleEffectSourceKind.Skill,
+                            DamageKind = BattleDamageKind.Area,
+                        }
+                    );
 
-                    effects.ApplyStatus(new BattleStatusRequest
-                    {
-                        Source = casterState, Target = enemyState,
-                        Type = BattleStatusType.Stun, Level = 1, Duration = 3.0f, IsDebuff = true, IsDispelAllowed = true
-                    });
+                    effects.ApplyStatus(
+                        new BattleStatusRequest
+                        {
+                            Source = casterState,
+                            Target = enemyState,
+                            Type = BattleStatusType.Stun,
+                            Level = 1,
+                            Duration = 3.0f,
+                            IsDebuff = true,
+                            IsDispelAllowed = true,
+                        }
+                    );
                 }
             }
         }

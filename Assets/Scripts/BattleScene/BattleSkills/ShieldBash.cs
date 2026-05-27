@@ -23,8 +23,6 @@ public sealed class ShieldBashSkill : IBattleSkill
         if (target == null)
             return;
 
-
-
         effects.ScheduleEffect(
             caster.SkillDuration,
             context.Actor,
@@ -45,10 +43,10 @@ public sealed class ShieldBashSkill : IBattleSkill
                         IsSkill = true,
                     }
                 );
-            Vector3 pushDir = target.Position - caster.Position;
-            effects.AddKnockback(target, pushDir, 120f); // 강력한 넉백
+                Vector3 pushDir = target.Position - caster.Position;
+                effects.AddKnockback(target, pushDir, 120f); // 강력한 넉백
 
-            effects.ApplyBuff(caster, target, BuffType.AttackDamage, -3, 6f);
+                effects.ApplyBuff(caster, target, BuffType.AttackDamage, -3, 6f);
             }
         );
     }

@@ -19,14 +19,16 @@ public sealed class VampiricWeedArtifact : IDamageReactionArtifact
         {
             float healAmount = result.FinalAmount * (_level * 0.08f);
 
-            effects.Heal(new BattleHealRequest
-            {
-                Source = owner,
-                Target = owner,
-                Amount = healAmount,
-                SourceKind = BattleEffectSourceKind.Artifact,
-                ArtifactId = this.ArtifactId
-            });
+            effects.Heal(
+                new BattleHealRequest
+                {
+                    Source = owner,
+                    Target = owner,
+                    Amount = healAmount,
+                    SourceKind = BattleEffectSourceKind.Artifact,
+                    ArtifactId = this.ArtifactId,
+                }
+            );
         }
     }
 }

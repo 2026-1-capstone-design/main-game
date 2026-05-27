@@ -27,38 +27,36 @@ public sealed class RevolverFanningSkill : IBattleSkill
         if (casterRuntime == null || caster == null || targetRuntime == null || target == null)
             return;
 
-
-        for(int i = 0; i < 6; i++)
+        for (int i = 0; i < 6; i++)
         {
             if (caster.IsCombatDisabled || target.IsCombatDisabled)
-                    return;
+                return;
 
             effects.ScheduleEffect(
-            caster.SkillDuration + 0.1f * i,
-            casterRuntime,
-            targetRuntime,
-            context,
-            (ctx, sink) =>
-            {
-                float newX = Random.Range(-1f, 1f);
-                float newY = Random.Range(0f, 1f);
-                float newZ = Random.Range(-1f, 1f);
-                VFXManager.Instance.PlayEffect("CompactHit", target.Position + new Vector3(newX, newY, newZ));
-                sink.DealDamage(
-                    new BattleDamageRequest
-                    {
-                        Source = caster,
-                        Target = target,
-                        Amount = caster.Attack * 0.5f,
-                        SourceKind = BattleEffectSourceKind.Skill,
-                        DamageKind = BattleDamageKind.Direct,
-                        SkillId = SkillId,
-                        IsSkill = true,
-                    }
-                );
-            }
-        );
+                caster.SkillDuration + 0.1f * i,
+                casterRuntime,
+                targetRuntime,
+                context,
+                (ctx, sink) =>
+                {
+                    float newX = Random.Range(-1f, 1f);
+                    float newY = Random.Range(0f, 1f);
+                    float newZ = Random.Range(-1f, 1f);
+                    VFXManager.Instance.PlayEffect("CompactHit", target.Position + new Vector3(newX, newY, newZ));
+                    sink.DealDamage(
+                        new BattleDamageRequest
+                        {
+                            Source = caster,
+                            Target = target,
+                            Amount = caster.Attack * 0.5f,
+                            SourceKind = BattleEffectSourceKind.Skill,
+                            DamageKind = BattleDamageKind.Direct,
+                            SkillId = SkillId,
+                            IsSkill = true,
+                        }
+                    );
+                }
+            );
         }
-
     }
 }

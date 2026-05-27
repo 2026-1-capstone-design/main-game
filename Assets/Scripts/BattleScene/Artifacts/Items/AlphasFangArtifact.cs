@@ -15,7 +15,8 @@ public sealed class AlphasFangArtifact : IDamageModifierArtifact
 
     public void ModifyDamage(BattleUnitCombatState owner, ref BattleDamageRequest request)
     {
-        if (request.Source != owner || request.Target == null) return;
+        if (request.Source != owner || request.Target == null)
+            return;
 
         float hpRatio = request.Target.CurrentHealth / Mathf.Max(1f, request.Target.MaxHealth);
         float lostHpRatio = Mathf.Clamp01(1f - hpRatio);

@@ -58,7 +58,7 @@ public enum WeaponSkillId
     Banishment = 54,
     Assemble = 55,
     ScatteredStarlight = 56,
-    UnholyBlessing = 57
+    UnholyBlessing = 57,
 }
 
 public enum skillType

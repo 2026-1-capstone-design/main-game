@@ -18,7 +18,8 @@ public sealed class VanguardCrestArtifact : IDamageModifierArtifact
 
     public void ModifyDamage(BattleUnitCombatState owner, ref BattleDamageRequest request)
     {
-        if (request.Source != owner || _units == null) return;
+        if (request.Source != owner || _units == null)
+            return;
 
         int allyCount = 0;
         int enemyCount = 0;
@@ -27,12 +28,15 @@ public sealed class VanguardCrestArtifact : IDamageModifierArtifact
         for (int i = 0; i < _units.Count; i++)
         {
             BattleRuntimeUnit unit = _units[i];
-            if (unit == null || unit.State == null || unit.IsCombatDisabled || unit.State == owner) continue;
+            if (unit == null || unit.State == null || unit.IsCombatDisabled || unit.State == owner)
+                continue;
 
             if ((unit.Position - owner.Position).sqrMagnitude <= radiusSqr)
             {
-                if (unit.TeamId == owner.TeamId) allyCount++;
-                else enemyCount++;
+                if (unit.TeamId == owner.TeamId)
+                    allyCount++;
+                else
+                    enemyCount++;
             }
         }
 

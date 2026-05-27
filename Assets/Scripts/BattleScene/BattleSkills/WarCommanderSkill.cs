@@ -31,7 +31,7 @@ public sealed class WarCommanderSkill : IBattleSkill
             {
                 bool isEnemy = target.TeamId != caster.TeamId;
 
-                if(isEnemy)
+                if (isEnemy)
                     VFXManager.Instance.PlayEffect("DarkHit", target.Position + Vector3.up);
                 else
                     VFXManager.Instance.PlayEffect("LightHit", target.Position + Vector3.up);
@@ -42,7 +42,7 @@ public sealed class WarCommanderSkill : IBattleSkill
                         Source = caster,
                         Target = target,
                         Type = BattleStatusType.MoveSpeed,
-                        Level = isEnemy?-15:15,
+                        Level = isEnemy ? -15 : 15,
                         Duration = 8f,
                         IsDebuff = isEnemy,
                         IsDispelAllowed = true,
@@ -54,7 +54,7 @@ public sealed class WarCommanderSkill : IBattleSkill
                         Source = caster,
                         Target = target,
                         Type = BattleStatusType.AttackDamage,
-                        Level = isEnemy?-15:15,
+                        Level = isEnemy ? -15 : 15,
                         Duration = 8f,
                         IsDebuff = isEnemy,
                         IsDispelAllowed = true,

@@ -20,7 +20,8 @@ public sealed class SwipeAttackSkill : IBattleSkill
     public void Activate(in BattleEffectContext context, IBattleEffectSink effects)
     {
         BattleRuntimeUnit caster = context.Actor;
-        if (caster == null) return;
+        if (caster == null)
+            return;
 
         float impactDelay = caster.State.SkillDuration;
 
@@ -31,28 +32,32 @@ public sealed class SwipeAttackSkill : IBattleSkill
             context,
             (ctx, sink) =>
             {
-                if (caster.State == null || caster.State.IsCombatDisabled) return;
+                if (caster.State == null || caster.State.IsCombatDisabled)
+                    return;
 
                 VFXManager.Instance.PlayEffect("SwipeAttackEffect", caster.Position + Vector3.up * 0.5f);
 
                 foreach (var unit in ctx.Units)
                 {
-                    if (unit == null || unit.State.IsCombatDisabled) continue;
+                    if (unit == null || unit.State.IsCombatDisabled)
+                        continue;
 
                     if (BattleFieldSnapshot.IsValidEnemyTarget(caster.State, unit.State))
                     {
                         if (Vector3.Distance(caster.Position, unit.Position) <= AreaRadius)
                         {
-                            sink.DealDamage(new BattleDamageRequest
-                            {
-                                Source = caster.State,
-                                Target = unit.State,
-                                Amount = caster.State.Attack * 1.2f,
-                                SourceKind = BattleEffectSourceKind.Skill,
-                                DamageKind = BattleDamageKind.Area,
-                                IsSkill = true,
-                                IsArea = true
-                            });
+                            sink.DealDamage(
+                                new BattleDamageRequest
+                                {
+                                    Source = caster.State,
+                                    Target = unit.State,
+                                    Amount = caster.State.Attack * 1.2f,
+                                    SourceKind = BattleEffectSourceKind.Skill,
+                                    DamageKind = BattleDamageKind.Area,
+                                    IsSkill = true,
+                                    IsArea = true,
+                                }
+                            );
                         }
                     }
                 }

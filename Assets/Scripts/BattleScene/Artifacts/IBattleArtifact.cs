@@ -22,7 +22,7 @@ public enum ArtifactId
     AbyssalMedallion = 17,
     GiantSlayer = 18,
     MasterlessMedal = 19,
-    VampiricWeed = 20
+    VampiricWeed = 20,
 }
 
 // 전투 중 장신구 효과 구현체의 공통 계약이다.

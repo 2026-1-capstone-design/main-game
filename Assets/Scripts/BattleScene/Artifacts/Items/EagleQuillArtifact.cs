@@ -17,27 +17,31 @@ public sealed class EagleQuillArtifact : IKillReactionArtifact
     {
         if (killEvent.Killer == owner)
         {
-            effects.ApplyStatus(new BattleStatusRequest
-            {
-                Source = owner,
-                Target = owner,
-                Type = BattleStatusType.MoveSpeed,
-                Level = _level * 3,
-                Duration = 7f,
-                IsDebuff = false,
-                IsDispelAllowed = true
-            });
+            effects.ApplyStatus(
+                new BattleStatusRequest
+                {
+                    Source = owner,
+                    Target = owner,
+                    Type = BattleStatusType.MoveSpeed,
+                    Level = _level * 3,
+                    Duration = 7f,
+                    IsDebuff = false,
+                    IsDispelAllowed = true,
+                }
+            );
 
-            effects.ApplyStatus(new BattleStatusRequest
-            {
-                Source = owner,
-                Target = owner,
-                Type = BattleStatusType.AttackSpeed,
-                Level = _level * 3,
-                Duration = 7f,
-                IsDebuff = false,
-                IsDispelAllowed = true
-            });
+            effects.ApplyStatus(
+                new BattleStatusRequest
+                {
+                    Source = owner,
+                    Target = owner,
+                    Type = BattleStatusType.AttackSpeed,
+                    Level = _level * 3,
+                    Duration = 7f,
+                    IsDebuff = false,
+                    IsDispelAllowed = true,
+                }
+            );
         }
     }
 }

@@ -4,9 +4,14 @@ using UnityEngine;
 public class BattleTextManager : MonoBehaviour
 {
     [Header("Settings")]
-    [SerializeField] private FloatingText textPrefab;
-    [SerializeField] private int maxTextCount = 50;
-    [SerializeField] private float statusTextInterval = 0.2f;
+    [SerializeField]
+    private FloatingText textPrefab;
+
+    [SerializeField]
+    private int maxTextCount = 50;
+
+    [SerializeField]
+    private float statusTextInterval = 0.2f;
 
     private FloatingText[] _textPool;
     private int _currentIndex = 0;
@@ -26,7 +31,8 @@ public class BattleTextManager : MonoBehaviour
     }
 
     // 유닛(State)을 식별표로 삼아 각자의 큐를 찾아주는 딕셔너리
-    private Dictionary<BattleUnitCombatState, UnitTextQueue> _unitQueues = new Dictionary<BattleUnitCombatState, UnitTextQueue>();
+    private Dictionary<BattleUnitCombatState, UnitTextQueue> _unitQueues =
+        new Dictionary<BattleUnitCombatState, UnitTextQueue>();
 
     // 안전한 딕셔너리 삭제를 위한 캐싱 리스트 (최적화용)
     private List<BattleUnitCombatState> _emptyKeys = new List<BattleUnitCombatState>();
@@ -93,7 +99,8 @@ public class BattleTextManager : MonoBehaviour
 
     private void HandleStatusText(BattleStatusRequest request)
     {
-        if (request.Target == null) return;
+        if (request.Target == null)
+            return;
 
         Color textColor = request.IsDebuff ? new Color(1f, 0.6f, 0f) : Color.cyan;
         string statusName = request.Type.ToString().ToUpper() + "!";
@@ -106,12 +113,15 @@ public class BattleTextManager : MonoBehaviour
         }
 
         // "그 유닛 전용 큐"에만 텍스트를 집어넣습니다.
-        _unitQueues[request.Target].Queue.Enqueue(new PendingStatusText
-        {
-            BasePosition = targetPos,
-            Text = statusName,
-            TextColor = textColor
-        });
+        _unitQueues[request.Target]
+            .Queue.Enqueue(
+                new PendingStatusText
+                {
+                    BasePosition = targetPos,
+                    Text = statusName,
+                    TextColor = textColor,
+                }
+            );
     }
 
     private void HandleDamageText(BattleDamageResult result)
@@ -148,7 +158,8 @@ public class BattleTextManager : MonoBehaviour
 
     private void SpawnText(Vector3 position, string text, Color color)
     {
-        if (_textPool == null || _textPool.Length == 0) return;
+        if (_textPool == null || _textPool.Length == 0)
+            return;
 
         FloatingText floatingText = _textPool[_currentIndex];
         floatingText.Setup(position, text, color);

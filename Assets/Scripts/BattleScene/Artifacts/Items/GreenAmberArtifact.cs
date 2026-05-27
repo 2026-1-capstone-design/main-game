@@ -27,7 +27,7 @@ public sealed class GreenAmberArtifact : IBattleStartArtifactEffect
                 Level = healthBonusPercent, // Level 자체가 1당 1%로 동작하도록 전달
                 Duration = 9999f, // 무한 지속 (또는 프로젝트 내 영구 지속 상수 사용)
                 IsDebuff = false,
-                IsDispelAllowed = false // 해제 불가능한 고유 효과로 설정
+                IsDispelAllowed = false, // 해제 불가능한 고유 효과로 설정
             }
         );
     }

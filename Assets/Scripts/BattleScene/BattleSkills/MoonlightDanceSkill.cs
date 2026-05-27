@@ -58,7 +58,6 @@ public sealed class MoonlightDanceSkill : IBattleSkill
                             }
                         );
                         VFXManager.Instance.PlayEffect("CompactHit", tgt.Position + Vector3.up);
-
                     }
                 }
             );

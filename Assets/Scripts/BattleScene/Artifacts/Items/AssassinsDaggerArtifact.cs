@@ -18,7 +18,8 @@ public sealed class AssassinsDaggerArtifact : IDamageModifierArtifact
 
     public void ModifyDamage(BattleUnitCombatState owner, ref BattleDamageRequest request)
     {
-        if (request.Source != owner || _units == null) return;
+        if (request.Source != owner || _units == null)
+            return;
 
         int targetingEnemies = 0;
 

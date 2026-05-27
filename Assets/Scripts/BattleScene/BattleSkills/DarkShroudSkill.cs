@@ -19,8 +19,6 @@ public sealed class DarkShroudSkill : IBattleSkill
         if (caster == null)
             return;
 
-
-
         foreach (BattleRuntimeUnit unitView in context.Units)
         {
             BattleUnitCombatState target = unitView?.State;

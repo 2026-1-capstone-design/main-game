@@ -251,7 +251,7 @@ public sealed class BattleEffectSystem : IBattleEffectSink
             Direction = pullDirection,
             Distance = pullDistance,
             IsKnockback = true,
-            IsTeleport = false
+            IsTeleport = false,
         };
 
         if (_artifacts != null && _artifacts.CanIgnoreForcedMovement(targetRuntime, request))
