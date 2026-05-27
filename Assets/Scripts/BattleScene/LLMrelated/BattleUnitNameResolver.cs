@@ -1,7 +1,21 @@
 // 전투 시작 시점의 BattleRuntimeUnit 이름과 SOT unitId 매핑을 보관한다.
 // 유저 입력의 실제 유닛 이름을 A_01/E_01 형식으로 바꾼다.
+// 유저 입력의 유닛 이름에 작은 오타가 있으면 현재 전투 명단 기준으로 보정한다.
 // 대사 레이어 출력 text 안의 A_01/E_01 토큰을 실제 유닛 이름으로 바꾼다.
 // 비정상 unitId 토큰이 섞인 대사는 fallback 문장으로 대체함. 안 들린다는 컨셉.
+
+/*
+오타 내성을 위한 수정안
+1. exact match를 먼저 수행한다.
+2. exact match 후 남은 토큰만 fuzzy match한다.
+3. 현재 전투에 등장한 12명의 DisplayName만 후보로 둔다.
+4. 편집거리 기준:
+   - 이름 길이 2~4: distance 1까지만 허용
+   - 이름 길이 5 이상: distance 2까지 허용
+5. 같은 거리의 후보가 2개 이상이면 보정하지 않는다.
+6. 명령어 토큰까지 억지로 이름으로 바꾸지 않도록 threshold를 낮게 유지한다.
+*/
+
 
 using System;
 using System.Collections.Generic;
@@ -9,8 +23,15 @@ using System.Text.RegularExpressions;
 
 public sealed class BattleUnitNameResolver
 {
+    private const int MinimumApproximateNameLength = 2;
+
     private static readonly Regex SotTokenRegex = new Regex(
         @"(?<![A-Za-z0-9_])([AaEe])_([A-Za-z0-9]*)(?![A-Za-z0-9_])",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant
+    );
+
+    private static readonly Regex UserNameTokenRegex = new Regex(
+        @"(?<![A-Za-z0-9_])[\p{L}\p{N}]+(?![A-Za-z0-9_])",
         RegexOptions.Compiled | RegexOptions.CultureInvariant
     );
 
@@ -35,6 +56,9 @@ public sealed class BattleUnitNameResolver
     private readonly List<KeyValuePair<string, string>> _nameReplacementPairs =
         new List<KeyValuePair<string, string>>();
 
+    private readonly List<NameReplacementCandidate> _approximateNameCandidates =
+        new List<NameReplacementCandidate>();
+
     private int _fallbackCursor;
 
     public void Clear()
@@ -44,6 +68,7 @@ public sealed class BattleUnitNameResolver
         _displayNameBySotId.Clear();
         _sotIdByDisplayName.Clear();
         _nameReplacementPairs.Clear();
+        _approximateNameCandidates.Clear();
         _fallbackCursor = 0;
     }
 
@@ -67,6 +92,17 @@ public sealed class BattleUnitNameResolver
                     return lengthCompare;
 
                 return string.CompareOrdinal(left.Key, right.Key);
+            }
+        );
+
+        _approximateNameCandidates.Sort(
+            (left, right) =>
+            {
+                int lengthCompare = right.NormalizedDisplayName.Length.CompareTo(left.NormalizedDisplayName.Length);
+                if (lengthCompare != 0)
+                    return lengthCompare;
+
+                return string.CompareOrdinal(left.DisplayName, right.DisplayName);
             }
         );
     }
@@ -118,7 +154,7 @@ public sealed class BattleUnitNameResolver
             );
         }
 
-        return result;
+        return ReplaceApproximateDisplayNamesWithSotIds(result);
     }
 
     // 대사 레이어 결과 text 안의 SOT unitId를 실제 유닛 이름으로 바꾼다.
@@ -208,8 +244,173 @@ public sealed class BattleUnitNameResolver
             {
                 _sotIdByDisplayName.Add(displayName, canonicalSotId);
                 _nameReplacementPairs.Add(new KeyValuePair<string, string>(displayName, canonicalSotId));
+
+                string normalizedDisplayName = NormalizeNameForMatching(displayName);
+                if (!string.IsNullOrEmpty(normalizedDisplayName))
+                {
+                    _approximateNameCandidates.Add(
+                        new NameReplacementCandidate(displayName, normalizedDisplayName, canonicalSotId)
+                    );
+                }
             }
         }
+    }
+
+    private string ReplaceApproximateDisplayNamesWithSotIds(string source)
+    {
+        if (string.IsNullOrWhiteSpace(source) || _approximateNameCandidates.Count == 0)
+            return source ?? string.Empty;
+
+        return UserNameTokenRegex.Replace(
+            source,
+            match =>
+            {
+                string token = match.Value;
+                if (string.IsNullOrWhiteSpace(token))
+                    return token;
+
+                if (TryResolveApproximateNameToken(token, out string sotId))
+                    return sotId;
+
+                return token;
+            }
+        );
+    }
+
+    private bool TryResolveApproximateNameToken(string rawToken, out string sotId)
+    {
+        sotId = null;
+
+        string normalizedToken = NormalizeNameForMatching(rawToken);
+        if (normalizedToken.Length < MinimumApproximateNameLength)
+            return false;
+
+        int bestDistance = int.MaxValue;
+        string bestSotId = null;
+        bool ambiguous = false;
+
+        for (int i = 0; i < _approximateNameCandidates.Count; i++)
+        {
+            NameReplacementCandidate candidate = _approximateNameCandidates[i];
+            int allowedDistance = CalculateAllowedNameDistance(
+                normalizedToken.Length,
+                candidate.NormalizedDisplayName.Length
+            );
+
+            if (allowedDistance <= 0)
+                continue;
+
+            if (Math.Abs(normalizedToken.Length - candidate.NormalizedDisplayName.Length) > allowedDistance)
+                continue;
+
+            int distance = CalculateEditDistanceBounded(
+                normalizedToken,
+                candidate.NormalizedDisplayName,
+                allowedDistance
+            );
+
+            if (distance > allowedDistance)
+                continue;
+
+            if (distance < bestDistance)
+            {
+                bestDistance = distance;
+                bestSotId = candidate.SotId;
+                ambiguous = false;
+            }
+            else if (distance == bestDistance)
+            {
+                ambiguous = true;
+            }
+        }
+
+        if (bestDistance == int.MaxValue || ambiguous || string.IsNullOrWhiteSpace(bestSotId))
+            return false;
+
+        sotId = bestSotId;
+        return true;
+    }
+
+    private static int CalculateAllowedNameDistance(int tokenLength, int displayNameLength)
+    {
+        int shorterLength = Math.Min(tokenLength, displayNameLength);
+        if (shorterLength < MinimumApproximateNameLength)
+            return 0;
+
+        int longerLength = Math.Max(tokenLength, displayNameLength);
+        return longerLength >= 5 ? 2 : 1;
+    }
+
+    private static int CalculateEditDistanceBounded(string left, string right, int maxDistance)
+    {
+        if (left == null || right == null)
+            return maxDistance + 1;
+
+        if (Math.Abs(left.Length - right.Length) > maxDistance)
+            return maxDistance + 1;
+
+        if (left.Length == 0)
+            return right.Length;
+
+        if (right.Length == 0)
+            return left.Length;
+
+        int[] previous = new int[right.Length + 1];
+        int[] current = new int[right.Length + 1];
+
+        for (int j = 0; j <= right.Length; j++)
+        {
+            previous[j] = j;
+        }
+
+        for (int i = 1; i <= left.Length; i++)
+        {
+            current[0] = i;
+            int rowMinimum = current[0];
+
+            for (int j = 1; j <= right.Length; j++)
+            {
+                int substitutionCost = left[i - 1] == right[j - 1] ? 0 : 1;
+                int deletion = previous[j] + 1;
+                int insertion = current[j - 1] + 1;
+                int substitution = previous[j - 1] + substitutionCost;
+                int value = Math.Min(Math.Min(deletion, insertion), substitution);
+
+                current[j] = value;
+                if (value < rowMinimum)
+                    rowMinimum = value;
+            }
+
+            if (rowMinimum > maxDistance)
+                return maxDistance + 1;
+
+            int[] temp = previous;
+            previous = current;
+            current = temp;
+        }
+
+        return previous[right.Length];
+    }
+
+    private static string NormalizeNameForMatching(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return string.Empty;
+
+        char[] buffer = new char[value.Length];
+        int count = 0;
+
+        for (int i = 0; i < value.Length; i++)
+        {
+            char character = value[i];
+            if (!char.IsLetterOrDigit(character))
+                continue;
+
+            buffer[count] = char.ToUpperInvariant(character);
+            count++;
+        }
+
+        return count == 0 ? string.Empty : new string(buffer, 0, count);
     }
 
     private static string BuildSotId(BattleRuntimeUnit unit, IBattleRosterProjection rosterProjection)
@@ -271,5 +472,19 @@ public sealed class BattleUnitNameResolver
         string fallback = InvalidDialogFallbackTexts[_fallbackCursor % InvalidDialogFallbackTexts.Length];
         _fallbackCursor++;
         return fallback;
+    }
+
+    private readonly struct NameReplacementCandidate
+    {
+        public readonly string DisplayName;
+        public readonly string NormalizedDisplayName;
+        public readonly string SotId;
+
+        public NameReplacementCandidate(string displayName, string normalizedDisplayName, string sotId)
+        {
+            DisplayName = displayName ?? string.Empty;
+            NormalizedDisplayName = normalizedDisplayName ?? string.Empty;
+            SotId = sotId ?? string.Empty;
+        }
     }
 }

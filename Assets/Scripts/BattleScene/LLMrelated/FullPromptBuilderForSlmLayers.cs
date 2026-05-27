@@ -383,7 +383,7 @@ speechStyle 규칙:
 action 의미 요약:
 - move: 특정 unitId 쪽으로 이동한다. subtype은 접근, 후퇴, 지원, 전열 유지 의도를 나타낸다.
 - move.subtype=""approachOpponent"": 교전, 공격, 압박, 스킬 사용을 위해 대상에게 접근한다.
-- move.subtype=""escape"": 위험에서 벗어나거나 후방 또는 안전한 대상에게 이동한다.
+- move.subtype=""escape"": 특정 아군 쪽으로 후퇴하는 행동이 아니다. 현재 자신을 위협하는 적의 반대 방향으로 이탈한다.
 - move.subtype=""help"": 특정 아군을 지원하거나 보호하기 위해 이동한다.
 - move.subtype=""holdFront"": 전열 위치로 이동해 앞에서 버티거나 전열을 유지한다.
 - attack: target enemy를 공격한다.
@@ -396,6 +396,8 @@ action 의미 요약:
 - 각 text는 보통 1문장으로 쓴다.
 - 너무 길게 쓰지 않는다. 보통 45자 이내를 우선한다.
 - personalityDescription을 반드시 참고하되, 그 문장을 그대로 복사하지 않는다.
+- 네가 personalityDescription에서 특정 어미, 높임 수준, 시대극 말투, 거친 말투, 담담한 말투, 소심한 말투 같은 발화 방식을 감지하면 최종 대사도 가능한 한 그 말투를 따른다.
+- personalityDescription과 speechStyle이 충돌하면 speechStyle를 우선한다.
 - 유닛이 자기 성격을 직접 해설하게 만들지 않는다.
 - speechStyle 0, 1, 2의 말투를 한 문장 안에서 섞지 않는다.
 - actor들의 대사는 서로 완전히 달라야 한다.
@@ -404,6 +406,7 @@ action 의미 요약:
 - 최종 대사는 유닛이 전투 중 직접 말하는 자연스러운 문장이어야 한다.
 - 유닛은 ""타겟"", ""타게팅"", ""유효성"", ""fallback"", ""sequence"", ""action"" 같은 시스템 용어를 말하지 않는다.
 - obeyedActionAdjustment에 따른 타겟 보정을 할 때는 ""찾을 수 없다"", ""그 적이 보이지 않는다"", ""이미 쓰러졌다"", ""대신 다른 쪽을 맡겠다""처럼 자연스러운 전투 표현으로 바꾼다.
+- escape 대사는 ""물러난다"", ""거리를 벌린다"", ""무리하지 않고 이탈한다""처럼 적과의 거리 벌리기 의미로 쓴다.
 
 예시 방향:
 - 신중한 유닛이 거부하고 escape를 수행하면, 무리하지 않고 빠지는 태도를 짧게 말한다.

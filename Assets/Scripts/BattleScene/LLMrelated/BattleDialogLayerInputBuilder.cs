@@ -59,7 +59,7 @@ public sealed class BattleDialogLayerInputBuilder
                         : finalActor.obedienceState,
                     obeyedActionAdjustment = finalActor.obeyedActionAdjustment ?? string.Empty,
                     refusalSummary = finalActor.refusalSummary ?? string.Empty,
-                    finalActionSequence = finalActor.finalActionSequence,
+                    finalActionSequence = BuildDialogFinalActionSequence(finalActor.finalActionSequence),
                 }
             );
         }
@@ -108,7 +108,9 @@ public sealed class BattleDialogLayerInputBuilder
                     obedienceState = "obey",
                     obeyedActionAdjustment = string.Empty,
                     refusalSummary = string.Empty,
-                    finalActionSequence = BattleMockCommandParser.ToFinalActionSequence(actorSequence),
+                    finalActionSequence = BuildDialogFinalActionSequence(
+                        BattleMockCommandParser.ToFinalActionSequence(actorSequence)
+                    ),
                 }
             );
         }
@@ -154,6 +156,48 @@ public sealed class BattleDialogLayerInputBuilder
         }
 
         return "명령을 확인했다.";
+    }
+
+    // dialog SLM 입력용 finalActionSequence를 만든다.
+    // escape는 실행층에서 to를 쓰지 않고 적 위협/적 군집 반대 방향으로 이동하므로 dialog 입력에서도 to를 제거한다.
+    private static SotFinalActionDto[] BuildDialogFinalActionSequence(SotFinalActionDto[] source)
+    {
+        if (source == null || source.Length == 0)
+            return System.Array.Empty<SotFinalActionDto>();
+
+        SotFinalActionDto[] result = new SotFinalActionDto[source.Length];
+
+        for (int i = 0; i < source.Length; i++)
+        {
+            result[i] = CloneForDialog(source[i]);
+        }
+
+        return result;
+    }
+
+    // 실행 의미와 다른 옛 escape.to가 대사 생성에 섞이지 않도록 제거한다.
+    private static SotFinalActionDto CloneForDialog(SotFinalActionDto source)
+    {
+        if (source == null)
+            return null;
+
+        string type = source.type ?? string.Empty;
+        string subtype = source.subtype ?? string.Empty;
+        bool isEscape =
+            string.Equals(type, "move", System.StringComparison.OrdinalIgnoreCase)
+            && string.Equals(subtype, "escape", System.StringComparison.OrdinalIgnoreCase);
+
+        return new SotFinalActionDto
+        {
+            type = source.type,
+            subtype = source.subtype,
+            movementType = isEscape ? "direct" : source.movementType,
+            to = isEscape ? null : source.to,
+            target = source.target,
+            description = source.description,
+            mode = source.mode,
+            durationSec = source.durationSec,
+        };
     }
 
     // 대사 레이어에는 긴 description 대신 짧은 dialogPersonalityDescription만 넘김. 성능 낮은 slm을 돕도록, 실제 말투를 반영한 설명문임.
