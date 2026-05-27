@@ -5,7 +5,7 @@ public sealed class PetrifyingGazeSkill : IBattleSkill
 {
     public WeaponSkillId SkillId => WeaponSkillId.PetrifyingGaze;
     public skillType SkillCategory => skillType.attack;
-    public IReadOnlyList<WeaponType> CompatibleWeaponTypes { get; } = new[] { WeaponType.staff };
+    public IReadOnlyList<WeaponType> CompatibleWeaponTypes { get; } = new[] { WeaponType.shield };
     public BattleSkillTargetPolicy TargetPolicy => BattleSkillTargetPolicy.Self;
     public float CastRange => 0f;
     public float AreaRadius => 15f;

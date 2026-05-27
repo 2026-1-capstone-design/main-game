@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: df9d8b62f4a040845a470ef2178797ef, type: 3}
+  m_Name: OldSpear
+  m_EditorClassIdentifier: 
+  icon: {fileID: 0}
+  weaponName: OldSpear
+  weaponType: 4
+  leftWeaponPrefab: {fileID: 0}
+  rightWeaponPrefab: {fileID: 6699702307572344912, guid: d02a9255317cac24193d015d741d5294, type: 3}
+  isRanged: 0
+  useProjectile: 0
+  defaultDur: 0
+  duration: 1
+  baseAttackBonus: 0
+  baseHealthBonus: 0
+  baseAttackSpeedBonus: 1.8
+  baseMoveSpeedBonus: 0
+  baseAttackRangeBonus: 3
+  calculatedPrice: 4900
+  weaponGrade: 0

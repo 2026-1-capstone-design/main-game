@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0efcbe04e3ad52a428a9f4cc079e1b31, type: 3}
+  m_Name: ManaCollapse
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponSkillSO
+  icon: {fileID: 0}
+  skillName: "\uB9C8\uB098 \uBD95\uAD34"
+  description: "10\uCD08\uAC04, \uBC18\uACBD \uC548\uC5D0\uC11C \uB204\uAD6C\uB4E0
+    \uACF5\uACA9\uD558\uB294 \uC801\uB4E4\uC740 \uBCF8\uC778 \uCD5C\uB300 \uCCB4\uB825\uC758
+    1%, \uC2A4\uD0AC\uC744 \uC2DC\uC804\uD558\uB294 \uC801\uC740 10% \uD53C\uD574\uB97C
+    \uC785\uC74C"
+  weaponType: 10
+  skillId: 29
+  defaultDur: 1
+  duration: 1

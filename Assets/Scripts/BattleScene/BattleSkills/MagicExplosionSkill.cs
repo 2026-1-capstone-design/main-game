@@ -50,7 +50,7 @@ public sealed class MagicExplosionSkill : IBattleSkill
             _units = units;
         }
 
-        public void Initialize(BattleUnitCombatState owner, in BattleEffectContext context) { }
+        public void Initialize(BattleUnitCombatState owner, int level, in BattleEffectContext context) { }
 
         public void AfterDamage(BattleUnitCombatState owner, in BattleDamageResult result, IBattleEffectSink effects)
         {

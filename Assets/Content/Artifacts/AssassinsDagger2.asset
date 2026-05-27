@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 251b89a55cd5a2743878f62ed275c4de, type: 3}
+  m_Name: AssassinsDagger2
+  m_EditorClassIdentifier: 
+  icon: {fileID: 0}
+  artifactName: AssassinsDagger
+  artifactId: 12
+  artifactLevel: 2
+  description: "\uC790\uC2E0\uC744 \uACF5\uACA9\uD558\uB294 \uC801\uC774 1\uBA85
+    \uC774\uD558\uC77C \uB54C \uACF5\uACA9\uB825 % \uC99D\uAC00"

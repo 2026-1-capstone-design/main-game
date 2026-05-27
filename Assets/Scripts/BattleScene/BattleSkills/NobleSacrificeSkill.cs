@@ -5,7 +5,7 @@ public sealed class NobleSacrificeSkill : IBattleSkill
 {
     public WeaponSkillId SkillId => WeaponSkillId.NobleSacrifice;
     public skillType SkillCategory => skillType.support;
-    public IReadOnlyList<WeaponType> CompatibleWeaponTypes { get; } = new[] { WeaponType.shield };
+    public IReadOnlyList<WeaponType> CompatibleWeaponTypes { get; } = new[] { WeaponType.twoHand };
     public BattleSkillTargetPolicy TargetPolicy => BattleSkillTargetPolicy.PlannedAlly;
     public float CastRange => 20f;
     public float AreaRadius => 0f;
@@ -50,7 +50,7 @@ public sealed class NobleSacrificeSkill : IBattleSkill
             _protector = protector;
         }
 
-        public void Initialize(BattleUnitCombatState owner, in BattleEffectContext context) { }
+        public void Initialize(BattleUnitCombatState owner, int level, in BattleEffectContext context) { }
 
         public void ModifyDamage(BattleUnitCombatState owner, ref BattleDamageRequest request)
         {

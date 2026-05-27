@@ -5,7 +5,7 @@ public sealed class MoonlightDanceSkill : IBattleSkill
 {
     public WeaponSkillId SkillId => WeaponSkillId.MoonlightDance;
     public skillType SkillCategory => skillType.attack;
-    public IReadOnlyList<WeaponType> CompatibleWeaponTypes { get; } = new[] { WeaponType.twoHand };
+    public IReadOnlyList<WeaponType> CompatibleWeaponTypes { get; } = new[] { WeaponType.dualHand };
     public BattleSkillTargetPolicy TargetPolicy => BattleSkillTargetPolicy.Self;
     public float CastRange => 0f;
     public float AreaRadius => 30f;
@@ -81,7 +81,7 @@ public sealed class MoonlightDanceSkill : IBattleSkill
     {
         public ArtifactId ArtifactId => ArtifactId.None;
 
-        public void Initialize(BattleUnitCombatState owner, in BattleEffectContext context) { }
+        public void Initialize(BattleUnitCombatState owner, int level, in BattleEffectContext context) { }
 
         public void ModifyTargetScore(BattleUnitCombatState owner, ref BattleTargetScore score) { }
 

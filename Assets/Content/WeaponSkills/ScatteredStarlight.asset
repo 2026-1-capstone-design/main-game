@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0efcbe04e3ad52a428a9f4cc079e1b31, type: 3}
+  m_Name: ScatteredStarlight
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponSkillSO
+  icon: {fileID: 0}
+  skillName: "\uD769\uC5B4\uC9C4 \uBCC4 \uAE38"
+  description: "\uC8FC\uBCC0 \uBC94\uC704 \uB0B4\uC5D0 \uC801\uC774 \uC874\uC7AC\uD55C\uB2E4\uBA74,
+    \uAC00\uC7A5 \uBA40\uB9AC \uC788\uB294 \uC801\uC5D0\uAC8C \uB3CC\uC9C4\uD558\uBA70
+    \uD53C\uD574\uB97C \uC90C.\n\uCD5C\uB300 5\uD68C \uBC18\uBCF5. \uBC29\uAE08 \uACF5\uACA9\uD55C
+    \uC801\uC744 \uACE7\uBC14\uB85C \uB2E4\uC2DC \uB300\uC0C1\uC73C\uB85C \uC9C0\uC815
+    X"
+  weaponType: 4
+  skillId: 56
+  defaultDur: 1
+  duration: 1

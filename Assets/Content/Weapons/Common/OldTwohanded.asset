@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: df9d8b62f4a040845a470ef2178797ef, type: 3}
+  m_Name: OldTwohanded
+  m_EditorClassIdentifier: 
+  icon: {fileID: 0}
+  weaponName: OldTwohanded
+  weaponType: 2
+  leftWeaponPrefab: {fileID: 0}
+  rightWeaponPrefab: {fileID: 7898991837698537266, guid: 2533d56f32ea21a42a2e5794cc8fbf96, type: 3}
+  isRanged: 0
+  useProjectile: 0
+  defaultDur: 0
+  duration: 1
+  baseAttackBonus: 30
+  baseHealthBonus: 1000
+  baseAttackSpeedBonus: 0
+  baseMoveSpeedBonus: 0
+  baseAttackRangeBonus: 2
+  calculatedPrice: 4900
+  weaponGrade: 0

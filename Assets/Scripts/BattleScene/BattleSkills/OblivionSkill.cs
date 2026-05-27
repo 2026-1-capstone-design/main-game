@@ -5,7 +5,7 @@ public sealed class OblivionSkill : IBattleSkill
 {
     public WeaponSkillId SkillId => WeaponSkillId.Oblivion;
     public skillType SkillCategory => skillType.enhance;
-    public IReadOnlyList<WeaponType> CompatibleWeaponTypes { get; } = new[] { WeaponType.staff };
+    public IReadOnlyList<WeaponType> CompatibleWeaponTypes { get; } = new[] { WeaponType.dagger };
     public BattleSkillTargetPolicy TargetPolicy => BattleSkillTargetPolicy.Self;
     public float CastRange => 0f;
     public float AreaRadius => 15f;
@@ -37,7 +37,7 @@ public sealed class OblivionSkill : IBattleSkill
         public ArtifactId ArtifactId => ArtifactId.None;
         private int _blockCount = 3;
 
-        public void Initialize(BattleUnitCombatState owner, in BattleEffectContext context) { }
+        public void Initialize(BattleUnitCombatState owner, int level, in BattleEffectContext context) { }
 
         public void ModifyDamage(BattleUnitCombatState owner, ref BattleDamageRequest request)
         {

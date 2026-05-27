@@ -6,7 +6,7 @@ public sealed class DarkShroudSkill : IBattleSkill
 {
     public WeaponSkillId SkillId => WeaponSkillId.DarkShroud;
     public skillType SkillCategory => skillType.attack;
-    public IReadOnlyList<WeaponType> CompatibleWeaponTypes { get; } = new[] { WeaponType.staff };
+    public IReadOnlyList<WeaponType> CompatibleWeaponTypes { get; } = new[] { WeaponType.dagger };
     public BattleSkillTargetPolicy TargetPolicy => BattleSkillTargetPolicy.AreaAroundSelf;
     public float CastRange => 0f;
     public float AreaRadius => 15f;

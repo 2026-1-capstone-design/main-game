@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 251b89a55cd5a2743878f62ed275c4de, type: 3}
+  m_Name: AssassinationManual3
+  m_EditorClassIdentifier: 
+  icon: {fileID: 0}
+  artifactName: AssassinationManual
+  artifactId: 5
+  artifactLevel: 3
+  description: "\uC801\uC758 \uB4F1 \uB4A4\uC5D0\uC11C \uACF5\uACA9\uC2DC \uCD94\uAC00\uB370\uBBF8\uC9C0"

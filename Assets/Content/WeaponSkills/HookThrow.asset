@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0efcbe04e3ad52a428a9f4cc079e1b31, type: 3}
+  m_Name: HookThrow
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponSkillSO
+  icon: {fileID: 0}
+  skillName: "\uAC08\uACE0\uB9AC \uD22C\uCC99"
+  description: "\uBC18\uACBD \uB0B4\uC758 \uCCB4\uB825\uC774 \uAC00\uC7A5 \uB0AE\uC740
+    \uC801 \uB610\uB294 \uBA85\uB839\uC73C\uB85C \uC9C0\uC815\uB41C \uC801\uC744
+    \uC790\uC2E0\uC5D0\uAC8C \uB04C\uC5B4\uC634"
+  weaponType: 1
+  skillId: 28
+  defaultDur: 1
+  duration: 1

@@ -49,7 +49,7 @@ public sealed class CurseSkill : IBattleSkill
     {
         public ArtifactId ArtifactId => ArtifactId.None;
 
-        public void Initialize(BattleUnitCombatState owner, in BattleEffectContext context) { }
+        public void Initialize(BattleUnitCombatState owner, int level, in BattleEffectContext context) { }
 
         public void ModifyDamage(BattleUnitCombatState owner, ref BattleDamageRequest request)
         {

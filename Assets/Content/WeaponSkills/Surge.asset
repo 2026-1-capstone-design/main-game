@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0efcbe04e3ad52a428a9f4cc079e1b31, type: 3}
+  m_Name: Surge
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponSkillSO
+  icon: {fileID: 0}
+  skillName: "\uC1C4\uB3C4"
+  description: "\uC8FC\uBCC0 \uBC18\uACBD\uC758 \uAC00\uC7A5 \uCCB4\uB825 \uB0AE\uC740
+    \uC801\uC5D0\uAC8C \uBE60\uB974\uAC8C \uC774\uB3D9, 3\uD68C \uCC38\uACA9 \uD6C4
+    \uC2A4\uD134"
+  weaponType: 1
+  skillId: 38
+  defaultDur: 1
+  duration: 1

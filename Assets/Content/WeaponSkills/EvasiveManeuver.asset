@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0efcbe04e3ad52a428a9f4cc079e1b31, type: 3}
+  m_Name: EvasiveManeuver
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponSkillSO
+  icon: {fileID: 0}
+  skillName: "\uD68C\uD53C\uAE30\uB3D9"
+  description: "10\uCD08 \uC9C0\uC18D. \uBC18\uACBD n\uC548\uC5D0 \uC0C1\uB300\uAC00
+    \uC9C4\uC785\uD560 \uB54C\uB9C8\uB2E4, \uD574\uB2F9 \uC801\uACFC\uC758 \uAC70\uB9AC\uAC00
+    \uBCF8\uC778\uC758 \uC0AC\uAC70\uB9AC\uB9CC\uD07C \uD655\uBCF4\uB418\uB3C4\uB85D
+    \uB4A4\uB85C \uB300\uC26C"
+  weaponType: 11
+  skillId: 50
+  defaultDur: 1
+  duration: 1

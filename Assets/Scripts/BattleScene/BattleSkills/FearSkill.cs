@@ -48,7 +48,7 @@ public sealed class FearSkill : IBattleSkill
             _fearSource = fearSource;
         }
 
-        public void Initialize(BattleUnitCombatState owner, in BattleEffectContext context) { }
+        public void Initialize(BattleUnitCombatState owner, int level, in BattleEffectContext context) { }
 
         public void ModifyMoveSpeed(BattleUnitCombatState owner, ref BattleMoveRequest request)
         {

@@ -5,7 +5,7 @@ public sealed class FreezeSkill : IBattleSkill
 {
     public WeaponSkillId SkillId => WeaponSkillId.Freeze;
     public skillType SkillCategory => skillType.attack;
-    public IReadOnlyList<WeaponType> CompatibleWeaponTypes { get; } = new[] { WeaponType.handGun, WeaponType.rifle };
+    public IReadOnlyList<WeaponType> CompatibleWeaponTypes { get; } = new[] { WeaponType.handGun };
     public BattleSkillTargetPolicy TargetPolicy => BattleSkillTargetPolicy.Self;
     public float CastRange => 0f;
     public float AreaRadius => 20f;
@@ -47,7 +47,7 @@ public sealed class FreezeSkill : IBattleSkill
             _radius = radius;
         }
 
-        public void Initialize(BattleUnitCombatState owner, in BattleEffectContext context) { }
+        public void Initialize(BattleUnitCombatState owner, int level, in BattleEffectContext context) { }
 
         public void TickWithPositionHistory(
             BattleRuntimeUnit owner,

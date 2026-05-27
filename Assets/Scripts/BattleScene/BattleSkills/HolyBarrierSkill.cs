@@ -46,7 +46,7 @@ public sealed class HolyBarrierSkill : IBattleSkill
             _ownerView = ownerView;
         }
 
-        public void Initialize(BattleUnitCombatState owner, in BattleEffectContext context) { }
+        public void Initialize(BattleUnitCombatState owner, int level, in BattleEffectContext context) { }
 
         public void AfterDamage(BattleUnitCombatState owner, in BattleDamageResult result, IBattleEffectSink effects)
         {

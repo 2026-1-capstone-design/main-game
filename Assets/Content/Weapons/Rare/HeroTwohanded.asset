@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: df9d8b62f4a040845a470ef2178797ef, type: 3}
+  m_Name: HeroTwohanded
+  m_EditorClassIdentifier: 
+  icon: {fileID: 0}
+  weaponName: HeroTwohanded
+  weaponType: 2
+  leftWeaponPrefab: {fileID: 0}
+  rightWeaponPrefab: {fileID: 7083416613941726609, guid: de214bf3217f72a4e833f2743fea70df, type: 3}
+  isRanged: 0
+  useProjectile: 0
+  defaultDur: 0
+  duration: 1
+  baseAttackBonus: 40
+  baseHealthBonus: 2150
+  baseAttackSpeedBonus: 0
+  baseMoveSpeedBonus: 0
+  baseAttackRangeBonus: 2.5
+  calculatedPrice: 6900
+  weaponGrade: 2

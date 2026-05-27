@@ -5,7 +5,7 @@ public sealed class GlyphOfCounterattackSkill : IBattleSkill
 {
     public WeaponSkillId SkillId => WeaponSkillId.GlyphOfCounterattack;
     public skillType SkillCategory => skillType.support;
-    public IReadOnlyList<WeaponType> CompatibleWeaponTypes { get; } = new[] { WeaponType.staff };
+    public IReadOnlyList<WeaponType> CompatibleWeaponTypes { get; } = new[] { WeaponType.twoHand };
     public BattleSkillTargetPolicy TargetPolicy => BattleSkillTargetPolicy.PlannedAlly;
     public float CastRange => 20f;
     public float AreaRadius => 0f;
@@ -47,7 +47,7 @@ public sealed class GlyphOfCounterattackSkill : IBattleSkill
             _originalCaster = originalCaster;
         }
 
-        public void Initialize(BattleUnitCombatState owner, in BattleEffectContext context) { }
+        public void Initialize(BattleUnitCombatState owner, int level, in BattleEffectContext context) { }
 
         //쉴드 삭감 로직 대신, 받는 데미지를 50%로 줄입니다.
         public void ModifyDamage(BattleUnitCombatState owner, ref BattleDamageRequest request)

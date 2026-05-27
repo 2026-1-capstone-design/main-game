@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0efcbe04e3ad52a428a9f4cc079e1b31, type: 3}
+  m_Name: NobleSacrifice
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponSkillSO
+  icon: {fileID: 0}
+  skillName: "\uC22D\uACE0\uD55C \uD76C\uC0DD"
+  description: "\uAC00\uC7A5 \uCCB4\uB825 \uB0AE\uAC70\uB098 \uACF5\uACA9\uB9CE\uC774
+    \uBC1B\uB294 \uC544\uAD70 \uD639\uC740 \uBA85\uB839 \uC9C0\uC815 \uC544\uAD70.
+    10\uCD08\uAC04 \uD574\uB2F9 \uC544\uAD70 \uD53C\uD574 \uB300\uC2E0 \uBC1B\uC74C"
+  weaponType: 2
+  skillId: 42
+  defaultDur: 1
+  duration: 1

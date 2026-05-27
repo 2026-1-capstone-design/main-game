@@ -39,7 +39,7 @@ public sealed class FanaticalObsessionSkill : IBattleSkill
         public ArtifactId ArtifactId => ArtifactId.None;
         private float _lastDashTime = 0f;
 
-        public void Initialize(BattleUnitCombatState owner, in BattleEffectContext context) { }
+        public void Initialize(BattleUnitCombatState owner, int level, in BattleEffectContext context) { }
 
         public void TickWithPositionHistory(
             BattleRuntimeUnit owner,

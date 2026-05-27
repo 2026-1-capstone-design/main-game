@@ -18,11 +18,13 @@ public sealed class BattleUnitCombatState
     public int Level { get; private set; }
 
     // ── 체력 / 전투불능 ────────────────────────────────────────────
-    public float MaxHealth { get; private set; }
     public float CurrentHealth { get; private set; }
     public bool IsCombatDisabled { get; private set; }
 
     // ── 기본 스탯 (스냅샷에서 읽어온 원본값) ──────────────────────
+    [SerializeField]
+    public float BaseMaxHealth;
+
     [SerializeField]
     public float BaseAttack;
 
@@ -39,6 +41,15 @@ public sealed class BattleUnitCombatState
     public float BaseWeaponDuration;
 
     // ── 실효 스탯 (버프 반영 계산값) ──────────────────────────────
+    public float MaxHealth
+    {
+        get
+        {
+            float bonusPercent = GetStatusLevel(BattleStatusType.HP);
+            return Mathf.Max(1f, BaseMaxHealth * (1f + (bonusPercent / 100f)));
+        }
+    }
+
     [SerializeField]
     public float Attack => Mathf.Max(0f, BaseAttack + GetBuffLevel(BuffType.AttackDamage) * 10f);
 
@@ -348,7 +359,7 @@ public sealed class BattleUnitCombatState
         DisplayName = snapshot.DisplayName;
         Level = snapshot.Level;
 
-        MaxHealth = snapshot.MaxHealth;
+        BaseMaxHealth = snapshot.MaxHealth;
         CurrentHealth = snapshot.CurrentHealth;
         IsCombatDisabled = false;
 
