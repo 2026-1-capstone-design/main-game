@@ -47,6 +47,7 @@ public sealed class BattleOrdersManager : MonoBehaviour
 
     private readonly BattleRuntimeUnit[] _allyUnits = new BattleRuntimeUnit[BattleTeamConstants.MaxUnitsPerTeam];
     private readonly BattleRuntimeUnit[] _enemyUnits = new BattleRuntimeUnit[BattleTeamConstants.MaxUnitsPerTeam];
+    private readonly BattleUnitNameResolver _unitNameResolver = new BattleUnitNameResolver();
     private IBattleRosterProjection _rosterProjection;
 
     private SphereCollider _battlefieldCollider;
@@ -112,6 +113,7 @@ public sealed class BattleOrdersManager : MonoBehaviour
                 }
             }
         }
+        _unitNameResolver.Rebuild(_allyUnits, _enemyUnits, _rosterProjection);
 
         _initialized = true;
 
@@ -157,7 +159,17 @@ public sealed class BattleOrdersManager : MonoBehaviour
             Debug.Log(sb.ToString(), this);
         }
 
-        RunSotLayerPipeline(sanitizedRawText);
+        string sotOrderText = _unitNameResolver.ReplaceDisplayNamesWithSotIds(sanitizedRawText);
+
+        if (verboseLog && !string.Equals(sanitizedRawText, sotOrderText, StringComparison.Ordinal))
+        {
+            Debug.Log(
+                $"[BattleOrdersManager] Unit display names resolved for SOT pipeline. Raw=\"{sanitizedRawText}\", SOT=\"{sotOrderText}\"",
+                this
+            );
+        }
+
+        RunSotLayerPipeline(sotOrderText);
     }
 
     public void SubmitSingleOrder(BattleRuntimeUnit targetAlly, string rawOrderText)
@@ -246,6 +258,88 @@ public sealed class BattleOrdersManager : MonoBehaviour
         }
 
         TryIssuePostprocessedSlmCommands(result.PostprocessResult);
+
+        if (issuePostprocessedSotCommands)
+        {
+            EmitDialogLayerResponses(result.DialogResponse);
+        }
+    }
+
+    private void EmitDialogLayerResponses(SotDialogLayerResponseDto dialogResponse)
+    {
+        if (dialogResponse == null || dialogResponse.dialog == null || dialogResponse.dialog.Length == 0)
+        {
+            return;
+        }
+
+        for (int i = 0; i < dialogResponse.dialog.Length; i++)
+        {
+            SotDialogLineDto line = dialogResponse.dialog[i];
+            if (line == null || string.IsNullOrWhiteSpace(line.unitId))
+            {
+                continue;
+            }
+
+            BattleRuntimeUnit actorUnit = _unitNameResolver.FindUnitBySotId(line.unitId);
+            if (actorUnit == null)
+            {
+                if (verboseLog)
+                {
+                    Debug.LogWarning(
+                        "[BattleOrdersManager] Dialog response skipped. Actor unitId was not found. UnitId="
+                            + (line.unitId ?? string.Empty),
+                        this
+                    );
+                }
+
+                continue;
+            }
+
+            if (_rosterProjection != null && !_rosterProjection.IsPlayerUnit(actorUnit))
+            {
+                if (verboseLog)
+                {
+                    Debug.LogWarning(
+                        "[BattleOrdersManager] Dialog response skipped. Dialog unitId is not an ally. UnitId="
+                            + (line.unitId ?? string.Empty),
+                        this
+                    );
+                }
+
+                continue;
+            }
+
+            if (
+                !_unitNameResolver.TryResolveDialogText(
+                    line.text,
+                    out string resolvedDialogText,
+                    out string resolveError
+                )
+            )
+            {
+                if (verboseLog)
+                {
+                    Debug.LogWarning(
+                        "[BattleOrdersManager] Dialog text fallback applied. UnitId="
+                            + (line.unitId ?? string.Empty)
+                            + ", Reason="
+                            + resolveError,
+                        this
+                    );
+                }
+            }
+
+            RaiseAllyOrderResponse(actorUnit, resolvedDialogText);
+        }
+    }
+
+    private void RaiseAllyOrderResponse(BattleRuntimeUnit actorUnit, string responseText)
+    {
+        string sanitizedText = SanitizeRawText(responseText);
+        if (actorUnit != null && !string.IsNullOrWhiteSpace(sanitizedText))
+        {
+            OnAllyOrderResponseReceived?.Invoke(actorUnit, sanitizedText);
+        }
     }
 
     private void TryIssuePostprocessedSlmCommands(BattleCommandPostprocessResult postprocessResult)
