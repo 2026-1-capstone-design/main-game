@@ -13087,10 +13087,17 @@ MonoBehaviour:
   verboseLog: 1
   logSotLayerInputPreview: 1
   useMockInput: 0
-  slmProxyUrl: 
-  slmAppSharedToken: 
+  useSLM: 0
+  slmProxyUrl: https://together-proxy-fn-769017230258.asia-northeast3.run.app
+  slmAppSharedToken: rlawlsgur212
   selectedSlmBackend: 0
   slmRequestTimeoutSeconds: 60
+  geminiModel: gemini-3.1-flash-lite
+  geminiParserMaxOutputTokens: 650
+  geminiDialogMaxOutputTokens: 300
+  geminiUseLowestThinking: 1
+  logSotTimingBreakdown: 1
+  measureUpstreamTtftByStreaming: 1
   issuePostprocessedSotCommands: 1
 --- !u!4 &1233094451
 Transform:
