@@ -77,6 +77,12 @@ public sealed class WeaponSkillSO : ScriptableObject
     public WeaponType weaponType = WeaponType.oneHand;
     public WeaponSkillId skillId = WeaponSkillId.None;
 
+    [Header("SOT Runtime Metadata")]
+    public bool isSkillOnSelf;
+    public bool isSkillOnOtherAlly;
+    public bool isSkillAoe;
+    public bool canSkillTargetDead;
+
     [Header("Skill Animation Timing")]
     public bool defaultDur = true;
     public float duration = 1.0f;

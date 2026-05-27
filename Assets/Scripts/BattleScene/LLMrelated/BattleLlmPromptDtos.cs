@@ -1,4 +1,4 @@
-using System;
+/*using System;
 
 [Serializable]
 public sealed class BattleLlmPromptDto
@@ -95,3 +95,4 @@ public sealed class BattleLlmOutputTemplateDto
 
 [Serializable]
 public sealed class BattleLlmOutputActionPlaceholderDto { }
+*/

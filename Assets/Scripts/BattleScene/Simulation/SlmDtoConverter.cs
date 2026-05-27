@@ -1,50 +1,95 @@
-using System.Collections.Generic;
-using UnityEngine;
+// SOT 후처리 완료 action을 SlmUnitCommand로 변환한다.
+// 이 파일은 SOT DTO와 팀원 실행 IR 사이의 유일한 어댑터다.
+// DTO 스키마 변경은 이 파일에서 흡수하고, 시뮬레이션은 SlmUnitCommand만 의존한다.
+// 실제 행동 로직은 SlmCommandUnitPlanner와 하위 실행계층이 처리한다.
+// 여기서는 unitId 해석, enum 매핑, command sequence 생성만 수행한다.
 
-// SLM 응답 DTO를 시뮬레이션 IR(SlmUnitCommand)로 변환한다.
-// SLM 측 스키마 변경에 노출되는 유일한 어댑터이다.
+using System;
+using System.Collections.Generic;
+
 public static class SlmDtoConverter
 {
+    // 후처리 결과 actor 1명의 finalActionSequence를 SlmUnitCommand sequence로 변환한다.
+    // 호출부는 반환된 actor.State와 commands를 BattleSimulationManager.IssueSlmCommands에 넘긴다.
     public static bool TryConvert(
-        BattleLlmResponseDto dto,
-        BattleRuntimeUnit actor,
+        BattleCommandFinalActorDto finalActor,
         IReadOnlyList<BattleRuntimeUnit> allyUnits,
         IReadOnlyList<BattleRuntimeUnit> enemyUnits,
         IBattleRosterProjection rosterProjection,
+        out BattleRuntimeUnit actor,
         out List<SlmUnitCommand> commands,
         out string errorReason
     )
     {
+        actor = null;
         commands = null;
         errorReason = null;
 
-        if (dto == null || dto.output == null)
+        if (finalActor == null)
         {
-            errorReason = "Response DTO or output is null.";
+            errorReason = "Final actor DTO is null.";
             return false;
         }
 
+        return TryConvert(
+            finalActor.unitId,
+            finalActor.finalActionSequence,
+            allyUnits,
+            enemyUnits,
+            rosterProjection,
+            out actor,
+            out commands,
+            out errorReason
+        );
+    }
+
+    // actor unitId와 확정된 SOT action sequence를 실행 IR로 변환한다.
+    // actor는 반드시 아군 목록에서만 찾는다.
+    public static bool TryConvert(
+        string actorUnitId,
+        IReadOnlyList<SotFinalActionDto> finalActionSequence,
+        IReadOnlyList<BattleRuntimeUnit> allyUnits,
+        IReadOnlyList<BattleRuntimeUnit> enemyUnits,
+        IBattleRosterProjection rosterProjection,
+        out BattleRuntimeUnit actor,
+        out List<SlmUnitCommand> commands,
+        out string errorReason
+    )
+    {
+        actor = null;
+        commands = null;
+        errorReason = null;
+
+        if (string.IsNullOrWhiteSpace(actorUnitId))
+        {
+            errorReason = "Actor unitId is empty.";
+            return false;
+        }
+
+        actor = BattleOrderRuntimeQueries.FindUnitById(allyUnits, rosterProjection, actorUnitId);
         if (actor == null)
         {
-            errorReason = "Actor unit is null.";
+            errorReason = $"Actor unit '{actorUnitId}' was not found in ally roster.";
             return false;
         }
 
-        BattleLlmResponseActionDto[] rawActions = dto.output.action;
-        if (rawActions == null || rawActions.Length == 0)
+        if (finalActionSequence == null || finalActionSequence.Count == 0)
         {
-            // 빈 action은 거부 대사로 해석되므로 명령 없음을 정상 응답으로 처리한다.
-            commands = new List<SlmUnitCommand>(0);
-            return true;
+            errorReason = $"Actor '{actorUnitId}' has no final action sequence.";
+            return false;
         }
 
-        commands = new List<SlmUnitCommand>(rawActions.Length);
+        commands = new List<SlmUnitCommand>(finalActionSequence.Count);
 
-        for (int i = 0; i < rawActions.Length; i++)
+        for (int i = 0; i < finalActionSequence.Count; i++)
         {
-            BattleLlmResponseActionDto raw = rawActions[i];
+            SotFinalActionDto raw = finalActionSequence[i];
             if (raw == null)
-                continue;
+            {
+                errorReason = $"Action[{i}] is null.";
+                commands = null;
+                return false;
+            }
 
             if (
                 !TryConvertSingle(
@@ -59,11 +104,16 @@ public static class SlmDtoConverter
             )
             {
                 errorReason = $"Action[{i}] conversion failed. {singleError}";
+                commands = null;
                 return false;
             }
 
             if (command.Kind == SlmCommandKind.None)
-                continue;
+            {
+                errorReason = $"Action[{i}] converted to None.";
+                commands = null;
+                return false;
+            }
 
             commands.Add(command);
         }
@@ -71,8 +121,10 @@ public static class SlmDtoConverter
         return true;
     }
 
+    // SOT action 한 칸을 SlmUnitCommand 한 칸으로 변환한다.
+    // target side와 runtime validity는 후처리 단계에서 이미 확정된 것으로 본다.
     private static bool TryConvertSingle(
-        BattleLlmResponseActionDto raw,
+        SotFinalActionDto raw,
         BattleRuntimeUnit actor,
         IReadOnlyList<BattleRuntimeUnit> allyUnits,
         IReadOnlyList<BattleRuntimeUnit> enemyUnits,
@@ -84,110 +136,232 @@ public static class SlmDtoConverter
         command = default;
         errorReason = null;
 
-        SlmCommandKind kind = ParseKind(raw.type);
-        if (kind == SlmCommandKind.None)
+        string type = NormalizeToken(raw.type);
+        if (string.IsNullOrEmpty(type))
         {
-            errorReason = $"Unknown action type '{raw.type}'.";
+            errorReason = "Action type is empty.";
             return false;
         }
 
-        if (kind == SlmCommandKind.Attack)
-        {
-            BattleRuntimeUnit target = FindUnitById(raw.targetUnitId, allyUnits, enemyUnits, rosterProjection);
-            command = new SlmUnitCommand(
-                actor,
-                SlmCommandKind.Attack,
-                target,
-                SlmMoveSubtype.None,
-                SlmMoveStyle.Direct,
-                0f
-            );
-            return true;
-        }
-
-        if (kind == SlmCommandKind.Move)
-        {
-            SlmMoveSubtype subtype = ParseMoveSubtype(raw.subtype);
-            // DTO에 movementType 필드가 없어 기본값(Direct)으로 둔다.
-            SlmMoveStyle style = SlmMoveStyle.Direct;
-
-            // targetUnitId가 비어있으면 relativeFromUnitId를 fallback으로 사용한다.
-            string targetId = string.IsNullOrWhiteSpace(raw.targetUnitId) ? raw.relativeFromUnitId : raw.targetUnitId;
-            BattleRuntimeUnit moveTarget = FindUnitById(targetId, allyUnits, enemyUnits, rosterProjection);
-
-            command = new SlmUnitCommand(actor, SlmCommandKind.Move, moveTarget, subtype, style, 0f);
-            return true;
-        }
-
-        if (kind == SlmCommandKind.Skill)
-        {
-            BattleRuntimeUnit skillTarget = FindUnitById(raw.targetUnitId, allyUnits, enemyUnits, rosterProjection);
-            command = new SlmUnitCommand(
-                actor,
-                SlmCommandKind.Skill,
-                skillTarget,
-                SlmMoveSubtype.None,
-                SlmMoveStyle.Direct,
-                0f
-            );
-            return true;
-        }
-
-        if (kind == SlmCommandKind.Wait || kind == SlmCommandKind.DeferSkill)
-        {
-            // deferSkill은 명세에서 제외돼 Planner에서 즉시 종료된다.
-            // DTO에 sec 필드가 없어 DurationSec=0으로 두고, Planner가 디폴트 값으로 처리한다.
-            command = new SlmUnitCommand(actor, kind, null, SlmMoveSubtype.None, SlmMoveStyle.Direct, 0f);
-            return true;
-        }
-
-        if (kind == SlmCommandKind.NoSkill)
-        {
-            command = new SlmUnitCommand(
-                actor,
-                SlmCommandKind.NoSkill,
-                null,
-                SlmMoveSubtype.None,
-                SlmMoveStyle.Direct,
-                0f
-            );
-            return true;
-        }
-
-        errorReason = $"Unhandled action kind '{kind}'.";
-        return false;
-    }
-
-    private static SlmCommandKind ParseKind(string typeToken)
-    {
-        if (string.IsNullOrWhiteSpace(typeToken))
-            return SlmCommandKind.None;
-
-        switch (typeToken.Trim().ToLowerInvariant())
+        switch (type)
         {
             case "attack":
-                return SlmCommandKind.Attack;
+                return TryConvertAttack(
+                    raw,
+                    actor,
+                    allyUnits,
+                    enemyUnits,
+                    rosterProjection,
+                    out command,
+                    out errorReason
+                );
+
             case "move":
-                return SlmCommandKind.Move;
+                return TryConvertMove(
+                    raw,
+                    actor,
+                    allyUnits,
+                    enemyUnits,
+                    rosterProjection,
+                    out command,
+                    out errorReason
+                );
+
             case "skill":
-                return SlmCommandKind.Skill;
+                return TryConvertSkill(
+                    raw,
+                    actor,
+                    allyUnits,
+                    enemyUnits,
+                    rosterProjection,
+                    out command,
+                    out errorReason
+                );
+
             case "wait":
-                return SlmCommandKind.Wait;
-            case "deferskill":
-                return SlmCommandKind.DeferSkill;
-            case "noskill":
-                return SlmCommandKind.NoSkill;
+                command = new SlmUnitCommand(
+                    actor,
+                    SlmCommandKind.Wait,
+                    null,
+                    SlmMoveSubtype.None,
+                    SlmMoveStyle.Direct,
+                    ReadDurationSec(raw)
+                );
+                return true;
+
+            case "skillcontrol":
+                return TryConvertSkillControl(raw, actor, out command, out errorReason);
+
             default:
-                return SlmCommandKind.None;
+                errorReason = $"Unknown action type '{raw.type}'.";
+                return false;
         }
     }
 
+    // attack.target을 SlmCommandKind.Attack의 Target으로 넣는다.
+    private static bool TryConvertAttack(
+        SotFinalActionDto raw,
+        BattleRuntimeUnit actor,
+        IReadOnlyList<BattleRuntimeUnit> allyUnits,
+        IReadOnlyList<BattleRuntimeUnit> enemyUnits,
+        IBattleRosterProjection rosterProjection,
+        out SlmUnitCommand command,
+        out string errorReason
+    )
+    {
+        command = default;
+        errorReason = null;
+
+        BattleRuntimeUnit target = FindAnyUnitById(raw.target, allyUnits, enemyUnits, rosterProjection);
+
+        if (target == null)
+        {
+            errorReason = $"Attack target '{raw.target}' was not found.";
+            return false;
+        }
+
+        command = new SlmUnitCommand(
+            actor,
+            SlmCommandKind.Attack,
+            target,
+            SlmMoveSubtype.None,
+            SlmMoveStyle.Direct,
+            0f
+        );
+        return true;
+    }
+
+    // move.subtype, move.movementType, move.to를 SlmUnitCommand 이동 필드로 넣는다.
+    // escape는 SOT target을 실행 기준점으로 쓰지 않고, 실행층에서 적 위협/적 군집 기준으로 도망친다.
+    // help는 후처리/실행층에서 direct 보호 행동으로 해석한다.
+    private static bool TryConvertMove(
+        SotFinalActionDto raw,
+        BattleRuntimeUnit actor,
+        IReadOnlyList<BattleRuntimeUnit> allyUnits,
+        IReadOnlyList<BattleRuntimeUnit> enemyUnits,
+        IBattleRosterProjection rosterProjection,
+        out SlmUnitCommand command,
+        out string errorReason
+    )
+    {
+        command = default;
+        errorReason = null;
+
+        SlmMoveSubtype subtype = ParseMoveSubtype(raw.subtype);
+        if (subtype == SlmMoveSubtype.None)
+        {
+            errorReason = $"Unknown move subtype '{raw.subtype}'.";
+            return false;
+        }
+
+        SlmMoveStyle style = ParseMoveStyle(raw.movementType, out bool validMoveStyle);
+        if (!validMoveStyle)
+        {
+            errorReason = $"Unknown movementType '{raw.movementType}'.";
+            return false;
+        }
+
+        if (subtype == SlmMoveSubtype.Escape)
+        {
+            command = new SlmUnitCommand(
+                actor,
+                SlmCommandKind.Move,
+                null,
+                SlmMoveSubtype.Escape,
+                SlmMoveStyle.Direct,
+                0f
+            );
+            return true;
+        }
+
+        BattleRuntimeUnit target = FindAnyUnitById(raw.to, allyUnits, enemyUnits, rosterProjection);
+
+        if (target == null)
+        {
+            errorReason = $"Move target '{raw.to}' was not found.";
+            return false;
+        }
+
+        if (subtype == SlmMoveSubtype.Help)
+            style = SlmMoveStyle.Direct;
+
+        command = new SlmUnitCommand(actor, SlmCommandKind.Move, target, subtype, style, 0f);
+        return true;
+    }
+
+    // skill.target을 SlmCommandKind.Skill의 Target으로 넣는다.
+    // self skill도 target에는 actor 자신이 들어간다.
+    private static bool TryConvertSkill(
+        SotFinalActionDto raw,
+        BattleRuntimeUnit actor,
+        IReadOnlyList<BattleRuntimeUnit> allyUnits,
+        IReadOnlyList<BattleRuntimeUnit> enemyUnits,
+        IBattleRosterProjection rosterProjection,
+        out SlmUnitCommand command,
+        out string errorReason
+    )
+    {
+        command = default;
+        errorReason = null;
+
+        BattleRuntimeUnit target = FindAnyUnitById(raw.target, allyUnits, enemyUnits, rosterProjection);
+
+        if (target == null)
+        {
+            errorReason = $"Skill target '{raw.target}' was not found.";
+            return false;
+        }
+
+        command = new SlmUnitCommand(actor, SlmCommandKind.Skill, target, SlmMoveSubtype.None, SlmMoveStyle.Direct, 0f);
+        return true;
+    }
+
+    // skillControl.mode를 실행 IR의 분리된 command kind로 변환한다.
+    // defer는 DeferSkill, forbid는 NoSkill로 매핑한다.
+    private static bool TryConvertSkillControl(
+        SotFinalActionDto raw,
+        BattleRuntimeUnit actor,
+        out SlmUnitCommand command,
+        out string errorReason
+    )
+    {
+        command = default;
+        errorReason = null;
+
+        switch (NormalizeToken(raw.mode))
+        {
+            case "defer":
+                command = new SlmUnitCommand(
+                    actor,
+                    SlmCommandKind.DeferSkill,
+                    null,
+                    SlmMoveSubtype.None,
+                    SlmMoveStyle.Direct,
+                    ReadDurationSec(raw)
+                );
+                return true;
+
+            case "forbid":
+                command = new SlmUnitCommand(
+                    actor,
+                    SlmCommandKind.NoSkill,
+                    null,
+                    SlmMoveSubtype.None,
+                    SlmMoveStyle.Direct,
+                    ReadDurationSec(raw)
+                );
+                return true;
+
+            default:
+                errorReason = $"Unknown skillControl mode '{raw.mode}'.";
+                return false;
+        }
+    }
+
+    // SOT move subtype 문자열을 실행 IR enum으로 변환한다.
     private static SlmMoveSubtype ParseMoveSubtype(string subtypeToken)
     {
-        if (string.IsNullOrWhiteSpace(subtypeToken))
-            return SlmMoveSubtype.None;
-
-        switch (subtypeToken.Trim().ToLowerInvariant())
+        switch (NormalizeToken(subtypeToken))
         {
             case "approachopponent":
                 return SlmMoveSubtype.ApproachOpponent;
@@ -197,47 +371,62 @@ public static class SlmDtoConverter
                 return SlmMoveSubtype.Help;
             case "holdfront":
                 return SlmMoveSubtype.HoldFront;
-
-            // 구 DTO(absolute/relative) fallback. 갱신된 스키마에서는 도달하지 않는다.
-            case "absolute":
-            case "relative":
-                return SlmMoveSubtype.ApproachOpponent;
-
             default:
                 return SlmMoveSubtype.None;
         }
     }
 
-    private static BattleRuntimeUnit FindUnitById(
+    // movementType 누락은 direct로 본다.
+    // 알 수 없는 값은 실패시킨다.
+    private static SlmMoveStyle ParseMoveStyle(string movementTypeToken, out bool valid)
+    {
+        string token = NormalizeToken(movementTypeToken);
+        if (string.IsNullOrEmpty(token) || token == "direct")
+        {
+            valid = true;
+            return SlmMoveStyle.Direct;
+        }
+
+        if (token == "flank")
+        {
+            valid = true;
+            return SlmMoveStyle.Flank;
+        }
+
+        valid = false;
+        return SlmMoveStyle.Direct;
+    }
+
+    // durationSec가 없으면 0으로 둔다.
+    // wait/noSkill/deferSkill의 최종 clamp는 planner가 한 번 더 처리한다.
+    private static float ReadDurationSec(SotFinalActionDto raw)
+    {
+        if (raw == null || !raw.durationSec.HasValue)
+            return 0f;
+
+        return raw.durationSec.Value;
+    }
+
+    // SOT unitId를 아군/적 전체에서 BattleRuntimeUnit으로 되돌린다.
+    // actor는 아군만 허용하지만 action target은 아군/적 양쪽 모두 가능하다.
+    private static BattleRuntimeUnit FindAnyUnitById(
         string unitId,
         IReadOnlyList<BattleRuntimeUnit> allyUnits,
         IReadOnlyList<BattleRuntimeUnit> enemyUnits,
         IBattleRosterProjection rosterProjection
     )
     {
-        if (string.IsNullOrWhiteSpace(unitId) || rosterProjection == null)
-            return null;
+        BattleRuntimeUnit unit = BattleOrderRuntimeQueries.FindUnitById(allyUnits, rosterProjection, unitId);
 
-        for (int i = 0; i < allyUnits.Count; i++)
-        {
-            BattleRuntimeUnit unit = allyUnits[i];
-            if (
-                unit != null
-                && string.Equals(rosterProjection.GetDisplayUnitId(unit), unitId, System.StringComparison.Ordinal)
-            )
-                return unit;
-        }
+        if (unit != null)
+            return unit;
 
-        for (int i = 0; i < enemyUnits.Count; i++)
-        {
-            BattleRuntimeUnit unit = enemyUnits[i];
-            if (
-                unit != null
-                && string.Equals(rosterProjection.GetDisplayUnitId(unit), unitId, System.StringComparison.Ordinal)
-            )
-                return unit;
-        }
+        return BattleOrderRuntimeQueries.FindUnitById(enemyUnits, rosterProjection, unitId);
+    }
 
-        return null;
+    // 비교용 토큰 정규화. null, 앞 뒤 공백, 대소문자 차이, switch case 중복 방지
+    private static string NormalizeToken(string token)
+    {
+        return string.IsNullOrWhiteSpace(token) ? string.Empty : token.Trim().ToLowerInvariant();
     }
 }

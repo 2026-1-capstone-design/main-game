@@ -1,3 +1,8 @@
+// SOT mock/postprocess 결과를 로그로 확인하고 실행 진입점에 연결한다.
+// 구형 BattleLlmResponseDto 기반 LLM 경로는 주석처리되어 있다.
+// 후처리 완료 action만 SlmUnitCommand로 변환해 BattleSimulationManager에 넘긴다.
+// 실제 행동 생성은 SlmCommandUnitPlanner와 실행계층이 처리한다.
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -13,6 +18,8 @@ public sealed class BattleOrdersManager : MonoBehaviour
     [SerializeField]
     private bool verboseLog = true;
 
+    /*
+    구형 BattleLlmResponseDto 기반 LLM Proxy 설정이라 주석처리함. 나중에 실제 SOT LLM 호출 재연결 시 다시 써야 함.
     [Header("LLM Proxy")]
     [SerializeField]
     private bool sendOrdersToLlm = true;
@@ -28,6 +35,15 @@ public sealed class BattleOrdersManager : MonoBehaviour
 
     [SerializeField]
     private int requestTimeoutSeconds = 30;
+    */
+
+    [Header("SOT Layer Preview")]
+    [SerializeField]
+    private bool logSotLayerInputPreview = true;
+
+    [Header("SOT Command Execution")]
+    [SerializeField]
+    private bool issuePostprocessedSotCommands = true;
 
     private readonly BattleRuntimeUnit[] _allyUnits = new BattleRuntimeUnit[BattleTeamConstants.MaxUnitsPerTeam];
     private readonly BattleRuntimeUnit[] _enemyUnits = new BattleRuntimeUnit[BattleTeamConstants.MaxUnitsPerTeam];
@@ -35,7 +51,10 @@ public sealed class BattleOrdersManager : MonoBehaviour
 
     private SphereCollider _battlefieldCollider;
     private bool _initialized;
-    private int _requestSequence;
+
+    // 구형 BattleLlmResponseDto 기반 요청 sequence라 주석처리함. 나중에 실제 SOT LLM 호출 재연결 시 다시 써야 함.
+    // private int _requestSequence;
+    private BattleOrderLayerPipeline _layerPipeline;
 
     public event Action<BattleRuntimeUnit, string> OnAllyOrderResponseReceived;
 
@@ -113,111 +132,246 @@ public sealed class BattleOrdersManager : MonoBehaviour
             return;
         }
 
-        StringBuilder sb = new StringBuilder(768);
-
-        sb.AppendLine("<color=#4FC3F7><b>[GLOBAL]</b></color>");
-        sb.AppendLine("<color=#B3E5FC>Global order received.</color>");
-
-        for (int i = 0; i < _allyUnits.Length; i++)
+        string sanitizedRawText = SanitizeRawText(rawOrderText);
+        if (string.IsNullOrWhiteSpace(sanitizedRawText))
         {
-            sb.AppendLine(BuildGlobalAllyLine(i + 1, _allyUnits[i]));
-        }
-
-        sb.Append("<color=#FFCC80>Raw order:</color> \"");
-        sb.Append(SanitizeRawText(rawOrderText));
-        sb.AppendLine("\"");
-
-        if (
-            !TryResolveActorFromGlobalOrder(
-                rawOrderText,
-                out BattleRuntimeUnit resolvedActor,
-                out int matchedCount,
-                out string matchedSummary
-            )
-        )
-        {
-            sb.Append("<color=#EF9A9A>LLM skipped.</color> Matched ally count = ");
-            sb.Append(matchedCount);
-            sb.Append(". ");
-            sb.Append(matchedSummary);
-
-            Debug.Log(sb.ToString(), this);
+            Debug.LogWarning("[BattleOrdersManager] Global order ignored. Raw order text is empty.", this);
             return;
         }
 
-        sb.Append("<color=#81C784>Resolved actor:</color> ");
-        sb.Append(BuildUnitIdentityText(resolvedActor));
-        sb.Append(" / UnitId=");
-        sb.Append(BuildUnitId(resolvedActor));
+        if (verboseLog)
+        {
+            StringBuilder sb = new StringBuilder(768);
+            sb.AppendLine("<color=#4FC3F7><b>[GLOBAL]</b></color>");
+            sb.AppendLine("<color=#B3E5FC>Global order received.</color>");
 
-        Debug.Log(sb.ToString(), this);
+            for (int i = 0; i < _allyUnits.Length; i++)
+            {
+                sb.AppendLine(BuildGlobalAllyLine(i + 1, _allyUnits[i]));
+            }
 
-        TrySendOrderToLlm("GLOBAL", resolvedActor, rawOrderText);
+            sb.Append("<color=#FFCC80>Raw order:</color> \"");
+            sb.Append(sanitizedRawText);
+            sb.AppendLine("\"");
+
+            Debug.Log(sb.ToString(), this);
+        }
+
+        RunSotLayerPipeline(sanitizedRawText);
     }
 
     public void SubmitSingleOrder(BattleRuntimeUnit targetAlly, string rawOrderText)
     {
-        if (!_initialized)
-        {
-            Debug.LogError("[BattleOrdersManager] SubmitSingleOrder called before Initialize.", this);
-            return;
-        }
-
-        if (targetAlly == null)
-        {
-            Debug.LogWarning("[BattleOrdersManager] SubmitSingleOrder ignored. Target ally is null.", this);
-            return;
-        }
-
-        if (_rosterProjection != null && !_rosterProjection.IsPlayerUnit(targetAlly))
-        {
-            Debug.LogWarning("[BattleOrdersManager] SubmitSingleOrder ignored. Target is an enemy unit.", this);
-            return;
-        }
-
-        StringBuilder sb = new StringBuilder(384);
-
-        sb.AppendLine("<color=#BA68C8><b>[SINGLE]</b></color>");
-        sb.AppendLine("<color=#E1BEE7>Single target order received.</color>");
-        sb.Append("<color=#81C784>Target ally:</color> ");
-        sb.AppendLine(BuildUnitIdentityText(targetAlly));
-        sb.Append("<color=#81C784>Target unitId:</color> ");
-        sb.AppendLine(BuildUnitId(targetAlly));
-        sb.Append("<color=#FFCC80>Raw order:</color> \"");
-        sb.Append(SanitizeRawText(rawOrderText));
-        sb.Append('"');
-
-        Debug.Log(sb.ToString(), this);
-
-        TrySendOrderToLlm("SINGLE", targetAlly, rawOrderText);
+        //deprecated
     }
 
-    public bool TryGetAllyIndex(BattleRuntimeUnit allyUnit, out int allyIndex)
+    private void RunSotLayerPipeline(string sanitizedRawText)
     {
-        allyIndex = -1;
+        bool shouldLogPreview = logSotLayerInputPreview;
 
-        if (allyUnit == null)
+        BattleSimulationManager simulationManager = BattleSimulationManager.Instance;
+        if (simulationManager == null)
         {
-            return false;
-        }
-
-        if (_rosterProjection != null && _rosterProjection.TryGetPlayerIndex(allyUnit, out allyIndex))
-        {
-            return true;
-        }
-
-        for (int i = 0; i < _allyUnits.Length; i++)
-        {
-            if (_allyUnits[i] == allyUnit)
+            if (shouldLogPreview)
             {
-                allyIndex = i;
-                return true;
+                Debug.LogWarning(
+                    "[BattleOrdersManager] SOT layer pipeline skipped. BattleSimulationManager.Instance is null.",
+                    this
+                );
             }
+
+            return;
         }
 
-        return false;
+        _layerPipeline ??= new BattleOrderLayerPipeline();
+
+        BattleOrderRuntimeContext context = new BattleOrderRuntimeContext(
+            _allyUnits,
+            _enemyUnits,
+            _rosterProjection,
+            simulationManager
+        );
+
+        if (
+            !_layerPipeline.TryBuildInputPreview(
+                sanitizedRawText,
+                context,
+                out BattleOrderLayerPreviewResult result,
+                out string mockParserLog,
+                out string error
+            )
+        )
+        {
+            if (shouldLogPreview)
+            {
+                if (error == "invalidinput")
+                {
+                    Debug.LogWarning(
+                        "<color=#FF8A80><b>[SOT MOCK PARSER]</b></color> invalidinput\n"
+                            + (string.IsNullOrWhiteSpace(mockParserLog) ? string.Empty : mockParserLog),
+                        this
+                    );
+                }
+                else
+                {
+                    Debug.LogWarning($"[BattleOrdersManager] SOT layer pipeline failed. Reason={error}", this);
+                }
+            }
+
+            return;
+        }
+
+        if (shouldLogPreview)
+        {
+            if (!string.IsNullOrWhiteSpace(mockParserLog))
+            {
+                Debug.Log("<color=#AED581><b>[SOT MOCK PARSER]</b></color>\n" + mockParserLog, this);
+            }
+
+            Debug.Log("<color=#4FC3F7><b>[SOT PARSER INPUT PREVIEW]</b></color>\n" + result.ParserRequestJson, this);
+
+            Debug.Log("<color=#81C784><b>[SOT MOCK PARSER OUTPUT]</b></color>\n" + result.MockParserOutputJson, this);
+
+            Debug.Log(
+                "<color=#FFB74D><b>[SOT POSTPROCESS RESULT PREVIEW]</b></color>\n" + result.PostprocessResultJson,
+                this
+            );
+
+            Debug.Log("<color=#BA68C8><b>[SOT DIALOG INPUT PREVIEW]</b></color>\n" + result.DialogRequestJson, this);
+
+            Debug.Log(
+                "<color=#CE93D8><b>[SOT DIALOG RESPONSE PREVIEW]</b></color>\n" + result.DialogResponseJson,
+                this
+            );
+        }
+
+        TryIssuePostprocessedSlmCommands(result.PostprocessResult);
     }
 
+    private void TryIssuePostprocessedSlmCommands(BattleCommandPostprocessResult postprocessResult)
+    {
+        if (!issuePostprocessedSotCommands)
+            return;
+
+        if (postprocessResult == null)
+        {
+            Debug.LogWarning("[BattleOrdersManager] SOT command execution skipped. PostprocessResult is null.", this);
+            return;
+        }
+
+        if (postprocessResult.fallbackToDefaultMlAi)
+        {
+            if (verboseLog)
+            {
+                Debug.Log(
+                    "[BattleOrdersManager] SOT command execution skipped. fallbackToDefaultMlAi=true. AdvisorLine="
+                        + (postprocessResult.advisorLine ?? string.Empty),
+                    this
+                );
+            }
+
+            return;
+        }
+
+        BattleCommandFinalActorDto[] finalActors =
+            postprocessResult.actors ?? System.Array.Empty<BattleCommandFinalActorDto>();
+
+        if (finalActors.Length == 0)
+        {
+            if (verboseLog)
+            {
+                Debug.Log("[BattleOrdersManager] SOT command execution skipped. No final actors.", this);
+            }
+
+            return;
+        }
+
+        BattleSimulationManager simulationManager = BattleSimulationManager.Instance;
+        if (simulationManager == null)
+        {
+            Debug.LogError(
+                "[BattleOrdersManager] SOT command execution skipped. BattleSimulationManager.Instance is null.",
+                this
+            );
+            return;
+        }
+
+        int issuedCount = 0;
+        int failedCount = 0;
+
+        for (int i = 0; i < finalActors.Length; i++)
+        {
+            BattleCommandFinalActorDto finalActor = finalActors[i];
+            if (finalActor == null)
+            {
+                failedCount++;
+                Debug.LogWarning(
+                    "[BattleOrdersManager] SOT command execution skipped for actor entry. Final actor is null.",
+                    this
+                );
+                continue;
+            }
+
+            if (
+                !SlmDtoConverter.TryConvert(
+                    finalActor,
+                    _allyUnits,
+                    _enemyUnits,
+                    _rosterProjection,
+                    out BattleRuntimeUnit actorUnit,
+                    out List<SlmUnitCommand> slmCommands,
+                    out string conversionError
+                )
+            )
+            {
+                failedCount++;
+                Debug.LogWarning(
+                    "[BattleOrdersManager] SOT command conversion failed. ActorUnitId="
+                        + (finalActor.unitId ?? string.Empty)
+                        + ", Error="
+                        + conversionError,
+                    this
+                );
+                continue;
+            }
+
+            if (actorUnit == null || actorUnit.State == null)
+            {
+                failedCount++;
+                Debug.LogWarning(
+                    "[BattleOrdersManager] SOT command execution skipped. Actor state is null. ActorUnitId="
+                        + (finalActor.unitId ?? string.Empty),
+                    this
+                );
+                continue;
+            }
+
+            if (slmCommands == null || slmCommands.Count == 0)
+            {
+                failedCount++;
+                Debug.LogWarning(
+                    "[BattleOrdersManager] SOT command execution skipped. Converted command list is empty. ActorUnitId="
+                        + (finalActor.unitId ?? string.Empty),
+                    this
+                );
+                continue;
+            }
+
+            simulationManager.IssueSlmCommands(actorUnit.State, slmCommands);
+            issuedCount++;
+        }
+
+        if (verboseLog)
+        {
+            Debug.Log(
+                $"[BattleOrdersManager] SOT command execution result. IssuedActors={issuedCount}, FailedActors={failedCount}",
+                this
+            );
+        }
+    }
+
+    /*
+    구형 BattleLlmResponseDto 기반 LLM 송수신/파싱/검증 경로라 주석처리함. 나중에 실제 SOT LLM 호출 재연결 시 다시 써야 함.
     private void TrySendOrderToLlm(string orderType, BattleRuntimeUnit actorUnit, string rawOrderText)
     {
         if (!sendOrdersToLlm)
@@ -1400,6 +1554,7 @@ public sealed class BattleOrdersManager : MonoBehaviour
         string description = actorUnit.Snapshot.Personality.description;
         return string.IsNullOrWhiteSpace(description) ? string.Empty : description.Trim();
     }
+    */
 
     private string BuildUnitId(BattleRuntimeUnit unit)
     {
