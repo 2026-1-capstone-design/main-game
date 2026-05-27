@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 251b89a55cd5a2743878f62ed275c4de, type: 3}
-  m_Name: OmniousGaze
+  m_Name: OminousGaze
   m_EditorClassIdentifier: 
   icon: {fileID: 0}
-  artifactName: OmniousGaze
-  artifactId: 2
+  artifactName: OminousGaze
+  artifactPerkId: 2
   artifactLevel: 1
-  description: "\uC801\uC5D0\uAC8C \uB354 \uB9CE\uC774 \uB178\uB824\uC9C4\uB2E4."
+  artifactLore: "\uC801\uC5D0\uAC8C \uB354 \uB9CE\uC774 \uB178\uB824\uC9C4\uB2E4."
