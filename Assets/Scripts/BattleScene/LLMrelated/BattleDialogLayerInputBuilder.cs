@@ -50,7 +50,7 @@ public sealed class BattleDialogLayerInputBuilder
                 {
                     unitId = finalActor.unitId,
                     speechStyle = ResolveSpeechStyle(actor),
-                    personalityDescription = ResolvePersonalityDescription(actor),
+                    personalityDescription = ResolveDialogPersonalityDescription(actor),
                     sourceDialog = string.IsNullOrWhiteSpace(finalActor.sourceDialog)
                         ? "명령을 확인했다."
                         : finalActor.sourceDialog,
@@ -103,7 +103,7 @@ public sealed class BattleDialogLayerInputBuilder
                 {
                     unitId = actorSequence.unitId,
                     speechStyle = ResolveSpeechStyle(actor),
-                    personalityDescription = ResolvePersonalityDescription(actor),
+                    personalityDescription = ResolveDialogPersonalityDescription(actor),
                     sourceDialog = ResolveSourceDialog(mockParseResult, actorSequence.unitId),
                     obedienceState = "obey",
                     obeyedActionAdjustment = string.Empty,
@@ -156,14 +156,21 @@ public sealed class BattleDialogLayerInputBuilder
         return "명령을 확인했다.";
     }
 
-    private static string ResolvePersonalityDescription(BattleRuntimeUnit unit)
+    // 대사 레이어에는 긴 description 대신 짧은 dialogPersonalityDescription만 넘김. 성능 낮은 slm을 돕도록, 실제 말투를 반영한 설명문임.
+    // 기존 asset에 값이 없으면 description으로 폴백한다.
+    private static string ResolveDialogPersonalityDescription(BattleRuntimeUnit unit)
     {
         if (unit == null || unit.Snapshot == null || unit.Snapshot.Personality == null)
             return string.Empty;
 
-        return string.IsNullOrWhiteSpace(unit.Snapshot.Personality.description)
+        PersonalitySO personality = unit.Snapshot.Personality;
+
+        if (!string.IsNullOrWhiteSpace(personality.dialogPersonalityDescription))
+            return personality.dialogPersonalityDescription.Trim();
+
+        return string.IsNullOrWhiteSpace(personality.description)
             ? string.Empty
-            : unit.Snapshot.Personality.description.Trim();
+            : personality.description.Trim();
     }
 
     private static int ResolveSpeechStyle(BattleRuntimeUnit unit)
