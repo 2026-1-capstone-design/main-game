@@ -13085,11 +13085,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BattleOrdersManager
   verboseLog: 1
-  sendOrdersToLlm: 1
-  llmProxyUrl: https://together-proxy-fn-769017230258.asia-northeast3.run.app
-  appSharedToken: jinkimdis1248
-  selectedLlmBackend: 0
-  requestTimeoutSeconds: 30
+  logSotLayerInputPreview: 1
+  useMockInput: 0
+  slmProxyUrl: 
+  slmAppSharedToken: 
+  selectedSlmBackend: 0
+  slmRequestTimeoutSeconds: 60
+  issuePostprocessedSotCommands: 1
 --- !u!4 &1233094451
 Transform:
   m_ObjectHideFlags: 0
@@ -22374,6 +22376,7 @@ MonoBehaviour:
   maxSimulationSpeed: 8
   unitBodyRadius: 0.5
   aiTuning: {fileID: 11400000, guid: 9460e7500e3182e498f0bc7ab23dd2ef, type: 2}
+  slmCommandTuningSO: {fileID: 0}
   desiredPositionStopDistance: 0.5
   escapeTowardTeamBlend: 0.35
   trainingOptimizedSimulation: 0

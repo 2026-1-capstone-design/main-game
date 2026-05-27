@@ -41,6 +41,23 @@ public sealed class BattleOrdersManager : MonoBehaviour
     [SerializeField]
     private bool logSotLayerInputPreview = true;
 
+    [Header("SOT Input Source")]
+    [SerializeField]
+    private bool useMockInput = true;
+
+    [Header("SOT Server")]
+    [SerializeField]
+    private string slmProxyUrl = "";
+
+    [SerializeField]
+    private string slmAppSharedToken = "";
+
+    [SerializeField]
+    private BattleLlmBackend selectedSlmBackend = BattleLlmBackend.TogetherGemma3nE4B;
+
+    [SerializeField]
+    private int slmRequestTimeoutSeconds = 60;
+
     [Header("SOT Command Execution")]
     [SerializeField]
     private bool issuePostprocessedSotCommands = true;
@@ -48,6 +65,9 @@ public sealed class BattleOrdersManager : MonoBehaviour
     private readonly BattleRuntimeUnit[] _allyUnits = new BattleRuntimeUnit[BattleTeamConstants.MaxUnitsPerTeam];
     private readonly BattleRuntimeUnit[] _enemyUnits = new BattleRuntimeUnit[BattleTeamConstants.MaxUnitsPerTeam];
     private readonly BattleUnitNameResolver _unitNameResolver = new BattleUnitNameResolver();
+    private readonly BattleParserInputBuilder _serverParserInputBuilder = new BattleParserInputBuilder();
+    private readonly BattleCommandPostprocessor _serverPostprocessor = new BattleCommandPostprocessor();
+    private readonly BattleDialogLayerInputBuilder _serverDialogInputBuilder = new BattleDialogLayerInputBuilder();
     private IBattleRosterProjection _rosterProjection;
 
     private SphereCollider _battlefieldCollider;
@@ -56,6 +76,7 @@ public sealed class BattleOrdersManager : MonoBehaviour
     // 구형 BattleLlmResponseDto 기반 요청 sequence라 주석처리함. 나중에 실제 SOT LLM 호출 재연결 시 다시 써야 함.
     // private int _requestSequence;
     private BattleOrderLayerPipeline _layerPipeline;
+    private bool _serverSotPipelineRunning;
 
     public event Action<BattleRuntimeUnit, string> OnAllyOrderResponseReceived;
 
@@ -169,7 +190,20 @@ public sealed class BattleOrdersManager : MonoBehaviour
             );
         }
 
-        RunSotLayerPipeline(sotOrderText);
+        if (useMockInput)
+        {
+            RunSotLayerPipeline(sotOrderText);
+        }
+        else
+        {
+            if (_serverSotPipelineRunning)
+            {
+                Debug.LogWarning("[BattleOrdersManager] Server SOT pipeline ignored. Previous request is still running.", this);
+                return;
+            }
+
+            StartCoroutine(RunServerSotLayerPipeline(sotOrderText));
+        }
     }
 
     public void SubmitSingleOrder(BattleRuntimeUnit targetAlly, string rawOrderText)
@@ -263,6 +297,231 @@ public sealed class BattleOrdersManager : MonoBehaviour
         {
             EmitDialogLayerResponses(result.DialogResponse);
         }
+    }
+
+    private IEnumerator RunServerSotLayerPipeline(string sanitizedRawText)
+    {
+        _serverSotPipelineRunning = true;
+
+        bool shouldLogPreview = logSotLayerInputPreview;
+        BattleSimulationManager simulationManager = BattleSimulationManager.Instance;
+
+        if (simulationManager == null)
+        {
+            Debug.LogWarning("[BattleOrdersManager] Server SOT pipeline skipped. BattleSimulationManager.Instance is null.", this);
+            _serverSotPipelineRunning = false;
+            yield break;
+        }
+
+        BattleOrderRuntimeContext context = new BattleOrderRuntimeContext(
+            _allyUnits,
+            _enemyUnits,
+            _rosterProjection,
+            simulationManager
+        );
+
+        SotParserRequestDto parserRequest = _serverParserInputBuilder.Build(sanitizedRawText, context);
+        SotLayerPromptBundle parserPrompt = FullPromptBuilderForSlmLayers.BuildParserPrompt(parserRequest);
+
+        if (shouldLogPreview)
+        {
+            Debug.Log("<color=#4FC3F7><b>[SOT SERVER PARSER PROMPT]</b></color>\n" + parserPrompt.ToDebugText(), this);
+        }
+
+        string parserRawResponse = null;
+        string parserRequestError = null;
+
+        yield return BattleOrdersHttpClient.PostCommand(
+            slmProxyUrl,
+            slmAppSharedToken,
+            GetSelectedBackendId(selectedSlmBackend),
+            parserPrompt.SystemInstruction,
+            parserPrompt.UserPayloadJson,
+            slmRequestTimeoutSeconds,
+            (responseBackendId, responseProvider, responseModel, responseText) =>
+            {
+                parserRawResponse = responseText;
+                if (shouldLogPreview)
+                {
+                    Debug.Log(
+                        "<color=#81C784><b>[SOT SERVER PARSER RAW RESPONSE]</b></color>\n"
+                            + $"Backend={responseBackendId}, Provider={responseProvider}, Model={responseModel}\n"
+                            + responseText,
+                        this
+                    );
+                }
+            },
+            error => parserRequestError = error
+        );
+
+        if (!string.IsNullOrWhiteSpace(parserRequestError))
+        {
+            LogSotServerFailure("PARSER REQUEST FAILED", parserPrompt, parserRequestError, parserRawResponse);
+            _serverSotPipelineRunning = false;
+            yield break;
+        }
+
+        if (
+            !SotLayerOutputParser.TryParseParserOutput(
+                parserRawResponse,
+                parserRequest,
+                out SotParserOutputDto parserOutput,
+                out string parserParseError
+            )
+        )
+        {
+            LogSotServerFailure("PARSER OUTPUT INVALID", parserPrompt, parserParseError, parserRawResponse);
+            _serverSotPipelineRunning = false;
+            yield break;
+        }
+
+        if (
+            !_serverPostprocessor.TryProcess(
+                sanitizedRawText,
+                parserOutput,
+                context,
+                out BattleCommandPostprocessResult postprocessResult,
+                out string postprocessError
+            )
+        )
+        {
+            LogSotServerFailure("POSTPROCESS FAILED", parserPrompt, postprocessError, parserRawResponse);
+            _serverSotPipelineRunning = false;
+            yield break;
+        }
+
+        SotDialogLayerRequestDto dialogRequest;
+
+        if (postprocessResult != null && postprocessResult.fallbackToDefaultMlAi)
+        {
+            if (shouldLogPreview)
+            {
+                Debug.Log(
+                    "[BattleOrdersManager] Server SOT pipeline ended with fallbackToDefaultMlAi=true. AdvisorLine="
+                        + (postprocessResult.advisorLine ?? string.Empty),
+                    this
+                );
+            }
+
+            _serverSotPipelineRunning = false;
+            yield break;
+        }
+
+        dialogRequest = _serverDialogInputBuilder.BuildFromPostprocessResult(postprocessResult, context);
+
+        if (dialogRequest == null || dialogRequest.actors == null || dialogRequest.actors.Length == 0)
+        {
+            if (shouldLogPreview)
+            {
+                Debug.Log("[BattleOrdersManager] Server SOT pipeline ended. Dialog request has no actors.", this);
+            }
+
+            _serverSotPipelineRunning = false;
+            yield break;
+        }
+
+        SotLayerPromptBundle dialogPrompt = FullPromptBuilderForSlmLayers.BuildDialogPrompt(dialogRequest);
+
+        if (shouldLogPreview)
+        {
+            Debug.Log("<color=#BA68C8><b>[SOT SERVER DIALOG PROMPT]</b></color>\n" + dialogPrompt.ToDebugText(), this);
+        }
+
+        string dialogRawResponse = null;
+        string dialogRequestError = null;
+
+        yield return BattleOrdersHttpClient.PostCommand(
+            slmProxyUrl,
+            slmAppSharedToken,
+            GetSelectedBackendId(selectedSlmBackend),
+            dialogPrompt.SystemInstruction,
+            dialogPrompt.UserPayloadJson,
+            slmRequestTimeoutSeconds,
+            (responseBackendId, responseProvider, responseModel, responseText) =>
+            {
+                dialogRawResponse = responseText;
+                if (shouldLogPreview)
+                {
+                    Debug.Log(
+                        "<color=#CE93D8><b>[SOT SERVER DIALOG RAW RESPONSE]</b></color>\n"
+                            + $"Backend={responseBackendId}, Provider={responseProvider}, Model={responseModel}\n"
+                            + responseText,
+                        this
+                    );
+                }
+            },
+            error => dialogRequestError = error
+        );
+
+        if (!string.IsNullOrWhiteSpace(dialogRequestError))
+        {
+            LogSotServerFailure("DIALOG REQUEST FAILED", dialogPrompt, dialogRequestError, dialogRawResponse);
+            _serverSotPipelineRunning = false;
+            yield break;
+        }
+
+        if (
+            !SotLayerOutputParser.TryParseDialogOutput(
+                dialogRawResponse,
+                dialogRequest,
+                out SotDialogLayerResponseDto dialogResponse,
+                out string dialogParseError
+            )
+        )
+        {
+            LogSotServerFailure("DIALOG OUTPUT INVALID", dialogPrompt, dialogParseError, dialogRawResponse);
+            _serverSotPipelineRunning = false;
+            yield break;
+        }
+
+        if (shouldLogPreview)
+        {
+            Debug.Log(
+                "<color=#FFB74D><b>[SOT SERVER POSTPROCESS RESULT]</b></color>\n"
+                    + FullPromptBuilderForSlmLayers.ToCompactJson(postprocessResult),
+                this
+            );
+            Debug.Log(
+                "<color=#CE93D8><b>[SOT SERVER DIALOG RESPONSE]</b></color>\n"
+                    + FullPromptBuilderForSlmLayers.ToCompactJson(dialogResponse),
+                this
+            );
+        }
+
+        if (issuePostprocessedSotCommands)
+        {
+            EmitDialogLayerResponses(dialogResponse);
+        }
+
+        TryIssuePostprocessedSlmCommands(postprocessResult);
+
+        _serverSotPipelineRunning = false;
+    }
+
+    private void LogSotServerFailure(
+    string title,
+    SotLayerPromptBundle promptBundle,
+    string error,
+    string rawResponse
+    )
+    {
+        if (!verboseLog)
+        {
+            return;
+        }
+
+        Debug.Log(
+            "<color=#9E9E9E><b>[SOT SERVER "
+                + title
+                + " - IGNORED]</b></color>\n"
+                + "<color=#BDBDBD>Reason:</color> "
+                + (error ?? string.Empty)
+                + "\n\n<color=#BDBDBD>FullPrompt:</color>\n"
+                + promptBundle.ToDebugText()
+                + "\n\n<color=#BDBDBD>RawResponse:</color>\n"
+                + (rawResponse ?? string.Empty),
+            this
+        );
     }
 
     private void EmitDialogLayerResponses(SotDialogLayerResponseDto dialogResponse)
