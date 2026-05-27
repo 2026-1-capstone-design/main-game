@@ -320,6 +320,7 @@ public sealed class BattleManager : MonoBehaviour
         }
 
         _sessionManager.SetPendingBattleReward(pendingReward);
+        _sessionManager.RecordBattleResult(wasWin, defeatedEnemyCount: 0);
 
         _battlePanelOpen = false;
         _resultOpen = true;

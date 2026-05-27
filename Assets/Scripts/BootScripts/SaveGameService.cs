@@ -185,6 +185,9 @@ public static class SaveGameService
             savedAtUtc = DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture),
             hasUsedBattleToday = sessionManager != null && sessionManager.HasUsedBattleToday,
             pendingBattleRewardAmount = sessionManager != null ? sessionManager.PendingBattleRewardAmount : 0,
+            totalBattleCount = sessionManager != null ? sessionManager.TotalBattleCount : 0,
+            victoryBattleCount = sessionManager != null ? sessionManager.VictoryBattleCount : 0,
+            defeatedEnemyCount = sessionManager != null ? sessionManager.DefeatedEnemyCount : 0,
             classCounters =
                 sessionManager != null
                     ? sessionManager.GetClassCounterEntriesForSave()
@@ -258,6 +261,11 @@ public static class SaveGameService
         {
             sessionManager.SetCurrentDayForLoad(data.day);
             sessionManager.SetBattleStateForLoad(data.hasUsedBattleToday, data.pendingBattleRewardAmount);
+            sessionManager.SetAccountStatisticsForLoad(
+                data.totalBattleCount,
+                data.victoryBattleCount,
+                data.defeatedEnemyCount
+            );
             sessionManager.SetClassCounterEntriesForLoad(data.classCounters);
         }
 

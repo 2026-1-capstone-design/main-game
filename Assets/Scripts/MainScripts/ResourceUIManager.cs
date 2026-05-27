@@ -7,9 +7,6 @@ public sealed class ResourceUIManager : MonoBehaviour
     [SerializeField]
     private TMP_Text goldText;
 
-    [SerializeField]
-    private string goldPrefix = "골드 : ";
-
     private ResourceManager _resourceManager;
 
     public void Initialize(ResourceManager resourceManager)
@@ -63,7 +60,7 @@ public sealed class ResourceUIManager : MonoBehaviour
             return;
         }
 
-        goldText.text = goldPrefix + currentGold;
+        goldText.text = $"{currentGold} G";
         Debug.Log($"[ResourceUIManager] Gold text refreshed. CurrentGold={currentGold}", this);
     }
 }

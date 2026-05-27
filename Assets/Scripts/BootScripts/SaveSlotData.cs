@@ -11,6 +11,9 @@ public sealed class SaveSlotData
 
     public bool hasUsedBattleToday;
     public int pendingBattleRewardAmount;
+    public int totalBattleCount;
+    public int victoryBattleCount;
+    public int defeatedEnemyCount;
 
     public SaveClassCounterEntry[] classCounters;
     public SaveOwnedWeaponData[] ownedWeapons;

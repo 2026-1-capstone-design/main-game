@@ -504,6 +504,9 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
             return false;
         }
 
+        // 판매된 검투사가 스쿼드 슬롯에 남으면 전투 payload에 제거된 보유 데이터가 섞이므로,
+        // 보유 목록 제거가 확정된 직후 모든 편성 슬롯에서도 함께 제거한다.
+        SquadManager.Instance?.RemoveGladiatorFromSquad(gladiator);
         _resourceManager.AddGold(sellPrice);
 
         if (verboseLog)

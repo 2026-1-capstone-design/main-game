@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using TMPro;
 using UnityEngine;
@@ -32,6 +33,25 @@ public sealed class MainUIManager : MonoBehaviour
 
     [SerializeField]
     private Button stampButton;
+
+    [Header("Account Panel")]
+    [SerializeField]
+    private GameObject accountPanelRoot;
+
+    [SerializeField]
+    private TMP_Text teamNameText;
+
+    [SerializeField]
+    private TMP_Text gladiatorStatisticsText;
+
+    [SerializeField]
+    private TMP_Text goldStatisticsText;
+
+    [SerializeField]
+    private Button accountBackButton;
+
+    [SerializeField]
+    private int projectedExpenseDays = 3;
 
     [Header("Escape Menu")]
     [SerializeField]
@@ -94,6 +114,8 @@ public sealed class MainUIManager : MonoBehaviour
 
     private MainFlowManager _flow; // 메인 메뉴 버튼 입력을 실제 게임 흐름 처리 함수로 넘김
     private SessionManager _sessionManager;
+    private ResourceManager _resourceManager;
+    private GladiatorManager _gladiatorManager;
     private bool _initialized;
     private bool _mainMenuInteractable = true;
     private Button _saveBackdropButton;
@@ -101,7 +123,12 @@ public sealed class MainUIManager : MonoBehaviour
 
     // 메인 버튼들을 모두 MainFlowManager 핸들러에 연결하고,
     // !!DayChanged 이벤트를 구독해!! 날짜 UI를 동기화
-    public void Initialize(MainFlowManager flow, SessionManager sessionManager)
+    public void Initialize(
+        MainFlowManager flow,
+        SessionManager sessionManager,
+        ResourceManager resourceManager,
+        GladiatorManager gladiatorManager
+    )
     {
         if (_initialized)
         {
@@ -110,6 +137,8 @@ public sealed class MainUIManager : MonoBehaviour
 
         _flow = flow;
         _sessionManager = sessionManager;
+        _resourceManager = resourceManager;
+        _gladiatorManager = gladiatorManager;
 
         BindButton(gladiatorButton, OnGladiatorClicked);
         BindButton(squadButton, OnSquadClicked);
@@ -117,10 +146,12 @@ public sealed class MainUIManager : MonoBehaviour
         BindButton(inventoryButton, OnInventoryClicked);
         BindButton(marketButton, OnMarketClicked);
         BindButton(eodButton, OnEodClicked);
+        BindButton(accountbookButton, OnAccountbookClicked);
         BindButton(continueButton, OnContinueClicked);
         BindButton(settingsButton, OnSettingsClicked);
         BindButton(escapeSaveButton, OnSaveClicked);
         BindButton(escapeTitleButton, OnTitleClicked);
+        BindButton(accountBackButton, OnAccountBackClicked);
 
         CacheSaveModalControls();
         CacheSettingsModalControls();
@@ -142,6 +173,11 @@ public sealed class MainUIManager : MonoBehaviour
         if (settingsPanelRoot != null)
         {
             settingsPanelRoot.SetActive(false);
+        }
+
+        if (accountPanelRoot != null)
+        {
+            accountPanelRoot.SetActive(false);
         }
 
         if (_sessionManager != null)
@@ -301,6 +337,27 @@ public sealed class MainUIManager : MonoBehaviour
             Debug.Log("EOd clicked");
             _flow.HandleEodRequested();
         }
+    }
+
+    private void OnAccountbookClicked()
+    {
+        if (accountPanelRoot == null)
+        {
+            return;
+        }
+
+        RefreshAccountPanel();
+        accountPanelRoot.SetActive(true);
+    }
+
+    private void OnAccountBackClicked()
+    {
+        if (accountPanelRoot == null)
+        {
+            return;
+        }
+
+        accountPanelRoot.SetActive(false);
     }
 
     private void OnSaveClicked()
@@ -632,6 +689,12 @@ public sealed class MainUIManager : MonoBehaviour
 
     private void HandleEscapePressed()
     {
+        if (accountPanelRoot != null && accountPanelRoot.activeSelf)
+        {
+            OnAccountBackClicked();
+            return;
+        }
+
         if (settingsPanelRoot != null && settingsPanelRoot.activeSelf)
         {
             OnCloseSettingsClicked();
@@ -672,6 +735,57 @@ public sealed class MainUIManager : MonoBehaviour
         {
             escapeMenuRoot.SetActive(false);
         }
+    }
+
+    private void RefreshAccountPanel()
+    {
+        // 팀 이름은 에디터에서 고정 텍스트로 관리하므로 여기서는 통계 텍스트만 갱신한다.
+        if (gladiatorStatisticsText != null)
+        {
+            gladiatorStatisticsText.text =
+                $"총원 : {GetOwnedGladiatorCount()}\n\n"
+                + $"치른 전투 수 : {(_sessionManager != null ? _sessionManager.TotalBattleCount : 0)}\n\n"
+                + $"승리 전투 수 : {(_sessionManager != null ? _sessionManager.VictoryBattleCount : 0)}\n\n"
+                + $"처치 적 수 : {(_sessionManager != null ? _sessionManager.DefeatedEnemyCount : 0)}";
+        }
+
+        if (goldStatisticsText != null)
+        {
+            int currentGold = _resourceManager != null ? _resourceManager.CurrentGold : 0;
+            int totalUpkeep = GetTotalUpkeep();
+            int expectedExpense = totalUpkeep * Mathf.Max(1, projectedExpenseDays);
+
+            goldStatisticsText.text =
+                $"<color=#62461E>보유 골드 : {currentGold} G\n\n"
+                + $"유지비 : {totalUpkeep} G</color>\n\n"
+                + $"<color=#FF0000>예상 지출 골드 : {expectedExpense} G</color>";
+        }
+    }
+
+    private int GetOwnedGladiatorCount()
+    {
+        return _gladiatorManager != null ? _gladiatorManager.GetOwnedGladiatorCount() : 0;
+    }
+
+    private int GetTotalUpkeep()
+    {
+        if (_gladiatorManager == null || _gladiatorManager.OwnedGladiators == null)
+        {
+            return 0;
+        }
+
+        int total = 0;
+        IReadOnlyList<OwnedGladiatorData> ownedGladiators = _gladiatorManager.OwnedGladiators;
+        for (int i = 0; i < ownedGladiators.Count; i++)
+        {
+            OwnedGladiatorData gladiator = ownedGladiators[i];
+            if (gladiator != null)
+            {
+                total += Mathf.Max(0, gladiator.Upkeep);
+            }
+        }
+
+        return total;
     }
 
     private static string BuildSlotPreviewText(int slotIndex)

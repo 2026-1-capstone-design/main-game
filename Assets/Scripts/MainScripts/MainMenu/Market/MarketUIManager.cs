@@ -185,6 +185,19 @@ public sealed class MarketUIManager : MonoBehaviour
     [SerializeField]
     private Button cannotSellConfirmButton;
 
+    [Header("Sell Equipped Confirm Popup")]
+    [SerializeField]
+    private GameObject sellEquippedConfirmPanel;
+
+    [SerializeField]
+    private TMP_Text sellEquippedConfirmText;
+
+    [SerializeField]
+    private Button sellEquippedConfirmButton;
+
+    [SerializeField]
+    private Button sellEquippedCancelButton;
+
     [Header("Debug")]
     [SerializeField]
     private bool verboseLog = true;
@@ -253,6 +266,8 @@ public sealed class MarketUIManager : MonoBehaviour
         BindButton(buySelectedButton, OnBuySelectedClicked);
         BindButton(sellSelectedButton, OnSellSelectedClicked);
         BindButton(cannotSellConfirmButton, OnCannotSellConfirmClicked);
+        BindButton(sellEquippedConfirmButton, OnSellEquippedConfirmClicked);
+        BindButton(sellEquippedCancelButton, OnSellEquippedCancelClicked);
 
         _resourceManager.GoldChanged += OnGoldChanged;
         CacheCannotSellRefsIfNull();
@@ -282,6 +297,7 @@ public sealed class MarketUIManager : MonoBehaviour
         SetPanelActive(buyModePanel, false);
         SetPanelActive(sellModePanel, false);
         CloseCannotSellPanel();
+        CloseSellEquippedConfirmPanel();
         RefreshGoldText(_resourceManager != null ? _resourceManager.CurrentGold : 0);
     }
 
@@ -290,6 +306,7 @@ public sealed class MarketUIManager : MonoBehaviour
         _tradeMode = TradeMode.None;
         ClearPendingSelections();
         CloseCannotSellPanel();
+        CloseSellEquippedConfirmPanel();
         SetPanelActive(buyModePanel, false);
         SetPanelActive(sellModePanel, false);
         SetPanelActive(marketRootPanel, false);
@@ -389,6 +406,7 @@ public sealed class MarketUIManager : MonoBehaviour
         _currentCategory = category;
         ClearPendingSelections();
         CloseCannotSellPanel();
+        CloseSellEquippedConfirmPanel();
         SetPanelActive(marketRootPanel, true);
         SetPanelActive(buyModePanel, true);
         SetPanelActive(sellModePanel, false);
@@ -406,6 +424,7 @@ public sealed class MarketUIManager : MonoBehaviour
         _currentCategory = category;
         ClearPendingSelections();
         CloseCannotSellPanel();
+        CloseSellEquippedConfirmPanel();
         SetPanelActive(marketRootPanel, true);
         SetPanelActive(buyModePanel, false);
         SetPanelActive(sellModePanel, true);
@@ -761,15 +780,8 @@ public sealed class MarketUIManager : MonoBehaviour
             return;
         }
 
-        OwnedGladiatorData owner =
-            _gladiatorManager != null ? _gladiatorManager.FindOwnerOfEquippedWeapon(weapon) : null;
-        if (owner != null)
-        {
-            OpenCannotSellPanel();
-            return;
-        }
-
         ClearPendingSelections();
+        CloseSellEquippedConfirmPanel();
         _pendingSellWeapon = weapon;
         int price = _marketManager != null ? _marketManager.GetWeaponSellPrice(weapon) : 0;
         SetSellDetail(
@@ -794,15 +806,8 @@ public sealed class MarketUIManager : MonoBehaviour
             return;
         }
 
-        OwnedGladiatorData owner =
-            _gladiatorManager != null ? _gladiatorManager.FindOwnerOfEquippedArtifact(artifact) : null;
-        if (owner != null)
-        {
-            OpenCannotSellPanel();
-            return;
-        }
-
         ClearPendingSelections();
+        CloseSellEquippedConfirmPanel();
         _pendingSellArtifact = artifact;
         int price = _marketManager != null ? _marketManager.GetArtifactSellPrice() : 0;
         SetSellDetail(
@@ -889,6 +894,17 @@ public sealed class MarketUIManager : MonoBehaviour
             return;
         }
 
+        if (TryGetPendingSellEquippedOwner(out OwnedGladiatorData owner))
+        {
+            OpenSellEquippedConfirmPanel(owner);
+            return;
+        }
+
+        SellSelectedItem();
+    }
+
+    private void SellSelectedItem()
+    {
         bool succeeded = false;
         string failReason = string.Empty;
         int soldPrice = 0;
@@ -924,6 +940,7 @@ public sealed class MarketUIManager : MonoBehaviour
         {
             ClearPendingSelections();
             ClearSellDetail();
+            CloseSellEquippedConfirmPanel();
             RefreshCurrentCategoryViewer();
         }
     }
@@ -1506,6 +1523,124 @@ public sealed class MarketUIManager : MonoBehaviour
     private void OnCannotSellConfirmClicked()
     {
         CloseCannotSellPanel();
+    }
+
+    private void OpenSellEquippedConfirmPanel(OwnedGladiatorData owner)
+    {
+        if (sellEquippedConfirmText != null)
+        {
+            string ownerName = owner != null ? owner.DisplayName : "검투사";
+            string itemName = GetPendingSellItemName();
+            string itemParticle = HasFinalConsonant(itemName) ? "은" : "는";
+            string ownerParticle = HasFinalConsonant(ownerName) ? "이" : "가";
+
+            sellEquippedConfirmText.text =
+                $"{itemName}{itemParticle} 현재 {ownerName}{ownerParticle} 장착중입니다.\n"
+                + $"판매 시 {ownerName}의 {itemName}{itemParticle} 해제됩니다.\n"
+                + "정말 판매하시겠습니까?";
+        }
+
+        SetPanelActive(sellEquippedConfirmPanel, true);
+    }
+
+    private void CloseSellEquippedConfirmPanel()
+    {
+        SetPanelActive(sellEquippedConfirmPanel, false);
+    }
+
+    private void OnSellEquippedConfirmClicked()
+    {
+        if (!TryUnequipPendingSellItem())
+        {
+            return;
+        }
+
+        CloseSellEquippedConfirmPanel();
+        SellSelectedItem();
+    }
+
+    private void OnSellEquippedCancelClicked()
+    {
+        CloseSellEquippedConfirmPanel();
+    }
+
+    private bool TryGetPendingSellEquippedOwner(out OwnedGladiatorData owner)
+    {
+        owner = null;
+
+        if (_gladiatorManager == null)
+        {
+            return false;
+        }
+
+        if (_pendingSellWeapon != null)
+        {
+            owner = _gladiatorManager.FindOwnerOfEquippedWeapon(_pendingSellWeapon);
+            return owner != null;
+        }
+
+        if (_pendingSellArtifact != null)
+        {
+            owner = _gladiatorManager.FindOwnerOfEquippedArtifact(_pendingSellArtifact);
+            return owner != null;
+        }
+
+        return false;
+    }
+
+    private bool TryUnequipPendingSellItem()
+    {
+        if (_gladiatorManager == null)
+        {
+            return false;
+        }
+
+        string failReason;
+
+        if (_pendingSellWeapon != null)
+        {
+            OwnedGladiatorData owner = _gladiatorManager.FindOwnerOfEquippedWeapon(_pendingSellWeapon);
+            return owner == null || _gladiatorManager.TryUnequipWeapon(owner, out failReason);
+        }
+
+        if (_pendingSellArtifact != null)
+        {
+            OwnedGladiatorData owner = _gladiatorManager.FindOwnerOfEquippedArtifact(_pendingSellArtifact);
+            return owner == null || _gladiatorManager.TryUnequipArtifact(owner, out failReason);
+        }
+
+        return false;
+    }
+
+    private string GetPendingSellItemName()
+    {
+        if (_pendingSellWeapon != null)
+        {
+            return _pendingSellWeapon.DisplayName;
+        }
+
+        if (_pendingSellArtifact != null)
+        {
+            return _pendingSellArtifact.DisplayName;
+        }
+
+        return "선택한 장비";
+    }
+
+    private static bool HasFinalConsonant(string value)
+    {
+        if (string.IsNullOrEmpty(value))
+        {
+            return false;
+        }
+
+        char lastCharacter = value[value.Length - 1];
+        if (lastCharacter < '가' || lastCharacter > '힣')
+        {
+            return false;
+        }
+
+        return (lastCharacter - '가') % 28 != 0;
     }
 
     private void CacheCannotSellRefsIfNull()
