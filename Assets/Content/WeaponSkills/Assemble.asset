@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0efcbe04e3ad52a428a9f4cc079e1b31, type: 3}
+  m_Name: Assemble
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponSkillSO
+  icon: {fileID: 0}
+  skillName: Assemble!
+  description: "\uBAA8\uB4E0 \uC544\uAD70\uC744 \uBCF8\uC778 \uBC14\uB85C \uACC1\uC73C\uB85C
+    \uBE60\uB974\uAC8C \uB04C\uC5B4\uB2F9\uAE34\uB2E4.\n\uBAA8\uB4E0 \uC544\uAD70
+    5\uCD08\uAC04 \uBC1B\uB294\uD53C\uD574 \uAC10\uC18C 15% \uC99D\uAC00"
+  weaponType: 5
+  skillId: 55
+  defaultDur: 1
+  duration: 1

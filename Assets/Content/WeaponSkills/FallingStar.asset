@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0efcbe04e3ad52a428a9f4cc079e1b31, type: 3}
+  m_Name: FallingStar
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponSkillSO
+  icon: {fileID: 0}
+  skillName: "\uB099\uC131"
+  description: "\uC790\uC2E0\uC73C\uB85C\uBD80\uD130 \uAC00\uC7A5 \uBA3C \uC801\uC5D0\uAC8C
+    \uB3CC\uC9C4. \uADA4\uC801 \uC0C1\uC758 \uBAA8\uB4E0 \uC801\uC5D0\uAC8C \uD070
+    \uD53C\uD574"
+  weaponType: 4
+  skillId: 53
+  defaultDur: 1
+  duration: 1

@@ -5,7 +5,7 @@ public sealed class NobleSacrificeSkill : IBattleSkill
 {
     public WeaponSkillId SkillId => WeaponSkillId.NobleSacrifice;
     public skillType SkillCategory => skillType.support;
-    public IReadOnlyList<WeaponType> CompatibleWeaponTypes { get; } = new[] { WeaponType.shield };
+    public IReadOnlyList<WeaponType> CompatibleWeaponTypes { get; } = new[] { WeaponType.twoHand };
     public BattleSkillTargetPolicy TargetPolicy => BattleSkillTargetPolicy.PlannedAlly;
     public float CastRange => 20f;
     public float AreaRadius => 0f;
@@ -20,7 +20,8 @@ public sealed class NobleSacrificeSkill : IBattleSkill
             return;
 
         effects.GrantTemporaryArtifact(ally, new SacrificeArtifact(caster.State), 10f, context);
-        GameObject activeVfx = VFXManager.Instance.PlayEffect("SacrificeLink", ally.Position);
+        GameObject activeVfx1 = VFXManager.Instance.PlayEffect("ShinyStance", caster.transform);
+        GameObject activeVfx2 = VFXManager.Instance.PlayEffect("ShinyStance", ally.transform);
 
         effects.ScheduleEffect(
             10f,
@@ -29,8 +30,11 @@ public sealed class NobleSacrificeSkill : IBattleSkill
             context,
             (ctx, sink) =>
             {
-                if (activeVfx != null)
-                    VFXManager.Instance.StopEffect(activeVfx);
+                if (activeVfx1 != null && activeVfx2 != null)
+                {
+                    VFXManager.Instance.StopEffect(activeVfx1);
+                    VFXManager.Instance.StopEffect(activeVfx2);
+                }
             }
         );
     }
@@ -45,7 +49,7 @@ public sealed class NobleSacrificeSkill : IBattleSkill
             _protector = protector;
         }
 
-        public void Initialize(BattleUnitCombatState owner, in BattleEffectContext context) { }
+        public void Initialize(BattleUnitCombatState owner, int level, in BattleEffectContext context) { }
 
         public void ModifyDamage(BattleUnitCombatState owner, ref BattleDamageRequest request)
         {

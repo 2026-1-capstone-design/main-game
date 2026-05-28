@@ -45,8 +45,20 @@ public sealed class ParryingSkill : IBattleSkill
                 IsDispelAllowed = false,
             }
         );
+        effects.ApplyStatus(
+            new BattleStatusRequest
+            {
+                Source = casterState,
+                Target = casterState,
+                Type = BattleStatusType.Stun,
+                Level = 90,
+                Duration = 2f,
+                IsDebuff = true,
+                IsDispelAllowed = false,
+            }
+        );
 
-        VFXManager.Instance.PlayEffect("ParryStance", casterState.Position);
+        GameObject ActiveVFX = VFXManager.Instance.PlayEffect("LightStance", casterState.Position + Vector3.up);
 
         effects.ScheduleEffect(
             2.0f,
@@ -55,9 +67,10 @@ public sealed class ParryingSkill : IBattleSkill
             context,
             (ctx, sink) =>
             {
+                VFXManager.Instance.StopEffect(ActiveVFX);
+
                 if (casterState.IsCombatDisabled)
                     return;
-                VFXManager.Instance.PlayEffect("ParryCounter", casterState.Position);
 
                 foreach (BattleRuntimeUnit unitView in ctx.Units)
                 {
@@ -67,6 +80,8 @@ public sealed class ParryingSkill : IBattleSkill
 
                     if (Vector3.Distance(casterState.Position, target.Position) <= AreaRadius)
                     {
+                        VFXManager.Instance.PlayEffect("LightHit", target.Position + Vector3.up);
+
                         sink.DealDamage(
                             new BattleDamageRequest
                             {
@@ -86,8 +101,8 @@ public sealed class ParryingSkill : IBattleSkill
                                 Source = casterState,
                                 Target = target,
                                 Type = BattleStatusType.Stun,
-                                Level = 1,
-                                Duration = 1.5f,
+                                Level = 3,
+                                Duration = 3.0f,
                                 IsDebuff = true,
                                 IsDispelAllowed = true,
                             }

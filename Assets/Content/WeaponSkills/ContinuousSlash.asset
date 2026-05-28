@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0efcbe04e3ad52a428a9f4cc079e1b31, type: 3}
+  m_Name: ContinuousSlash
+  m_EditorClassIdentifier: 
+  icon: {fileID: 0}
+  skillName: "\uACC4\uC18D\uBCA0\uAE30"
+  description: "\uC9C0\uC18D\uC801\uC73C\uB85C \uC801\uC744 \uACF5\uACA9\uD558\uC5EC
+    \uC774\uB3D9\uC18D\uB3C4\uB97C \uAC10\uC18C\uC2DC\uD0A8\uB2E4."
+  weaponType: 2
+  skillId: 19
+  defaultDur: 1
+  duration: 1

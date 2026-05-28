@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnityEngine;
 
 // 8. 스팀팩 (라이플) : 자신의 공속 대폭 상승
 
@@ -16,6 +17,7 @@ public sealed class StimpackSkill : IBattleSkill
     public void Activate(in BattleEffectContext context, IBattleEffectSink effects)
     {
         BattleUnitCombatState caster = context.Actor != null ? context.Actor.State : null;
+        VFXManager.Instance.PlayEffect("RedEnhance", caster.Position + Vector3.up * 0.2f);
         effects.ApplyBuff(caster, caster, BuffType.AttackSpeed, 4, 8f);
     }
 }

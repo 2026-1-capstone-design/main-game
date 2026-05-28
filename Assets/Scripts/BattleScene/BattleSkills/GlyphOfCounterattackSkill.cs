@@ -5,7 +5,7 @@ public sealed class GlyphOfCounterattackSkill : IBattleSkill
 {
     public WeaponSkillId SkillId => WeaponSkillId.GlyphOfCounterattack;
     public skillType SkillCategory => skillType.support;
-    public IReadOnlyList<WeaponType> CompatibleWeaponTypes { get; } = new[] { WeaponType.staff };
+    public IReadOnlyList<WeaponType> CompatibleWeaponTypes { get; } = new[] { WeaponType.twoHand };
     public BattleSkillTargetPolicy TargetPolicy => BattleSkillTargetPolicy.PlannedAlly;
     public float CastRange => 20f;
     public float AreaRadius => 0f;
@@ -19,11 +19,10 @@ public sealed class GlyphOfCounterattackSkill : IBattleSkill
         if (caster == null || ally == null)
             return;
 
-        // 시전자 공격력의 3배만큼의 쉴드량을 가진 아티팩트 부여
-        float shieldAmount = caster.State.Attack * 3.0f;
-        effects.GrantTemporaryArtifact(ally, new CounterattackArtifact(caster.State, shieldAmount), 10f, context);
+        // 쉴드 계산 로직을 제거하고 아티팩트 부여 시 시전자 정보만 넘깁니다.
+        effects.GrantTemporaryArtifact(ally, new CounterattackArtifact(caster.State), 10f, context);
 
-        GameObject activeVfx = VFXManager.Instance.PlayEffect("CounterattackShield", ally.Position);
+        GameObject activeVfx = VFXManager.Instance.PlayEffect("LightStance", ally.transform);
 
         effects.ScheduleEffect(
             10f,
@@ -42,35 +41,25 @@ public sealed class GlyphOfCounterattackSkill : IBattleSkill
     {
         public ArtifactId ArtifactId => ArtifactId.None;
         private readonly BattleUnitCombatState _originalCaster;
-        private float _shieldHp;
 
-        public CounterattackArtifact(BattleUnitCombatState originalCaster, float shieldHp)
+        public CounterattackArtifact(BattleUnitCombatState originalCaster)
         {
             _originalCaster = originalCaster;
-            _shieldHp = shieldHp;
         }
 
-        public void Initialize(BattleUnitCombatState owner, in BattleEffectContext context) { }
+        public void Initialize(BattleUnitCombatState owner, int level, in BattleEffectContext context) { }
 
-        // 데미지 방어 (쉴드 로직)
+        //쉴드 삭감 로직 대신, 받는 데미지를 50%로 줄입니다.
         public void ModifyDamage(BattleUnitCombatState owner, ref BattleDamageRequest request)
         {
-            if (request.Target == owner && _shieldHp > 0)
+            if (request.Target == owner)
             {
-                if (_shieldHp >= request.Amount)
-                {
-                    _shieldHp -= request.Amount;
-                    request.Amount = 0;
-                }
-                else
-                {
-                    request.Amount -= _shieldHp;
-                    _shieldHp = 0;
-                }
+                // 들어오는 피해량을 절반(50%)으로 깎습니다.
+                request.Amount *= 0.5f;
             }
         }
 
-        // 데미지 반사
+        // 데미지 반사 (기존 유지)
         public void AfterDamage(BattleUnitCombatState owner, in BattleDamageResult result, IBattleEffectSink effects)
         {
             if (result.Target == owner && result.Source != null && result.Source != owner)

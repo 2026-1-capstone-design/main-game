@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0efcbe04e3ad52a428a9f4cc079e1b31, type: 3}
+  m_Name: Curse
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponSkillSO
+  icon: {fileID: 0}
+  skillName: "\uC800\uC8FC"
+  description: "\uB300\uC0C1\uC5D0\uAC8C \uC18C\uB7C9\uC758 \uD53C\uD574\uB97C \uC8FC\uACE0,
+    \uC774\uD6C4 \uB300\uC0C1 \uBC1B\uB294 \uD53C\uD574 10\uCD08\uAC04 30% \uC99D\uAC00"
+  weaponType: 10
+  skillId: 40
+  defaultDur: 1
+  duration: 1

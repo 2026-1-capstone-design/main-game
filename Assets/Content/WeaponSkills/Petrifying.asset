@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0efcbe04e3ad52a428a9f4cc079e1b31, type: 3}
+  m_Name: Petrifying
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponSkillSO
+  icon: {fileID: 0}
+  skillName: "\uC11D\uD654\uC758 \uC751\uC2DC"
+  description: "\uCE74\uC2DC \uAD81. \uC8FC\uBCC0 \uBC94\uC704 \uB0B4 \uC790\uC2E0\uC744
+    \uBC14\uB77C\uBCF4\uB294 \uC801 3\uCD08 \uC2A4\uD134"
+  weaponType: 5
+  skillId: 52
+  defaultDur: 1
+  duration: 1

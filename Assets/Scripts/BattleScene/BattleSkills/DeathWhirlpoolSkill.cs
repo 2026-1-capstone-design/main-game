@@ -24,7 +24,7 @@ public sealed class DeathWhirlpoolSkill : IBattleSkill
 
         for (int i = 0; i < 15; i++)
         {
-            float delay = i * 0.2f;
+            float delay = i * 0.1f;
             effects.ScheduleEffect(
                 delay,
                 casterRuntime,
@@ -63,7 +63,7 @@ public sealed class DeathWhirlpoolSkill : IBattleSkill
                                 IsSkill = true,
                             }
                         );
-                        VFXManager.Instance.PlayEffect("GunshotEffect", randomTarget.Position);
+                        VFXManager.Instance.PlayEffect("CompactHit", randomTarget.Position + Vector3.up);
                     }
                 }
             );

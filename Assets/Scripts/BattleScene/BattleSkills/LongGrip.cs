@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnityEngine;
 
 public sealed class LongGripSkill : IBattleSkill
 {
@@ -14,6 +15,7 @@ public sealed class LongGripSkill : IBattleSkill
     public void Activate(in BattleEffectContext context, IBattleEffectSink effects)
     {
         BattleUnitCombatState caster = context.Actor != null ? context.Actor.State : null;
+        VFXManager.Instance.PlayEffect("NormalEnhance", caster.Position + Vector3.up * 0.1f);
         effects.ApplyBuff(caster, caster, BuffType.AttackRange, 5, 10f); // 사거리 +2.5
     }
 }

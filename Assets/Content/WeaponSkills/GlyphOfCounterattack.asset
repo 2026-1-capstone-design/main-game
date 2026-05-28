@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0efcbe04e3ad52a428a9f4cc079e1b31, type: 3}
+  m_Name: GlyphOfCounterattack
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponSkillSO
+  icon: {fileID: 0}
+  skillName: "\uBC18\uACA9\uC758 \uBB38\uC591"
+  description: "\uC801\uC5D0\uAC8C \uAC00\uC7A5 \uB9CE\uC774 \uACF5\uACA9\uBC1B\uB294
+    \uC544\uAD70 \uD639\uC740 \uBA85\uB839 \uC9C0\uC815 \uB300\uC0C1 \uC544\uAD70.
+    10\uCD08\uAC04 \uC274\uB4DC\uB97C \uC8FC\uACE0, \uD53C\uACA9\uC2DC \uB300\uC0C1\uC5D0\uAC8C
+    \uB300\uBBF8\uC9C0 \uC90C."
+  weaponType: 2
+  skillId: 41
+  defaultDur: 1
+  duration: 1

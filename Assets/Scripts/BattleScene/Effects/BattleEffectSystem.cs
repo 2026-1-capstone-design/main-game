@@ -15,6 +15,7 @@ public sealed class BattleEffectSystem : IBattleEffectSink
 
     public event System.Action<BattleDamageResult> OnDamageProcessed;
     public event System.Action<BattleHealResult> OnHealProcessed;
+    public event System.Action<BattleStatusRequest> OnStatusApplied;
 
     public BattleEffectSystem(BattleArtifactSystem artifacts)
     {
@@ -127,6 +128,8 @@ public sealed class BattleEffectSystem : IBattleEffectSink
             return;
 
         target.ApplyStatus(request);
+
+        OnStatusApplied?.Invoke(request);
     }
 
     public void ApplyBuff(
@@ -231,23 +234,31 @@ public sealed class BattleEffectSystem : IBattleEffectSink
         delta.y = 0f;
         float distance = delta.magnitude;
         float clampedStop = Mathf.Max(0f, stopDistance);
+
         if (distance <= clampedStop)
             return;
 
-        Vector3 destination = sourceRuntime.Position - delta.normalized * clampedStop;
+        // 끌려와야 하는 방향 (타겟 -> 시전자)
+        Vector3 pullDirection = delta.normalized;
+        // 끌려와야 하는 순수 거리
+        float pullDistance = distance - clampedStop;
+
         BattleForcedMovementRequest request = new BattleForcedMovementRequest
         {
             Source = sourceRuntime,
             Target = targetRuntime,
-            Destination = destination,
-            Direction = delta.normalized,
-            Distance = distance - clampedStop,
+            Destination = sourceRuntime.Position - pullDirection * clampedStop,
+            Direction = pullDirection,
+            Distance = pullDistance,
+            IsKnockback = true,
+            IsTeleport = false,
         };
+
         if (_artifacts != null && _artifacts.CanIgnoreForcedMovement(targetRuntime, request))
             return;
 
-        targetRuntime.SetPosition(destination);
-        targetRuntime.ClampInsideBattlefield(_battlefieldCollider);
+        float pullForce = pullDistance * 6f;
+        target.AddKnockback(pullDirection, pullForce);
     }
 
     public void PushToArenaEdge(BattleUnitCombatState source, BattleUnitCombatState target, float slowDuration)

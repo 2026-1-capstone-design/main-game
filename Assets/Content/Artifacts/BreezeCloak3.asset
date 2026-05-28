@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 251b89a55cd5a2743878f62ed275c4de, type: 3}
+  m_Name: BreezeCloak3
+  m_EditorClassIdentifier: 
+  icon: {fileID: 0}
+  artifactName: BreezeCloak
+  artifactId: 10
+  artifactLevel: 3
+  description: "\uBC94\uC704 \uB0B4\uC5D0 \uC544\uAD70\uC774 \uC5C6\uC73C\uBA74 \uC774\uC18D,
+    \uACF5\uC18D % \uC99D\uAC00"

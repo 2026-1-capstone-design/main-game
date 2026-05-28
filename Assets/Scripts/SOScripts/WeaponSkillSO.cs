@@ -20,7 +20,7 @@ public enum WeaponSkillId
     HeadStrike = 15,
     SpiralSlash = 16,
     Parrying = 18,
-    ContinuousSlash = 18,
+    ContinuousSlash = 19,
     HighHeal = 20,
     OminousStar = 21,
     DarkShroud = 22,
@@ -40,12 +40,9 @@ public enum WeaponSkillId
     DeathWhirlpool = 36,
     Retribution = 37,
     Surge = 38,
-
     MagicExplosion = 39,
-
     Curse = 40,
     GlyphOfCounterattack = 41,
-
     NobleSacrifice = 42,
     Duel = 43,
     Freeze = 44,
@@ -54,6 +51,14 @@ public enum WeaponSkillId
     Respite = 47,
     MoonlightDance = 48,
     FanaticalObsession = 49,
+    EvasiveManeuver = 50,
+    DimensionalRift = 51,
+    PetrifyingGaze = 52,
+    FallingStar = 53,
+    Banishment = 54,
+    Assemble = 55,
+    ScatteredStarlight = 56,
+    UnholyBlessing = 57,
 }
 
 public enum skillType

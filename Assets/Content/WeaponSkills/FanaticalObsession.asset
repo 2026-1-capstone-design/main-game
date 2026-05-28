@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0efcbe04e3ad52a428a9f4cc079e1b31, type: 3}
+  m_Name: FanaticalObsession
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponSkillSO
+  icon: {fileID: 0}
+  skillName: "\uAD11\uC801\uC778 \uC9D1\uB150"
+  description: "15\uCD08\uAC04 \uC9C0\uC18D. \uC790\uC2E0\uC758 \uACF5\uACA9 \uB300\uC0C1\uACFC\uC758
+    \uAC70\uB9AC\uAC00 \uC790\uC2E0\uC758 \uACF5\uACA9 \uC0AC\uAC70\uB9AC\uB97C \uB118\uC5B4\uAC00\uB294
+    \uBAA8\uB4E0 \uC21C\uAC04 \uC989\uC2DC \uBC1C\uB3D9\n\uC989\uC2DC \uB300\uC0C1\uACC1\uC73C\uB85C
+    \uACE0\uC18D \uC774\uB3D9\uD558\uBA70 \uD3C9\uD0C0 \uB51C\uB808\uC774\uC640 \uAD00\uACC4
+    \uC5C6\uC774 1\uD68C \uD0C0\uACA9."
+  weaponType: 1
+  skillId: 49
+  defaultDur: 1
+  duration: 1

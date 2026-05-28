@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0efcbe04e3ad52a428a9f4cc079e1b31, type: 3}
+  m_Name: Retribution
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponSkillSO
+  icon: {fileID: 0}
+  skillName: "\uC751\uC9D5"
+  description: "5\uCD08\uAC04 \uBC29\uC5B4 \uD0DC\uC138. \uBC1B\uC740 \uD53C\uD574
+    \uCE90\uC2F1\uD588\uB2E4\uAC00, \uC885\uB8CC\uC640 \uB3D9\uC2DC\uC5D0 \uC8FC\uBCC0
+    \uC801\uC5D0\uAC8C \uBAA8\uC740 \uD53C\uD574 %\uB85C \uAC00\uD568"
+  weaponType: 5
+  skillId: 37
+  defaultDur: 1
+  duration: 1

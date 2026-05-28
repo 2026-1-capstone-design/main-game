@@ -35,6 +35,6 @@ public sealed class HuntStartSkill : IBattleSkill
             }
         );
 
-        VFXManager.Instance.PlayEffect("MarkOfHunt", target.Position + Vector3.up * 2f);
+        VFXManager.Instance.PlayEffect("BrokenHeart", target.Position + Vector3.up);
     }
 }

@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0efcbe04e3ad52a428a9f4cc079e1b31, type: 3}
+  m_Name: DarkShroud
+  m_EditorClassIdentifier: 
+  icon: {fileID: 0}
+  skillName: "\uC5B4\uB460\uC7A5\uB9C9"
+  description: "\uC2DC\uC804 \uC989\uC2DC \uC790\uC2E0\uC758 \uBC18\uACBD n \uC548\uC758
+    \uBAA8\uB4E0 \uC801\uB4E4\uC5D0\uAC8C \uC2A4\uD0AC \uC0AC\uC6A9\uC744 7\uCD08\uAC04
+    \uAE08\uC9C0\uD558\uB294 \uB514\uBC84\uD504 \uBD80\uC5EC(\uC2DC\uC804 \uC2DC\uC810\uC5D0\uB9CC
+    \uBD80\uC5EC)"
+  weaponType: 6
+  skillId: 22
+  defaultDur: 1
+  duration: 1

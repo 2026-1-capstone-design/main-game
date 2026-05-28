@@ -24,7 +24,7 @@ public sealed class FearSkill : IBattleSkill
         // 타겟(적)에게 5초짜리 임시 장신구를 강제로 채워버립니다!
         effects.GrantTemporaryArtifact(target, new FearArtifact(caster), 5f, context);
 
-        GameObject activeVfx = VFXManager.Instance.PlayEffect("FearDebuff", target.Position);
+        GameObject activeVfx = VFXManager.Instance.PlayEffect("DarkHit", target.Position);
         effects.ScheduleEffect(
             10f,
             caster,
@@ -48,7 +48,7 @@ public sealed class FearSkill : IBattleSkill
             _fearSource = fearSource;
         }
 
-        public void Initialize(BattleUnitCombatState owner, in BattleEffectContext context) { }
+        public void Initialize(BattleUnitCombatState owner, int level, in BattleEffectContext context) { }
 
         public void ModifyMoveSpeed(BattleUnitCombatState owner, ref BattleMoveRequest request)
         {
