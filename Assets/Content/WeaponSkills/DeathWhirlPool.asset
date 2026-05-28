@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0efcbe04e3ad52a428a9f4cc079e1b31, type: 3}
+  m_Name: DeathWhirlPool
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponSkillSO
+  icon: {fileID: 0}
+  skillName: "\uC8FD\uC74C\uC758 \uC18C\uC6A9\uB3CC\uC774"
+  description: "\uB9E4 \uACF5\uACA9\uB9C8\uB2E4 \uBC18\uACBD \uC774\uB0B4\uC758 \uC801
+    \uB9AC\uC2A4\uD2B8 \uC911 \uB79C\uB364\uC73C\uB85C \uBF51\uC544\uC11C \uD55C
+    \uBA85 \uACF5\uACA9. "
+  weaponType: 8
+  skillId: 36
+  defaultDur: 1
+  duration: 1

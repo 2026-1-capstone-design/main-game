@@ -8,6 +8,7 @@ public enum BattleStatusType
     AttackSpeed,
     MoveSpeed,
     AttackRange,
+    HP,
     DamageTakenPercent,
     SkillDisabled,
     Stun,

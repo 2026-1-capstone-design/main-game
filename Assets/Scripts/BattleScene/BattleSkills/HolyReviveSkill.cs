@@ -40,7 +40,7 @@ public sealed class HolyReviveSkill : IBattleSkill
 
         if (deadAlly != null && deadAlly.State != null)
         {
-            VFXManager.Instance.PlayEffect("HolyRevive", deadAlly.Position);
+            VFXManager.Instance.PlayEffect("HealEffect", deadAlly.Position + Vector3.up * 0.1f);
             effects.Revive(deadAlly.State, deadAlly.MaxHealth * 0.2f);
         }
     }

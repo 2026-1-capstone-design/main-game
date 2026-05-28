@@ -38,7 +38,11 @@ public sealed class LeapOfFaithSkill : IBattleSkill
         if (lowestHpAlly != null)
         {
             Vector3 jumpDestination = lowestHpAlly.Position + (caster.Position - lowestHpAlly.Position).normalized * 2f;
+
+            VFXManager.Instance.PlayEffect("VanishEffect", caster.Position + Vector3.up);
             effects.Teleport(caster, jumpDestination);
+            VFXManager.Instance.PlayEffect("VanishEffect", caster.Position + Vector3.up);
+            VFXManager.Instance.PlayEffect("BlessEnhance", caster.transform);
 
             effects.ApplyStatus(
                 new BattleStatusRequest
@@ -64,8 +68,6 @@ public sealed class LeapOfFaithSkill : IBattleSkill
                     IsDispelAllowed = true,
                 }
             );
-
-            VFXManager.Instance.PlayEffect("ShieldLanding", jumpDestination);
         }
     }
 }

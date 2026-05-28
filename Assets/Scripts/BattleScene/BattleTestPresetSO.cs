@@ -17,6 +17,9 @@ namespace BattleTest
         [Tooltip("테스트할 스킬을 직접 지정합니다.")]
         public WeaponSkillId weaponSkillId;
 
+        [Header("Artifacts")]
+        public ArtifactSO equippedArtifact;
+
         [Header("Stat Overrides (0 = Use Class Defaults)")]
         public float healthOverride;
         public float attackOverride;

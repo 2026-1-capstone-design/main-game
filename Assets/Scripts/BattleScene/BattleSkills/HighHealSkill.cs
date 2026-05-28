@@ -11,8 +11,9 @@ public sealed class HighHealSkill : IBattleSkill
     public float CastRange => 15f;
     public float AreaRadius => 0f;
 
-    public bool CanActivate(in BattleEffectContext context) =>
-        context.Actor != null && context.Actor.PlannedTargetAlly != null;
+    public bool CanActivate(in BattleEffectContext context) => context.Actor != null;
+
+    //&& context.Actor.PlannedTargetAlly != null;
 
     public void Activate(in BattleEffectContext context, IBattleEffectSink effects)
     {
@@ -34,6 +35,6 @@ public sealed class HighHealSkill : IBattleSkill
             }
         );
 
-        VFXManager.Instance.PlayEffect("HighHealEffect", target.Position);
+        VFXManager.Instance.PlayEffect("HealEffect", target.Position);
     }
 }

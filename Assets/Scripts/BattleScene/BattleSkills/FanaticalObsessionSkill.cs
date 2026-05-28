@@ -19,7 +19,7 @@ public sealed class FanaticalObsessionSkill : IBattleSkill
             return;
 
         effects.GrantTemporaryArtifact(caster, new ObsessionArtifact(), 15f, context);
-        GameObject activeVfx = VFXManager.Instance.PlayEffect("ObsessionBuff", caster.Position);
+        GameObject activeVfx = VFXManager.Instance.PlayEffect("RedEnhance", caster.Position + Vector3.up);
 
         effects.ScheduleEffect(
             15f,
@@ -39,7 +39,7 @@ public sealed class FanaticalObsessionSkill : IBattleSkill
         public ArtifactId ArtifactId => ArtifactId.None;
         private float _lastDashTime = 0f;
 
-        public void Initialize(BattleUnitCombatState owner, in BattleEffectContext context) { }
+        public void Initialize(BattleUnitCombatState owner, int level, in BattleEffectContext context) { }
 
         public void TickWithPositionHistory(
             BattleRuntimeUnit owner,
@@ -56,7 +56,9 @@ public sealed class FanaticalObsessionSkill : IBattleSkill
 
                 if (dist > owner.State.AttackRange && (context.BattleTime - _lastDashTime > 0.5f))
                 {
+                    VFXManager.Instance.PlayEffect("VanishEffect", owner.Position);
                     effects.Teleport(owner.State, currentTarget.Position);
+                    VFXManager.Instance.PlayEffect("VanishEffect", owner.Position);
                     effects.DealDamage(
                         new BattleDamageRequest
                         {
@@ -66,7 +68,7 @@ public sealed class FanaticalObsessionSkill : IBattleSkill
                             IsSkill = true,
                         }
                     );
-                    VFXManager.Instance.PlayEffect("ObsessionDash", currentTarget.Position);
+                    VFXManager.Instance.PlayEffect("CriticalHit", owner.Position);
 
                     _lastDashTime = context.BattleTime;
                 }

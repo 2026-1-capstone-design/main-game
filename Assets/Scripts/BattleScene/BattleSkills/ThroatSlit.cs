@@ -26,7 +26,9 @@ public sealed class ThroatSlitSkill : IBattleSkill
         Vector3 behindPos = target.Position + dirToTarget * 2f;
         behindPos.y = caster.Position.y;
 
+        VFXManager.Instance.PlayEffect("VanishEffect", caster.Position + Vector3.up * 0.2f);
         context.Actor?.SetPosition(behindPos); // 텔레포트는 Transform 동기화가 필요하다.
+        VFXManager.Instance.PlayEffect("VanishEffect", caster.Position + Vector3.up * 0.2f);
         effects.DealDamage(
             new BattleDamageRequest
             {

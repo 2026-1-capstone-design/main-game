@@ -41,14 +41,16 @@ public class VFXManager : MonoBehaviour
         }
     }
 
-    // 🌟 수정됨: 단발성/고정 위치 이펙트 생성 (생성된 GameObject를 반환하도록 변경)
+    // 단발성/고정 위치 이펙트 생성 (생성된 VFX를 반환)
     public GameObject PlayEffect(string effectId, Vector3 position, Quaternion rotation = default)
     {
-        if (rotation == default)
-            rotation = Quaternion.identity;
-
         if (_effectDict != null && _effectDict.TryGetValue(effectId, out GameObject prefab))
         {
+            if (rotation.Equals(default(Quaternion)))
+            {
+                rotation = prefab.transform.rotation;
+            }
+
             return Instantiate(prefab, position, rotation);
         }
         else
@@ -58,14 +60,14 @@ public class VFXManager : MonoBehaviour
         }
     }
 
-    // 🌟 신규 추가: 유닛을 따라다니는 유지형 이펙트 (부모 Transform 지정)
+    // 유닛을 따라다니는 유지형 이펙트 (부모 Transform 지정)
     public GameObject PlayEffect(string effectId, Transform parent, Vector3 localPosition = default)
     {
         if (_effectDict != null && _effectDict.TryGetValue(effectId, out GameObject prefab))
         {
             // 부모(유닛)의 하위 객체로 생성하여 유닛이 이동할 때 이펙트도 함께 이동하도록 설정
             GameObject effectInstance = Instantiate(prefab, parent);
-            effectInstance.transform.localPosition = localPosition;
+            effectInstance.transform.localPosition = localPosition + Vector3.up;
             return effectInstance;
         }
 
@@ -73,13 +75,11 @@ public class VFXManager : MonoBehaviour
         return null;
     }
 
-    // 🌟 신규 추가: 유지되던 이펙트를 강제로 종료/삭제
+    // 유지되던 이펙트를 강제로 종료/삭제
     public void StopEffect(GameObject effectInstance)
     {
         if (effectInstance != null)
         {
-            // 당장은 즉시 파괴(Destroy)를 사용하지만,
-            // 나중에 파티클이 서서히 사라지게 하려면 여기에 ParticleSystem.Stop() 로직을 넣으시면 됩니다!
             Destroy(effectInstance);
         }
     }

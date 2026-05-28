@@ -245,6 +245,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         State.OnAttackTriggered += HandleAttackTriggered;
 
         State.SyncPosition(transform.position);
+        State.SyncTransform(transform);
         State.ClearTargets();
 
         _myAnimation = transform.GetComponent<Animator>();

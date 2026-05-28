@@ -53,7 +53,7 @@ public sealed class SurgeSkill : IBattleSkill
                             IsSkill = true,
                         }
                     );
-                    VFXManager.Instance.PlayEffect("SurgeSlash", targetState.Position);
+                    VFXManager.Instance.PlayEffect("CompactHit", targetState.Position);
 
                     if (isLastHit)
                     {

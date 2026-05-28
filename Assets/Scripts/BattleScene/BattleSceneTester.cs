@@ -222,7 +222,7 @@ public sealed class BattleSceneTester : MonoBehaviour
             gladiatorClass: classSO,
             trait: null,
             personality: null,
-            equippedArtifact: null,
+            equippedArtifact: entry.equippedArtifact,
             weaponType: resolvedType,
             leftWeaponPrefab: leftPrefab,
             rightWeaponPrefab: rightPrefab,

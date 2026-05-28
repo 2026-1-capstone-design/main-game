@@ -29,6 +29,7 @@ public sealed class BattleCombatSystem
         _skillRegistry = new BattleSkillRegistry(
             new IBattleSkill[]
             {
+                new SwipeAttackSkill(),
                 new HeartAttackSkill(),
                 new MadnessSkill(),
                 new BayonetChargeSkill(),
@@ -48,6 +49,7 @@ public sealed class BattleCombatSystem
                 new OminousStarSkill(),
                 new ConsecrationSkill(),
                 new WarCommanderSkill(),
+                new SubmersionSkill(),
                 new HuntStartSkill(),
                 new LeapOfFaithSkill(),
                 new HookThrowSkill(),
@@ -56,19 +58,31 @@ public sealed class BattleCombatSystem
                 new ManaCollapseSkill(),
                 new HolyBarrierSkill(),
                 new FearSkill(),
-                new MagicExplosionSkill(),
+                new UnstoppableForceSkill(),
+                new JuggernautSkill(),
+                new HarvestSkill(),
+                new HolyReviveSkill(),
+                new DeathWhirlpoolSkill(),
                 new RetributionSkill(),
-                new SubmersionSkill(),
+                new SurgeSkill(),
+                new MagicExplosionSkill(),
                 new CurseSkill(),
                 new GlyphOfCounterattackSkill(),
                 new NobleSacrificeSkill(),
                 new DuelSkill(),
-                //new FreezeSkill(),
+                new FreezeSkill(),
                 //new MindControlSkill(),
                 new OblivionSkill(),
-                //new RespiteSkill(),
+                new RespiteSkill(),
                 new MoonlightDanceSkill(),
-                //new FanaticalObsessionSkill()
+                new FanaticalObsessionSkill(),
+                new EvasiveManeuverSkill(),
+                new DimensionalRiftSkill(),
+                new PetrifyingGazeSkill(),
+                new FallingStarSkill(),
+                new BanishmentSkill(),
+                new AssembleSkill(),
+                new ScatteredStarlightSkill(),
             }
         );
     }

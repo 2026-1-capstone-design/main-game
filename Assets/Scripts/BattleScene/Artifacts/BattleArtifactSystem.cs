@@ -73,7 +73,7 @@ public sealed class BattleArtifactSystem : IBattleTargetingPolicy, IBattleMoveme
                 if (artifact == null)
                     continue;
 
-                artifact.Initialize(ownerState, context);
+                artifact.Initialize(ownerState, owner.Snapshot.EquippedArtifact.artifactLevel, context);
 
                 if (artifact is IDamageModifierArtifact damageModifier)
                     _damageModifiers.Add(
@@ -325,7 +325,7 @@ public sealed class BattleArtifactSystem : IBattleTargetingPolicy, IBattleMoveme
         if (owner == null || owner.State == null || artifact == null)
             return;
 
-        artifact.Initialize(owner.State, context);
+        artifact.Initialize(owner.State, 1, context);
 
         if (artifact is IDamageModifierArtifact dmgMod)
             _damageModifiers.Add(new ArtifactBinding<IDamageModifierArtifact>(owner.State, owner, dmgMod));

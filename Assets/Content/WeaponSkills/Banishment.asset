@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0efcbe04e3ad52a428a9f4cc079e1b31, type: 3}
+  m_Name: Banishment
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponSkillSO
+  icon: {fileID: 0}
+  skillName: "\uCD94\uBC29"
+  description: "\uACF5\uACA9\uB825\uC774 \uAC00\uC7A5 \uB192\uC740 \uC801 \uD558\uB098\uB97C,
+    \uACBD\uAE30\uC7A5 \uAC00\uC7A5\uC790\uB9AC\uB85C \uC989\uC2DC \uC774\uB3D9\uC2DC\uD0A8\uB2E4.\uC2DC\uC804\uC790
+    \uBCF8\uC778\uC73C\uB85C\uBD80\uD130 \uAC00\uC7A5 \uBA40\uC5B4\uC9C0\uAC8C\uB054
+    \uC774\uB3D9\uC2DC\uD0B4. \uC774\uD6C4 5\uCD08\uAC04 \uB454\uD654 \uC801\uC6A9"
+  weaponType: 10
+  skillId: 54
+  defaultDur: 1
+  duration: 1

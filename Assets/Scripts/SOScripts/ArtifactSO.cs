@@ -10,6 +10,8 @@ public sealed class ArtifactSO : ScriptableObject
     [FormerlySerializedAs("artifactId")]
     public ArtifactId artifactPerkId;
 
+    public int artifactLevel = 1;
+
     [TextArea]
     [FormerlySerializedAs("description")]
     public string artifactLore;

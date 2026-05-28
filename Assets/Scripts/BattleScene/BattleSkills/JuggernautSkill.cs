@@ -27,7 +27,7 @@ public sealed class JuggernautSkill : IBattleSkill
         float damageMultiplier = 1f + (distance * 0.1f);
 
         effects.Teleport(casterState, targetState.Position);
-        VFXManager.Instance.PlayEffect("JuggernautImpact", targetState.Position);
+        VFXManager.Instance.PlayEffect("CriticalHit", targetState.Position);
 
         effects.DealDamage(
             new BattleDamageRequest

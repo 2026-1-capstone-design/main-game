@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0efcbe04e3ad52a428a9f4cc079e1b31, type: 3}
+  m_Name: OmniousStar
+  m_EditorClassIdentifier: 
+  icon: {fileID: 0}
+  skillName: "\uD749\uC131"
+  description: "\uBC1B\uB294 \uD53C\uD574 \uC99D\uAC00, \uC774\uB3D9 \uC18D\uB3C4
+    \uC99D\uAC00, \uACF5\uACA9\uB825 \uC99D\uAC00"
+  weaponType: 6
+  skillId: 21
+  defaultDur: 1
+  duration: 1

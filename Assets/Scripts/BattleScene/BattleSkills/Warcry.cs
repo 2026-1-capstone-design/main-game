@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnityEngine;
 
 // 3. 워크라이 (두손검) : 아군 전체 공격력 증가
 public sealed class WarcrySkill : IBattleSkill
@@ -20,6 +21,10 @@ public sealed class WarcrySkill : IBattleSkill
             BattleUnitCombatState unit = unitView != null ? unitView.State : null;
             if (unit != null && !unit.IsCombatDisabled && unit.TeamId == caster.TeamId)
             {
+                VFXManager.Instance.PlayEffect("RedEnhance", unit.Position + Vector3.up * 0.2f);
+                VFXManager.Instance.PlayEffect("RedEnhance", unit.Position + Vector3.up * 0.4f);
+                VFXManager.Instance.PlayEffect("RedEnhance", unit.Position + Vector3.up * 0.6f);
+                VFXManager.Instance.PlayEffect("RedEnhance", unit.Position + Vector3.up * 0.8f);
                 effects.ApplyBuff(caster, unit, BuffType.AttackDamage, 3, 10f); // 공격력 +30
             }
         }

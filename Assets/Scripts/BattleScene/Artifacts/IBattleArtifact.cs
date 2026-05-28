@@ -3,6 +3,26 @@
 public enum ArtifactId
 {
     None = 0,
+    GreenAmber = 1,
+    OminousGaze = 2,
+    MaleficStarGaze = 3,
+    TacticalMagnet = 4,
+    AssassinationManual = 5,
+    AlphasFang = 6,
+    BrokenCrown = 7,
+    MonstersClaw = 8,
+    VanguardCrest = 9,
+    BreezeCloak = 10,
+    GiantsHeaddress = 11,
+    AssassinsDagger = 12,
+    DeceiversMask = 13,
+    IronRosary = 14,
+    EagleQuill = 15,
+    BronzeRingOfTheDead = 16,
+    AbyssalMedallion = 17,
+    GiantSlayer = 18,
+    MasterlessMedal = 19,
+    VampiricWeed = 20,
 }
 
 // 전투 중 장신구 효과 구현체의 공통 계약이다.
@@ -10,7 +30,7 @@ public enum ArtifactId
 public interface IBattleArtifact
 {
     ArtifactId ArtifactId { get; }
-    void Initialize(BattleUnitCombatState owner, in BattleEffectContext context);
+    void Initialize(BattleUnitCombatState owner, int level, in BattleEffectContext context);
 }
 
 // 전투 시작 시 한 번 실행되는 장신구 훅이다.

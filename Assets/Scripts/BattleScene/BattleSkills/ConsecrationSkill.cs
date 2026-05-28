@@ -50,6 +50,6 @@ public sealed class ConsecrationSkill : IBattleSkill
             10f
         );
 
-        VFXManager.Instance.PlayEffect("ConsecrationEffect", caster.Position);
+        VFXManager.Instance.PlayEffect("BlessEnhance", caster.transform);
     }
 }

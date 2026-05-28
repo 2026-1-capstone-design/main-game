@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnityEngine;
 
 // 10. 총검술 (라이플) : 공속/공격/이속 상승 & 사거리 감소
 public sealed class BayonetChargeSkill : IBattleSkill
@@ -15,6 +16,9 @@ public sealed class BayonetChargeSkill : IBattleSkill
     public void Activate(in BattleEffectContext context, IBattleEffectSink effects)
     {
         BattleUnitCombatState caster = context.Actor != null ? context.Actor.State : null;
+
+        VFXManager.Instance.PlayEffect("BlueEnhance", caster.Position + Vector3.up * 0.1f);
+
         effects.ApplyBuff(caster, caster, BuffType.AttackSpeed, 3, 10f);
         effects.ApplyBuff(caster, caster, BuffType.AttackDamage, 2, 10f);
         effects.ApplyBuff(caster, caster, BuffType.MoveSpeed, 3, 10f);

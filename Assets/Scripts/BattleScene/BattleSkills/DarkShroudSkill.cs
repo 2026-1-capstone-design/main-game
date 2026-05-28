@@ -6,7 +6,7 @@ public sealed class DarkShroudSkill : IBattleSkill
 {
     public WeaponSkillId SkillId => WeaponSkillId.DarkShroud;
     public skillType SkillCategory => skillType.attack;
-    public IReadOnlyList<WeaponType> CompatibleWeaponTypes { get; } = new[] { WeaponType.staff };
+    public IReadOnlyList<WeaponType> CompatibleWeaponTypes { get; } = new[] { WeaponType.dagger };
     public BattleSkillTargetPolicy TargetPolicy => BattleSkillTargetPolicy.AreaAroundSelf;
     public float CastRange => 0f;
     public float AreaRadius => 15f;
@@ -19,8 +19,6 @@ public sealed class DarkShroudSkill : IBattleSkill
         if (caster == null)
             return;
 
-        VFXManager.Instance.PlayEffect("DarkShroudEffect", caster.Position);
-
         foreach (BattleRuntimeUnit unitView in context.Units)
         {
             BattleUnitCombatState target = unitView?.State;
@@ -29,6 +27,7 @@ public sealed class DarkShroudSkill : IBattleSkill
 
             if (Vector3.Distance(caster.Position, target.Position) <= AreaRadius)
             {
+                VFXManager.Instance.PlayEffect("DarkHit", target.Position + Vector3.up);
                 effects.ApplyStatus(
                     new BattleStatusRequest
                     {

@@ -36,7 +36,7 @@ public sealed class SubmersionSkill : IBattleSkill
             }
         );
 
-        GameObject activeVfx = VFXManager.Instance.PlayEffect("SubmersionEffect", caster.Position);
+        GameObject activeVfx = VFXManager.Instance.PlayEffect("CloudEffect", caster.transform);
 
         effects.ScheduleEffect(
             8f,
@@ -56,7 +56,7 @@ public sealed class SubmersionSkill : IBattleSkill
     {
         public ArtifactId ArtifactId => ArtifactId.None;
 
-        public void Initialize(BattleUnitCombatState owner, in BattleEffectContext context) { }
+        public void Initialize(BattleUnitCombatState owner, int level, in BattleEffectContext context) { }
 
         public void ModifyTargetScore(BattleUnitCombatState owner, ref BattleTargetScore score)
         {

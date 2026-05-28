@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0efcbe04e3ad52a428a9f4cc079e1b31, type: 3}
+  m_Name: UnstoppableForce
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponSkillSO
+  icon: {fileID: 0}
+  skillName: "\uBA48\uCD9C\uC218\uC5C6\uB294\uD798"
+  description: "\uC0C1\uB300\uBC29\uC5D0\uAC8C \uB3CC\uC9C4\uD55C \uB4A4\uC5D0 \uAD11\uC5ED\uC73C\uB85C
+    \uC801\uC5D0\uAC8C \uC5D0\uC5B4\uBCF8\uC744 \uC801\uC6A9 "
+  weaponType: 5
+  skillId: 32
+  defaultDur: 1
+  duration: 1

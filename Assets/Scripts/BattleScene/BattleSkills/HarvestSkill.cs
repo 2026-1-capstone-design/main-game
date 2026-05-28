@@ -14,51 +14,65 @@ public sealed class HarvestSkill : IBattleSkill
 
     public void Activate(in BattleEffectContext context, IBattleEffectSink effects)
     {
-        BattleUnitCombatState casterState = context.Actor?.State;
-        if (casterState == null || casterState.IsCombatDisabled)
+        BattleRuntimeUnit casterRuntime = context.Actor;
+        BattleUnitCombatState casterState = casterRuntime?.State;
+
+        if (casterRuntime == null || casterState == null || casterState.IsCombatDisabled)
             return;
 
-        VFXManager.Instance.PlayEffect("HarvestSlash", casterState.Position);
-        float totalTheoreticalDamage = 0f;
-
-        foreach (BattleRuntimeUnit unitView in context.Units)
-        {
-            BattleUnitCombatState targetState = unitView?.State;
-            if (!BattleFieldSnapshot.IsValidEnemyTarget(casterState, targetState))
-                continue;
-
-            if (Vector3.Distance(casterState.Position, targetState.Position) <= AreaRadius)
+        effects.ScheduleEffect(
+            1.0f,
+            casterRuntime,
+            casterRuntime,
+            context,
+            (ctx, sink) =>
             {
-                float damageAmount = casterState.Attack * 1.5f;
-                totalTheoreticalDamage += damageAmount;
+                if (casterState.IsCombatDisabled)
+                    return;
 
-                effects.DealDamage(
-                    new BattleDamageRequest
-                    {
-                        Source = casterState,
-                        Target = targetState,
-                        Amount = damageAmount,
-                        SourceKind = BattleEffectSourceKind.Skill,
-                        DamageKind = BattleDamageKind.Area,
-                        SkillId = SkillId,
-                        IsSkill = true,
-                        IsArea = true,
-                    }
-                );
-            }
-        }
+                VFXManager.Instance.PlayEffect("SwipeAttackRed", casterState.Position + Vector3.up);
+                float totalTheoreticalDamage = 0f;
 
-        if (totalTheoreticalDamage > 0f)
-        {
-            effects.Heal(
-                new BattleHealRequest
+                foreach (BattleRuntimeUnit unitView in ctx.Units)
                 {
-                    Source = casterState,
-                    Target = casterState,
-                    Amount = totalTheoreticalDamage * 0.3f,
-                    SourceKind = BattleEffectSourceKind.Skill,
+                    BattleUnitCombatState targetState = unitView?.State;
+                    if (!BattleFieldSnapshot.IsValidEnemyTarget(casterState, targetState))
+                        continue;
+
+                    if (Vector3.Distance(casterState.Position, targetState.Position) <= AreaRadius)
+                    {
+                        float damageAmount = casterState.Attack * 1.5f;
+                        totalTheoreticalDamage += damageAmount;
+
+                        sink.DealDamage(
+                            new BattleDamageRequest
+                            {
+                                Source = casterState,
+                                Target = targetState,
+                                Amount = damageAmount,
+                                SourceKind = BattleEffectSourceKind.Skill,
+                                DamageKind = BattleDamageKind.Area,
+                                SkillId = SkillId,
+                                IsSkill = true,
+                                IsArea = true,
+                            }
+                        );
+                    }
                 }
-            );
-        }
+
+                if (totalTheoreticalDamage > 0f)
+                {
+                    sink.Heal(
+                        new BattleHealRequest
+                        {
+                            Source = casterState,
+                            Target = casterState,
+                            Amount = totalTheoreticalDamage * 0.3f,
+                            SourceKind = BattleEffectSourceKind.Skill,
+                        }
+                    );
+                }
+            }
+        );
     }
 }

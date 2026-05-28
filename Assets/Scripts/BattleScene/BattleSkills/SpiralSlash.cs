@@ -16,30 +16,43 @@ public sealed class SpiralSlashSkill : IBattleSkill
     public void Activate(in BattleEffectContext context, IBattleEffectSink effects)
     {
         BattleUnitCombatState caster = context.Actor != null ? context.Actor.State : null;
-        foreach (BattleRuntimeUnit unitView in context.Units)
-        {
-            BattleUnitCombatState unit = unitView != null ? unitView.State : null;
-            if (BattleFieldSnapshot.IsValidEnemyTarget(caster, unit))
+
+        effects.ScheduleEffect(
+            caster.SkillDuration,
+            context.Actor,
+            context.Actor,
+            context,
+            (ctx, sink) =>
             {
-                if (Vector3.Distance(caster.Position, unit.Position) <= 45f) // 광역 반경 45
+                VFXManager.Instance.PlayEffect("SwipeAttackEffect", caster.Position + Vector3.up * 1f);
+
+                foreach (BattleRuntimeUnit unitView in ctx.Units)
                 {
-                    effects.DealDamage(
-                        new BattleDamageRequest
+                    BattleUnitCombatState unit = unitView != null ? unitView.State : null;
+                    if (BattleFieldSnapshot.IsValidEnemyTarget(caster, unit))
+                    {
+                        if (Vector3.Distance(caster.Position, unit.Position) <= 20f) // 광역 반경 20
                         {
-                            Source = caster,
-                            Target = unit,
-                            Amount = caster.Attack * 1.2f,
-                            SourceKind = BattleEffectSourceKind.Skill,
-                            DamageKind = BattleDamageKind.Area,
-                            SkillId = SkillId,
-                            IsSkill = true,
-                            IsArea = true,
+                            VFXManager.Instance.PlayEffect("PlainSwordHit", unit.Position + Vector3.up * 1f);
+                            effects.DealDamage(
+                                new BattleDamageRequest
+                                {
+                                    Source = caster,
+                                    Target = unit,
+                                    Amount = caster.Attack * 1.2f,
+                                    SourceKind = BattleEffectSourceKind.Skill,
+                                    DamageKind = BattleDamageKind.Area,
+                                    SkillId = SkillId,
+                                    IsSkill = true,
+                                    IsArea = true,
+                                }
+                            );
+                            Vector3 pushDir = unit.Position - caster.Position;
+                            effects.AddKnockback(unit, pushDir, 80f);
                         }
-                    );
-                    Vector3 pushDir = unit.Position - caster.Position;
-                    effects.AddKnockback(unit, pushDir, 80f);
+                    }
                 }
             }
-        }
+        );
     }
 }
