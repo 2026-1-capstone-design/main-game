@@ -248,6 +248,13 @@ public sealed class BattleOrdersManager : MonoBehaviour
         }
 
         SotServerRouteKind routeKind = useSLM ? SotServerRouteKind.RemoteSlm : SotServerRouteKind.GeminiLlm;
+
+        if (!TryValidateSotServerRouteSettings(routeKind, out string routeSettingsError))
+        {
+            Debug.LogError("[BattleOrdersManager] Server SOT pipeline skipped. " + routeSettingsError, this);
+            return;
+        }
+
         StartCoroutine(RunServerSotLayerPipeline(sotOrderText, routeKind));
     }
 
@@ -790,6 +797,44 @@ public sealed class BattleOrdersManager : MonoBehaviour
             thinkingBudget = geminiUseLowestThinking ? 0 : -1,
             thinkingLevel = geminiUseLowestThinking ? "minimal" : "low",
         };
+    }
+
+    private bool TryValidateSotServerRouteSettings(SotServerRouteKind routeKind, out string error)
+    {
+        error = null;
+
+        string routeLabel = GetSotRouteLabel(routeKind);
+        string proxyUrl = GetSotProxyUrl(routeKind);
+        string model = GetSotModel(routeKind);
+
+        if (string.IsNullOrWhiteSpace(proxyUrl))
+        {
+            error = routeLabel + " proxy URL is empty.";
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(model))
+        {
+            error = routeLabel + " model is empty.";
+            return false;
+        }
+
+        if (routeKind == SotServerRouteKind.RemoteSlm)
+        {
+            if (string.IsNullOrWhiteSpace(remoteSlmUpstreamUrl))
+            {
+                error = "Remote SLM upstream URL is empty.";
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(remoteSlmAppSharedToken))
+            {
+                error = "Remote SLM app shared token is empty.";
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private string GetSotProxyUrl(SotServerRouteKind routeKind)

@@ -164,7 +164,7 @@ public sealed class BattleUnitNameResolver
             if (string.IsNullOrWhiteSpace(displayName) || string.IsNullOrWhiteSpace(sotId))
                 continue;
 
-            result = Regex.Replace(result, Regex.Escape(displayName), sotId, RegexOptions.CultureInvariant);
+            result = result.Replace(displayName, sotId);
         }
 
         return ReplaceApproximateDisplayNamesWithSotIds(result);
