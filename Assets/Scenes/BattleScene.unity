@@ -8745,7 +8745,7 @@ MonoBehaviour:
   defaultFov: 80
   minFov: 20
   maxFov: 80
-  zoomSpeed: 50
+  zoomSpeed: 130
   zoomLookCompensationStrength: 1
 --- !u!1 &762136616
 GameObject:
