@@ -63,6 +63,14 @@ public sealed class BattleOrderLayerPipeline
         string mockParserOutputJson = JsonConvert.SerializeObject(mockParserOutput, JsonSettings);
 
         if (
+            !SotParserOutputValidator.TryValidate(mockParserOutput, parserRequest, out string mockOutputValidationError)
+        )
+        {
+            error = "mockoutputvalidation: " + mockOutputValidationError;
+            return false;
+        }
+
+        if (
             !_postprocessor.TryProcess(
                 command,
                 mockParserOutput,

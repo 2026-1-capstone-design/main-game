@@ -99,3 +99,7 @@ Assets/Demos.meta
 .claude/
 .codex/
 .agents/
+
+# Whisper local model binaries
+/[Aa]ssets/[Ss]treaming[Aa]ssets/[Ww]hisper/*.bin
+/[Aa]ssets/[Ss]treaming[Aa]ssets/[Ww]hisper/*.bin.meta

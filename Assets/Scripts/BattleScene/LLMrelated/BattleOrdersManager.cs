@@ -1,45 +1,104 @@
-// SOT mock/postprocess 결과를 로그로 확인하고 실행 진입점에 연결한다.
-// 구형 BattleLlmResponseDto 기반 LLM 경로는 주석처리되어 있다.
+// SOT mock/Gemini LLM/remote SLM 결과를 로그로 확인하고 실행 진입점에 연결한다.
+// 서버 경로는 Unity가 빌드한 prompt와 생성 설정을 proxy에 보내고, proxy 응답 text만 파싱한다.
 // 후처리 완료 action만 SlmUnitCommand로 변환해 BattleSimulationManager에 넘긴다.
 // 실제 행동 생성은 SlmCommandUnitPlanner와 실행계층이 처리한다.
 
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Text;
-using System.Text.RegularExpressions;
 using UnityEngine;
+using UnityEngine.Networking;
+using UnityEngine.Serialization;
 
 [DisallowMultipleComponent]
 public sealed class BattleOrdersManager : MonoBehaviour
 {
+    private enum SotServerRouteKind
+    {
+        GeminiLlm,
+        RemoteSlm,
+    }
+
     [Header("Debug")]
     [SerializeField]
     private bool verboseLog = true;
 
-    /*
-    구형 BattleLlmResponseDto 기반 LLM Proxy 설정이라 주석처리함. 나중에 실제 SOT LLM 호출 재연결 시 다시 써야 함.
-    [Header("LLM Proxy")]
-    [SerializeField]
-    private bool sendOrdersToLlm = true;
-
-    [SerializeField]
-    private string llmProxyUrl = "";
-
-    [SerializeField]
-    private string appSharedToken = "";
-
-    [SerializeField]
-    private BattleLlmBackend selectedLlmBackend = BattleLlmBackend.TogetherGemma3nE4B;
-
-    [SerializeField]
-    private int requestTimeoutSeconds = 30;
-    */
-
     [Header("SOT Layer Preview")]
     [SerializeField]
     private bool logSotLayerInputPreview = true;
+
+    [Header("SOT Input Source")]
+    [SerializeField]
+    // 최상위 필터. 켜져 있으면 mock parser 전담 경로로 들어간다.
+    private bool useMockInput = true;
+
+    [SerializeField]
+    // useMockInput이 꺼져 있을 때의 두 번째 분기다. true면 remote SLM, false면 Gemini LLM 경로로 들어간다.
+    private bool useSLM = true;
+
+    [Header("SOT Remote SLM Upstream")]
+    [SerializeField]
+    private string remoteSlmUpstreamUrl = "";
+
+    [Header("SOT Gemini LLM Proxy")]
+    [SerializeField]
+    [FormerlySerializedAs("slmProxyUrl")]
+    private string geminiProxyUrl = "https://together-proxy-fn-769017230258.asia-northeast3.run.app";
+
+    [SerializeField]
+    [FormerlySerializedAs("slmAppSharedToken")]
+    private string geminiAppSharedToken = "";
+
+    [SerializeField]
+    [FormerlySerializedAs("slmRequestTimeoutSeconds")]
+    private int geminiRequestTimeoutSeconds = 60;
+
+    [Header("SOT Gemini LLM Request")]
+    [SerializeField]
+    private string geminiModel = "gemini-2.5-flash-lite";
+
+    [SerializeField]
+    private int geminiParserMaxOutputTokens = 700;
+
+    [SerializeField]
+    private int geminiDialogMaxOutputTokens = 400;
+
+    [SerializeField]
+    private bool geminiUseLowestThinking = true;
+
+    [Header("SOT Remote SLM Proxy")]
+    [SerializeField]
+    private string remoteSlmProxyUrl = "";
+
+    [SerializeField]
+    private string remoteSlmAppSharedToken = "wlsgur9898eoaks";
+
+    [SerializeField]
+    private int remoteSlmRequestTimeoutSeconds = 60;
+
+    [Header("SOT Remote SLM Request")]
+    [SerializeField]
+    private string remoteSlmModel = "gemma-4-e4b-it-q4-sft";
+
+    [SerializeField]
+    private int remoteSlmParserMaxOutputTokens = 700;
+
+    [SerializeField]
+    private int remoteSlmDialogMaxOutputTokens = 400;
+
+    [SerializeField]
+    private int remoteSlmParserNumCtx = 6000;
+
+    [SerializeField]
+    private int remoteSlmDialogNumCtx = 4000;
+
+    [Header("SOT Timing Diagnostics")]
+    [SerializeField]
+    private bool logSotTimingBreakdown = true;
+
+    [SerializeField]
+    private bool measureUpstreamTtftByStreaming = true;
 
     [Header("SOT Command Execution")]
     [SerializeField]
@@ -47,6 +106,10 @@ public sealed class BattleOrdersManager : MonoBehaviour
 
     private readonly BattleRuntimeUnit[] _allyUnits = new BattleRuntimeUnit[BattleTeamConstants.MaxUnitsPerTeam];
     private readonly BattleRuntimeUnit[] _enemyUnits = new BattleRuntimeUnit[BattleTeamConstants.MaxUnitsPerTeam];
+    private readonly BattleUnitNameResolver _unitNameResolver = new BattleUnitNameResolver();
+    private readonly BattleParserInputBuilder _serverParserInputBuilder = new BattleParserInputBuilder();
+    private readonly BattleCommandPostprocessor _serverPostprocessor = new BattleCommandPostprocessor();
+    private readonly BattleDialogLayerInputBuilder _serverDialogInputBuilder = new BattleDialogLayerInputBuilder();
     private IBattleRosterProjection _rosterProjection;
 
     private SphereCollider _battlefieldCollider;
@@ -55,6 +118,7 @@ public sealed class BattleOrdersManager : MonoBehaviour
     // 구형 BattleLlmResponseDto 기반 요청 sequence라 주석처리함. 나중에 실제 SOT LLM 호출 재연결 시 다시 써야 함.
     // private int _requestSequence;
     private BattleOrderLayerPipeline _layerPipeline;
+    private bool _serverSotPipelineRunning;
 
     public event Action<BattleRuntimeUnit, string> OnAllyOrderResponseReceived;
 
@@ -112,6 +176,7 @@ public sealed class BattleOrdersManager : MonoBehaviour
                 }
             }
         }
+        _unitNameResolver.Rebuild(_allyUnits, _enemyUnits, _rosterProjection);
 
         _initialized = true;
 
@@ -157,12 +222,68 @@ public sealed class BattleOrdersManager : MonoBehaviour
             Debug.Log(sb.ToString(), this);
         }
 
-        RunSotLayerPipeline(sanitizedRawText);
+        string sotOrderText = _unitNameResolver.ReplaceDisplayNamesWithSotIds(sanitizedRawText);
+
+        if (verboseLog && !string.Equals(sanitizedRawText, sotOrderText, StringComparison.Ordinal))
+        {
+            Debug.Log(
+                $"[BattleOrdersManager] Unit display names resolved for SOT pipeline. Raw=\"{sanitizedRawText}\", SOT=\"{sotOrderText}\"",
+                this
+            );
+        }
+
+        if (useMockInput)
+        {
+            RunSotLayerPipeline(sotOrderText);
+            return;
+        }
+
+        if (_serverSotPipelineRunning)
+        {
+            Debug.LogWarning(
+                "[BattleOrdersManager] Server SOT pipeline ignored. Previous request is still running.",
+                this
+            );
+            return;
+        }
+
+        SotServerRouteKind routeKind = useSLM ? SotServerRouteKind.RemoteSlm : SotServerRouteKind.GeminiLlm;
+
+        if (!TryValidateSotServerRouteSettings(routeKind, out string routeSettingsError))
+        {
+            Debug.LogError("[BattleOrdersManager] Server SOT pipeline skipped. " + routeSettingsError, this);
+            return;
+        }
+
+        StartCoroutine(RunServerSotLayerPipeline(sotOrderText, routeKind));
     }
 
     public void SubmitSingleOrder(BattleRuntimeUnit targetAlly, string rawOrderText)
     {
         //deprecated
+    }
+
+    public string BuildCurrentUnitDisplayNamePromptSegment()
+    {
+        List<string> displayNames = new List<string>(BattleTeamConstants.MaxUnitsPerTeam * 2);
+        _unitNameResolver.AppendDisplayNames(displayNames);
+
+        if (displayNames.Count == 0)
+            return string.Empty;
+
+        StringBuilder sb = new StringBuilder(128);
+
+        for (int i = 0; i < displayNames.Count; i++)
+        {
+            if (i > 0)
+            {
+                sb.Append(", ");
+            }
+
+            sb.Append(displayNames[i]);
+        }
+
+        return sb.ToString();
     }
 
     private void RunSotLayerPipeline(string sanitizedRawText)
@@ -246,6 +367,629 @@ public sealed class BattleOrdersManager : MonoBehaviour
         }
 
         TryIssuePostprocessedSlmCommands(result.PostprocessResult);
+
+        if (issuePostprocessedSotCommands)
+        {
+            EmitDialogLayerResponses(result.DialogResponse);
+        }
+    }
+
+    private IEnumerator RunServerSotLayerPipeline(string sanitizedRawText, SotServerRouteKind routeKind)
+    {
+        _serverSotPipelineRunning = true;
+
+        bool shouldLogPreview = logSotLayerInputPreview;
+        BattleSimulationManager simulationManager = BattleSimulationManager.Instance;
+
+        if (simulationManager == null)
+        {
+            Debug.LogWarning(
+                "[BattleOrdersManager] Server SOT pipeline skipped. BattleSimulationManager.Instance is null.",
+                this
+            );
+            _serverSotPipelineRunning = false;
+            yield break;
+        }
+
+        BattleOrderRuntimeContext context = new BattleOrderRuntimeContext(
+            _allyUnits,
+            _enemyUnits,
+            _rosterProjection,
+            simulationManager
+        );
+
+        string selectedBackendId = GetSelectedSotBackendId(routeKind);
+        string routeLabel = GetSotRouteLabel(routeKind);
+
+        SotParserRequestDto parserRequest = _serverParserInputBuilder.Build(sanitizedRawText, context);
+        SotLayerPromptBundle parserPrompt = FullPromptBuilderForSlmLayers.BuildParserPrompt(parserRequest);
+
+        if (shouldLogPreview)
+        {
+            Debug.Log(
+                "<color=#4FC3F7><b>[SOT " + routeLabel + " PARSER PROMPT]</b></color>\n" + parserPrompt.ToDebugText(),
+                this
+            );
+        }
+
+        string parserRawResponse = null;
+        string parserRequestError = null;
+
+        yield return PostSotLayerRequest(
+            routeKind,
+            "parser",
+            selectedBackendId,
+            parserPrompt,
+            BuildParserLayerGenerationSettings(routeKind),
+            (responseBackendId, responseProvider, responseModel, responseText) =>
+            {
+                parserRawResponse = responseText;
+                if (shouldLogPreview)
+                {
+                    Debug.Log(
+                        "<color=#81C784><b>[SOT "
+                            + routeLabel
+                            + " PARSER RAW RESPONSE]</b></color>\n"
+                            + $"Backend={responseBackendId}, Provider={responseProvider}, Model={responseModel}\n"
+                            + responseText,
+                        this
+                    );
+                }
+            },
+            error => parserRequestError = error
+        );
+
+        if (!string.IsNullOrWhiteSpace(parserRequestError))
+        {
+            LogSotServerFailure("PARSER REQUEST FAILED", parserPrompt, parserRequestError, parserRawResponse);
+            _serverSotPipelineRunning = false;
+            yield break;
+        }
+
+        if (
+            !SotLayerOutputParser.TryParseParserOutput(
+                parserRawResponse,
+                parserRequest,
+                out SotParserOutputDto parserOutput,
+                out string parserParseError
+            )
+        )
+        {
+            LogSotServerFailure("PARSER OUTPUT INVALID", parserPrompt, parserParseError, parserRawResponse);
+            _serverSotPipelineRunning = false;
+            yield break;
+        }
+
+        if (
+            !_serverPostprocessor.TryProcess(
+                sanitizedRawText,
+                parserOutput,
+                context,
+                out BattleCommandPostprocessResult postprocessResult,
+                out string postprocessError
+            )
+        )
+        {
+            LogSotServerFailure("POSTPROCESS FAILED", parserPrompt, postprocessError, parserRawResponse);
+            _serverSotPipelineRunning = false;
+            yield break;
+        }
+
+        SotDialogLayerRequestDto dialogRequest;
+
+        if (postprocessResult != null && postprocessResult.fallbackToDefaultMlAi)
+        {
+            if (shouldLogPreview)
+            {
+                Debug.Log(
+                    "[BattleOrdersManager] Server SOT pipeline ended with fallbackToDefaultMlAi=true. AdvisorLine="
+                        + (postprocessResult.advisorLine ?? string.Empty),
+                    this
+                );
+            }
+
+            _serverSotPipelineRunning = false;
+            yield break;
+        }
+
+        dialogRequest = _serverDialogInputBuilder.BuildFromPostprocessResult(postprocessResult, context);
+
+        if (dialogRequest == null || dialogRequest.actors == null || dialogRequest.actors.Length == 0)
+        {
+            if (shouldLogPreview)
+            {
+                Debug.Log("[BattleOrdersManager] Server SOT pipeline ended. Dialog request has no actors.", this);
+            }
+
+            _serverSotPipelineRunning = false;
+            yield break;
+        }
+
+        SotLayerPromptBundle dialogPrompt = FullPromptBuilderForSlmLayers.BuildDialogPrompt(dialogRequest);
+
+        if (shouldLogPreview)
+        {
+            Debug.Log(
+                "<color=#BA68C8><b>[SOT " + routeLabel + " DIALOG PROMPT]</b></color>\n" + dialogPrompt.ToDebugText(),
+                this
+            );
+        }
+
+        string dialogRawResponse = null;
+        string dialogRequestError = null;
+
+        yield return PostSotLayerRequest(
+            routeKind,
+            "dialog",
+            selectedBackendId,
+            dialogPrompt,
+            BuildDialogLayerGenerationSettings(routeKind),
+            (responseBackendId, responseProvider, responseModel, responseText) =>
+            {
+                dialogRawResponse = responseText;
+                if (shouldLogPreview)
+                {
+                    Debug.Log(
+                        "<color=#CE93D8><b>[SOT "
+                            + routeLabel
+                            + " DIALOG RAW RESPONSE]</b></color>\n"
+                            + $"Backend={responseBackendId}, Provider={responseProvider}, Model={responseModel}\n"
+                            + responseText,
+                        this
+                    );
+                }
+            },
+            error => dialogRequestError = error
+        );
+
+        if (!string.IsNullOrWhiteSpace(dialogRequestError))
+        {
+            LogSotServerFailure("DIALOG REQUEST FAILED", dialogPrompt, dialogRequestError, dialogRawResponse);
+            _serverSotPipelineRunning = false;
+            yield break;
+        }
+
+        if (
+            !SotLayerOutputParser.TryParseDialogOutput(
+                dialogRawResponse,
+                dialogRequest,
+                out SotDialogLayerResponseDto dialogResponse,
+                out string dialogParseError
+            )
+        )
+        {
+            LogSotServerFailure("DIALOG OUTPUT INVALID", dialogPrompt, dialogParseError, dialogRawResponse);
+            _serverSotPipelineRunning = false;
+            yield break;
+        }
+
+        if (shouldLogPreview)
+        {
+            Debug.Log(
+                "<color=#FFB74D><b>[SOT "
+                    + routeLabel
+                    + " POSTPROCESS RESULT]</b></color>\n"
+                    + FullPromptBuilderForSlmLayers.ToCompactJson(postprocessResult),
+                this
+            );
+            Debug.Log(
+                "<color=#CE93D8><b>[SOT "
+                    + routeLabel
+                    + " DIALOG RESPONSE]</b></color>\n"
+                    + FullPromptBuilderForSlmLayers.ToCompactJson(dialogResponse),
+                this
+            );
+        }
+
+        if (issuePostprocessedSotCommands)
+        {
+            EmitDialogLayerResponses(dialogResponse);
+        }
+
+        TryIssuePostprocessedSlmCommands(postprocessResult);
+
+        _serverSotPipelineRunning = false;
+    }
+
+    private IEnumerator PostSotLayerRequest(
+        SotServerRouteKind routeKind,
+        string layerName,
+        string backendId,
+        SotLayerPromptBundle promptBundle,
+        GeminiGenerationSettingsDto generationSettings,
+        Action<string, string, string, string> onSuccess,
+        Action<string> onError
+    )
+    {
+        string proxyUrl = GetSotProxyUrl(routeKind);
+        string appSharedToken = GetSotAppSharedToken(routeKind);
+        string model = GetSotModel(routeKind);
+        string provider = GetSotProvider(routeKind);
+        int requestTimeoutSeconds = GetSotRequestTimeoutSeconds(routeKind);
+
+        if (string.IsNullOrWhiteSpace(proxyUrl))
+        {
+            onError?.Invoke(GetSotRouteLabel(routeKind) + " proxy URL is empty.");
+            yield break;
+        }
+
+        if (string.IsNullOrWhiteSpace(model))
+        {
+            onError?.Invoke(GetSotRouteLabel(routeKind) + " model is empty.");
+            yield break;
+        }
+
+        if (routeKind == SotServerRouteKind.RemoteSlm && string.IsNullOrWhiteSpace(appSharedToken))
+        {
+            onError?.Invoke("Remote SLM app shared token is empty.");
+            yield break;
+        }
+
+        UnityConfiguredGeminiRequestDto requestDto = new UnityConfiguredGeminiRequestDto
+        {
+            remoteSlmProxyUrl = routeKind == SotServerRouteKind.RemoteSlm ? remoteSlmUpstreamUrl.Trim() : string.Empty,
+            backendId = backendId,
+            provider = provider,
+            layerName = layerName,
+            model = model.Trim(),
+            systemInstruction = promptBundle.SystemInstruction,
+            userPayloadJson = promptBundle.UserPayloadJson,
+            generationSettings = generationSettings,
+            debugTiming = new SotProxyDebugTimingRequestDto
+            {
+                enabled = logSotTimingBreakdown,
+                streamUpstream = measureUpstreamTtftByStreaming,
+            },
+        };
+
+        string requestJson = JsonUtility.ToJson(requestDto);
+        byte[] bodyRaw = Encoding.UTF8.GetBytes(requestJson);
+
+        using UnityWebRequest request = new UnityWebRequest(proxyUrl, UnityWebRequest.kHttpVerbPOST);
+        request.uploadHandler = new UploadHandlerRaw(bodyRaw);
+        request.downloadHandler = new DownloadHandlerBuffer();
+        request.timeout = Mathf.Max(1, requestTimeoutSeconds);
+        request.SetRequestHeader("Content-Type", "application/json; charset=utf-8");
+
+        if (!string.IsNullOrWhiteSpace(appSharedToken))
+        {
+            request.SetRequestHeader("X-App-Token", appSharedToken);
+        }
+
+        System.Diagnostics.Stopwatch clientStopwatch = System.Diagnostics.Stopwatch.StartNew();
+        yield return request.SendWebRequest();
+        clientStopwatch.Stop();
+        float clientTotalMs = (float)clientStopwatch.Elapsed.TotalMilliseconds;
+
+        string responseBody = request.downloadHandler != null ? request.downloadHandler.text : string.Empty;
+
+        if (request.result != UnityWebRequest.Result.Success)
+        {
+            onError?.Invoke(
+                $"Route={GetSotRouteLabel(routeKind)}, Status={request.responseCode}, Error={request.error}, Body={responseBody}"
+            );
+            yield break;
+        }
+
+        SotProxyResponseDto responseDto;
+        try
+        {
+            responseDto = JsonUtility.FromJson<SotProxyResponseDto>(responseBody);
+        }
+        catch (Exception exception)
+        {
+            onError?.Invoke("Proxy response JSON parse failed. " + exception.Message + ", Body=" + responseBody);
+            yield break;
+        }
+
+        if (responseDto == null || string.IsNullOrWhiteSpace(responseDto.text))
+        {
+            onError?.Invoke("Proxy response text is empty. Body=" + responseBody);
+            yield break;
+        }
+
+        if (logSotTimingBreakdown)
+        {
+            Debug.Log(BuildSotTimingBreakdownLog(layerName, responseDto, clientTotalMs), this);
+        }
+
+        onSuccess?.Invoke(
+            responseDto.backendId ?? string.Empty,
+            responseDto.provider ?? string.Empty,
+            responseDto.model ?? string.Empty,
+            responseDto.text
+        );
+    }
+
+    private static string BuildSotTimingBreakdownLog(
+        string layerName,
+        SotProxyResponseDto responseDto,
+        float clientTotalMs
+    )
+    {
+        SotProxyTimingDto timing = responseDto != null ? responseDto.timing : null;
+        float proxyTotalMs = timing != null ? timing.proxyTotalMs : -1f;
+        float upstreamTotalMs = timing != null ? timing.upstreamTotalMs : -1f;
+        float upstreamTtftMs = timing != null ? timing.upstreamTtftMs : -1f;
+        float upstreamAfterTtftMs = timing != null ? timing.upstreamAfterTtftMs : -1f;
+        float preUpstreamMs = timing != null ? timing.proxyPreUpstreamMs : -1f;
+        float postUpstreamMs = timing != null ? timing.proxyPostUpstreamMs : -1f;
+        float responseParseMs = timing != null ? timing.responseParseMs : -1f;
+        float approximateUnityProxyNetworkMs = proxyTotalMs >= 0f ? clientTotalMs - proxyTotalMs : -1f;
+
+        StringBuilder sb = new StringBuilder(768);
+        sb.AppendLine("<color=#90CAF9><b>[SOT TIMING BREAKDOWN]</b></color>");
+        sb.AppendLine("Layer=" + (layerName ?? string.Empty));
+        sb.AppendLine("Model=" + (responseDto != null ? responseDto.model ?? string.Empty : string.Empty));
+        sb.AppendLine("ClientTotalMs=" + FormatMs(clientTotalMs));
+        sb.AppendLine("ProxyTotalMs=" + FormatMs(proxyTotalMs));
+        sb.AppendLine("ApproxUnityProxyNetworkMs=" + FormatMs(approximateUnityProxyNetworkMs));
+        sb.AppendLine("ProxyPreUpstreamMs=" + FormatMs(preUpstreamMs));
+        sb.AppendLine("UpstreamTotalMs=" + FormatMs(upstreamTotalMs));
+        sb.AppendLine("UpstreamTTFTMs=" + FormatMs(upstreamTtftMs));
+        sb.AppendLine("UpstreamAfterTTFTMs=" + FormatMs(upstreamAfterTtftMs));
+        sb.AppendLine("ProxyResponseParseMs=" + FormatMs(responseParseMs));
+        sb.AppendLine("ProxyPostUpstreamMs=" + FormatMs(postUpstreamMs));
+        sb.AppendLine("UsedUpstreamStreaming=" + (timing != null && timing.usedUpstreamStreaming));
+        sb.AppendLine("RetriedWithoutReasoning=" + (timing != null && timing.retriedWithoutReasoning));
+        return sb.ToString();
+    }
+
+    private static string FormatMs(float value)
+    {
+        return value < 0f ? "N/A" : value.ToString("0.0") + " ms";
+    }
+
+    private GeminiGenerationSettingsDto BuildParserLayerGenerationSettings(SotServerRouteKind routeKind)
+    {
+        int maxOutputTokens = Mathf.Max(1, GetParserMaxOutputTokens(routeKind));
+        int numCtx = Mathf.Max(1, GetParserNumCtx(routeKind));
+        float temperature = 0f;
+        float topP = 0.8f;
+
+        return new GeminiGenerationSettingsDto
+        {
+            temperature = temperature,
+            topP = topP,
+            top_p = topP,
+            topK = routeKind == SotServerRouteKind.GeminiLlm ? 1 : 0,
+            maxOutputTokens = maxOutputTokens,
+            num_predict = maxOutputTokens,
+            numCtx = numCtx,
+            num_ctx = numCtx,
+            stream = routeKind == SotServerRouteKind.RemoteSlm,
+            think = false,
+            candidateCount = 1,
+            responseMimeType = "application/json",
+            thinkingConfig = routeKind == SotServerRouteKind.GeminiLlm ? BuildGeminiThinkingConfig() : null,
+        };
+    }
+
+    private GeminiGenerationSettingsDto BuildDialogLayerGenerationSettings(SotServerRouteKind routeKind)
+    {
+        int maxOutputTokens = Mathf.Max(1, GetDialogMaxOutputTokens(routeKind));
+        int numCtx = Mathf.Max(1, GetDialogNumCtx(routeKind));
+        float temperature = 0.2f;
+        float topP = 0.8f;
+
+        return new GeminiGenerationSettingsDto
+        {
+            temperature = temperature,
+            topP = topP,
+            top_p = topP,
+            topK = routeKind == SotServerRouteKind.GeminiLlm ? 20 : 0,
+            maxOutputTokens = maxOutputTokens,
+            num_predict = maxOutputTokens,
+            numCtx = numCtx,
+            num_ctx = numCtx,
+            stream = routeKind == SotServerRouteKind.RemoteSlm,
+            think = false,
+            candidateCount = 1,
+            responseMimeType = "application/json",
+            thinkingConfig = routeKind == SotServerRouteKind.GeminiLlm ? BuildGeminiThinkingConfig() : null,
+        };
+    }
+
+    private GeminiThinkingConfigDto BuildGeminiThinkingConfig()
+    {
+        return new GeminiThinkingConfigDto
+        {
+            thinkingBudget = geminiUseLowestThinking ? 0 : -1,
+            thinkingLevel = geminiUseLowestThinking ? "minimal" : "low",
+        };
+    }
+
+    private bool TryValidateSotServerRouteSettings(SotServerRouteKind routeKind, out string error)
+    {
+        error = null;
+
+        string routeLabel = GetSotRouteLabel(routeKind);
+        string proxyUrl = GetSotProxyUrl(routeKind);
+        string model = GetSotModel(routeKind);
+
+        if (string.IsNullOrWhiteSpace(proxyUrl))
+        {
+            error = routeLabel + " proxy URL is empty.";
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(model))
+        {
+            error = routeLabel + " model is empty.";
+            return false;
+        }
+
+        if (routeKind == SotServerRouteKind.RemoteSlm)
+        {
+            if (string.IsNullOrWhiteSpace(remoteSlmUpstreamUrl))
+            {
+                error = "Remote SLM upstream URL is empty.";
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(remoteSlmAppSharedToken))
+            {
+                error = "Remote SLM app shared token is empty.";
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private string GetSotProxyUrl(SotServerRouteKind routeKind)
+    {
+        return routeKind == SotServerRouteKind.RemoteSlm ? remoteSlmProxyUrl : geminiProxyUrl;
+    }
+
+    private string GetSotAppSharedToken(SotServerRouteKind routeKind)
+    {
+        return routeKind == SotServerRouteKind.RemoteSlm ? remoteSlmAppSharedToken : geminiAppSharedToken;
+    }
+
+    private string GetSotModel(SotServerRouteKind routeKind)
+    {
+        return routeKind == SotServerRouteKind.RemoteSlm ? remoteSlmModel : geminiModel;
+    }
+
+    private int GetSotRequestTimeoutSeconds(SotServerRouteKind routeKind)
+    {
+        return routeKind == SotServerRouteKind.RemoteSlm ? remoteSlmRequestTimeoutSeconds : geminiRequestTimeoutSeconds;
+    }
+
+    private int GetParserMaxOutputTokens(SotServerRouteKind routeKind)
+    {
+        return routeKind == SotServerRouteKind.RemoteSlm ? remoteSlmParserMaxOutputTokens : geminiParserMaxOutputTokens;
+    }
+
+    private int GetDialogMaxOutputTokens(SotServerRouteKind routeKind)
+    {
+        return routeKind == SotServerRouteKind.RemoteSlm ? remoteSlmDialogMaxOutputTokens : geminiDialogMaxOutputTokens;
+    }
+
+    private int GetParserNumCtx(SotServerRouteKind routeKind)
+    {
+        return routeKind == SotServerRouteKind.RemoteSlm ? remoteSlmParserNumCtx : 6000;
+    }
+
+    private int GetDialogNumCtx(SotServerRouteKind routeKind)
+    {
+        return routeKind == SotServerRouteKind.RemoteSlm ? remoteSlmDialogNumCtx : 4000;
+    }
+
+    private static string GetSotProvider(SotServerRouteKind routeKind)
+    {
+        return routeKind == SotServerRouteKind.RemoteSlm ? "remote_slm" : "gemini";
+    }
+
+    private static string GetSelectedSotBackendId(SotServerRouteKind routeKind)
+    {
+        return routeKind == SotServerRouteKind.RemoteSlm
+            ? "remote_slm_llama_cpp_gemma4_e4b_q4_sft"
+            : "unity_configured_gemini";
+    }
+
+    private static string GetSotRouteLabel(SotServerRouteKind routeKind)
+    {
+        return routeKind == SotServerRouteKind.RemoteSlm ? "REMOTE SLM" : "GEMINI LLM";
+    }
+
+    private void LogSotServerFailure(string title, SotLayerPromptBundle promptBundle, string error, string rawResponse)
+    {
+        if (!verboseLog)
+        {
+            return;
+        }
+
+        Debug.Log(
+            "<color=#9E9E9E><b>[SOT SERVER "
+                + title
+                + " - IGNORED]</b></color>\n"
+                + "<color=#BDBDBD>Reason:</color> "
+                + (error ?? string.Empty)
+                + "\n\n<color=#BDBDBD>PromptWithoutSystem:</color>\n"
+                + BuildFailurePromptDebugText(promptBundle)
+                + "\n\n<color=#BDBDBD>RawResponse:</color>\n"
+                + (rawResponse ?? string.Empty),
+            this
+        );
+    }
+
+    private void EmitDialogLayerResponses(SotDialogLayerResponseDto dialogResponse)
+    {
+        if (dialogResponse == null || dialogResponse.dialog == null || dialogResponse.dialog.Length == 0)
+        {
+            return;
+        }
+
+        for (int i = 0; i < dialogResponse.dialog.Length; i++)
+        {
+            SotDialogLineDto line = dialogResponse.dialog[i];
+            if (line == null || string.IsNullOrWhiteSpace(line.unitId))
+            {
+                continue;
+            }
+
+            BattleRuntimeUnit actorUnit = _unitNameResolver.FindUnitBySotId(line.unitId);
+            if (actorUnit == null)
+            {
+                if (verboseLog)
+                {
+                    Debug.LogWarning(
+                        "[BattleOrdersManager] Dialog response skipped. Actor unitId was not found. UnitId="
+                            + (line.unitId ?? string.Empty),
+                        this
+                    );
+                }
+
+                continue;
+            }
+
+            if (_rosterProjection != null && !_rosterProjection.IsPlayerUnit(actorUnit))
+            {
+                if (verboseLog)
+                {
+                    Debug.LogWarning(
+                        "[BattleOrdersManager] Dialog response skipped. Dialog unitId is not an ally. UnitId="
+                            + (line.unitId ?? string.Empty),
+                        this
+                    );
+                }
+
+                continue;
+            }
+
+            if (
+                !_unitNameResolver.TryResolveDialogText(
+                    line.text,
+                    out string resolvedDialogText,
+                    out string resolveError
+                )
+            )
+            {
+                if (verboseLog)
+                {
+                    Debug.LogWarning(
+                        "[BattleOrdersManager] Dialog text fallback applied. UnitId="
+                            + (line.unitId ?? string.Empty)
+                            + ", Reason="
+                            + resolveError,
+                        this
+                    );
+                }
+            }
+
+            RaiseAllyOrderResponse(actorUnit, resolvedDialogText);
+        }
+    }
+
+    private void RaiseAllyOrderResponse(BattleRuntimeUnit actorUnit, string responseText)
+    {
+        string sanitizedText = SanitizeRawText(responseText);
+        if (actorUnit != null && !string.IsNullOrWhiteSpace(sanitizedText))
+        {
+            OnAllyOrderResponseReceived?.Invoke(actorUnit, sanitizedText);
+        }
     }
 
     private void TryIssuePostprocessedSlmCommands(BattleCommandPostprocessResult postprocessResult)
@@ -370,1192 +1114,6 @@ public sealed class BattleOrdersManager : MonoBehaviour
         }
     }
 
-    /*
-    구형 BattleLlmResponseDto 기반 LLM 송수신/파싱/검증 경로라 주석처리함. 나중에 실제 SOT LLM 호출 재연결 시 다시 써야 함.
-    private void TrySendOrderToLlm(string orderType, BattleRuntimeUnit actorUnit, string rawOrderText)
-    {
-        if (!sendOrdersToLlm)
-        {
-            return;
-        }
-
-        if (!_initialized)
-        {
-            Debug.LogError("[BattleOrdersManager] LLM send blocked. Manager is not initialized.", this);
-            return;
-        }
-
-        if (actorUnit == null)
-        {
-            Debug.LogWarning("[BattleOrdersManager] LLM send skipped. Actor unit is null.", this);
-            return;
-        }
-
-        if (_rosterProjection != null && !_rosterProjection.IsPlayerUnit(actorUnit))
-        {
-            Debug.LogWarning("[BattleOrdersManager] LLM send skipped. Actor unit is an enemy.", this);
-            return;
-        }
-
-        string sanitizedRawText = SanitizeRawText(rawOrderText);
-        if (string.IsNullOrWhiteSpace(sanitizedRawText))
-        {
-            Debug.LogWarning("[BattleOrdersManager] LLM send skipped. Raw order text is empty.", this);
-            return;
-        }
-
-        if (string.IsNullOrWhiteSpace(llmProxyUrl))
-        {
-            Debug.LogWarning("[BattleOrdersManager] LLM send skipped. Proxy URL is empty.", this);
-            return;
-        }
-
-        if (string.IsNullOrWhiteSpace(appSharedToken))
-        {
-            Debug.LogWarning("[BattleOrdersManager] LLM send skipped. App shared token is empty.", this);
-            return;
-        }
-
-        string systemInstruction = BuildSystemInstruction(actorUnit);
-        string userPayloadJson = BuildUserPayloadJson(actorUnit, sanitizedRawText);
-
-        if (string.IsNullOrWhiteSpace(systemInstruction))
-        {
-            Debug.LogWarning("[BattleOrdersManager] LLM send skipped. System instruction is empty.", this);
-            return;
-        }
-
-        if (string.IsNullOrWhiteSpace(userPayloadJson))
-        {
-            Debug.LogWarning("[BattleOrdersManager] LLM send skipped. User payload JSON is empty.", this);
-            return;
-        }
-
-        Debug.Log(
-            $"[BattleOrdersManager] Order entered LLM pipeline. Type={orderType}, Actor={BuildUnitIdentityText(actorUnit)}, Raw=\"{sanitizedRawText}\"",
-            this
-        );
-
-        StartCoroutine(
-            SendOrderToLlmCoroutine(orderType, actorUnit, sanitizedRawText, systemInstruction, userPayloadJson)
-        );
-    }
-
-    private IEnumerator SendOrderToLlmCoroutine(
-        string orderType,
-        BattleRuntimeUnit actorUnit,
-        string sanitizedRawText,
-        string systemInstruction,
-        string userPayloadJson
-    )
-    {
-        int requestId = ++_requestSequence;
-
-        if (verboseLog)
-        {
-            Debug.Log(
-                $"[BattleOrdersManager] Sending structured order to LLM.\n"
-                    + $"RequestId={requestId}\n"
-                    + $"Type={orderType}\n"
-                    + $"Actor={BuildUnitIdentityText(actorUnit)}\n"
-                    + $"ActorUnitId={BuildUnitId(actorUnit)}\n"
-                    + $"Raw=\"{sanitizedRawText}\"\n"
-                    + $"SystemInstruction=\n{systemInstruction}\n"
-                    + $"UserPayloadJson=\n{userPayloadJson}",
-                this
-            );
-        }
-
-        string responseBackendId = null;
-        string responseProvider = null;
-        string responseModel = null;
-        string responseText = null;
-        string errorText = null;
-
-        string backendId = GetSelectedBackendId(selectedLlmBackend);
-
-        yield return BattleOrdersHttpClient.PostCommand(
-            llmProxyUrl,
-            appSharedToken,
-            backendId,
-            systemInstruction,
-            userPayloadJson,
-            requestTimeoutSeconds,
-            onSuccess: (returnedBackendId, provider, model, text) =>
-            {
-                responseBackendId = returnedBackendId;
-                responseProvider = provider;
-                responseModel = model;
-                responseText = text;
-            },
-            onError: error => errorText = error
-        );
-
-        if (!string.IsNullOrEmpty(errorText))
-        {
-            Debug.LogError(
-                $"[BattleOrdersManager] LLM request failed. RequestId={requestId}, Type={orderType}, ActorUnitId={BuildUnitId(actorUnit)}, Error={errorText}",
-                this
-            );
-            yield break;
-        }
-
-        Debug.Log(
-            $"<color=#FFD54F><b>[LLM RESPONSE RAW]</b></color>\n"
-                + $"<color=#FFF59D>RequestId:</color> {requestId}\n"
-                + $"<color=#FFF59D>Type:</color> {orderType}\n"
-                + $"<color=#FFF59D>ActorUnitId:</color> {BuildUnitId(actorUnit)}\n"
-                + $"<color=#FFF59D>Backend:</color> {responseBackendId}\n"
-                + $"<color=#FFF59D>Provider:</color> {responseProvider}\n"
-                + $"<color=#FFF59D>Model:</color> {responseModel}\n"
-                + $"<color=#FFF59D>Text:</color> {responseText}",
-            this
-        );
-
-        if (!TryParseLlmResponse(responseText, out BattleLlmResponseDto parsedResponse, out string parseError))
-        {
-            Debug.LogError(
-                $"<color=#FF8A80><b>[LLM PARSE FAILED]</b></color>\n"
-                    + $"<color=#FFCDD2>RequestId:</color> {requestId}\n"
-                    + $"<color=#FFCDD2>Type:</color> {orderType}\n"
-                    + $"<color=#FFCDD2>ActorUnitId:</color> {BuildUnitId(actorUnit)}\n"
-                    + $"<color=#FFCDD2>Reason:</color> {parseError}\n"
-                    + $"<color=#FFCDD2>RawText:</color> {responseText}",
-                this
-            );
-            yield break;
-        }
-
-        List<string> validationErrors = ValidateLlmResponse(actorUnit, parsedResponse);
-
-        if (validationErrors.Count > 0)
-        {
-            Debug.LogWarning(
-                $"<color=#FFB74D><b>[LLM VALIDATION FAILED]</b></color>\n"
-                    + $"<color=#FFE0B2>RequestId:</color> {requestId}\n"
-                    + $"<color=#FFE0B2>Type:</color> {orderType}\n"
-                    + $"<color=#FFE0B2>ActorUnitId:</color> {BuildUnitId(actorUnit)}\n"
-                    + $"<color=#FFE0B2>Errors:</color>\n{BuildValidationErrorSummary(validationErrors)}\n"
-                    + $"<color=#FFE0B2>ParsedResponse:</color>\n{BuildParsedResponseSummary(parsedResponse)}\n"
-                    + $"<color=#FFE0B2>Fallback:</color> Ignored. No gameplay action is applied.",
-                this
-            );
-            yield break;
-        }
-
-        Debug.Log(
-            $"<color=#81C784><b>[LLM VALIDATED SUCCESS]</b></color>\n"
-                + $"<color=#C8E6C9>RequestId:</color> {requestId}\n"
-                + $"<color=#C8E6C9>Type:</color> {orderType}\n"
-                + $"<color=#C8E6C9>ActorUnitId:</color> {BuildUnitId(actorUnit)}\n"
-                + $"<color=#C8E6C9>ParsedResponse:</color>\n{BuildParsedResponseSummary(parsedResponse)}",
-            this
-        );
-
-        RaiseAllyOrderResponse(actorUnit, parsedResponse.output?.dialog ?? string.Empty);
-
-        // 검증 통과한 SLM 응답을 IR로 변환해 시뮬레이션에 명령을 활성화한다.
-        if (
-            !SlmDtoConverter.TryConvert(
-                parsedResponse,
-                actorUnit,
-                _allyUnits,
-                _enemyUnits,
-                _rosterProjection,
-                out List<SlmUnitCommand> slmCommands,
-                out string conversionError
-            )
-        )
-        {
-            Debug.LogError(
-                $"[BattleOrdersManager] SLM IR conversion failed. RequestId={requestId}, ActorUnitId={BuildUnitId(actorUnit)}, Error={conversionError}",
-                this
-            );
-            yield break;
-        }
-
-        if (slmCommands.Count == 0)
-        {
-            if (verboseLog)
-            {
-                Debug.Log(
-                    $"[BattleOrdersManager] SLM IR converted to empty command list (likely refusal). RequestId={requestId}",
-                    this
-                );
-            }
-            yield break;
-        }
-
-        if (BattleSimulationManager.Instance == null)
-        {
-            Debug.LogError(
-                $"[BattleOrdersManager] SLM execution skipped. BattleSimulationManager.Instance is null. RequestId={requestId}",
-                this
-            );
-            yield break;
-        }
-
-        BattleSimulationManager.Instance.IssueSlmCommands(actorUnit.State, slmCommands);
-    }
-
-    private void RaiseAllyOrderResponse(BattleRuntimeUnit actorUnit, string responseText)
-    {
-        string sanitizedText = SanitizeRawText(responseText);
-        if (actorUnit != null && !string.IsNullOrWhiteSpace(sanitizedText))
-        {
-            OnAllyOrderResponseReceived?.Invoke(actorUnit, sanitizedText);
-        }
-    }
-
-    private bool TryResolveActorFromGlobalOrder(
-        string rawOrderText,
-        out BattleRuntimeUnit resolvedActor,
-        out int matchedCount,
-        out string matchedSummary
-    )
-    {
-        resolvedActor = null;
-        matchedCount = 0;
-
-        List<BattleRuntimeUnit> matchedUnits = new List<BattleRuntimeUnit>(2);
-        string searchText = rawOrderText ?? string.Empty;
-
-        for (int i = 0; i < _allyUnits.Length; i++)
-        {
-            BattleRuntimeUnit unit = _allyUnits[i];
-            if (unit == null)
-            {
-                continue;
-            }
-
-            string displayName = unit.DisplayName;
-            if (string.IsNullOrWhiteSpace(displayName))
-            {
-                continue;
-            }
-
-            if (searchText.IndexOf(displayName, StringComparison.Ordinal) >= 0)
-            {
-                matchedUnits.Add(unit);
-            }
-        }
-
-        matchedCount = matchedUnits.Count;
-
-        if (matchedUnits.Count == 0)
-        {
-            matchedSummary = "No ally name matched exactly.";
-            return false;
-        }
-
-        if (matchedUnits.Count > 1)
-        {
-            StringBuilder sb = new StringBuilder(128);
-            sb.Append("Multiple ally names matched: ");
-
-            for (int i = 0; i < matchedUnits.Count; i++)
-            {
-                if (i > 0)
-                {
-                    sb.Append(", ");
-                }
-
-                BattleRuntimeUnit unit = matchedUnits[i];
-                sb.Append(unit != null ? unit.DisplayName : "Unknown");
-            }
-
-            matchedSummary = sb.ToString();
-            return false;
-        }
-
-        resolvedActor = matchedUnits[0];
-        matchedSummary = $"Matched ally: {resolvedActor.DisplayName}";
-        return true;
-    }
-
-    private bool TryParseLlmResponse(
-        string rawResponseText,
-        out BattleLlmResponseDto parsedResponse,
-        out string parseError
-    )
-    {
-        parsedResponse = null;
-        parseError = null;
-
-        string jsonText = ExtractLikelyJsonObjectText(rawResponseText);
-        if (string.IsNullOrWhiteSpace(jsonText))
-        {
-            parseError = "Could not extract a valid JSON object from raw response text.";
-            return false;
-        }
-
-        string outputJson;
-        if (!TryExtractObjectProperty(jsonText, "output", out outputJson))
-        {
-            outputJson = jsonText;
-        }
-
-        BattleLlmResponseOutputDto outputDto = new BattleLlmResponseOutputDto();
-
-        if (!TryExtractJsonStringProperty(outputJson, "thinking", out outputDto.thinking))
-        {
-            parseError = "Missing or invalid output.thinking string.";
-            return false;
-        }
-
-        if (!TryExtractJsonStringProperty(outputJson, "dialog", out outputDto.dialog))
-        {
-            parseError = "Missing or invalid output.dialog string.";
-            return false;
-        }
-
-        if (!TryExtractArrayProperty(outputJson, "action", out string actionArrayJson))
-        {
-            parseError = "Missing or invalid output.action array.";
-            return false;
-        }
-
-        if (!TrySplitTopLevelObjectArray(actionArrayJson, out List<string> actionObjectJsons, out string splitError))
-        {
-            parseError = $"Failed to parse output.action array. {splitError}";
-            return false;
-        }
-
-        BattleLlmResponseActionDto[] actions = new BattleLlmResponseActionDto[actionObjectJsons.Count];
-
-        for (int i = 0; i < actionObjectJsons.Count; i++)
-        {
-            if (
-                !TryParseSingleAction(
-                    actionObjectJsons[i],
-                    out BattleLlmResponseActionDto parsedAction,
-                    out string actionError
-                )
-            )
-            {
-                parseError = $"Action[{i}] parse failed. {actionError}";
-                return false;
-            }
-
-            actions[i] = parsedAction;
-        }
-
-        outputDto.action = actions;
-
-        parsedResponse = new BattleLlmResponseDto { output = outputDto };
-
-        return true;
-    }
-
-    private bool TryParseSingleAction(
-        string actionJson,
-        out BattleLlmResponseActionDto parsedAction,
-        out string actionError
-    )
-    {
-        parsedAction = new BattleLlmResponseActionDto();
-        actionError = null;
-
-        if (!TryExtractJsonStringProperty(actionJson, "type", out parsedAction.type))
-        {
-            actionError = "Missing action.type string.";
-            return false;
-        }
-
-        TryExtractJsonStringProperty(actionJson, "subtype", out parsedAction.subtype);
-        TryExtractJsonStringProperty(actionJson, "target", out parsedAction.targetUnitId);
-        TryExtractJsonStringProperty(actionJson, "from", out parsedAction.relativeFromUnitId);
-
-        if (TryExtractFloatPairProperty(actionJson, "target", out float targetX, out float targetY))
-        {
-            parsedAction.absoluteTarget = new BattleLlmVector2Dto { x = targetX, y = targetY };
-        }
-
-        if (TryExtractFloatPairProperty(actionJson, "offset", out float offsetX, out float offsetY))
-        {
-            parsedAction.relativeOffset = new BattleLlmVector2Dto { x = offsetX, y = offsetY };
-        }
-
-        return true;
-    }
-
-    private List<string> ValidateLlmResponse(BattleRuntimeUnit actorUnit, BattleLlmResponseDto parsedResponse)
-    {
-        List<string> errors = new List<string>();
-
-        if (actorUnit == null)
-        {
-            errors.Add("Actor unit is null.");
-            return errors;
-        }
-
-        if (_rosterProjection != null && !_rosterProjection.IsPlayerUnit(actorUnit))
-        {
-            errors.Add("Actor unit must be an ally, but actor is enemy.");
-            return errors;
-        }
-
-        string actorUnitId = BuildUnitId(actorUnit);
-
-        HashSet<string> allyIds = new HashSet<string>(StringComparer.Ordinal);
-        HashSet<string> enemyIds = new HashSet<string>(StringComparer.Ordinal);
-        HashSet<string> allIds = new HashSet<string>(StringComparer.Ordinal);
-
-        for (int i = 0; i < _allyUnits.Length; i++)
-        {
-            BattleRuntimeUnit unit = _allyUnits[i];
-            if (unit == null)
-            {
-                continue;
-            }
-
-            string unitId = BuildUnitId(unit);
-            allyIds.Add(unitId);
-            allIds.Add(unitId);
-        }
-
-        for (int i = 0; i < _enemyUnits.Length; i++)
-        {
-            BattleRuntimeUnit unit = _enemyUnits[i];
-            if (unit == null)
-            {
-                continue;
-            }
-
-            string unitId = BuildUnitId(unit);
-            enemyIds.Add(unitId);
-            allIds.Add(unitId);
-        }
-
-        if (!allyIds.Contains(actorUnitId))
-        {
-            errors.Add($"Actor unit id '{actorUnitId}' is not present in ally roster.");
-        }
-
-        if (parsedResponse == null)
-        {
-            errors.Add("Parsed response is null.");
-            return errors;
-        }
-
-        if (parsedResponse.output == null)
-        {
-            errors.Add("Parsed response.output is null.");
-            return errors;
-        }
-
-        BattleLlmResponseActionDto[] actions = parsedResponse.output.action ?? new BattleLlmResponseActionDto[0];
-
-        if (actions.Length > 4)
-        {
-            errors.Add($"Action count exceeds limit. Count={actions.Length}, Limit=4.");
-        }
-
-        for (int i = 0; i < actions.Length; i++)
-        {
-            BattleLlmResponseActionDto action = actions[i];
-            if (action == null)
-            {
-                errors.Add($"Action[{i}] is null.");
-                continue;
-            }
-
-            string type = NormalizeToken(action.type);
-            string subtype = NormalizeToken(action.subtype);
-
-            if (type != "move" && type != "attack")
-            {
-                errors.Add($"Action[{i}] has unsupported type '{action.type}'. Allowed: move, attack.");
-                continue;
-            }
-
-            if (type == "attack")
-            {
-                if (string.IsNullOrWhiteSpace(action.targetUnitId))
-                {
-                    errors.Add($"Action[{i}] attack is missing target unit id.");
-                    continue;
-                }
-
-                if (allyIds.Contains(action.targetUnitId))
-                {
-                    errors.Add(
-                        $"Action[{i}] attack target '{action.targetUnitId}' is an ally. Attack against ally is forbidden."
-                    );
-                    continue;
-                }
-
-                if (!enemyIds.Contains(action.targetUnitId))
-                {
-                    errors.Add($"Action[{i}] attack target '{action.targetUnitId}' does not exist in enemy roster.");
-                    continue;
-                }
-
-                continue;
-            }
-
-            if (type == "move")
-            {
-                if (subtype != "absolute" && subtype != "relative")
-                {
-                    errors.Add($"Action[{i}] move subtype '{action.subtype}' is invalid. Allowed: absolute, relative.");
-                    continue;
-                }
-
-                if (subtype == "absolute")
-                {
-                    if (action.absoluteTarget == null)
-                    {
-                        errors.Add($"Action[{i}] move.absolute is missing target coordinate pair.");
-                    }
-
-                    continue;
-                }
-
-                if (subtype == "relative")
-                {
-                    if (string.IsNullOrWhiteSpace(action.relativeFromUnitId))
-                    {
-                        errors.Add($"Action[{i}] move.relative is missing from unit id.");
-                    }
-                    else if (!allIds.Contains(action.relativeFromUnitId))
-                    {
-                        errors.Add(
-                            $"Action[{i}] move.relative from unit id '{action.relativeFromUnitId}' does not exist."
-                        );
-                    }
-
-                    if (action.relativeOffset == null)
-                    {
-                        errors.Add($"Action[{i}] move.relative is missing offset coordinate pair.");
-                    }
-                }
-            }
-        }
-
-        return errors;
-    }
-
-    private static string BuildParsedResponseSummary(BattleLlmResponseDto parsedResponse)
-    {
-        if (parsedResponse == null || parsedResponse.output == null)
-        {
-            return "Parsed response is null.";
-        }
-
-        StringBuilder sb = new StringBuilder(512);
-
-        sb.Append("<b>Thinking:</b> ");
-        sb.AppendLine(
-            string.IsNullOrWhiteSpace(parsedResponse.output.thinking) ? "(empty)" : parsedResponse.output.thinking
-        );
-
-        sb.Append("<b>Dialog:</b> ");
-        sb.AppendLine(
-            string.IsNullOrWhiteSpace(parsedResponse.output.dialog) ? "(empty)" : parsedResponse.output.dialog
-        );
-
-        BattleLlmResponseActionDto[] actions = parsedResponse.output.action ?? new BattleLlmResponseActionDto[0];
-        sb.Append("<b>ActionCount:</b> ");
-        sb.AppendLine(actions.Length.ToString());
-
-        for (int i = 0; i < actions.Length; i++)
-        {
-            sb.Append("- ");
-            sb.AppendLine(BuildActionSummary(actions[i], i));
-        }
-
-        return sb.ToString();
-    }
-
-    private static string BuildActionSummary(BattleLlmResponseActionDto action, int index)
-    {
-        if (action == null)
-        {
-            return $"Action[{index}] = null";
-        }
-
-        string type = NormalizeToken(action.type);
-        string subtype = NormalizeToken(action.subtype);
-
-        if (type == "attack")
-        {
-            return $"Action[{index}] type=attack, target={action.targetUnitId}";
-        }
-
-        if (type == "move" && subtype == "absolute")
-        {
-            if (action.absoluteTarget == null)
-            {
-                return $"Action[{index}] type=move, subtype=absolute, target=(missing)";
-            }
-
-            return $"Action[{index}] type=move, subtype=absolute, target=[{action.absoluteTarget.x}, {action.absoluteTarget.y}]";
-        }
-
-        if (type == "move" && subtype == "relative")
-        {
-            if (action.relativeOffset == null)
-            {
-                return $"Action[{index}] type=move, subtype=relative, from={action.relativeFromUnitId}, offset=(missing)";
-            }
-
-            return $"Action[{index}] type=move, subtype=relative, from={action.relativeFromUnitId}, offset=[{action.relativeOffset.x}, {action.relativeOffset.y}]";
-        }
-
-        return $"Action[{index}] type={action.type}, subtype={action.subtype}";
-    }
-
-    private static string BuildValidationErrorSummary(List<string> errors)
-    {
-        if (errors == null || errors.Count == 0)
-        {
-            return "(none)";
-        }
-
-        StringBuilder sb = new StringBuilder(256);
-
-        for (int i = 0; i < errors.Count; i++)
-        {
-            sb.Append("- ");
-            sb.AppendLine(errors[i]);
-        }
-
-        return sb.ToString();
-    }
-
-    private static string NormalizeToken(string value)
-    {
-        return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim().ToLowerInvariant();
-    }
-
-    private static string ExtractLikelyJsonObjectText(string rawResponseText)
-    {
-        if (string.IsNullOrWhiteSpace(rawResponseText))
-        {
-            return null;
-        }
-
-        string trimmed = rawResponseText.Trim();
-
-        if (trimmed.StartsWith("```", StringComparison.Ordinal))
-        {
-            int firstLineBreak = trimmed.IndexOf('\n');
-            if (firstLineBreak >= 0)
-            {
-                trimmed = trimmed.Substring(firstLineBreak + 1).Trim();
-            }
-
-            int lastFence = trimmed.LastIndexOf("```", StringComparison.Ordinal);
-            if (lastFence >= 0)
-            {
-                trimmed = trimmed.Substring(0, lastFence).Trim();
-            }
-        }
-
-        int firstBrace = trimmed.IndexOf('{');
-        int lastBrace = trimmed.LastIndexOf('}');
-
-        if (firstBrace < 0 || lastBrace <= firstBrace)
-        {
-            return null;
-        }
-
-        return trimmed.Substring(firstBrace, lastBrace - firstBrace + 1);
-    }
-
-    private static bool TryExtractObjectProperty(string json, string propertyName, out string objectJson)
-    {
-        objectJson = null;
-
-        if (!TryGetPropertyValueSpan(json, propertyName, out int startIndex, out int endIndex))
-        {
-            return false;
-        }
-
-        if (startIndex < 0 || endIndex < startIndex || json[startIndex] != '{')
-        {
-            return false;
-        }
-
-        objectJson = json.Substring(startIndex, endIndex - startIndex + 1);
-        return true;
-    }
-
-    private static bool TryExtractArrayProperty(string json, string propertyName, out string arrayJson)
-    {
-        arrayJson = null;
-
-        if (!TryGetPropertyValueSpan(json, propertyName, out int startIndex, out int endIndex))
-        {
-            return false;
-        }
-
-        if (startIndex < 0 || endIndex < startIndex || json[startIndex] != '[')
-        {
-            return false;
-        }
-
-        arrayJson = json.Substring(startIndex, endIndex - startIndex + 1);
-        return true;
-    }
-
-    private static bool TryExtractJsonStringProperty(string json, string propertyName, out string value)
-    {
-        value = null;
-
-        if (!TryGetPropertyValueSpan(json, propertyName, out int startIndex, out int endIndex))
-        {
-            return false;
-        }
-
-        if (startIndex < 0 || endIndex <= startIndex || json[startIndex] != '"' || json[endIndex] != '"')
-        {
-            return false;
-        }
-
-        string encoded = json.Substring(startIndex + 1, endIndex - startIndex - 1);
-        value = UnescapeJsonString(encoded);
-        return true;
-    }
-
-    private static bool TryExtractFloatPairProperty(string json, string propertyName, out float x, out float y)
-    {
-        x = 0f;
-        y = 0f;
-
-        if (!TryGetPropertyValueSpan(json, propertyName, out int startIndex, out int endIndex))
-        {
-            return false;
-        }
-
-        if (startIndex < 0 || endIndex <= startIndex || json[startIndex] != '[' || json[endIndex] != ']')
-        {
-            return false;
-        }
-
-        string arrayJson = json.Substring(startIndex, endIndex - startIndex + 1);
-        Match match = Regex.Match(
-            arrayJson,
-            @"^\[\s*(-?\d+(?:\.\d+)?(?:[eE][+\-]?\d+)?)\s*,\s*(-?\d+(?:\.\d+)?(?:[eE][+\-]?\d+)?)\s*\]$"
-        );
-
-        if (!match.Success)
-        {
-            return false;
-        }
-
-        if (!float.TryParse(match.Groups[1].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out x))
-        {
-            return false;
-        }
-
-        if (!float.TryParse(match.Groups[2].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out y))
-        {
-            return false;
-        }
-
-        return true;
-    }
-
-    private static bool TrySplitTopLevelObjectArray(string arrayJson, out List<string> objects, out string error)
-    {
-        objects = new List<string>();
-        error = null;
-
-        if (string.IsNullOrWhiteSpace(arrayJson))
-        {
-            error = "Array JSON is empty.";
-            return false;
-        }
-
-        if (arrayJson[0] != '[' || arrayJson[arrayJson.Length - 1] != ']')
-        {
-            error = "Array JSON does not start/end with '[' and ']'.";
-            return false;
-        }
-
-        int index = 1;
-
-        while (index < arrayJson.Length - 1)
-        {
-            index = SkipWhitespace(arrayJson, index);
-
-            if (index >= arrayJson.Length - 1)
-            {
-                break;
-            }
-
-            if (arrayJson[index] == ',')
-            {
-                index++;
-                continue;
-            }
-
-            if (arrayJson[index] != '{')
-            {
-                error = $"Unexpected token '{arrayJson[index]}' inside action array.";
-                return false;
-            }
-
-            int endIndex = FindMatchingBracket(arrayJson, index, '{', '}');
-            if (endIndex < 0)
-            {
-                error = "Failed to find matching '}' in action array.";
-                return false;
-            }
-
-            objects.Add(arrayJson.Substring(index, endIndex - index + 1));
-            index = endIndex + 1;
-        }
-
-        return true;
-    }
-
-    private static bool TryGetPropertyValueSpan(string json, string propertyName, out int startIndex, out int endIndex)
-    {
-        startIndex = -1;
-        endIndex = -1;
-
-        if (string.IsNullOrWhiteSpace(json) || string.IsNullOrWhiteSpace(propertyName))
-        {
-            return false;
-        }
-
-        Match match = Regex.Match(json, "\"" + Regex.Escape(propertyName) + "\"\\s*:");
-        if (!match.Success)
-        {
-            return false;
-        }
-
-        int valueStart = SkipWhitespace(json, match.Index + match.Length);
-        if (valueStart < 0 || valueStart >= json.Length)
-        {
-            return false;
-        }
-
-        char firstChar = json[valueStart];
-
-        if (firstChar == '{')
-        {
-            int objectEnd = FindMatchingBracket(json, valueStart, '{', '}');
-            if (objectEnd < 0)
-            {
-                return false;
-            }
-
-            startIndex = valueStart;
-            endIndex = objectEnd;
-            return true;
-        }
-
-        if (firstChar == '[')
-        {
-            int arrayEnd = FindMatchingBracket(json, valueStart, '[', ']');
-            if (arrayEnd < 0)
-            {
-                return false;
-            }
-
-            startIndex = valueStart;
-            endIndex = arrayEnd;
-            return true;
-        }
-
-        if (firstChar == '"')
-        {
-            int stringEnd = FindStringEnd(json, valueStart);
-            if (stringEnd < 0)
-            {
-                return false;
-            }
-
-            startIndex = valueStart;
-            endIndex = stringEnd;
-            return true;
-        }
-
-        int primitiveEnd = valueStart;
-        while (
-            primitiveEnd < json.Length
-            && json[primitiveEnd] != ','
-            && json[primitiveEnd] != '}'
-            && json[primitiveEnd] != ']'
-        )
-        {
-            primitiveEnd++;
-        }
-
-        primitiveEnd--;
-
-        if (primitiveEnd < valueStart)
-        {
-            return false;
-        }
-
-        startIndex = valueStart;
-        endIndex = primitiveEnd;
-        return true;
-    }
-
-    private static int SkipWhitespace(string text, int index)
-    {
-        while (index < text.Length && char.IsWhiteSpace(text[index]))
-        {
-            index++;
-        }
-
-        return index;
-    }
-
-    private static int FindMatchingBracket(string text, int startIndex, char openChar, char closeChar)
-    {
-        bool inString = false;
-        int depth = 0;
-
-        for (int i = startIndex; i < text.Length; i++)
-        {
-            char c = text[i];
-
-            if (inString)
-            {
-                if (c == '\\')
-                {
-                    i++;
-                    continue;
-                }
-
-                if (c == '"')
-                {
-                    inString = false;
-                }
-
-                continue;
-            }
-
-            if (c == '"')
-            {
-                inString = true;
-                continue;
-            }
-
-            if (c == openChar)
-            {
-                depth++;
-                continue;
-            }
-
-            if (c == closeChar)
-            {
-                depth--;
-
-                if (depth == 0)
-                {
-                    return i;
-                }
-            }
-        }
-
-        return -1;
-    }
-
-    private static int FindStringEnd(string text, int startIndex)
-    {
-        for (int i = startIndex + 1; i < text.Length; i++)
-        {
-            char c = text[i];
-
-            if (c == '\\')
-            {
-                i++;
-                continue;
-            }
-
-            if (c == '"')
-            {
-                return i;
-            }
-        }
-
-        return -1;
-    }
-
-    private static string UnescapeJsonString(string encoded)
-    {
-        if (string.IsNullOrEmpty(encoded))
-        {
-            return string.Empty;
-        }
-
-        string normalized = encoded.Replace("\\/", "/");
-        return Regex.Unescape(normalized);
-    }
-
-    private string BuildSystemInstruction(BattleRuntimeUnit actorUnit)
-    {
-        string actorUnitId = BuildUnitId(actorUnit);
-
-        StringBuilder sb = new StringBuilder(1024);
-        sb.Append(
-            "You are generating one battle-order response for a single allied gladiator in a Unity battle prototype. "
-        );
-        sb.Append("The acting ally unit id is ");
-        sb.Append(actorUnitId);
-        sb.Append(". ");
-        sb.Append("The payload JSON already contains system_prompt, user_input, and an empty output template. ");
-        sb.Append("Use the actor personality from payload.system_prompt.personality. ");
-        sb.Append("Return only one valid JSON object with exactly this top-level shape: ");
-        sb.Append("{\"output\":{\"thinking\":\"string\",\"dialog\":\"string\",\"action\":[]}}. ");
-        sb.Append("Do not add markdown, code fences, or extra commentary. ");
-        sb.Append("The arena is a rectangular box arena. ");
-        sb.Append("Coordinates use x and y fields mapped from Unity world x and z. ");
-        sb.Append("The action array may contain 0 to 4 items. ");
-        sb.Append("Allowed action types are move and attack only. ");
-        sb.Append("Allowed move subtypes are absolute and relative only. ");
-        sb.Append("For attack.target, use an existing enemy unitId from the payload only. ");
-        sb.Append("Never target an ally with attack. ");
-        sb.Append("Think and speak as the acting allied gladiator.");
-
-        return sb.ToString();
-    }
-
-    private string BuildUserPayloadJson(BattleRuntimeUnit actorUnit, string sanitizedRawText)
-    {
-        BattleLlmPromptDto promptDto = new BattleLlmPromptDto
-        {
-            system_prompt = new BattleLlmSystemPromptDto
-            {
-                personality = BuildPersonalityDescription(actorUnit),
-                tools = BuildToolDtos(),
-            },
-            user_input = new BattleLlmUserInputDto
-            {
-                area_situation = new BattleLlmAreaSituationDto
-                {
-                    arena = BuildArenaDto(),
-                    allies = BuildTeamDtos(_allyUnits),
-                    enemies = BuildTeamDtos(_enemyUnits),
-                },
-                command = sanitizedRawText,
-            },
-            output = new BattleLlmOutputTemplateDto
-            {
-                thinking = string.Empty,
-                dialog = string.Empty,
-                action = new BattleLlmOutputActionPlaceholderDto[0],
-            },
-        };
-
-        return JsonUtility.ToJson(promptDto, true);
-    }
-
-    private BattleLlmToolDto[] BuildToolDtos()
-    {
-        return new[]
-        {
-            new BattleLlmToolDto
-            {
-                type = "move",
-                subtype = "absolute",
-                description = "절대 좌표로 이동",
-                parameters = new BattleLlmToolParametersDto
-                {
-                    target = "[num, num] — 이동할 절대 좌표",
-                    from = null,
-                    offset = null,
-                },
-            },
-            new BattleLlmToolDto
-            {
-                type = "move",
-                subtype = "relative",
-                description = "특정 유닛을 기준으로 상대 좌표로 이동",
-                parameters = new BattleLlmToolParametersDto
-                {
-                    target = null,
-                    from = "unit — 기준 유닛 ID",
-                    offset = "[num, num] — 기준 유닛으로부터의 상대 좌표",
-                },
-            },
-            new BattleLlmToolDto
-            {
-                type = "attack",
-                subtype = null,
-                description = "대상 유닛을 공격",
-                parameters = new BattleLlmToolParametersDto
-                {
-                    target = "unit — 공격 대상 유닛 ID",
-                    from = null,
-                    offset = null,
-                },
-            },
-        };
-    }
-
-    private BattleLlmArenaDto BuildArenaDto()
-    {
-        if (_battlefieldCollider == null)
-        {
-            return new BattleLlmArenaDto
-            {
-                shape = "box",
-                center = new BattleLlmVector2Dto { x = 0f, y = 0f },
-                size = new BattleLlmArenaSizeDto { width = 0f, height = 0f },
-            };
-        }
-
-        Bounds bounds = _battlefieldCollider.bounds;
-
-        return new BattleLlmArenaDto
-        {
-            shape = "box",
-            center = new BattleLlmVector2Dto { x = bounds.center.x, y = bounds.center.z },
-            size = new BattleLlmArenaSizeDto { width = bounds.size.x, height = bounds.size.z },
-        };
-    }
-
-    private BattleLlmUnitStateDto[] BuildTeamDtos(BattleRuntimeUnit[] sourceUnits)
-    {
-        List<BattleLlmUnitStateDto> result = new List<BattleLlmUnitStateDto>(sourceUnits.Length);
-
-        for (int i = 0; i < sourceUnits.Length; i++)
-        {
-            BattleRuntimeUnit unit = sourceUnits[i];
-            if (unit == null)
-            {
-                continue;
-            }
-
-            result.Add(
-                new BattleLlmUnitStateDto
-                {
-                    unitId = BuildUnitId(unit),
-                    position = new BattleLlmVector2Dto { x = unit.Position.x, y = unit.Position.z },
-                    stats = new BattleLlmStatsDto
-                    {
-                        hp = unit.CurrentHealth,
-                        atk = unit.Attack,
-                        range = unit.AttackRange,
-                    },
-                }
-            );
-        }
-
-        return result.ToArray();
-    }
-
-    private static string BuildPersonalityDescription(BattleRuntimeUnit actorUnit)
-    {
-        if (actorUnit == null || actorUnit.Snapshot == null || actorUnit.Snapshot.Personality == null)
-        {
-            return string.Empty;
-        }
-
-        string description = actorUnit.Snapshot.Personality.description;
-        return string.IsNullOrWhiteSpace(description) ? string.Empty : description.Trim();
-    }
-    */
-
     private string BuildUnitId(BattleRuntimeUnit unit)
     {
         if (unit == null)
@@ -1584,21 +1142,6 @@ public sealed class BattleOrdersManager : MonoBehaviour
         }
 
         return count;
-    }
-
-    private static string GetSelectedBackendId(BattleLlmBackend backend)
-    {
-        switch (backend)
-        {
-            case BattleLlmBackend.TogetherGemma3nE4B:
-                return "together_gemma_3n";
-
-            case BattleLlmBackend.Gemini25FlashLite:
-                return "gemini_25_flash_lite";
-
-            default:
-                return "together_gemma_3n";
-        }
     }
 
     private static string BuildGlobalAllyLine(int allyNumber, BattleRuntimeUnit unit)
@@ -1638,5 +1181,81 @@ public sealed class BattleOrdersManager : MonoBehaviour
         }
 
         return rawOrderText.Replace("\r", " ").Replace("\n", " ");
+    }
+
+    private static string BuildFailurePromptDebugText(SotLayerPromptBundle promptBundle)
+    {
+        return "[Layer]\n" + promptBundle.LayerName + "\n\n[UserPayloadJson]\n" + promptBundle.UserPayloadJson;
+    }
+
+    [Serializable]
+    private sealed class UnityConfiguredGeminiRequestDto
+    {
+        public string remoteSlmProxyUrl;
+        public string backendId;
+        public string provider;
+        public string layerName;
+        public string model;
+        public string systemInstruction;
+        public string userPayloadJson;
+        public GeminiGenerationSettingsDto generationSettings;
+        public SotProxyDebugTimingRequestDto debugTiming;
+    }
+
+    [Serializable]
+    private sealed class GeminiGenerationSettingsDto
+    {
+        public float temperature;
+        public float topP;
+        public float top_p;
+        public int topK;
+        public int maxOutputTokens;
+        public int num_predict;
+        public int numCtx;
+        public int num_ctx;
+        public string responseMimeType;
+        public GeminiThinkingConfigDto thinkingConfig;
+        public bool stream;
+        public bool think;
+        public int candidateCount;
+    }
+
+    [Serializable]
+    private sealed class GeminiThinkingConfigDto
+    {
+        public int thinkingBudget;
+        public string thinkingLevel;
+    }
+
+    [Serializable]
+    private sealed class SotProxyDebugTimingRequestDto
+    {
+        public bool enabled;
+        public bool streamUpstream;
+    }
+
+    [Serializable]
+    private sealed class SotProxyResponseDto
+    {
+        public string backendId;
+        public string provider;
+        public string model;
+        public string text;
+        public SotProxyTimingDto timing;
+    }
+
+    [Serializable]
+    private sealed class SotProxyTimingDto
+    {
+        public float proxyTotalMs;
+        public float proxyPreUpstreamMs;
+        public float upstreamHeadersMs;
+        public float upstreamTtftMs;
+        public float upstreamTotalMs;
+        public float upstreamAfterTtftMs;
+        public float responseParseMs;
+        public float proxyPostUpstreamMs;
+        public bool usedUpstreamStreaming;
+        public bool retriedWithoutReasoning;
     }
 }

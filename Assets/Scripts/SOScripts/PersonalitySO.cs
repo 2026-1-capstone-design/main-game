@@ -11,6 +11,12 @@ public sealed class PersonalitySO : ScriptableObject
     public int baseLoyalty = 70;
 
     [Header("SOT Dialog")]
+    // dialogPersonalityDescription 가 좀 중요합니다... 같은 반말이라도 좀 공격적인 애들이 있고 chill 한 애들이 있잖아요.
+    // 아예 프롬프트에 이 말투 참고하라고 박아놔서, so에셋들 만드실 때 어느 정도 검수 해주시면 좋을 것 같아요. 적당히만요
+    [TextArea(2, 4)]
+    public string dialogPersonalityDescription =
+        "침착하고 기복이 없는 성격이다. 무리한 돌격보다 확실한 교전을 선호한다.";
+
     [Range(0, 2)]
     public int speechStyle = 0;
 

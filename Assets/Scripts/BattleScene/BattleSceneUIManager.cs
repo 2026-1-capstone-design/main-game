@@ -459,6 +459,76 @@ public sealed class BattleSceneUIManager : MonoBehaviour
         }
     }
 
+    public bool TryBeginVoiceOrderInput()
+    {
+        if (!CanUseBattleUiAction("Voice Orders"))
+        {
+            return false;
+        }
+
+        EnsureOrderInputVisible();
+        SetGlobalOrderTarget();
+        ApplyOrderInputSpeedIfNeeded();
+        RefreshButtonStates();
+        return true;
+    }
+
+    public void CancelVoiceOrderInput()
+    {
+        RestoreOrderInputSpeedIfNeeded();
+        RefreshButtonStates();
+    }
+
+    public void SubmitVoiceOrderInput(string rawInput)
+    {
+        if (!CanUseBattleUiAction("Voice Orders"))
+        {
+            RestoreOrderInputSpeedIfNeeded();
+            RefreshButtonStates();
+            return;
+        }
+
+        EnsureOrderInputVisible();
+        SetGlobalOrderTarget();
+        EnsureBattleOrdersManager();
+
+        if (battleOrdersManager == null)
+        {
+            Debug.LogWarning("[BattleSceneUIManager] Voice order send blocked. BattleOrdersManager not found.", this);
+            RestoreOrderInputSpeedIfNeeded();
+            RefreshButtonStates();
+            return;
+        }
+
+        string sanitizedInput = SanitizeOrderInput(rawInput);
+        if (currentOrderInputField != null)
+        {
+            currentOrderInputField.SetTextWithoutNotify(sanitizedInput);
+            currentOrderInputField.ForceLabelUpdate();
+        }
+
+        if (string.IsNullOrWhiteSpace(sanitizedInput))
+        {
+            ClearCurrentOrderInput();
+            RestoreOrderInputSpeedIfNeeded();
+            RefreshButtonStates();
+            return;
+        }
+
+        if (verboseLog)
+        {
+            Debug.Log(
+                $"[BattleSceneUIManager] Voice order submitted. Mode={_currentOrderTargetMode}, Text=\"{sanitizedInput}\"",
+                this
+            );
+        }
+
+        battleOrdersManager.SubmitGlobalOrder(sanitizedInput);
+        ClearCurrentOrderInput();
+        RestoreOrderInputSpeedIfNeeded();
+        RefreshButtonStates();
+    }
+
     private void SetGlobalOrderTarget()
     {
         _currentOrderTargetMode = OrderTargetMode.Global;
