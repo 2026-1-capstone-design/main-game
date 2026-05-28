@@ -103,3 +103,5 @@ Assets/Demos.meta
 # Whisper local model binaries
 /[Aa]ssets/[Ss]treaming[Aa]ssets/[Ww]hisper/*.bin
 /[Aa]ssets/[Ss]treaming[Aa]ssets/[Ww]hisper/*.bin.meta
+
+AGENTS.override.md
