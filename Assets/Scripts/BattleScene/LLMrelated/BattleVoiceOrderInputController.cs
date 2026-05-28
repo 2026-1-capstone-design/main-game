@@ -7,12 +7,12 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using UnityEngine;
 using UnityEngine.UI;
 using Whisper;
 using Whisper.Utils;
 using Debug = UnityEngine.Debug;
-using System.IO;
 
 [DisallowMultipleComponent]
 public sealed class BattleVoiceOrderInputController : MonoBehaviour
@@ -206,7 +206,10 @@ public sealed class BattleVoiceOrderInputController : MonoBehaviour
 
         if (microphoneRecord == null)
         {
-            Debug.LogError("[BattleVoiceOrderInputController] Recording blocked. MicrophoneRecord is not assigned.", this);
+            Debug.LogError(
+                "[BattleVoiceOrderInputController] Recording blocked. MicrophoneRecord is not assigned.",
+                this
+            );
             yield break;
         }
 
@@ -219,7 +222,10 @@ public sealed class BattleVoiceOrderInputController : MonoBehaviour
 
         if (!HasMicrophonePermission())
         {
-            Debug.LogWarning("[BattleVoiceOrderInputController] Recording blocked. Microphone permission was not granted.", this);
+            Debug.LogWarning(
+                "[BattleVoiceOrderInputController] Recording blocked. Microphone permission was not granted.",
+                this
+            );
             CancelVoiceOrderInputMode();
             yield break;
         }
@@ -254,7 +260,11 @@ public sealed class BattleVoiceOrderInputController : MonoBehaviour
 
         try
         {
-            if (recordedAudio.Data == null || recordedAudio.Data.Length == 0 || recordedAudio.Length < minimumRecordLengthSec)
+            if (
+                recordedAudio.Data == null
+                || recordedAudio.Data.Length == 0
+                || recordedAudio.Length < minimumRecordLengthSec
+            )
             {
                 Debug.LogWarning(
                     $"[BattleVoiceOrderInputController] Transcription skipped. Recorded audio is too short. Length={recordedAudio.Length:F3}s",
@@ -265,7 +275,10 @@ public sealed class BattleVoiceOrderInputController : MonoBehaviour
 
             if (whisperManager == null)
             {
-                Debug.LogError("[BattleVoiceOrderInputController] Transcription failed. WhisperManager is not assigned.", this);
+                Debug.LogError(
+                    "[BattleVoiceOrderInputController] Transcription failed. WhisperManager is not assigned.",
+                    this
+                );
                 return;
             }
 
@@ -288,9 +301,10 @@ public sealed class BattleVoiceOrderInputController : MonoBehaviour
             stopwatch.Stop();
 
             string recognizedText = result != null ? (result.Result ?? string.Empty).Trim() : string.Empty;
-            float realtimeRate = stopwatch.ElapsedMilliseconds > 0
-                ? recordedAudio.Length / (stopwatch.ElapsedMilliseconds * 0.001f)
-                : 0f;
+            float realtimeRate =
+                stopwatch.ElapsedMilliseconds > 0
+                    ? recordedAudio.Length / (stopwatch.ElapsedMilliseconds * 0.001f)
+                    : 0f;
 
             Debug.Log(
                 $"[BattleVoiceOrderInputController] STT completed. Elapsed={stopwatch.ElapsedMilliseconds}ms, Rate={realtimeRate:F2}x, Text=\"{recognizedText}\"",
@@ -357,9 +371,8 @@ public sealed class BattleVoiceOrderInputController : MonoBehaviour
 
     private string BuildInitialPrompt()
     {
-        string namesSegment = battleOrdersManager != null
-            ? battleOrdersManager.BuildCurrentUnitDisplayNamePromptSegment()
-            : string.Empty;
+        string namesSegment =
+            battleOrdersManager != null ? battleOrdersManager.BuildCurrentUnitDisplayNamePromptSegment() : string.Empty;
 
         if (string.IsNullOrWhiteSpace(namesSegment))
         {
@@ -381,7 +394,10 @@ public sealed class BattleVoiceOrderInputController : MonoBehaviour
 
         if (battleSceneUIManager == null)
         {
-            Debug.LogError("[BattleVoiceOrderInputController] Cannot submit voice order. BattleSceneUIManager is not assigned.", this);
+            Debug.LogError(
+                "[BattleVoiceOrderInputController] Cannot submit voice order. BattleSceneUIManager is not assigned.",
+                this
+            );
             return;
         }
 
@@ -485,7 +501,7 @@ public sealed class BattleVoiceOrderInputController : MonoBehaviour
 #endif
     }
 
-        private bool ConfiguredModelFileExists()
+    private bool ConfiguredModelFileExists()
     {
         if (string.IsNullOrWhiteSpace(modelPath))
             return false;

@@ -16,7 +16,6 @@
 6. 명령어 토큰까지 억지로 이름으로 바꾸지 않도록 threshold를 낮게 유지한다.
 */
 
-
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
@@ -41,23 +40,24 @@ public sealed class BattleUnitNameResolver
         "(전장의 소음에 묻혀 들리지 않음)",
     };
 
-    private readonly Dictionary<string, BattleRuntimeUnit> _unitBySotId =
-        new Dictionary<string, BattleRuntimeUnit>(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, BattleRuntimeUnit> _unitBySotId = new Dictionary<string, BattleRuntimeUnit>(
+        StringComparer.OrdinalIgnoreCase
+    );
 
-    private readonly Dictionary<BattleRuntimeUnit, string> _sotIdByUnit =
-        new Dictionary<BattleRuntimeUnit, string>();
+    private readonly Dictionary<BattleRuntimeUnit, string> _sotIdByUnit = new Dictionary<BattleRuntimeUnit, string>();
 
-    private readonly Dictionary<string, string> _displayNameBySotId =
-        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, string> _displayNameBySotId = new Dictionary<string, string>(
+        StringComparer.OrdinalIgnoreCase
+    );
 
-    private readonly Dictionary<string, string> _sotIdByDisplayName =
-        new Dictionary<string, string>(StringComparer.Ordinal);
+    private readonly Dictionary<string, string> _sotIdByDisplayName = new Dictionary<string, string>(
+        StringComparer.Ordinal
+    );
 
     private readonly List<KeyValuePair<string, string>> _nameReplacementPairs =
         new List<KeyValuePair<string, string>>();
 
-    private readonly List<NameReplacementCandidate> _approximateNameCandidates =
-        new List<NameReplacementCandidate>();
+    private readonly List<NameReplacementCandidate> _approximateNameCandidates = new List<NameReplacementCandidate>();
 
     private int _fallbackCursor;
 
@@ -164,12 +164,7 @@ public sealed class BattleUnitNameResolver
             if (string.IsNullOrWhiteSpace(displayName) || string.IsNullOrWhiteSpace(sotId))
                 continue;
 
-            result = Regex.Replace(
-                result,
-                Regex.Escape(displayName),
-                sotId,
-                RegexOptions.CultureInvariant
-            );
+            result = Regex.Replace(result, Regex.Escape(displayName), sotId, RegexOptions.CultureInvariant);
         }
 
         return ReplaceApproximateDisplayNamesWithSotIds(result);

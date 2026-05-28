@@ -11,10 +11,10 @@ using Newtonsoft.Json.Linq;
 public static class SotLayerOutputParser
 {
     public static bool TryParseParserOutput(
-    string rawResponse,
-    SotParserRequestDto parserRequest,
-    out SotParserOutputDto parserOutput,
-    out string error
+        string rawResponse,
+        SotParserRequestDto parserRequest,
+        out SotParserOutputDto parserOutput,
+        out string error
     )
     {
         parserOutput = null;
@@ -289,7 +289,12 @@ public static class SotLayerOutputParser
         return true;
     }
 
-    private static bool TryValidateParserActionShape(JObject action, int actionIndex, int sequenceIndex, out string error)
+    private static bool TryValidateParserActionShape(
+        JObject action,
+        int actionIndex,
+        int sequenceIndex,
+        out string error
+    )
     {
         error = string.Empty;
         JToken typeToken = action["type"];
@@ -358,7 +363,8 @@ public static class SotLayerOutputParser
 
                     if (!IsJsonNumber(action["durationSec"]))
                     {
-                        error = $"skillControl defer action[{actionIndex}].sequence[{sequenceIndex}] durationSec must be number.";
+                        error =
+                            $"skillControl defer action[{actionIndex}].sequence[{sequenceIndex}] durationSec must be number.";
                         return false;
                     }
 
@@ -369,7 +375,8 @@ public static class SotLayerOutputParser
                 {
                     if (!HasExactKeys(action, "type", "mode"))
                     {
-                        error = $"skillControl forbid action[{actionIndex}].sequence[{sequenceIndex}] keys are invalid.";
+                        error =
+                            $"skillControl forbid action[{actionIndex}].sequence[{sequenceIndex}] keys are invalid.";
                         return false;
                     }
 
@@ -385,11 +392,7 @@ public static class SotLayerOutputParser
         }
     }
 
-    private static bool TryValidateDialogJsonShape(
-        JObject root,
-        HashSet<string> expectedActorIds,
-        out string error
-    )
+    private static bool TryValidateDialogJsonShape(JObject root, HashSet<string> expectedActorIds, out string error)
     {
         error = string.Empty;
 
