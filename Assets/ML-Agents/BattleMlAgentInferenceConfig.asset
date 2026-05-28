@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: addc00fdbb60494c8dc179b4992bf194, type: 3}
   m_Name: BattleMlAgentInferenceConfig
   m_EditorClassIdentifier: 
-  model: {fileID: 5022602860645237092, guid: bb8df75d83312f143bdbe4d1234d419f, type: 3}
+  model: {fileID: 5022602860645237092, guid: 0fb20385a4af94144af8ccdc141dc404, type: 3}
   behaviorName: GladiatorBehavior
   contractVersion: 15
   expectedContinuousActions: 2

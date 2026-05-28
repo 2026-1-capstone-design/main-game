@@ -44,19 +44,19 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5d1c4e0b1822b495aa52bc52839ecb30, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
   m_BrainParameters:
-    VectorObservationSize: 134
+    VectorObservationSize: 147
     NumStackedVectorObservations: 1
     m_ActionSpec:
       m_NumContinuousActions: 2
-      BranchSizes: 0200000003000000040000000c000000
-    VectorActionSize: 0200000003000000040000000300000006000000
+      BranchSizes: 030000000400000006000000
+    VectorActionSize: 
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
     hasUpgradedBrainParametersWithActionSpec: 1
-  m_Model: {fileID: 0}
+  m_Model: {fileID: 5022602860645237092, guid: 0fb20385a4af94144af8ccdc141dc404, type: 3}
   m_InferenceDevice: 0
   m_BehaviorType: 0
   m_BehaviorName: GladiatorBehavior
@@ -75,13 +75,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2d4656c56d7142c40bcbce02e16d4d17, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
-  rewardConfig: {fileID: 11400000, guid: 262fb219011f41b090ee980ee74cf86e, type: 2}
+  m_Name: 
+  m_EditorClassIdentifier: 
   agentParameters:
     maxStep: 0
   hasUpgradedFromAgentParameters: 1
   MaxStep: 0
+  rewardConfig: {fileID: 11400000, guid: 262fb219011f41b090ee980ee74cf86e, type: 2}
+  useBuiltInAiHeuristic: 0
 --- !u!114 &11400003
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -92,8 +93,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3a5c9d521e5ef4759a8246a07d52221e, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
   DecisionPeriod: 1
   DecisionStep: 0
   TakeActionsBetweenDecisions: 1

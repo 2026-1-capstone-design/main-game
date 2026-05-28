@@ -24865,7 +24865,7 @@ MonoBehaviour:
   slmCommandTuningSO: {fileID: 0}
   desiredPositionStopDistance: 0.5
   escapeTowardTeamBlend: 0.35
-  trainingOptimizedSimulation: 0
+  trainingOptimizedSimulation: 1
   projectileManager: {fileID: 273018758}
   _battleTextManager: {fileID: 817373528}
 --- !u!1 &2000921745
