@@ -11,7 +11,11 @@ public static class SotParserOutputValidator
 {
     private static readonly Regex UnitIdRegex = new Regex("^[AaEe]_[0-9]{2}$", RegexOptions.Compiled);
 
-    public static bool TryValidate(SotParserOutputDto output, SotParserRequestDto request, out string error)
+    public static bool TryValidate(
+        SotParserOutputDto output,
+        SotParserRequestDto request,
+        out string error
+    )
     {
         error = string.Empty;
 
@@ -103,7 +107,11 @@ public static class SotParserOutputValidator
         return true;
     }
 
-    private static bool TryValidateDialog(SotDialogLineDto[] dialog, HashSet<string> actionActors, out string error)
+    private static bool TryValidateDialog(
+        SotDialogLineDto[] dialog,
+        HashSet<string> actionActors,
+        out string error
+    )
     {
         error = string.Empty;
 
@@ -247,13 +255,7 @@ public static class SotParserOutputValidator
             return false;
         }
 
-        if (
-            !string.Equals(
-                action.description ?? string.Empty,
-                actor.skillDescription ?? string.Empty,
-                StringComparison.Ordinal
-            )
-        )
+        if (!string.Equals(action.description ?? string.Empty, actor.skillDescription ?? string.Empty, StringComparison.Ordinal))
         {
             error = $"skill description for actor '{actorId}' does not match actor skillDescription.";
             return false;
@@ -296,7 +298,11 @@ public static class SotParserOutputValidator
         return true;
     }
 
-    private static bool TryValidateWait(SotFinalActionDto action, int sequenceIndex, out string error)
+    private static bool TryValidateWait(
+        SotFinalActionDto action,
+        int sequenceIndex,
+        out string error
+    )
     {
         error = string.Empty;
 
@@ -353,12 +359,10 @@ public static class SotParserOutputValidator
     {
         error = string.Empty;
 
-        if (
-            action.subtype != "approachOpponent"
+        if (action.subtype != "approachOpponent"
             && action.subtype != "escape"
             && action.subtype != "help"
-            && action.subtype != "holdFront"
-        )
+            && action.subtype != "holdFront")
         {
             error = $"move sequence[{sequenceIndex}] subtype is invalid.";
             return false;

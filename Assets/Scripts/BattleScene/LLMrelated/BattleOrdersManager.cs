@@ -240,10 +240,7 @@ public sealed class BattleOrdersManager : MonoBehaviour
 
         if (_serverSotPipelineRunning)
         {
-            Debug.LogWarning(
-                "[BattleOrdersManager] Server SOT pipeline ignored. Previous request is still running.",
-                this
-            );
+            Debug.LogWarning("[BattleOrdersManager] Server SOT pipeline ignored. Previous request is still running.", this);
             return;
         }
 
@@ -376,10 +373,7 @@ public sealed class BattleOrdersManager : MonoBehaviour
 
         if (simulationManager == null)
         {
-            Debug.LogWarning(
-                "[BattleOrdersManager] Server SOT pipeline skipped. BattleSimulationManager.Instance is null.",
-                this
-            );
+            Debug.LogWarning("[BattleOrdersManager] Server SOT pipeline skipped. BattleSimulationManager.Instance is null.", this);
             _serverSotPipelineRunning = false;
             yield break;
         }
@@ -420,9 +414,7 @@ public sealed class BattleOrdersManager : MonoBehaviour
                 if (shouldLogPreview)
                 {
                     Debug.Log(
-                        "<color=#81C784><b>[SOT "
-                            + routeLabel
-                            + " PARSER RAW RESPONSE]</b></color>\n"
+                        "<color=#81C784><b>[SOT " + routeLabel + " PARSER RAW RESPONSE]</b></color>\n"
                             + $"Backend={responseBackendId}, Provider={responseProvider}, Model={responseModel}\n"
                             + responseText,
                         this
@@ -523,9 +515,7 @@ public sealed class BattleOrdersManager : MonoBehaviour
                 if (shouldLogPreview)
                 {
                     Debug.Log(
-                        "<color=#CE93D8><b>[SOT "
-                            + routeLabel
-                            + " DIALOG RAW RESPONSE]</b></color>\n"
+                        "<color=#CE93D8><b>[SOT " + routeLabel + " DIALOG RAW RESPONSE]</b></color>\n"
                             + $"Backend={responseBackendId}, Provider={responseProvider}, Model={responseModel}\n"
                             + responseText,
                         this
@@ -559,16 +549,12 @@ public sealed class BattleOrdersManager : MonoBehaviour
         if (shouldLogPreview)
         {
             Debug.Log(
-                "<color=#FFB74D><b>[SOT "
-                    + routeLabel
-                    + " POSTPROCESS RESULT]</b></color>\n"
+                "<color=#FFB74D><b>[SOT " + routeLabel + " POSTPROCESS RESULT]</b></color>\n"
                     + FullPromptBuilderForSlmLayers.ToCompactJson(postprocessResult),
                 this
             );
             Debug.Log(
-                "<color=#CE93D8><b>[SOT "
-                    + routeLabel
-                    + " DIALOG RESPONSE]</b></color>\n"
+                "<color=#CE93D8><b>[SOT " + routeLabel + " DIALOG RESPONSE]</b></color>\n"
                     + FullPromptBuilderForSlmLayers.ToCompactJson(dialogResponse),
                 this
             );
@@ -620,7 +606,9 @@ public sealed class BattleOrdersManager : MonoBehaviour
 
         UnityConfiguredGeminiRequestDto requestDto = new UnityConfiguredGeminiRequestDto
         {
-            remoteSlmProxyUrl = routeKind == SotServerRouteKind.RemoteSlm ? remoteSlmUpstreamUrl.Trim() : string.Empty,
+            remoteSlmProxyUrl = routeKind == SotServerRouteKind.RemoteSlm
+                ? remoteSlmUpstreamUrl.Trim()
+                : string.Empty,
             backendId = backendId,
             provider = provider,
             layerName = layerName,
@@ -809,17 +797,23 @@ public sealed class BattleOrdersManager : MonoBehaviour
 
     private int GetSotRequestTimeoutSeconds(SotServerRouteKind routeKind)
     {
-        return routeKind == SotServerRouteKind.RemoteSlm ? remoteSlmRequestTimeoutSeconds : geminiRequestTimeoutSeconds;
+        return routeKind == SotServerRouteKind.RemoteSlm
+            ? remoteSlmRequestTimeoutSeconds
+            : geminiRequestTimeoutSeconds;
     }
 
     private int GetParserMaxOutputTokens(SotServerRouteKind routeKind)
     {
-        return routeKind == SotServerRouteKind.RemoteSlm ? remoteSlmParserMaxOutputTokens : geminiParserMaxOutputTokens;
+        return routeKind == SotServerRouteKind.RemoteSlm
+            ? remoteSlmParserMaxOutputTokens
+            : geminiParserMaxOutputTokens;
     }
 
     private int GetDialogMaxOutputTokens(SotServerRouteKind routeKind)
     {
-        return routeKind == SotServerRouteKind.RemoteSlm ? remoteSlmDialogMaxOutputTokens : geminiDialogMaxOutputTokens;
+        return routeKind == SotServerRouteKind.RemoteSlm
+            ? remoteSlmDialogMaxOutputTokens
+            : geminiDialogMaxOutputTokens;
     }
 
     private int GetParserNumCtx(SotServerRouteKind routeKind)
@@ -849,7 +843,12 @@ public sealed class BattleOrdersManager : MonoBehaviour
         return routeKind == SotServerRouteKind.RemoteSlm ? "REMOTE SLM" : "GEMINI LLM";
     }
 
-    private void LogSotServerFailure(string title, SotLayerPromptBundle promptBundle, string error, string rawResponse)
+    private void LogSotServerFailure(
+        string title,
+        SotLayerPromptBundle promptBundle,
+        string error,
+        string rawResponse
+    )
     {
         if (!verboseLog)
         {
@@ -1140,7 +1139,10 @@ public sealed class BattleOrdersManager : MonoBehaviour
 
     private static string BuildFailurePromptDebugText(SotLayerPromptBundle promptBundle)
     {
-        return "[Layer]\n" + promptBundle.LayerName + "\n\n[UserPayloadJson]\n" + promptBundle.UserPayloadJson;
+        return "[Layer]\n"
+            + promptBundle.LayerName
+            + "\n\n[UserPayloadJson]\n"
+            + promptBundle.UserPayloadJson;
     }
 
     [Serializable]

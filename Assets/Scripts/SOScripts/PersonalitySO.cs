@@ -16,7 +16,6 @@ public sealed class PersonalitySO : ScriptableObject
     [TextArea(2, 4)]
     public string dialogPersonalityDescription =
         "침착하고 기복이 없는 성격이다. 무리한 돌격보다 확실한 교전을 선호한다.";
-
     [Range(0, 2)]
     public int speechStyle = 0;
 
