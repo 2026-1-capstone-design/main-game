@@ -113,6 +113,24 @@ public sealed class BattleUnitNameResolver
         return unit != null && _sotIdByUnit.TryGetValue(unit, out sotId);
     }
 
+    public void AppendDisplayNames(List<string> displayNames)
+    {
+        if (displayNames == null)
+            return;
+
+        for (int i = 0; i < _nameReplacementPairs.Count; i++)
+        {
+            string displayName = _nameReplacementPairs[i].Key;
+            if (string.IsNullOrWhiteSpace(displayName))
+                continue;
+
+            if (!displayNames.Contains(displayName))
+            {
+                displayNames.Add(displayName);
+            }
+        }
+    }
+
     public bool TryGetDisplayName(string sotId, out string displayName)
     {
         displayName = null;

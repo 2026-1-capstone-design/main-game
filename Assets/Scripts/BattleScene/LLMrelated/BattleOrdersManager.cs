@@ -253,6 +253,29 @@ public sealed class BattleOrdersManager : MonoBehaviour
         //deprecated
     }
 
+    public string BuildCurrentUnitDisplayNamePromptSegment()
+    {
+        List<string> displayNames = new List<string>(BattleTeamConstants.MaxUnitsPerTeam * 2);
+        _unitNameResolver.AppendDisplayNames(displayNames);
+
+        if (displayNames.Count == 0)
+            return string.Empty;
+
+        StringBuilder sb = new StringBuilder(128);
+
+        for (int i = 0; i < displayNames.Count; i++)
+        {
+            if (i > 0)
+            {
+                sb.Append(", ");
+            }
+
+            sb.Append(displayNames[i]);
+        }
+
+        return sb.ToString();
+    }
+
     private void RunSotLayerPipeline(string sanitizedRawText)
     {
         bool shouldLogPreview = logSotLayerInputPreview;
@@ -838,8 +861,8 @@ public sealed class BattleOrdersManager : MonoBehaviour
                 + " - IGNORED]</b></color>\n"
                 + "<color=#BDBDBD>Reason:</color> "
                 + (error ?? string.Empty)
-                + "\n\n<color=#BDBDBD>FullPrompt:</color>\n"
-                + promptBundle.ToDebugText()
+                + "\n\n<color=#BDBDBD>PromptWithoutSystem:</color>\n"
+                + BuildFailurePromptDebugText(promptBundle)
                 + "\n\n<color=#BDBDBD>RawResponse:</color>\n"
                 + (rawResponse ?? string.Empty),
             this
@@ -1112,6 +1135,14 @@ public sealed class BattleOrdersManager : MonoBehaviour
         }
 
         return rawOrderText.Replace("\r", " ").Replace("\n", " ");
+    }
+
+    private static string BuildFailurePromptDebugText(SotLayerPromptBundle promptBundle)
+    {
+        return "[Layer]\n"
+            + promptBundle.LayerName
+            + "\n\n[UserPayloadJson]\n"
+            + promptBundle.UserPayloadJson;
     }
 
     [Serializable]

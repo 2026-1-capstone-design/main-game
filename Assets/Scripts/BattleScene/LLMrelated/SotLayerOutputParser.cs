@@ -11,20 +11,60 @@ using Newtonsoft.Json.Linq;
 public static class SotLayerOutputParser
 {
     public static bool TryParseParserOutput(
-        string rawResponse,
-        SotParserRequestDto parserRequest,
-        out SotParserOutputDto parserOutput,
-        out string error
+    string rawResponse,
+    SotParserRequestDto parserRequest,
+    out SotParserOutputDto parserOutput,
+    out string error
     )
     {
         parserOutput = null;
         error = string.Empty;
 
         if (!TryParseJsonObject(rawResponse, out JObject root, out error))
+        {
+            string originalError = error;
+
+            if (
+                SotParserOutputRepairer.TryRepairParserOutput(
+                    rawResponse,
+                    parserRequest,
+                    out parserOutput,
+                    out string repairedJson,
+                    out string repairLog,
+                    out string repairError
+                )
+            )
+            {
+                error = string.Empty;
+                return true;
+            }
+
+            error = originalError + " Repair failed: " + repairError;
             return false;
+        }
 
         if (!TryValidateParserJsonShape(root, out error))
+        {
+            string originalError = error;
+
+            if (
+                SotParserOutputRepairer.TryRepairParserOutput(
+                    rawResponse,
+                    parserRequest,
+                    out parserOutput,
+                    out string repairedJson,
+                    out string repairLog,
+                    out string repairError
+                )
+            )
+            {
+                error = string.Empty;
+                return true;
+            }
+
+            error = originalError + " Repair failed: " + repairError;
             return false;
+        }
 
         try
         {
@@ -32,12 +72,49 @@ public static class SotLayerOutputParser
         }
         catch (Exception exception)
         {
-            error = "Failed to deserialize parser output: " + exception.Message;
+            string originalError = "Failed to deserialize parser output: " + exception.Message;
+
+            if (
+                SotParserOutputRepairer.TryRepairParserOutput(
+                    rawResponse,
+                    parserRequest,
+                    out parserOutput,
+                    out string repairedJson,
+                    out string repairLog,
+                    out string repairError
+                )
+            )
+            {
+                error = string.Empty;
+                return true;
+            }
+
+            error = originalError + " Repair failed: " + repairError;
             return false;
         }
 
         if (!SotParserOutputValidator.TryValidate(parserOutput, parserRequest, out error))
+        {
+            string originalError = error;
+
+            if (
+                SotParserOutputRepairer.TryRepairParserOutput(
+                    rawResponse,
+                    parserRequest,
+                    out parserOutput,
+                    out string repairedJson,
+                    out string repairLog,
+                    out string repairError
+                )
+            )
+            {
+                error = string.Empty;
+                return true;
+            }
+
+            error = originalError + " Repair failed: " + repairError;
             return false;
+        }
 
         return true;
     }
