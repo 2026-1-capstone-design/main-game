@@ -128,7 +128,12 @@ public static class SotParserOutputRepairer
 
             JObject choiceMessage = choice["message"] as JObject;
             if (choiceMessage != null)
-                TryAddStringToken(choiceMessage["content"], candidates, "envelope.choices.message.content", repairSteps);
+                TryAddStringToken(
+                    choiceMessage["content"],
+                    candidates,
+                    "envelope.choices.message.content",
+                    repairSteps
+                );
 
             JObject delta = choice["delta"] as JObject;
             if (delta != null)
@@ -237,11 +242,7 @@ public static class SotParserOutputRepairer
         }
     }
 
-    private static bool TryExtractOrCompleteJsonObject(
-        string text,
-        out string jsonText,
-        List<string> repairSteps
-    )
+    private static bool TryExtractOrCompleteJsonObject(string text, out string jsonText, List<string> repairSteps)
     {
         jsonText = string.Empty;
 
@@ -356,11 +357,7 @@ public static class SotParserOutputRepairer
         return (actual == '}' || actual == ']') && (expected == '}' || expected == ']');
     }
 
-    private static JObject BuildParserRoot(
-        JObject source,
-        ParserRepairContext context,
-        List<string> repairSteps
-    )
+    private static JObject BuildParserRoot(JObject source, ParserRepairContext context, List<string> repairSteps)
     {
         JObject root = UnwrapParserRoot(source, repairSteps);
 
@@ -416,11 +413,7 @@ public static class SotParserOutputRepairer
             || source["commands"] != null;
     }
 
-    private static JArray RepairActionArray(
-        JToken token,
-        ParserRepairContext context,
-        List<string> repairSteps
-    )
+    private static JArray RepairActionArray(JToken token, ParserRepairContext context, List<string> repairSteps)
     {
         JArray sourceArray = ToArray(token);
         Dictionary<string, JArray> sequenceByActor = new Dictionary<string, JArray>(StringComparer.Ordinal);
@@ -432,9 +425,7 @@ public static class SotParserOutputRepairer
             if (actorObject == null)
                 continue;
 
-            string actorId = context.NormalizeUnitId(
-                ReadString(actorObject, "unitId", "actorUnitId", "actor", "unit")
-            );
+            string actorId = context.NormalizeUnitId(ReadString(actorObject, "unitId", "actorUnitId", "actor", "unit"));
 
             if (!context.IsAllowedActor(actorId))
             {
@@ -445,7 +436,9 @@ public static class SotParserOutputRepairer
                     continue;
                 }
 
-                repairSteps.Add("replaced invalid actor '" + (actorId ?? string.Empty) + "' with '" + fallbackActor + "'.");
+                repairSteps.Add(
+                    "replaced invalid actor '" + (actorId ?? string.Empty) + "' with '" + fallbackActor + "'."
+                );
                 actorId = fallbackActor;
             }
 
@@ -480,13 +473,7 @@ public static class SotParserOutputRepairer
             if (sequence.Count == 0)
                 continue;
 
-            result.Add(
-                new JObject
-                {
-                    ["unitId"] = actorId,
-                    ["sequence"] = sequence,
-                }
-            );
+            result.Add(new JObject { ["unitId"] = actorId, ["sequence"] = sequence });
         }
 
         return result;
@@ -540,9 +527,7 @@ public static class SotParserOutputRepairer
         List<string> repairSteps
     )
     {
-        string targetId = context.NormalizeUnitId(
-            ReadString(source, "target", "to", "enemy", "targetUnitId")
-        );
+        string targetId = context.NormalizeUnitId(ReadString(source, "target", "to", "enemy", "targetUnitId"));
 
         if (!context.IsAllowedAttackTarget(targetId))
         {
@@ -553,15 +538,13 @@ public static class SotParserOutputRepairer
                 return null;
             }
 
-            repairSteps.Add("replaced invalid attack target '" + (targetId ?? string.Empty) + "' with '" + replacement + "'.");
+            repairSteps.Add(
+                "replaced invalid attack target '" + (targetId ?? string.Empty) + "' with '" + replacement + "'."
+            );
             targetId = replacement;
         }
 
-        return new JObject
-        {
-            ["type"] = "attack",
-            ["target"] = targetId,
-        };
+        return new JObject { ["type"] = "attack", ["target"] = targetId };
     }
 
     private static JObject RepairMoveAction(
@@ -584,9 +567,7 @@ public static class SotParserOutputRepairer
             ReadString(source, "movementType", "movement", "moveStyle", "style")
         );
 
-        string targetId = context.NormalizeUnitId(
-            ReadString(source, "to", "target", "targetUnitId", "anchor")
-        );
+        string targetId = context.NormalizeUnitId(ReadString(source, "to", "target", "targetUnitId", "anchor"));
 
         string repairedTarget = context.FindMoveTarget(actorId, subtype, targetId);
         if (string.IsNullOrWhiteSpace(repairedTarget))
@@ -630,9 +611,7 @@ public static class SotParserOutputRepairer
             return null;
         }
 
-        string targetId = context.NormalizeUnitId(
-            ReadString(source, "target", "to", "targetUnitId")
-        );
+        string targetId = context.NormalizeUnitId(ReadString(source, "target", "to", "targetUnitId"));
 
         string repairedTarget = context.FindSkillTarget(actorId, actor, targetId);
         if (string.IsNullOrWhiteSpace(repairedTarget))
@@ -654,11 +633,7 @@ public static class SotParserOutputRepairer
         float duration = ReadFloat(source, context.DefaultWaitDuration, "durationSec", "duration", "seconds", "sec");
         duration = Clamp(duration, context.WaitMin, context.WaitMax);
 
-        return new JObject
-        {
-            ["type"] = "wait",
-            ["durationSec"] = duration,
-        };
+        return new JObject { ["type"] = "wait", ["durationSec"] = duration };
     }
 
     private static JObject RepairSkillControlAction(string actorId, JObject source, ParserRepairContext context)
@@ -670,11 +645,7 @@ public static class SotParserOutputRepairer
         if (string.IsNullOrWhiteSpace(mode))
             mode = "defer";
 
-        JObject result = new JObject
-        {
-            ["type"] = "skillControl",
-            ["mode"] = mode,
-        };
+        JObject result = new JObject { ["type"] = "skillControl", ["mode"] = mode };
 
         if (mode == "defer")
         {
@@ -737,13 +708,7 @@ public static class SotParserOutputRepairer
                 repairSteps.Add("generated missing dialog for actor '" + unitId + "'.");
             }
 
-            result.Add(
-                new JObject
-                {
-                    ["unitId"] = unitId,
-                    ["text"] = text,
-                }
-            );
+            result.Add(new JObject { ["unitId"] = unitId, ["text"] = text });
         }
 
         return result;
@@ -1278,7 +1243,10 @@ public static class SotParserOutputRepairer
                     return actorId;
 
                 case "help":
-                    if (!string.Equals(normalizedCurrent, actorId, StringComparison.Ordinal) && IsLivingAlly(normalizedCurrent))
+                    if (
+                        !string.Equals(normalizedCurrent, actorId, StringComparison.Ordinal)
+                        && IsLivingAlly(normalizedCurrent)
+                    )
                         return normalizedCurrent;
 
                     if (TryGetAlly(actorId, out SotAllyUnitDto helpActor))
@@ -1288,7 +1256,10 @@ public static class SotParserOutputRepairer
                             return closestAlly;
 
                         string farthestAlly = NormalizeUnitId(helpActor.farthestAliveAlly);
-                        if (!string.Equals(farthestAlly, actorId, StringComparison.Ordinal) && IsLivingAlly(farthestAlly))
+                        if (
+                            !string.Equals(farthestAlly, actorId, StringComparison.Ordinal)
+                            && IsLivingAlly(farthestAlly)
+                        )
                             return farthestAlly;
                     }
 

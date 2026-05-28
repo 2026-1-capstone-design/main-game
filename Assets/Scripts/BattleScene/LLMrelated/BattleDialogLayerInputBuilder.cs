@@ -212,9 +212,7 @@ public sealed class BattleDialogLayerInputBuilder
         if (!string.IsNullOrWhiteSpace(personality.dialogPersonalityDescription))
             return personality.dialogPersonalityDescription.Trim();
 
-        return string.IsNullOrWhiteSpace(personality.description)
-            ? string.Empty
-            : personality.description.Trim();
+        return string.IsNullOrWhiteSpace(personality.description) ? string.Empty : personality.description.Trim();
     }
 
     private static int ResolveSpeechStyle(BattleRuntimeUnit unit)

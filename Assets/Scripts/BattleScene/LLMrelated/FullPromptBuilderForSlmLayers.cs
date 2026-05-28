@@ -66,14 +66,7 @@ public static class FullPromptBuilderForSlmLayers
     private static readonly object OutputSchemaExample = new
     {
         thinking = "현재 전장 상태와 명령 의미를 근거로 실행 가능한 행동만 선택한다.",
-        dialog = new[]
-        {
-            new
-            {
-                unitId = "A_01",
-                text = "내가 맡아서 처리한다.",
-            },
-        },
+        dialog = new[] { new { unitId = "A_01", text = "내가 맡아서 처리한다." } },
         action = new[]
         {
             new
@@ -88,11 +81,7 @@ public static class FullPromptBuilderForSlmLayers
                         movementType = "direct",
                         to = "E_01",
                     },
-                    new
-                    {
-                        type = "attack",
-                        target = "E_01",
-                    },
+                    new { type = "attack", target = "E_01" },
                 },
             },
         },
@@ -111,11 +100,7 @@ public static class FullPromptBuilderForSlmLayers
             hard_constraints = HardConstraints,
         };
 
-        return new SotLayerPromptBundle(
-            "parser",
-            ParserSystemPrompt,
-            ToCompactJson(userPayload)
-        );
+        return new SotLayerPromptBundle("parser", ParserSystemPrompt, ToCompactJson(userPayload));
     }
 
     public static SotLayerPromptBundle BuildDialogPrompt(SotDialogLayerRequestDto dialogRequest)
@@ -134,11 +119,7 @@ public static class FullPromptBuilderForSlmLayers
             output = "JSON object 하나를 출력한다. top-level key는 lines 하나만 사용한다.",
         };
 
-        return new SotLayerPromptBundle(
-            "dialog",
-            DialogSystemPrompt,
-            ToCompactJson(userPayload)
-        );
+        return new SotLayerPromptBundle("dialog", DialogSystemPrompt, ToCompactJson(userPayload));
     }
 
     public static string ToCompactJson(object value)
@@ -147,7 +128,7 @@ public static class FullPromptBuilderForSlmLayers
     }
 
     public const string ParserSystemPrompt =
-@"너는 실시간 전투 명령을 JSON object 하나로 변환하는 엔진이다.
+        @"너는 실시간 전투 명령을 JSON object 하나로 변환하는 엔진이다.
 
 사용자의 명령은 한국어일 수 있다. 한국어 명령을 직접 해석한다. 명령을 별도의 출력으로 번역하지 않는다. JSON 밖에 설명을 추가하지 않는다. 출력은 반드시 JSON object 하나만 한다. 첫 글자는 { 이어야 하고, 마지막 글자는 } 이어야 한다. 마크다운, 코드블록, 주석, 사과문, 설명문, JSON 밖의 자연어 텍스트를 절대 출력하지 않는다.
 
@@ -325,7 +306,7 @@ Conditional command:
 - 미래 action, 예약 action, scheduled action, trigger 기반 action을 만들지 않는다.";
 
     public const string DialogSystemPrompt =
-@"너는 전투 중 유닛들의 최종 대사만 생성하는 대사 레이어다.
+        @"너는 전투 중 유닛들의 최종 대사만 생성하는 대사 레이어다.
 
 가장 중요한 목표는 실제 한국어 화자가 이해할 수 있는 자연스러운 문장을 쓰는 것이다.
 과장된 표현은 허용하지만, 실제 한국어에서 잘 쓰이지 않는 조어·어색한 합성어·뜻이 불분명한 표현은 만들지 않는다.
