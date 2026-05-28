@@ -1427,8 +1427,7 @@ public sealed class MarketUIManager : MonoBehaviour
             return string.Empty;
         }
 
-        string lore = string.IsNullOrWhiteSpace(artifact.Artifact.artifactLore) ? "-" : artifact.Artifact.artifactLore;
-        return $"퍼크: {artifact.Artifact.ArtifactPerkId}\n" + lore;
+        return BuildArtifactText(artifact.Artifact);
     }
 
     private static string BuildArtifactText(ArtifactSO artifact)
@@ -1439,7 +1438,7 @@ public sealed class MarketUIManager : MonoBehaviour
         }
 
         string lore = string.IsNullOrWhiteSpace(artifact.artifactLore) ? "-" : artifact.artifactLore;
-        return $"퍼크: {artifact.ArtifactPerkId}\n" + lore;
+        return lore;
     }
 
     private static string GetWeaponKindText(OwnedWeaponData weapon)

@@ -1,4 +1,4 @@
-%YAML 1.1
+﻿%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
 --- !u!114 &11400000
 MonoBehaviour:
@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0efcbe04e3ad52a428a9f4cc079e1b31, type: 3}
   m_Name: UnhloyBlessing
   m_EditorClassIdentifier: Assembly-CSharp::WeaponSkillSO
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 4594fc64da829d142811f09da2ef056f, type: 3}
   skillName: "\uBD80\uC815\uD55C \uCD95\uBCF5"
   description: "\uC804\uD22C \uBD88\uB2A5\uC774 \uB41C \uC544\uAD70\uB9CC \uB300\uC0C1
     \uC9C0\uC815 \uAC00\uB2A5.\n\uBAA8\uB4E0 \uB2A5\uB825\uCE58\uC758 30%\uB9CC \uAC00\uC9C4
