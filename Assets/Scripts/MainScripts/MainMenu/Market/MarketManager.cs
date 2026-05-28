@@ -74,6 +74,19 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
         }
     }
 
+    public void ResetForNewSession()
+    {
+        _gladiatorOffers.Clear();
+        _weaponOffers.Clear();
+        _artifactOffers.Clear();
+        _initializedDay = -1;
+
+        if (verboseLog)
+        {
+            Debug.Log("[MarketManager] Reset for new session.", this);
+        }
+    }
+
     // 시장이 참조할 factory와 실제 보유/골드 매니저를 연결
     // 마켓 매니저가 DDOL 매니저라서 메인씬 재진입 시 scene 의존성을 다시 꽂아주는 역할도 함
     public void Initialize(
@@ -504,6 +517,9 @@ public sealed class MarketManager : SingletonBehaviour<MarketManager>
             return false;
         }
 
+        // 판매된 검투사가 스쿼드 슬롯에 남으면 전투 payload에 제거된 보유 데이터가 섞이므로,
+        // 보유 목록 제거가 확정된 직후 모든 편성 슬롯에서도 함께 제거한다.
+        SquadManager.Instance?.RemoveGladiatorFromSquad(gladiator);
         _resourceManager.AddGold(sellPrice);
 
         if (verboseLog)

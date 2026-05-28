@@ -224,6 +224,8 @@ public sealed class BattleSceneTester : MonoBehaviour
             personality: null,
             equippedArtifact: entry.equippedArtifact,
             weaponType: resolvedType,
+            weaponName: entry.weaponData != null ? entry.weaponData.weaponName : string.Empty,
+            weaponIconSprite: entry.weaponData != null ? entry.weaponData.icon : null,
             leftWeaponPrefab: leftPrefab,
             rightWeaponPrefab: rightPrefab,
             weaponSkillId: entry.weaponSkillId,

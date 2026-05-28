@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: df9d8b62f4a040845a470ef2178797ef, type: 3}
   m_Name: Rifle
   m_EditorClassIdentifier: 
-  icon: {fileID: 21300000, guid: 00dd97793ab545940b2c38c8fd55a322, type: 3}
+  icon: {fileID: 21300000, guid: 07409a1261764fd4c910496f0d1181a8, type: 3}
   weaponName: Rifle
   weaponType: 9
   lore: "\uB77C\uC774\uD50C\uC774\uB2E4."

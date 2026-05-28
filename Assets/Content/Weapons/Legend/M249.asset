@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: df9d8b62f4a040845a470ef2178797ef, type: 3}
   m_Name: M249
   m_EditorClassIdentifier: 
-  icon: {fileID: 21300000, guid: 7ab74e659e1f0a34d9cfec21c478fc12, type: 3}
+  icon: {fileID: 21300000, guid: 93b8ca5d8f951b6469431da37e583062, type: 3}
   weaponName: M249
   weaponType: 9
   lore: 

@@ -34,6 +34,9 @@ public sealed class OwnedItemGridCell : MonoBehaviour
     [SerializeField]
     private TMP_Text equippedMarkText;
 
+    [SerializeField]
+    private TMP_Text priceText;
+
     private OwnedItemViewData _data;
     private Action<OwnedItemViewData> _clickCallback;
 
@@ -66,22 +69,10 @@ public sealed class OwnedItemGridCell : MonoBehaviour
 
         if (weaponPreviewView != null)
         {
-            if (data.IsWeaponPreview && !data.IsPlaceholder)
-            {
-                weaponPreviewView.Show(data.LeftWeaponPrefab, data.RightWeaponPrefab);
-            }
-            else
-            {
-                weaponPreviewView.Clear();
-            }
+            weaponPreviewView.Clear();
         }
 
-        bool useModelPreview =
-            !data.IsPlaceholder
-            && (
-                (modelPreviewView != null && data.ModelPrefab != null)
-                || (weaponPreviewView != null && data.IsWeaponPreview && HasWeaponPreviewPrefab(data))
-            );
+        bool useModelPreview = !data.IsPlaceholder && modelPreviewView != null && data.ModelPrefab != null;
 
         if (iconImage != null)
         {
@@ -96,8 +87,9 @@ public sealed class OwnedItemGridCell : MonoBehaviour
             rawIconImage.enabled = !useModelPreview && data.RawIcon != null;
         }
 
-        bool showGladiatorInfo = ShouldShowGladiatorInfo(data);
-        SetLevelInfoVisible(showGladiatorInfo);
+        bool showLevelInfo = ShouldShowLevelInfo(data);
+        SetLevelInfoVisible(showLevelInfo);
+        SetPriceTextVisible(ShouldShowPriceText(data));
 
         if (equippedMarkText != null)
         {
@@ -154,6 +146,8 @@ public sealed class OwnedItemGridCell : MonoBehaviour
             equippedMarkText.text = string.Empty;
         }
 
+        SetPriceTextVisible(false);
+
         if (rootButton != null)
         {
             rootButton.onClick.RemoveAllListeners();
@@ -176,19 +170,21 @@ public sealed class OwnedItemGridCell : MonoBehaviour
         {
             weaponPreviewView = GetComponentInChildren<WeaponModelPreviewView>(true);
         }
+
+        if (priceText == null)
+        {
+            priceText = FindChildComponent<TMP_Text>(transform, "PriceText");
+        }
     }
 
-    private static bool ShouldShowGladiatorInfo(OwnedItemViewData data)
+    private static bool ShouldShowLevelInfo(OwnedItemViewData data)
     {
-        return !data.IsPlaceholder
-            && !data.IsWeaponPreview
-            && data.ModelPrefab != null
-            && !string.IsNullOrEmpty(data.LevelText);
+        return !data.IsPlaceholder && !string.IsNullOrEmpty(data.LevelText);
     }
 
-    private static bool HasWeaponPreviewPrefab(OwnedItemViewData data)
+    private static bool ShouldShowPriceText(OwnedItemViewData data)
     {
-        return data.LeftWeaponPrefab != null || data.RightWeaponPrefab != null;
+        return !data.IsPlaceholder && !string.IsNullOrEmpty(data.PriceText);
     }
 
     private void SetLevelInfoVisible(bool visible)
@@ -205,6 +201,17 @@ public sealed class OwnedItemGridCell : MonoBehaviour
             levelText.gameObject.SetActive(visible);
             levelText.text = visible ? _data.LevelText : string.Empty;
         }
+    }
+
+    private void SetPriceTextVisible(bool visible)
+    {
+        if (priceText == null)
+        {
+            return;
+        }
+
+        priceText.gameObject.SetActive(visible);
+        priceText.text = visible ? _data.PriceText : string.Empty;
     }
 
     private void NormalizeLevelInfoLayout()
@@ -229,5 +236,30 @@ public sealed class OwnedItemGridCell : MonoBehaviour
         rectTransform.offsetMax = new Vector2(-horizontalPadding, LevelInfoHeight);
         rectTransform.localScale = Vector3.one;
         rectTransform.localRotation = Quaternion.identity;
+    }
+
+    private static T FindChildComponent<T>(Transform parent, string childName)
+        where T : Component
+    {
+        if (parent == null || string.IsNullOrEmpty(childName))
+        {
+            return null;
+        }
+
+        foreach (Transform child in parent)
+        {
+            if (child.name == childName)
+            {
+                return child.GetComponent<T>();
+            }
+
+            T nested = FindChildComponent<T>(child, childName);
+            if (nested != null)
+            {
+                return nested;
+            }
+        }
+
+        return null;
     }
 }

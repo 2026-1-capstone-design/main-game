@@ -1,4 +1,4 @@
-%YAML 1.1
+﻿%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
 --- !u!114 &11400000
 MonoBehaviour:
@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0efcbe04e3ad52a428a9f4cc079e1b31, type: 3}
   m_Name: MagicExplosion
   m_EditorClassIdentifier: Assembly-CSharp::WeaponSkillSO
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: d300bdc58b1fc5a48b723cf17cc50b21, type: 3}
   skillName: "\uB9C8\uB825 \uD3ED\uBC1C"
   description: "10\uCD08 \uAC04 \uACF5\uACA9\uC2DC \uACF5\uACA9 \uB300\uC0C1\uC5D0\uAC8C
     \uD3ED\uBC1C\uC744 \uC77C\uC73C\uCF1C \uBC18\uACBD n \uC774\uB0B4\uC758 \uC8FC\uBCC0

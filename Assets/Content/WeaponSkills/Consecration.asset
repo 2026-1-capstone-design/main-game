@@ -1,4 +1,4 @@
-%YAML 1.1
+﻿%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
 --- !u!114 &11400000
 MonoBehaviour:
@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0efcbe04e3ad52a428a9f4cc079e1b31, type: 3}
   m_Name: Consecration
   m_EditorClassIdentifier: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: cbf03eb805630224ea504f1571e58a90, type: 3}
   skillName: "\uCD95\uC131"
   description: "\uC790\uC2E0\uC5D0\uAC8C \uAC78\uB9B0 \uBAA8\uB4E0 \uB514\uBC84\uD504\uB97C
     \uC989\uC2DC \uD574\uC81C\uD558\uACE0, \uC18C\uB7C9\uC758 \uD790, \uBAA8\uB4E0

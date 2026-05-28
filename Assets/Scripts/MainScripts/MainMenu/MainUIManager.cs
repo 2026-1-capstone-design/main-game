@@ -1,13 +1,33 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 [DisallowMultipleComponent]
 public sealed class MainUIManager : MonoBehaviour
 {
+    [Serializable]
+    private sealed class MainMenuTooltipEntry
+    {
+        [SerializeField]
+        private Button targetButton;
+
+        [SerializeField]
+        private string title;
+
+        [SerializeField]
+        [TextArea]
+        private string detail;
+
+        public Button TargetButton => targetButton;
+        public string Title => title;
+        public string Detail => detail;
+    }
+
     [Header("Main Buttons")]
     [SerializeField]
     private Button gladiatorButton;
@@ -32,6 +52,73 @@ public sealed class MainUIManager : MonoBehaviour
 
     [SerializeField]
     private Button stampButton;
+
+    [Header("Main Menu Tooltip")]
+    [SerializeField]
+    private GameObject mainMenuTooltipRoot;
+
+    [SerializeField]
+    private TMP_Text mainMenuTooltipTitleText;
+
+    [SerializeField]
+    private TMP_Text mainMenuTooltipDetailText;
+
+    [SerializeField]
+    private Vector2 mainMenuTooltipOffset = new Vector2(24f, -24f);
+
+    [SerializeField]
+    private MainMenuTooltipEntry[] mainMenuTooltipEntries = Array.Empty<MainMenuTooltipEntry>();
+
+    [Header("Account Panel")]
+    [SerializeField]
+    private GameObject accountPanelRoot;
+
+    [SerializeField]
+    private TMP_Text teamNameText;
+
+    [SerializeField]
+    private TMP_Text gladiatorStatisticsText;
+
+    [SerializeField]
+    private TMP_Text goldStatisticsText;
+
+    [SerializeField]
+    private Button accountBackButton;
+
+    [SerializeField]
+    private int projectedExpenseDays = 3;
+
+    [Header("EOD Panel")]
+    [SerializeField]
+    private GameObject eodPanelRoot;
+
+    [SerializeField]
+    private Button eodBackgroundButton;
+
+    [SerializeField]
+    private TMP_Text eodTitleText;
+
+    [SerializeField]
+    private TMP_Text eodGoldStatisticsText;
+
+    [Header("Game Over Panel")]
+    [SerializeField]
+    private GameObject gameOverPanelRoot;
+
+    [SerializeField]
+    private GameObject gameOverPanel1Root;
+
+    [SerializeField]
+    private Button gameOverPanel1Button;
+
+    [SerializeField]
+    private GameObject gameOverPanel2Root;
+
+    [SerializeField]
+    private Button gameOverPanel2BackgroundButton;
+
+    [SerializeField]
+    private TMP_Text gameOverPanel2StoryText;
 
     [Header("Escape Menu")]
     [SerializeField]
@@ -94,14 +181,24 @@ public sealed class MainUIManager : MonoBehaviour
 
     private MainFlowManager _flow; // 메인 메뉴 버튼 입력을 실제 게임 흐름 처리 함수로 넘김
     private SessionManager _sessionManager;
+    private ResourceManager _resourceManager;
+    private GladiatorManager _gladiatorManager;
     private bool _initialized;
     private bool _mainMenuInteractable = true;
     private Button _saveBackdropButton;
     private Button _settingsBackdropButton;
+    private RectTransform _mainMenuTooltipRectTransform;
+    private RectTransform _mainMenuTooltipParentRectTransform;
+    private Canvas _mainMenuTooltipCanvas;
 
     // 메인 버튼들을 모두 MainFlowManager 핸들러에 연결하고,
     // !!DayChanged 이벤트를 구독해!! 날짜 UI를 동기화
-    public void Initialize(MainFlowManager flow, SessionManager sessionManager)
+    public void Initialize(
+        MainFlowManager flow,
+        SessionManager sessionManager,
+        ResourceManager resourceManager,
+        GladiatorManager gladiatorManager
+    )
     {
         if (_initialized)
         {
@@ -110,6 +207,8 @@ public sealed class MainUIManager : MonoBehaviour
 
         _flow = flow;
         _sessionManager = sessionManager;
+        _resourceManager = resourceManager;
+        _gladiatorManager = gladiatorManager;
 
         BindButton(gladiatorButton, OnGladiatorClicked);
         BindButton(squadButton, OnSquadClicked);
@@ -117,10 +216,17 @@ public sealed class MainUIManager : MonoBehaviour
         BindButton(inventoryButton, OnInventoryClicked);
         BindButton(marketButton, OnMarketClicked);
         BindButton(eodButton, OnEodClicked);
+        BindButton(accountbookButton, OnAccountbookClicked);
         BindButton(continueButton, OnContinueClicked);
         BindButton(settingsButton, OnSettingsClicked);
         BindButton(escapeSaveButton, OnSaveClicked);
         BindButton(escapeTitleButton, OnTitleClicked);
+        BindButton(accountBackButton, OnAccountBackClicked);
+        BindButton(eodBackgroundButton, OnEodPanelClicked);
+        BindButton(gameOverPanel1Button, OnGameOverPanel1Clicked);
+        BindButton(gameOverPanel2BackgroundButton, OnGameOverPanel2BackgroundClicked);
+        CacheMainMenuTooltipReferences();
+        RegisterMainMenuTooltips();
 
         CacheSaveModalControls();
         CacheSettingsModalControls();
@@ -143,6 +249,23 @@ public sealed class MainUIManager : MonoBehaviour
         {
             settingsPanelRoot.SetActive(false);
         }
+
+        if (accountPanelRoot != null)
+        {
+            accountPanelRoot.SetActive(false);
+        }
+
+        DisableTextRaycasts(eodPanelRoot);
+        DisableTextRaycasts(gameOverPanel1Root);
+        DisableTextRaycasts(gameOverPanel2Root);
+        HideMainMenuTooltip();
+
+        if (eodPanelRoot != null)
+        {
+            eodPanelRoot.SetActive(false);
+        }
+
+        CloseGameOverPanel();
 
         if (_sessionManager != null)
         {
@@ -185,6 +308,8 @@ public sealed class MainUIManager : MonoBehaviour
         }
 
         Keyboard keyboard = Keyboard.current;
+        UpdateMainMenuTooltipPosition();
+
         if (keyboard == null || !keyboard.escapeKey.wasPressedThisFrame)
         {
             return;
@@ -204,6 +329,11 @@ public sealed class MainUIManager : MonoBehaviour
     public void SetMainMenuInteractable(bool value)
     {
         _mainMenuInteractable = value;
+        if (!value)
+        {
+            HideMainMenuTooltip();
+        }
+
         SetButtonInteractable(gladiatorButton, value);
         SetButtonInteractable(squadButton, value);
         SetButtonInteractable(battleButton, value);
@@ -256,6 +386,7 @@ public sealed class MainUIManager : MonoBehaviour
 
     private void OnGladiatorClicked()
     {
+        HideMainMenuTooltip();
         if (_flow != null)
         {
             _flow.HandleGladiatorMenuRequested();
@@ -264,6 +395,7 @@ public sealed class MainUIManager : MonoBehaviour
 
     private void OnSquadClicked()
     {
+        HideMainMenuTooltip();
         if (_flow != null)
         {
             _flow.HandleSquadMenuRequested();
@@ -272,6 +404,7 @@ public sealed class MainUIManager : MonoBehaviour
 
     private void OnBattleClicked()
     {
+        HideMainMenuTooltip();
         if (_flow != null)
         {
             _flow.HandleBattleMenuRequested();
@@ -280,6 +413,7 @@ public sealed class MainUIManager : MonoBehaviour
 
     private void OnInventoryClicked()
     {
+        HideMainMenuTooltip();
         if (_flow != null)
         {
             _flow.HandleInventoryMenuRequested();
@@ -288,6 +422,7 @@ public sealed class MainUIManager : MonoBehaviour
 
     private void OnMarketClicked()
     {
+        HideMainMenuTooltip();
         if (_flow != null)
         {
             _flow.HandleMarketMenuRequested();
@@ -296,11 +431,145 @@ public sealed class MainUIManager : MonoBehaviour
 
     private void OnEodClicked()
     {
+        HideMainMenuTooltip();
+        if (eodPanelRoot != null)
+        {
+            OpenEodPanel();
+            return;
+        }
+
+        AdvanceDayAfterEod();
+    }
+
+    private void OpenEodPanel()
+    {
+        if (eodTitleText != null)
+        {
+            eodTitleText.text = $"{GetCurrentDay()}일차 정산";
+        }
+
+        if (eodGoldStatisticsText != null)
+        {
+            int currentGold = GetCurrentGold();
+            int eodExpense = GetTotalUpkeep();
+            int remainingGold = currentGold - eodExpense;
+            string remainingColor = remainingGold >= 0 ? "#3366FF" : "#FF0000";
+
+            eodGoldStatisticsText.text =
+                $"{currentGold}G\n\n" + $"{eodExpense}G\n\n" + $"<color={remainingColor}>{remainingGold}G</color>";
+        }
+
+        eodPanelRoot.SetActive(true);
+    }
+
+    private void OnEodPanelClicked()
+    {
+        if (eodPanelRoot != null)
+        {
+            eodPanelRoot.SetActive(false);
+        }
+
+        int eodExpense = GetTotalUpkeep();
+        int remainingGold = GetCurrentGold() - eodExpense;
+        if (remainingGold < 0 || _resourceManager == null || !_resourceManager.TrySpendGold(eodExpense))
+        {
+            OpenGameOverPanel();
+            return;
+        }
+
+        AdvanceDayAfterEod();
+    }
+
+    private void AdvanceDayAfterEod()
+    {
         if (_flow != null)
         {
-            Debug.Log("EOd clicked");
             _flow.HandleEodRequested();
         }
+    }
+
+    private void OpenGameOverPanel()
+    {
+        if (gameOverPanelRoot != null)
+        {
+            gameOverPanelRoot.SetActive(true);
+        }
+
+        if (gameOverPanel1Root != null)
+        {
+            gameOverPanel1Root.SetActive(true);
+        }
+
+        if (gameOverPanel2Root != null)
+        {
+            gameOverPanel2Root.SetActive(false);
+        }
+    }
+
+    private void CloseGameOverPanel()
+    {
+        if (gameOverPanelRoot != null)
+        {
+            gameOverPanelRoot.SetActive(false);
+        }
+
+        if (gameOverPanel1Root != null)
+        {
+            gameOverPanel1Root.SetActive(false);
+        }
+
+        if (gameOverPanel2Root != null)
+        {
+            gameOverPanel2Root.SetActive(false);
+        }
+    }
+
+    private void OnGameOverPanel1Clicked()
+    {
+        if (gameOverPanel1Root != null)
+        {
+            gameOverPanel1Root.SetActive(false);
+        }
+
+        if (gameOverPanel2Root != null)
+        {
+            gameOverPanel2Root.SetActive(true);
+        }
+
+        if (gameOverPanel2StoryText != null)
+        {
+            gameOverPanel2StoryText.text = $"제 {GetCurrentDay()}일,\n{GetTeamNameForStory()}은 역사 속으로 사라졌다.";
+        }
+    }
+
+    private void OnGameOverPanel2BackgroundClicked()
+    {
+        if (_flow != null)
+        {
+            _flow.HandleReturnToTitleRequested();
+        }
+    }
+
+    private void OnAccountbookClicked()
+    {
+        HideMainMenuTooltip();
+        if (accountPanelRoot == null)
+        {
+            return;
+        }
+
+        RefreshAccountPanel();
+        accountPanelRoot.SetActive(true);
+    }
+
+    private void OnAccountBackClicked()
+    {
+        if (accountPanelRoot == null)
+        {
+            return;
+        }
+
+        accountPanelRoot.SetActive(false);
     }
 
     private void OnSaveClicked()
@@ -632,6 +901,23 @@ public sealed class MainUIManager : MonoBehaviour
 
     private void HandleEscapePressed()
     {
+        if (gameOverPanelRoot != null && gameOverPanelRoot.activeSelf)
+        {
+            return;
+        }
+
+        if (eodPanelRoot != null && eodPanelRoot.activeSelf)
+        {
+            eodPanelRoot.SetActive(false);
+            return;
+        }
+
+        if (accountPanelRoot != null && accountPanelRoot.activeSelf)
+        {
+            OnAccountBackClicked();
+            return;
+        }
+
         if (settingsPanelRoot != null && settingsPanelRoot.activeSelf)
         {
             OnCloseSettingsClicked();
@@ -660,6 +946,7 @@ public sealed class MainUIManager : MonoBehaviour
 
     private void OpenEscapeMenu()
     {
+        HideMainMenuTooltip();
         if (escapeMenuRoot != null)
         {
             escapeMenuRoot.SetActive(true);
@@ -672,6 +959,73 @@ public sealed class MainUIManager : MonoBehaviour
         {
             escapeMenuRoot.SetActive(false);
         }
+    }
+
+    private void RefreshAccountPanel()
+    {
+        // 팀 이름은 에디터에서 고정 텍스트로 관리하므로 여기서는 통계 텍스트만 갱신한다.
+        if (gladiatorStatisticsText != null)
+        {
+            gladiatorStatisticsText.text =
+                $"총원 : {GetOwnedGladiatorCount()}\n\n"
+                + $"치른 전투 수 : {(_sessionManager != null ? _sessionManager.TotalBattleCount : 0)}\n\n"
+                + $"승리 전투 수 : {(_sessionManager != null ? _sessionManager.VictoryBattleCount : 0)}\n\n"
+                + $"처치 적 수 : {(_sessionManager != null ? _sessionManager.DefeatedEnemyCount : 0)}";
+        }
+
+        if (goldStatisticsText != null)
+        {
+            int currentGold = _resourceManager != null ? _resourceManager.CurrentGold : 0;
+            int totalUpkeep = GetTotalUpkeep();
+            int expectedExpense = totalUpkeep * Mathf.Max(1, projectedExpenseDays);
+
+            goldStatisticsText.text =
+                $"<color=#62461E>보유 골드 : {currentGold} G\n\n"
+                + $"유지비 : {totalUpkeep} G</color>\n\n"
+                + $"<color=#FF0000>예상 지출 골드 : {expectedExpense} G</color>";
+        }
+    }
+
+    private int GetOwnedGladiatorCount()
+    {
+        return _gladiatorManager != null ? _gladiatorManager.GetOwnedGladiatorCount() : 0;
+    }
+
+    private int GetCurrentGold()
+    {
+        return _resourceManager != null ? _resourceManager.CurrentGold : 0;
+    }
+
+    private int GetCurrentDay()
+    {
+        return _sessionManager != null ? _sessionManager.CurrentDay : 1;
+    }
+
+    private string GetTeamNameForStory()
+    {
+        string teamName = teamNameText != null ? teamNameText.text : string.Empty;
+        return string.IsNullOrWhiteSpace(teamName) ? "검투사단" : teamName.Trim();
+    }
+
+    private int GetTotalUpkeep()
+    {
+        if (_gladiatorManager == null || _gladiatorManager.OwnedGladiators == null)
+        {
+            return 0;
+        }
+
+        int total = 0;
+        IReadOnlyList<OwnedGladiatorData> ownedGladiators = _gladiatorManager.OwnedGladiators;
+        for (int i = 0; i < ownedGladiators.Count; i++)
+        {
+            OwnedGladiatorData gladiator = ownedGladiators[i];
+            if (gladiator != null)
+            {
+                total += Mathf.Max(0, gladiator.Upkeep);
+            }
+        }
+
+        return total;
     }
 
     private static string BuildSlotPreviewText(int slotIndex)
@@ -782,6 +1136,139 @@ public sealed class MainUIManager : MonoBehaviour
         }
 
         return child.GetComponent<T>();
+    }
+
+    private static void DisableTextRaycasts(GameObject root)
+    {
+        if (root == null)
+        {
+            return;
+        }
+
+        TMP_Text[] texts = root.GetComponentsInChildren<TMP_Text>(true);
+        for (int i = 0; i < texts.Length; i++)
+        {
+            TMP_Text text = texts[i];
+            if (text != null)
+            {
+                text.raycastTarget = false;
+            }
+        }
+    }
+
+    private void RegisterMainMenuTooltips()
+    {
+        if (mainMenuTooltipEntries == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < mainMenuTooltipEntries.Length; i++)
+        {
+            MainMenuTooltipEntry entry = mainMenuTooltipEntries[i];
+            if (entry == null || entry.TargetButton == null)
+            {
+                continue;
+            }
+
+            EventTrigger trigger = entry.TargetButton.GetComponent<EventTrigger>();
+            if (trigger == null)
+            {
+                trigger = entry.TargetButton.gameObject.AddComponent<EventTrigger>();
+            }
+
+            MainMenuTooltipEntry capturedEntry = entry;
+            AddEventTriggerListener(trigger, EventTriggerType.PointerEnter, _ => ShowMainMenuTooltip(capturedEntry));
+            AddEventTriggerListener(trigger, EventTriggerType.PointerExit, _ => HideMainMenuTooltip());
+        }
+    }
+
+    private void CacheMainMenuTooltipReferences()
+    {
+        if (mainMenuTooltipRoot == null)
+        {
+            return;
+        }
+
+        _mainMenuTooltipRectTransform = mainMenuTooltipRoot.GetComponent<RectTransform>();
+        _mainMenuTooltipParentRectTransform = mainMenuTooltipRoot.transform.parent as RectTransform;
+        _mainMenuTooltipCanvas = mainMenuTooltipRoot.GetComponentInParent<Canvas>();
+    }
+
+    private void ShowMainMenuTooltip(MainMenuTooltipEntry entry)
+    {
+        if (!_mainMenuInteractable || entry == null || mainMenuTooltipRoot == null)
+        {
+            return;
+        }
+
+        if (mainMenuTooltipTitleText != null)
+        {
+            mainMenuTooltipTitleText.text = entry.Title;
+        }
+
+        if (mainMenuTooltipDetailText != null)
+        {
+            mainMenuTooltipDetailText.text = entry.Detail;
+        }
+
+        mainMenuTooltipRoot.SetActive(true);
+        UpdateMainMenuTooltipPosition();
+    }
+
+    private void HideMainMenuTooltip()
+    {
+        if (mainMenuTooltipRoot != null)
+        {
+            mainMenuTooltipRoot.SetActive(false);
+        }
+    }
+
+    private void UpdateMainMenuTooltipPosition()
+    {
+        if (
+            mainMenuTooltipRoot == null
+            || !mainMenuTooltipRoot.activeSelf
+            || _mainMenuTooltipRectTransform == null
+            || _mainMenuTooltipParentRectTransform == null
+            || Mouse.current == null
+        )
+        {
+            return;
+        }
+
+        Camera eventCamera =
+            _mainMenuTooltipCanvas != null && _mainMenuTooltipCanvas.renderMode != RenderMode.ScreenSpaceOverlay
+                ? _mainMenuTooltipCanvas.worldCamera
+                : null;
+        Vector2 screenPosition = Mouse.current.position.ReadValue() + mainMenuTooltipOffset;
+        if (
+            RectTransformUtility.ScreenPointToWorldPointInRectangle(
+                _mainMenuTooltipParentRectTransform,
+                screenPosition,
+                eventCamera,
+                out Vector3 worldPosition
+            )
+        )
+        {
+            _mainMenuTooltipRectTransform.position = worldPosition;
+        }
+    }
+
+    private static void AddEventTriggerListener(
+        EventTrigger trigger,
+        EventTriggerType eventType,
+        UnityEngine.Events.UnityAction<BaseEventData> action
+    )
+    {
+        if (trigger == null || action == null)
+        {
+            return;
+        }
+
+        EventTrigger.Entry triggerEntry = new EventTrigger.Entry { eventID = eventType };
+        triggerEntry.callback.AddListener(action);
+        trigger.triggers.Add(triggerEntry);
     }
 
     private static void BindButton(Button button, UnityEngine.Events.UnityAction action)

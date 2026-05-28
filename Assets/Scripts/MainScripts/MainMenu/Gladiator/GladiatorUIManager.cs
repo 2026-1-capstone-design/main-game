@@ -297,8 +297,6 @@ public sealed class GladiatorUIManager : MonoBehaviour
 
                 _weaponViewBuffer.Add(
                     new OwnedItemViewData(
-                        weapon.Weapon.leftWeaponPrefab,
-                        weapon.Weapon.rightWeaponPrefab,
                         weapon.Weapon.icon,
                         weapon.DisplayName,
                         $"Lv.{weapon.Level}",
@@ -727,12 +725,12 @@ public sealed class GladiatorUIManager : MonoBehaviour
 
         if (weaponDetailEquipButton != null)
         {
-            weaponDetailEquipButton.gameObject.SetActive(!equippedByCurrent);
+            weaponDetailEquipButton.gameObject.SetActive(true);
         }
 
         if (weaponDetailUnequipButton != null)
         {
-            weaponDetailUnequipButton.gameObject.SetActive(equippedByCurrent);
+            weaponDetailUnequipButton.gameObject.SetActive(false);
         }
     }
 
@@ -892,6 +890,12 @@ public sealed class GladiatorUIManager : MonoBehaviour
         }
 
         OwnedGladiatorData owner = _gladiatorManager.FindOwnerOfEquippedWeapon(_currentSelectedWeapon);
+        if (owner != null && owner == _currentDetailGladiator)
+        {
+            TryUnequipSelectedWeapon();
+            return;
+        }
+
         if (owner != null && owner != _currentDetailGladiator)
         {
             OpenAlreadyEquippedPopup();
@@ -952,6 +956,30 @@ public sealed class GladiatorUIManager : MonoBehaviour
         CloseInventoryPanel();
     }
 
+    private void TryUnequipSelectedWeapon()
+    {
+        if (_currentDetailGladiator == null || _gladiatorManager == null)
+        {
+            return;
+        }
+
+        string failReason;
+        bool succeeded = _gladiatorManager.TryUnequipWeapon(_currentDetailGladiator, out failReason);
+
+        if (!succeeded)
+        {
+            if (!string.IsNullOrEmpty(failReason))
+            {
+                Debug.LogWarning("[GladiatorUIManager] " + failReason, this);
+            }
+            return;
+        }
+
+        _currentSelectedWeapon = null;
+        SetWeaponDetailActive(false);
+        RefreshDetail(_currentDetailGladiator);
+    }
+
     private void OpenAlreadyEquippedPopup()
     {
         if (alreadyEquippedText != null)
@@ -959,11 +987,13 @@ public sealed class GladiatorUIManager : MonoBehaviour
             OwnedGladiatorData owner =
                 _gladiatorManager != null ? _gladiatorManager.FindOwnerOfEquippedWeapon(_currentSelectedWeapon) : null;
             string ownerName = owner != null ? owner.DisplayName : "다른 검투사";
+            string weaponName = _currentSelectedWeapon != null ? _currentSelectedWeapon.DisplayName : "선택한 장비";
             string subjectParticle = HasFinalConsonant(ownerName) ? "이" : "가";
+            string weaponParticle = HasFinalConsonant(weaponName) ? "은" : "는";
 
             alreadyEquippedText.text =
-                $"{ownerName}{subjectParticle} 장착중인 무기입니다.\n"
-                + $"이 장비를 장착하면 기존 장착중이던 {ownerName}의 장비를 해제합니다.";
+                $"{weaponName}{weaponParticle} 현재 {ownerName}{subjectParticle} 장착중입니다.\n"
+                + $"해당 장비를 장착 시 {ownerName}의 {weaponName}{weaponParticle} 해제됩니다.";
         }
 
         SetAlreadyEquippedPopupActive(true);
@@ -1162,6 +1192,10 @@ public sealed class GladiatorUIManager : MonoBehaviour
             alreadyEquippedPanelRoot.SetActive(value);
         }
 
+        SetComponentGameObjectActive(alreadyEquippedText, value);
+        SetComponentGameObjectActive(alreadyEquippedEquipButton, value);
+        SetComponentGameObjectActive(alreadyEquippedCancelButton, value);
+
         if (selectedWeaponIconImage != null)
         {
             selectedWeaponIconImage.gameObject.SetActive(!value && IsWeaponDetailActive());
@@ -1214,23 +1248,12 @@ public sealed class GladiatorUIManager : MonoBehaviour
         Sprite fallbackIcon
     )
     {
-        GameObject leftPrefab = weapon?.Weapon?.leftWeaponPrefab;
-        GameObject rightPrefab = weapon?.Weapon?.rightWeaponPrefab;
-        bool usePreview = previewView != null && (leftPrefab != null || rightPrefab != null);
-
         if (previewView != null)
         {
-            if (usePreview)
-            {
-                previewView.Show(leftPrefab, rightPrefab);
-            }
-            else
-            {
-                previewView.Clear();
-            }
+            previewView.Clear();
         }
 
-        SetPassiveImage(fallbackImage, usePreview ? null : fallbackIcon);
+        SetPassiveImage(fallbackImage, fallbackIcon);
     }
 
     private static void SetPassiveImage(Image image, Sprite icon)
@@ -1422,12 +1445,17 @@ public sealed class GladiatorUIManager : MonoBehaviour
 
     private static string BuildGladiatorDetailDescription(OwnedGladiatorData gladiator)
     {
-        return $"이름: {gladiator.DisplayName}\r\n"
+        string personalityName =
+            gladiator.Personality != null && !string.IsNullOrWhiteSpace(gladiator.Personality.personalityName)
+                ? gladiator.Personality.personalityName
+                : "성격 없음";
+
+        return $"<size=64><color=#FFFFFF>{personalityName}</color> <color=#000000>{gladiator.DisplayName}</color></size>\r\n"
             + $"레벨: {gladiator.Level}\r\n"
             + $"경험치: {gladiator.Exp}\r\n"
             + $"충성도: {gladiator.Loyalty}\r\n"
             + $"유지비: {gladiator.Upkeep}\r\n"
-            + $"최대체력: {gladiator.CurrentHealth:0.##} / {gladiator.CachedMaxHealth:0.##}\r\n"
+            + $"최대체력: {gladiator.CachedMaxHealth:0.##}\r\n"
             + $"공격력: {gladiator.CachedAttack:0.##}\r\n"
             + $"공격속도: {gladiator.CachedAttackSpeed:0.##}\r\n"
             + $"이동속도: {gladiator.CachedMoveSpeed:0.##}\r\n"

@@ -271,6 +271,8 @@ public sealed class TrainingBattlePayloadFactory
             personality: null,
             equippedArtifact: null,
             weaponType: weapon.weaponType,
+            weaponName: weapon.weaponName,
+            weaponIconSprite: weapon.icon,
             leftWeaponPrefab: weapon.leftWeaponPrefab,
             rightWeaponPrefab: weapon.rightWeaponPrefab,
             // TrainingScene은 이동/기본공격만 학습하므로 payload 단계에서 스킬을 제거한다.

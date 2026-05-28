@@ -46,12 +46,35 @@ public sealed class BattleVictorySystem
         int pendingReward = wasWin ? CalculateVictoryReward(currentDay, previewRewardGold) : 0;
 
         if (SessionManager.Instance != null)
+        {
             SessionManager.Instance.SetPendingBattleReward(pendingReward);
+            SessionManager.Instance.RecordBattleResult(wasWin, CountDefeatedEnemies(units, playerTeamId));
+        }
 
         BattleResolution resolution = BattleResolution.Create(wasWin, pendingReward, currentDay);
         BattleTeam winner = !winnerTeamId.HasValue ? BattleTeam.None : (wasWin ? BattleTeam.Ally : BattleTeam.Enemy);
 
         return new BattleOutcome(winner, winnerTeamId, currentTick, _survivorBuffer, resolution);
+    }
+
+    private static int CountDefeatedEnemies(IReadOnlyList<BattleRuntimeUnit> units, BattleTeamId playerTeamId)
+    {
+        if (units == null)
+        {
+            return 0;
+        }
+
+        int count = 0;
+        for (int i = 0; i < units.Count; i++)
+        {
+            BattleRuntimeUnit unit = units[i];
+            if (unit != null && unit.TeamId != playerTeamId && unit.IsCombatDisabled)
+            {
+                count++;
+            }
+        }
+
+        return count;
     }
 
     private static int CalculateVictoryReward(int currentDay, int previewRewardGold)

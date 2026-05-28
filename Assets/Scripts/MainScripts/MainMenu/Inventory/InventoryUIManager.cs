@@ -203,11 +203,9 @@ public sealed class InventoryUIManager : MonoBehaviour
 
                 _weaponViewBuffer.Add(
                     new OwnedItemViewData(
-                        weapon.Weapon?.leftWeaponPrefab,
-                        weapon.Weapon?.rightWeaponPrefab,
                         weapon.Weapon?.icon,
                         weapon.DisplayName,
-                        string.Empty,
+                        $"Lv.{weapon.Level}",
                         string.Empty,
                         weapon
                     )
@@ -294,12 +292,7 @@ public sealed class InventoryUIManager : MonoBehaviour
         _currentSelectedWeapon = null;
         _showLore = false;
 
-        SetDetailTexts(
-            artifact.DisplayName,
-            artifact.Artifact != null ? artifact.Artifact.ArtifactPerkId.ToString() : string.Empty,
-            string.Empty,
-            BuildArtifactStatsText(artifact)
-        );
+        SetDetailTexts(artifact.DisplayName, "장신구", string.Empty, BuildArtifactLoreText(artifact));
         SetSelectedIcon(artifact.Artifact != null ? artifact.Artifact.icon : null);
         SetEquippedGladiator(
             _gladiatorManager != null ? _gladiatorManager.FindOwnerOfEquippedArtifact(artifact) : null
@@ -343,23 +336,12 @@ public sealed class InventoryUIManager : MonoBehaviour
 
     private void SetSelectedWeaponPreview(OwnedWeaponData weapon)
     {
-        GameObject leftPrefab = weapon?.Weapon?.leftWeaponPrefab;
-        GameObject rightPrefab = weapon?.Weapon?.rightWeaponPrefab;
-        bool usePreview = selectedItemWeaponPreviewView != null && (leftPrefab != null || rightPrefab != null);
-
         if (selectedItemWeaponPreviewView != null)
         {
-            if (usePreview)
-            {
-                selectedItemWeaponPreviewView.Show(leftPrefab, rightPrefab);
-            }
-            else
-            {
-                selectedItemWeaponPreviewView.Clear();
-            }
+            selectedItemWeaponPreviewView.Clear();
         }
 
-        SetSelectedImageFallback(usePreview ? null : weapon?.Weapon?.icon);
+        SetSelectedImageFallback(weapon?.Weapon?.icon);
     }
 
     private void SetEquippedGladiator(OwnedGladiatorData gladiator)
@@ -444,9 +426,7 @@ public sealed class InventoryUIManager : MonoBehaviour
 
         if (_currentDetailMode == InventoryTabMode.Artifact)
         {
-            equipmentDetailText.text = _showLore
-                ? BuildArtifactLoreText(_currentSelectedArtifact)
-                : BuildArtifactStatsText(_currentSelectedArtifact);
+            equipmentDetailText.text = BuildArtifactLoreText(_currentSelectedArtifact);
             return;
         }
 
@@ -502,16 +482,6 @@ public sealed class InventoryUIManager : MonoBehaviour
         return weapon.Weapon.lore;
     }
 
-    private static string BuildArtifactStatsText(OwnedArtifactData artifact)
-    {
-        if (artifact == null || artifact.Artifact == null)
-        {
-            return string.Empty;
-        }
-
-        return artifact.Artifact.ArtifactPerkId.ToString();
-    }
-
     private static string BuildArtifactLoreText(OwnedArtifactData artifact)
     {
         if (artifact == null || artifact.Artifact == null)
@@ -530,7 +500,7 @@ public sealed class InventoryUIManager : MonoBehaviour
         SetComponentGameObjectActive(equipmentSkillText, value);
         SetComponentGameObjectActive(equipmentDetailText, value);
         SetSelectedItemVisualRootActive(value);
-        SetComponentGameObjectActive(selectedItemWeaponPreviewView, value && selectedItemWeaponPreviewView != null);
+        SetComponentGameObjectActive(selectedItemWeaponPreviewView, false);
         SetComponentGameObjectActive(helpText, value);
         bool hasEquippedGladiator = value && _hasEquippedGladiatorDetail;
         SetComponentGameObjectActive(equippedGladiatorText, hasEquippedGladiator);

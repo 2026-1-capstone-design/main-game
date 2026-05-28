@@ -211,7 +211,7 @@ public sealed class BattleUnitStatusPanelUIManager : MonoBehaviour
             BattleUnitSnapshot snapshot = unit.Snapshot;
             if (nameText != null)
             {
-                nameText.text = unit.DisplayName;
+                nameText.text = BuildPersonalityNameText(unit, nameText.color);
             }
 
             SetWeaponPreview(snapshot);
@@ -266,15 +266,10 @@ public sealed class BattleUnitStatusPanelUIManager : MonoBehaviour
         {
             if (weaponPreviewView != null)
             {
-                weaponPreviewView.Show(snapshot?.LeftWeaponPrefab, snapshot?.RightWeaponPrefab);
+                weaponPreviewView.Clear();
             }
 
-            if (weaponIcon != null)
-            {
-                bool hasWeapon =
-                    snapshot != null && (snapshot.LeftWeaponPrefab != null || snapshot.RightWeaponPrefab != null);
-                weaponIcon.enabled = hasWeapon;
-            }
+            SetRawImageSprite(weaponIcon, snapshot?.WeaponIconSprite);
         }
 
         private void SetSkillIcon(Sprite icon)
@@ -379,6 +374,25 @@ public sealed class BattleUnitStatusPanelUIManager : MonoBehaviour
                 textureRect.height / texture.height
             );
             image.enabled = true;
+        }
+
+        private static string BuildPersonalityNameText(BattleRuntimeUnit unit, Color nameColor)
+        {
+            if (unit == null)
+            {
+                return string.Empty;
+            }
+
+            BattleUnitSnapshot snapshot = unit.Snapshot;
+            string personalityName =
+                snapshot != null
+                && snapshot.Personality != null
+                && !string.IsNullOrWhiteSpace(snapshot.Personality.personalityName)
+                    ? snapshot.Personality.personalityName
+                    : "성격 없음";
+            string nameColorHtml = ColorUtility.ToHtmlStringRGB(nameColor);
+
+            return $"<size=18><color=#FFFFFF>{personalityName}</color></size> <color=#{nameColorHtml}>{unit.DisplayName}</color>";
         }
     }
 }

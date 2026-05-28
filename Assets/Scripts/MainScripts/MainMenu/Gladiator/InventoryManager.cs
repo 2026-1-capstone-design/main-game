@@ -129,6 +129,19 @@ public sealed class InventoryManager : SingletonBehaviour<InventoryManager>
         }
     }
 
+    public void ResetForNewSession()
+    {
+        _ownedWeapons.Clear();
+        _ownedArtifacts.Clear();
+        _nextRuntimeId = 1;
+        _nextArtifactRuntimeId = 1;
+
+        if (verboseLog)
+        {
+            Debug.Log("[InventoryManager] Reset for new session.", this);
+        }
+    }
+
     public bool AddPurchasedWeaponFromMarketPreview(OwnedWeaponData marketPreview)
     {
         return TryAddOwnedWeaponFromPreview(marketPreview, out _);
@@ -349,7 +362,7 @@ public sealed class InventoryManager : SingletonBehaviour<InventoryManager>
         for (int i = 0; i < sourceWeapons.Count; i++)
         {
             WeaponSO weapon = sourceWeapons[i];
-            if (weapon != null)
+            if (weapon != null && !IsExcludedRandomWeapon(weapon))
             {
                 validWeapons.Add(weapon);
             }
@@ -462,5 +475,28 @@ public sealed class InventoryManager : SingletonBehaviour<InventoryManager>
 
         int pickedIndex = _randomManager.NextInt(RandomStreamType.Equipment, 0, candidates.Count);
         return candidates[pickedIndex];
+    }
+
+    private static bool IsExcludedRandomWeapon(WeaponSO weapon)
+    {
+        if (weapon == null)
+        {
+            return true;
+        }
+
+        return weapon.weaponName switch
+        {
+            "Bow" => true,
+            "Dagger" => true,
+            "DualGun" => true,
+            "DualHand" => true,
+            "OneHandSword" => true,
+            "Rifle" => true,
+            "Shield" => true,
+            "Spear" => true,
+            "Staff" => true,
+            "TwoHandSword" => true,
+            _ => false,
+        };
     }
 }

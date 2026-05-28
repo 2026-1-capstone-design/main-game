@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: df9d8b62f4a040845a470ef2178797ef, type: 3}
   m_Name: DualHand
   m_EditorClassIdentifier: Assembly-CSharp::WeaponSO
-  icon: {fileID: 21300000, guid: e5dda82d34675eb4b878658113823077, type: 3}
+  icon: {fileID: 21300000, guid: 35cfddc5316c8d24daa53e0c58d0905e, type: 3}
   weaponName: DualHand
   weaponType: 3
   lore: "\uC591\uC190\uBB34\uAE30\uC774\uB2E4."

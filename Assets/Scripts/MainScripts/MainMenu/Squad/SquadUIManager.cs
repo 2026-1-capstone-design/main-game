@@ -652,7 +652,7 @@ public sealed class SquadUIManager : MonoBehaviour
     private string BuildGladiatorDetailText(OwnedGladiatorData gladiator)
     {
         _detailBuilder.Clear();
-        _detailBuilder.AppendLine($"이름 : {gladiator.DisplayName}");
+        _detailBuilder.AppendLine(BuildPersonalityNameText(gladiator));
         _detailBuilder.AppendLine($"레벨 : {gladiator.Level}");
         _detailBuilder.AppendLine($"경험치 : {gladiator.Exp}");
         _detailBuilder.AppendLine($"충성도 : {gladiator.Loyalty}");
@@ -665,6 +665,21 @@ public sealed class SquadUIManager : MonoBehaviour
         _detailBuilder.AppendLine($"공격 사거리 : {gladiator.CachedAttackRange:0.##}");
 
         return _detailBuilder.ToString();
+    }
+
+    private static string BuildPersonalityNameText(OwnedGladiatorData gladiator)
+    {
+        if (gladiator == null)
+        {
+            return string.Empty;
+        }
+
+        string personalityName =
+            gladiator.Personality != null && !string.IsNullOrWhiteSpace(gladiator.Personality.personalityName)
+                ? gladiator.Personality.personalityName
+                : "성격 없음";
+
+        return $"<color=#FFFFFF>{personalityName}</color> {gladiator.DisplayName}";
     }
 
     private void RefreshArtifactIcons(OwnedGladiatorData gladiator)
@@ -706,26 +721,15 @@ public sealed class SquadUIManager : MonoBehaviour
         OwnedWeaponData weapon
     )
     {
-        GameObject leftPrefab = weapon?.Weapon?.leftWeaponPrefab;
-        GameObject rightPrefab = weapon?.Weapon?.rightWeaponPrefab;
-        bool usePreview = previewView != null && (leftPrefab != null || rightPrefab != null);
-
         if (previewView != null)
         {
-            if (usePreview)
-            {
-                previewView.Show(leftPrefab, rightPrefab);
-            }
-            else
-            {
-                previewView.Clear();
-            }
+            previewView.Clear();
         }
 
         if (fallbackImage != null)
         {
-            fallbackImage.sprite = usePreview ? null : weapon?.Weapon?.icon;
-            fallbackImage.enabled = !usePreview && weapon?.Weapon?.icon != null;
+            fallbackImage.sprite = weapon?.Weapon?.icon;
+            fallbackImage.enabled = weapon?.Weapon?.icon != null;
             fallbackImage.preserveAspect = true;
         }
     }

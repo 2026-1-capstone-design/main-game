@@ -173,7 +173,7 @@ public sealed class MainFlowManager : MonoBehaviour
             inventoryManager,
             researchManager
         );
-        mainUIManager.Initialize(this, _sessionManager);
+        mainUIManager.Initialize(this, _sessionManager, resourceManager, gladiatorManager);
 
         TryGrantPendingBattleRewardOnMainSceneEnter();
 

@@ -11,6 +11,9 @@ public sealed class SessionManager : SingletonBehaviour<SessionManager>
     public bool HasUsedBattleToday { get; private set; }
     public int PendingBattleRewardAmount { get; private set; }
     public bool HasPendingBattleReward => PendingBattleRewardAmount > 0;
+    public int TotalBattleCount { get; private set; }
+    public int VictoryBattleCount { get; private set; }
+    public int DefeatedEnemyCount { get; private set; }
 
     public event Action<int> DayChanged;
     public event Action<bool> BattleUsageChanged;
@@ -22,6 +25,9 @@ public sealed class SessionManager : SingletonBehaviour<SessionManager>
         CurrentDay = 1;
         HasUsedBattleToday = false;
         PendingBattleRewardAmount = 0;
+        TotalBattleCount = 0;
+        VictoryBattleCount = 0;
+        DefeatedEnemyCount = 0;
         _classNameCounters.Clear();
 
         DayChanged?.Invoke(CurrentDay);
@@ -100,6 +106,25 @@ public sealed class SessionManager : SingletonBehaviour<SessionManager>
 
         BattleUsageChanged?.Invoke(HasUsedBattleToday);
         PendingBattleRewardChanged?.Invoke(PendingBattleRewardAmount);
+    }
+
+    public void SetAccountStatisticsForLoad(int totalBattleCount, int victoryBattleCount, int defeatedEnemyCount)
+    {
+        TotalBattleCount = Mathf.Max(0, totalBattleCount);
+        VictoryBattleCount = Mathf.Clamp(victoryBattleCount, 0, TotalBattleCount);
+        DefeatedEnemyCount = Mathf.Max(0, defeatedEnemyCount);
+    }
+
+    public void RecordBattleResult(bool wasWin, int defeatedEnemyCount)
+    {
+        TotalBattleCount++;
+
+        if (wasWin)
+        {
+            VictoryBattleCount++;
+        }
+
+        DefeatedEnemyCount += Mathf.Max(0, defeatedEnemyCount);
     }
 
     public SaveClassCounterEntry[] GetClassCounterEntriesForSave()

@@ -11,6 +11,9 @@ public sealed class SaveSlotData
 
     public bool hasUsedBattleToday;
     public int pendingBattleRewardAmount;
+    public int totalBattleCount;
+    public int victoryBattleCount;
+    public int defeatedEnemyCount;
 
     public SaveClassCounterEntry[] classCounters;
     public SaveOwnedWeaponData[] ownedWeapons;
@@ -146,8 +149,13 @@ public sealed class SaveBattleEncounterUnitData
     public string equippedArtifactName;
     public string equippedPerkName;
 
+    public string weaponName;
     public int weaponType;
     public int weaponSkillId;
+    public bool weaponDefaultDur;
+    public float weaponDuration;
+    public bool skillDefaultDur;
+    public float skillDuration;
     public int[] customizeIndicates;
 
     public bool isRanged;

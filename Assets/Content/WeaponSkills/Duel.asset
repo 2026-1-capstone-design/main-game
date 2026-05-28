@@ -1,4 +1,4 @@
-%YAML 1.1
+﻿%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
 --- !u!114 &11400000
 MonoBehaviour:
@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0efcbe04e3ad52a428a9f4cc079e1b31, type: 3}
   m_Name: Duel
   m_EditorClassIdentifier: Assembly-CSharp::WeaponSkillSO
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 0c804f103991dd8438b5c6737bbe00da, type: 3}
   skillName: "\uACB0\uD22C \uC2E0\uCCAD"
   description: "\uC790\uC2E0\uC758 \uACF5\uACA9 \uB300\uC0C1 \uD639\uC740 \uBA85\uB839
     \uC9C0\uC815 \uB300\uC0C1. \n\uD574\uB2F9 \uC801\uC5D0\uAC8C \uC8FC\uB294 \uD53C\uD574

@@ -94,6 +94,17 @@ public sealed class GladiatorManager : SingletonBehaviour<GladiatorManager>
         }
     }
 
+    public void ResetForNewSession()
+    {
+        _ownedGladiators.Clear();
+        _nextRuntimeId = 1;
+
+        if (verboseLog)
+        {
+            Debug.Log("[GladiatorManager] Reset for new session.", this);
+        }
+    }
+
     // 보유 검투사를 목록에서 제거함.
     // 제거 전에 장착 무기를 자동 해제해서 장착 참조가 남지 않게 한다.
     public bool RemoveOwnedGladiator(OwnedGladiatorData gladiator)

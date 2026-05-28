@@ -1,4 +1,4 @@
-%YAML 1.1
+﻿%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
 --- !u!114 &11400000
 MonoBehaviour:
@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0efcbe04e3ad52a428a9f4cc079e1b31, type: 3}
   m_Name: HighHeal
   m_EditorClassIdentifier: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: cc8bc120a1c967c4bace8345a146fe16, type: 3}
   skillName: "\uD558\uC774 \uD790"
   description: "\uC544\uAD70\uC744 \uC9C0\uC815\uD558\uC5EC \uB300\uC0C1 \uCD5C\uB300
     \uCCB4\uB825\uC5D0 10%\uB9CC\uD07C \uCE58\uC720\uD55C\uB2E4."

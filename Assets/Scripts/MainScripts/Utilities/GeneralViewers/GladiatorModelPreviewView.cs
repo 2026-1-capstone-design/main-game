@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -6,7 +7,8 @@ using UnityEngine.UI;
 [DisallowMultipleComponent]
 public sealed class GladiatorModelPreviewView : MonoBehaviour
 {
-    private const float PreviewSpacing = 1000f;
+    private const float PreviewSpacing = 200f;
+    private static readonly SortedSet<int> s_releasedPreviewIndices = new SortedSet<int>();
     private static int s_nextPreviewIndex;
 
     [SerializeField]
@@ -58,6 +60,7 @@ public sealed class GladiatorModelPreviewView : MonoBehaviour
     private GameObject _currentRightWeaponPrefab;
     private int[] _currentCustomizeIndicates;
     private bool _hasAppliedCustomization;
+    private int _previewIndex = -1;
     private Vector3 _previewOrigin;
     private Animator _preparedAnimator;
     private RuntimeAnimatorController _preparedAnimatorController;
@@ -94,13 +97,23 @@ public sealed class GladiatorModelPreviewView : MonoBehaviour
         if (_camera != null)
         {
             Destroy(_camera.gameObject);
+            _camera = null;
         }
 
         if (_renderTexture != null)
         {
             _renderTexture.Release();
             Destroy(_renderTexture);
+            _renderTexture = null;
         }
+
+        if (_previewRoot != null)
+        {
+            Destroy(_previewRoot.gameObject);
+            _previewRoot = null;
+        }
+
+        ReleasePreviewIndex();
     }
 
     public void Show(GameObject modelPrefab)
@@ -223,8 +236,32 @@ public sealed class GladiatorModelPreviewView : MonoBehaviour
         GameObject rootObject = new GameObject($"{name}_PreviewRoot");
         rootObject.hideFlags = HideFlags.HideAndDontSave;
         _previewRoot = rootObject.transform;
-        _previewOrigin = new Vector3(s_nextPreviewIndex++ * PreviewSpacing, -10000f, 0f);
+        _previewIndex = AcquirePreviewIndex();
+        _previewOrigin = new Vector3(_previewIndex * PreviewSpacing, -1000f, 0f);
         _previewRoot.position = _previewOrigin;
+    }
+
+    private static int AcquirePreviewIndex()
+    {
+        if (s_releasedPreviewIndices.Count <= 0)
+        {
+            return s_nextPreviewIndex++;
+        }
+
+        int index = s_releasedPreviewIndices.Min;
+        s_releasedPreviewIndices.Remove(index);
+        return index;
+    }
+
+    private void ReleasePreviewIndex()
+    {
+        if (_previewIndex < 0)
+        {
+            return;
+        }
+
+        s_releasedPreviewIndices.Add(_previewIndex);
+        _previewIndex = -1;
     }
 
     private void OnValidate()
