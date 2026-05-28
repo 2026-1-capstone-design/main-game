@@ -255,6 +255,9 @@ public sealed class MainUIManager : MonoBehaviour
             accountPanelRoot.SetActive(false);
         }
 
+        DisableTextRaycasts(eodPanelRoot);
+        DisableTextRaycasts(gameOverPanel1Root);
+        DisableTextRaycasts(gameOverPanel2Root);
         HideMainMenuTooltip();
 
         if (eodPanelRoot != null)
@@ -1133,6 +1136,24 @@ public sealed class MainUIManager : MonoBehaviour
         }
 
         return child.GetComponent<T>();
+    }
+
+    private static void DisableTextRaycasts(GameObject root)
+    {
+        if (root == null)
+        {
+            return;
+        }
+
+        TMP_Text[] texts = root.GetComponentsInChildren<TMP_Text>(true);
+        for (int i = 0; i < texts.Length; i++)
+        {
+            TMP_Text text = texts[i];
+            if (text != null)
+            {
+                text.raycastTarget = false;
+            }
+        }
     }
 
     private void RegisterMainMenuTooltips()

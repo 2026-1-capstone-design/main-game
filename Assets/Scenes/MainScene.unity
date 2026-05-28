@@ -9894,7 +9894,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 1425, y: -674}
+  m_AnchoredPosition: {x: 1425, y: -763}
   m_SizeDelta: {x: 168, y: 60}
   m_Pivot: {x: 0, y: 1}
 --- !u!222 &413511877
@@ -17149,7 +17149,7 @@ MonoBehaviour:
   textureSize: 1024
   modelLocalEulerAngles: {x: 0, y: 0, z: 0}
   cameraOffset: {x: 0, y: 0, z: 4}
-  lookAtOffset: {x: 0, y: 0.35, z: 0}
+  lookAtOffset: {x: 0, y: 0.45, z: 0}
   cameraFieldOfView: 10
   backgroundColor: {r: 0, g: 0, b: 0, a: 0}
   lightIntensity: 10
@@ -17864,8 +17864,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 355, y: -266}
-  m_SizeDelta: {x: 560, y: 598}
+  m_AnchoredPosition: {x: 310, y: -266}
+  m_SizeDelta: {x: 630, y: 598}
   m_Pivot: {x: 0, y: 1}
 --- !u!222 &652080229
 CanvasRenderer:
@@ -18753,7 +18753,7 @@ MonoBehaviour:
   textureSize: 1024
   modelLocalEulerAngles: {x: 0, y: 0, z: 0}
   cameraOffset: {x: 0, y: 0, z: 4}
-  lookAtOffset: {x: 0, y: 0.35, z: 0}
+  lookAtOffset: {x: 0, y: 0.45, z: 0}
   cameraFieldOfView: 10
   backgroundColor: {r: 0, g: 0, b: 0, a: 0}
   lightIntensity: 10
@@ -20076,7 +20076,7 @@ MonoBehaviour:
   textureSize: 1024
   modelLocalEulerAngles: {x: 0, y: 0, z: 0}
   cameraOffset: {x: 0, y: 0, z: 4}
-  lookAtOffset: {x: 0, y: 0.35, z: 0}
+  lookAtOffset: {x: 0, y: 0.45, z: 0}
   cameraFieldOfView: 10
   backgroundColor: {r: 0, g: 0, b: 0, a: 0}
   lightIntensity: 10
@@ -25964,7 +25964,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 1408, y: -342}
+  m_AnchoredPosition: {x: 1408, y: -431}
   m_SizeDelta: {x: 201, y: 322}
   m_Pivot: {x: 0, y: 1}
 --- !u!222 &903562498
@@ -36487,7 +36487,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 1425, y: -726}
+  m_AnchoredPosition: {x: 1425, y: -815}
   m_SizeDelta: {x: 168, y: 60}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &1314947228
@@ -43843,7 +43843,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 1234, y: -225}
+  m_AnchoredPosition: {x: 1444.2, y: -238}
   m_SizeDelta: {x: 128, y: 128}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &1573408168
@@ -44501,7 +44501,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 1457, y: -289}
+  m_AnchoredPosition: {x: 1465.8, y: -378}
   m_SizeDelta: {x: 89, y: 43}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &1593802005
@@ -47173,7 +47173,7 @@ MonoBehaviour:
   textureSize: 1024
   modelLocalEulerAngles: {x: 0, y: 0, z: 0}
   cameraOffset: {x: 0, y: 0, z: 4}
-  lookAtOffset: {x: 0, y: 0.35, z: 0}
+  lookAtOffset: {x: 0, y: 0.45, z: 0}
   cameraFieldOfView: 10
   backgroundColor: {r: 0, g: 0, b: 0, a: 0}
   lightIntensity: 10
@@ -55901,7 +55901,7 @@ MonoBehaviour:
   textureSize: 1024
   modelLocalEulerAngles: {x: 0, y: 0, z: 0}
   cameraOffset: {x: 0, y: 0, z: 4}
-  lookAtOffset: {x: 0, y: 0.35, z: 0}
+  lookAtOffset: {x: 0, y: 0.45, z: 0}
   cameraFieldOfView: 10
   backgroundColor: {r: 0, g: 0, b: 0, a: 0}
   lightIntensity: 10
@@ -57522,7 +57522,7 @@ MonoBehaviour:
   textureSize: 1024
   modelLocalEulerAngles: {x: 0, y: 0, z: 0}
   cameraOffset: {x: 0, y: 0, z: 4}
-  lookAtOffset: {x: 0, y: 0.35, z: 0}
+  lookAtOffset: {x: 0, y: 0.45, z: 0}
   cameraFieldOfView: 10
   backgroundColor: {r: 0, g: 0, b: 0, a: 0}
   lightIntensity: 10
@@ -59367,15 +59367,15 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 665604755071340849, guid: 0b6772ee38033124b98ca4799f7f47f4, type: 3}
       propertyPath: maxCellSize
-      value: 113
+      value: 150
       objectReference: {fileID: 0}
     - target: {fileID: 665604755071340849, guid: 0b6772ee38033124b98ca4799f7f47f4, type: 3}
       propertyPath: cellSpacing.x
-      value: 20
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 665604755071340849, guid: 0b6772ee38033124b98ca4799f7f47f4, type: 3}
       propertyPath: cellSpacing.y
-      value: 20
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 665604755071340849, guid: 0b6772ee38033124b98ca4799f7f47f4, type: 3}
       propertyPath: emptyCellIcon
@@ -59427,7 +59427,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5440159416159445925, guid: 0b6772ee38033124b98ca4799f7f47f4, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 560
+      value: 630
       objectReference: {fileID: 0}
     - target: {fileID: 5440159416159445925, guid: 0b6772ee38033124b98ca4799f7f47f4, type: 3}
       propertyPath: m_SizeDelta.y

@@ -1458,7 +1458,12 @@ public sealed class GladiatorUIManager : MonoBehaviour
 
     private static string BuildGladiatorDetailDescription(OwnedGladiatorData gladiator)
     {
-        return $"이름: {gladiator.DisplayName}\r\n"
+        string personalityName =
+            gladiator.Personality != null && !string.IsNullOrWhiteSpace(gladiator.Personality.personalityName)
+                ? gladiator.Personality.personalityName
+                : "성격 없음";
+
+        return $"<size=64><color=#FFFFFF>{personalityName}</color> <color=#000000>{gladiator.DisplayName}</color></size>\r\n"
             + $"레벨: {gladiator.Level}\r\n"
             + $"경험치: {gladiator.Exp}\r\n"
             + $"충성도: {gladiator.Loyalty}\r\n"

@@ -767,7 +767,7 @@ public sealed class MarketUIManager : MonoBehaviour
         ClearPendingSelections();
         _pendingBuyGladiatorOffer = offer;
         SetBuyDetail(
-            offer.Gladiator.DisplayName,
+            BuildPersonalityNameText(offer.Gladiator),
             GetGladiatorKindText(offer.Gladiator),
             string.Empty,
             BuildBuyGladiatorDetailText(offer),
@@ -831,7 +831,7 @@ public sealed class MarketUIManager : MonoBehaviour
         ClearPendingSelections();
         _pendingSellGladiator = gladiator;
         SetSellDetail(
-            gladiator.DisplayName,
+            BuildPersonalityNameText(gladiator),
             GetGladiatorKindText(gladiator),
             string.Empty,
             BuildSellGladiatorDetailText(gladiator),
@@ -1353,6 +1353,21 @@ public sealed class MarketUIManager : MonoBehaviour
             + $"사거리: {gladiator.CachedAttackRange:0.##}";
     }
 
+    private static string BuildPersonalityNameText(OwnedGladiatorData gladiator)
+    {
+        if (gladiator == null)
+        {
+            return string.Empty;
+        }
+
+        string personalityName =
+            gladiator.Personality != null && !string.IsNullOrWhiteSpace(gladiator.Personality.personalityName)
+                ? gladiator.Personality.personalityName
+                : "성격 없음";
+
+        return $"<color=#FFFFFF>{personalityName}</color> {gladiator.DisplayName}";
+    }
+
     private string BuildBuyEquipmentDetailText(MarketWeaponOffer offer)
     {
         if (offer == null || offer.Weapon == null)
@@ -1439,14 +1454,7 @@ public sealed class MarketUIManager : MonoBehaviour
 
     private static string GetGladiatorKindText(OwnedGladiatorData gladiator)
     {
-        if (gladiator == null || gladiator.GladiatorClass == null)
-        {
-            return string.Empty;
-        }
-
-        return !string.IsNullOrWhiteSpace(gladiator.GladiatorClass.className)
-            ? gladiator.GladiatorClass.className
-            : gladiator.GladiatorClass.name;
+        return gladiator != null ? "검투사" : string.Empty;
     }
 
     private void OpenCannotSellPanel()

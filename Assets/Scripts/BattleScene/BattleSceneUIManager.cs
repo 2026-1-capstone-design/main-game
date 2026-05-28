@@ -547,10 +547,10 @@ public sealed class BattleSceneUIManager : MonoBehaviour
 
     private void RefreshResultDetailTexts(BattleResolution resolution)
     {
-        SetText(victoryRewardText, $"Reward : {resolution.PendingReward} Gold");
-        SetText(defeatRewardText, "Reward : 0 Gold");
-        SetText(victoryBattleResultTitleText, "Victory");
-        SetText(defeatBattleResultTitleText, "Defeat");
+        SetText(victoryRewardText, $"보상 : {resolution.PendingReward} 골드");
+        SetText(defeatRewardText, "보상 : 0 골드");
+        SetText(victoryBattleResultTitleText, "전투 승리");
+        SetText(defeatBattleResultTitleText, "전투 패배");
     }
 
     private void ReturnToMainScene()

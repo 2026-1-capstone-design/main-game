@@ -46,6 +46,9 @@ public sealed class BattleUnitTooltipUIManager : MonoBehaviour
     private GladiatorModelPreviewView tooltipModelPreviewView;
 
     [SerializeField]
+    private TMP_Text personalityNameText;
+
+    [SerializeField]
     private TMP_Text levelText;
 
     [SerializeField]
@@ -331,6 +334,7 @@ public sealed class BattleUnitTooltipUIManager : MonoBehaviour
             return;
         }
 
+        SetText(personalityNameText, BuildPersonalityNameText(unit));
         SetText(levelText, unit.Level.ToString());
         SetText(attackText, FormatStat(unit.Attack));
         SetText(healthText, FormatHealth(unit.CurrentHealth));
@@ -442,5 +446,24 @@ public sealed class BattleUnitTooltipUIManager : MonoBehaviour
     private static string FormatHealth(float value)
     {
         return Mathf.RoundToInt(value).ToString();
+    }
+
+    private static string BuildPersonalityNameText(BattleRuntimeUnit unit)
+    {
+        if (unit == null)
+        {
+            return string.Empty;
+        }
+
+        BattleUnitSnapshot snapshot = unit.Snapshot;
+        string personalityName =
+            snapshot != null
+            && snapshot.Personality != null
+            && !string.IsNullOrWhiteSpace(snapshot.Personality.personalityName)
+                ? snapshot.Personality.personalityName
+                : "성격 없음";
+        string nameColor = unit.IsPlayerOwned ? "#3366FF" : "#FF0000";
+
+        return $"<color=#FFFFFF>{personalityName}</color> <color={nameColor}>{unit.DisplayName}</color>";
     }
 }
