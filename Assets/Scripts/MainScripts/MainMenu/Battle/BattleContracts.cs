@@ -118,6 +118,8 @@ public sealed class BattleUnitSnapshot
     public ArtifactSO EquippedArtifact { get; }
     public IReadOnlyList<ArtifactId> ArtifactIds { get; }
     public WeaponType WeaponType { get; }
+    public string WeaponName { get; }
+    public Sprite WeaponIconSprite { get; }
 
     // 무기 왼쪽 오른쪽 추가
     public GameObject LeftWeaponPrefab { get; }
@@ -156,6 +158,8 @@ public sealed class BattleUnitSnapshot
         PersonalitySO personality,
         ArtifactSO equippedArtifact,
         WeaponType weaponType,
+        string weaponName,
+        Sprite weaponIconSprite,
         GameObject leftWeaponPrefab,
         GameObject rightWeaponPrefab,
         WeaponSkillId weaponSkillId,
@@ -187,6 +191,8 @@ public sealed class BattleUnitSnapshot
         EquippedArtifact = equippedArtifact;
         ArtifactIds = BuildArtifactIds(equippedArtifact);
         WeaponType = weaponType;
+        WeaponName = string.IsNullOrWhiteSpace(weaponName) ? string.Empty : weaponName;
+        WeaponIconSprite = weaponIconSprite;
 
         // 생성자에 추가
         LeftWeaponPrefab = leftWeaponPrefab;
@@ -228,6 +234,8 @@ public sealed class BattleUnitSnapshot
             Personality,
             EquippedArtifact,
             WeaponType,
+            WeaponName,
+            WeaponIconSprite,
             LeftWeaponPrefab,
             RightWeaponPrefab,
             WeaponSkillId,
@@ -262,9 +270,11 @@ public sealed class BattleUnitSnapshot
             resolvedPortrait = source.GladiatorClass.icon;
         }
         WeaponType weaponType = WeaponType.None;
+        string weaponName = string.Empty;
 
         GameObject leftPrefab = null;
         GameObject rightPrefab = null;
+        Sprite weaponIconSprite = null;
 
         WeaponSkillId weaponSkillId = WeaponSkillId.None;
         bool isRanged = false;
@@ -284,9 +294,11 @@ public sealed class BattleUnitSnapshot
             if (weapon != null)
             {
                 weaponType = weapon.weaponType;
+                weaponName = weapon.weaponName;
                 // 무기 추가
                 leftPrefab = weapon.leftWeaponPrefab;
                 rightPrefab = weapon.rightWeaponPrefab;
+                weaponIconSprite = weapon.icon;
 
                 isRanged = weapon.isRanged;
                 useProjectile = weapon.useProjectile;
@@ -320,6 +332,8 @@ public sealed class BattleUnitSnapshot
             source.Personality,
             source.EquippedArtifact != null ? source.EquippedArtifact.Artifact : null,
             weaponType,
+            weaponName,
+            weaponIconSprite,
             leftPrefab,
             rightPrefab,
             weaponSkillId,

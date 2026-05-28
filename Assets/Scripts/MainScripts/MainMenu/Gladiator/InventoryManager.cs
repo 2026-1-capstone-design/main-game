@@ -129,6 +129,19 @@ public sealed class InventoryManager : SingletonBehaviour<InventoryManager>
         }
     }
 
+    public void ResetForNewSession()
+    {
+        _ownedWeapons.Clear();
+        _ownedArtifacts.Clear();
+        _nextRuntimeId = 1;
+        _nextArtifactRuntimeId = 1;
+
+        if (verboseLog)
+        {
+            Debug.Log("[InventoryManager] Reset for new session.", this);
+        }
+    }
+
     public bool AddPurchasedWeaponFromMarketPreview(OwnedWeaponData marketPreview)
     {
         return TryAddOwnedWeaponFromPreview(marketPreview, out _);

@@ -120,8 +120,24 @@ public sealed class TitleSceneUIManager : MonoBehaviour
         }
 
         SaveGameService.SetPendingLoadedData(null);
+        ResetRuntimeSessionForNewGame();
 
         TryStartMainSceneLoad();
+    }
+
+    // 타이틀로 돌아온 뒤 새 게임을 시작할 때 DDOL 세션 상태를 명시적으로 초기화한다.
+    // 부팅 시퀀스는 앱 실행 시 한 번만 돌기 때문에, 여기서 초기화하지 않으면 이전 플레이의 일차/전투 사용 상태가 남을 수 있다.
+    private void ResetRuntimeSessionForNewGame()
+    {
+        SessionManager.Instance?.StartNewSession();
+        RandomManager.Instance?.InitializeForNewSession();
+        ResourceManager.Instance?.ResetForNewSession();
+        InventoryManager.Instance?.ResetForNewSession();
+        GladiatorManager.Instance?.ResetForNewSession();
+        MarketManager.Instance?.ResetForNewSession();
+        SquadManager.Instance?.ResetForNewSession();
+        BattleSessionManager.Instance?.ClearPayload();
+        RecruitFactory.ResetReservedGladiatorDisplayNames();
     }
 
     private bool TryStartMainSceneLoad()

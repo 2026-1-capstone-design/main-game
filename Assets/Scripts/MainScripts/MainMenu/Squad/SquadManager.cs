@@ -222,6 +222,19 @@ public sealed class SquadManager : SingletonBehaviour<SquadManager>
         SetActiveTeam(activeTeamIndex);
     }
 
+    public void ResetForNewSession()
+    {
+        for (int team = 0; team < SquadTeamCount; team++)
+        {
+            for (int slot = 0; slot < SlotCount; slot++)
+            {
+                _teamSlots[team, slot] = null;
+            }
+        }
+
+        _activeTeamIndex = 0;
+    }
+
     private bool IsValidTeamIndex(int teamIndex)
     {
         return teamIndex >= 0 && teamIndex < SquadTeamCount;

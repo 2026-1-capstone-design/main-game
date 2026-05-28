@@ -12,6 +12,8 @@ using UnityEngine.UI;
 [DisallowMultipleComponent]
 public sealed class BattleStatusGridUIManager : MonoBehaviour
 {
+    private const bool DefaultStatusGridVisible = false;
+
     [Header("Top")]
     [SerializeField]
     private TMP_Text simulationSpeedText; // 현재 배속 텍스트
@@ -38,11 +40,10 @@ public sealed class BattleStatusGridUIManager : MonoBehaviour
     private readonly BattleRuntimeUnit[] _allyUnits = new BattleRuntimeUnit[BattleTeamConstants.MaxUnitsPerTeam];
     private readonly BattleRuntimeUnit[] _enemyUnits = new BattleRuntimeUnit[BattleTeamConstants.MaxUnitsPerTeam];
     private bool _initialized;
-    private bool _isStatusGridVisible = true;
+    private bool _isStatusGridVisible = DefaultStatusGridVisible;
 
     private void Awake()
     {
-        _isStatusGridVisible = ResolveInitialStatusGridVisibility();
         ApplyStatusGridVisibility();
     }
 
@@ -233,16 +234,6 @@ public sealed class BattleStatusGridUIManager : MonoBehaviour
     {
         _isStatusGridVisible = !_isStatusGridVisible;
         ApplyStatusGridVisibility();
-    }
-
-    private bool ResolveInitialStatusGridVisibility()
-    {
-        if (statusGridContentRoot != null && statusGridContentRoot.gameObject != gameObject)
-        {
-            return statusGridContentRoot.gameObject.activeSelf;
-        }
-
-        return gameObject.activeSelf;
     }
 
     private void ApplyStatusGridVisibility()

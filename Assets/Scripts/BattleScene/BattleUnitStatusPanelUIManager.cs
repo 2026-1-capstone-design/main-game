@@ -266,15 +266,10 @@ public sealed class BattleUnitStatusPanelUIManager : MonoBehaviour
         {
             if (weaponPreviewView != null)
             {
-                weaponPreviewView.Show(snapshot?.LeftWeaponPrefab, snapshot?.RightWeaponPrefab);
+                weaponPreviewView.Clear();
             }
 
-            if (weaponIcon != null)
-            {
-                bool hasWeapon =
-                    snapshot != null && (snapshot.LeftWeaponPrefab != null || snapshot.RightWeaponPrefab != null);
-                weaponIcon.enabled = hasWeapon;
-            }
+            SetRawImageSprite(weaponIcon, snapshot?.WeaponIconSprite);
         }
 
         private void SetSkillIcon(Sprite icon)

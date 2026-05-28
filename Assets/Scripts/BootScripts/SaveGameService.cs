@@ -682,8 +682,13 @@ public static class SaveGameService
                             unit.EquippedArtifact != null ? unit.EquippedArtifact.artifactName : string.Empty,
                         equippedPerkName =
                             unit.EquippedArtifact != null ? unit.EquippedArtifact.artifactName : string.Empty,
+                        weaponName = unit.WeaponName,
                         weaponType = (int)unit.WeaponType,
                         weaponSkillId = (int)unit.WeaponSkillId,
+                        weaponDefaultDur = unit.DefaultDur,
+                        weaponDuration = unit.Duration,
+                        skillDefaultDur = unit.SkillDefaultDur,
+                        skillDuration = unit.SkillDuration,
                         customizeIndicates = CloneIntArray(unit.CustomizeIndicates),
                         isRanged = unit.IsRanged,
                         useProjectile = unit.UseProjectile,
@@ -1223,11 +1228,12 @@ public static class SaveGameService
             ? (WeaponSkillId)savedUnit.weaponSkillId
             : WeaponSkillId.None;
 
-        WeaponSO weapon = FindWeaponByNameOrType(contentDatabaseProvider, string.Empty, (int)weaponType);
+        WeaponSO weapon = FindWeaponByNameOrType(contentDatabaseProvider, savedUnit.weaponName, (int)weaponType);
         GameObject leftPrefab = weapon != null ? weapon.leftWeaponPrefab : null;
         GameObject rightPrefab = weapon != null ? weapon.rightWeaponPrefab : null;
 
         Sprite portrait = gladiatorClass != null ? gladiatorClass.icon : null;
+        bool skillDefaultDur = savedUnit.skillDuration > 0f ? savedUnit.skillDefaultDur : true;
 
         return new BattleUnitSnapshot(
             savedUnit.sourceRuntimeId,
@@ -1246,13 +1252,19 @@ public static class SaveGameService
             personality,
             equippedArtifact,
             weaponType,
+            weapon != null ? weapon.weaponName : savedUnit.weaponName,
+            weapon != null ? weapon.icon : null,
             leftPrefab,
             rightPrefab,
             weaponSkillId,
             CloneIntArray(savedUnit.customizeIndicates),
             savedUnit.isRanged,
             savedUnit.useProjectile,
-            portrait
+            portrait,
+            savedUnit.weaponDefaultDur,
+            savedUnit.weaponDuration > 0f ? savedUnit.weaponDuration : 1f,
+            skillDefaultDur,
+            savedUnit.skillDuration > 0f ? savedUnit.skillDuration : 1f
         );
     }
 

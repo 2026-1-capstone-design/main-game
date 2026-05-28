@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 // BattleScene 전담 UI manager. 전투 종료 패널, 배속 UI 처리.
@@ -347,6 +348,7 @@ public sealed class BattleSceneUIManager : MonoBehaviour
                 continue;
             }
 
+            DisableNavigation(button);
             button.onClick.RemoveAllListeners();
             float speed = speedValues[i];
             button.onClick.AddListener(() => OnSpeedPresetClicked(speed));
@@ -500,7 +502,7 @@ public sealed class BattleSceneUIManager : MonoBehaviour
         string sanitizedInput = SanitizeOrderInput(rawInput);
         if (string.IsNullOrWhiteSpace(sanitizedInput))
         {
-            ClearAndRefocusCurrentOrderInput();
+            ClearAndReleaseCurrentOrderInput();
             return;
         }
 
@@ -514,7 +516,7 @@ public sealed class BattleSceneUIManager : MonoBehaviour
 
         battleOrdersManager.SubmitGlobalOrder(sanitizedInput);
 
-        ClearAndRefocusCurrentOrderInput();
+        ClearAndReleaseCurrentOrderInput();
     }
 
     private void OnVictoryConfirmClicked()
@@ -893,6 +895,7 @@ public sealed class BattleSceneUIManager : MonoBehaviour
         }
 
         currentOrderInputField.lineType = TMP_InputField.LineType.SingleLine;
+        DisableNavigation(currentOrderInputField);
         currentOrderInputField.onSubmit.RemoveAllListeners();
         currentOrderInputField.onSubmit.AddListener(OnOrderInputSubmitted);
         currentOrderInputField.onSelect.RemoveListener(HandleOrderInputSelected);
@@ -952,7 +955,7 @@ public sealed class BattleSceneUIManager : MonoBehaviour
         RefreshSpeedText();
     }
 
-    private void ClearAndRefocusCurrentOrderInput()
+    private void ClearAndReleaseCurrentOrderInput()
     {
         if (currentOrderInputField == null)
         {
@@ -960,8 +963,17 @@ public sealed class BattleSceneUIManager : MonoBehaviour
         }
 
         ClearCurrentOrderInput();
-        currentOrderInputField.ActivateInputField();
-        currentOrderInputField.Select();
+        currentOrderInputField.DeactivateInputField();
+
+        if (
+            EventSystem.current != null
+            && EventSystem.current.currentSelectedGameObject != null
+            && EventSystem.current.currentSelectedGameObject.GetComponentInParent<TMP_InputField>()
+                == currentOrderInputField
+        )
+        {
+            EventSystem.current.SetSelectedGameObject(null);
+        }
     }
 
     private void ClearCurrentOrderInput()
@@ -1149,8 +1161,21 @@ public sealed class BattleSceneUIManager : MonoBehaviour
             return;
         }
 
+        DisableNavigation(button);
         button.onClick.RemoveAllListeners();
         button.onClick.AddListener(action);
+    }
+
+    private static void DisableNavigation(Selectable selectable)
+    {
+        if (selectable == null)
+        {
+            return;
+        }
+
+        Navigation navigation = selectable.navigation;
+        navigation.mode = Navigation.Mode.None;
+        selectable.navigation = navigation;
     }
 
     private static void SetActive(GameObject target, bool value)
