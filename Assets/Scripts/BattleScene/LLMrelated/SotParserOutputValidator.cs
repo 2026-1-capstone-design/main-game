@@ -405,6 +405,16 @@ public static class SotParserOutputValidator
                 return true;
 
             case "escape":
+                if (actorId == targetId)
+                    return true;
+
+                if (!context.IsLivingAlly(targetId))
+                {
+                    error = $"escape target '{targetId}' is not a living ally.";
+                    return false;
+                }
+
+                return true;
             case "help":
                 if (actorId == targetId)
                 {

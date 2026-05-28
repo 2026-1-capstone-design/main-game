@@ -1,5 +1,5 @@
-// SOT mock/server 결과를 로그로 확인하고 실행 진입점에 연결한다.
-// 서버 경로는 Unity가 보낸 모델명/생성 설정/진단 설정으로 Gemini proxy를 호출한다.
+// SOT mock/Gemini LLM/remote SLM 결과를 로그로 확인하고 실행 진입점에 연결한다.
+// 서버 경로는 Unity가 빌드한 prompt와 생성 설정을 proxy에 보내고, proxy 응답 text만 파싱한다.
 // 후처리 완료 action만 SlmUnitCommand로 변환해 BattleSimulationManager에 넘긴다.
 // 실제 행동 생성은 SlmCommandUnitPlanner와 실행계층이 처리한다.
 
@@ -9,14 +9,20 @@ using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
+using UnityEngine.Serialization;
 
 [DisallowMultipleComponent]
 public sealed class BattleOrdersManager : MonoBehaviour
 {
+    private enum SotServerRouteKind
+    {
+        GeminiLlm,
+        RemoteSlm,
+    }
+
     [Header("Debug")]
     [SerializeField]
     private bool verboseLog = true;
-
 
     [Header("SOT Layer Preview")]
     [SerializeField]
@@ -24,38 +30,68 @@ public sealed class BattleOrdersManager : MonoBehaviour
 
     [Header("SOT Input Source")]
     [SerializeField]
-    // 최상위 필터. 이게 켜지면 무조건 "공격 브랜드 가렌" 같은 내부 파이프라인으로.
+    // 최상위 필터. 켜져 있으면 mock parser 전담 경로로 들어간다.
     private bool useMockInput = true;
 
     [SerializeField]
-    // 두번째 필터. 서버 경로에서는 현재 Gemini proxy를 호출한다. 이 값은 backendId 로그 구분용으로만 남긴다.
+    // useMockInput이 꺼져 있을 때의 두 번째 분기다. true면 remote SLM, false면 Gemini LLM 경로로 들어간다.
     private bool useSLM = true;
 
-    [Header("SOT Server")]
+    [Header("SOT Remote SLM Upstream")]
     [SerializeField]
-    private string slmProxyUrl = "";
+    private string remoteSlmUpstreamUrl = "";
+
+    [Header("SOT Gemini LLM Proxy")]
+    [SerializeField]
+    [FormerlySerializedAs("slmProxyUrl")]
+    private string geminiProxyUrl = "https://together-proxy-fn-769017230258.asia-northeast3.run.app";
 
     [SerializeField]
-    private string slmAppSharedToken = "";
+    [FormerlySerializedAs("slmAppSharedToken")]
+    private string geminiAppSharedToken = "";
 
     [SerializeField]
-    private BattleLlmBackend selectedSlmBackend = BattleLlmBackend.TogetherGemma3nE4B;
+    [FormerlySerializedAs("slmRequestTimeoutSeconds")]
+    private int geminiRequestTimeoutSeconds = 60;
 
-    [SerializeField]
-    private int slmRequestTimeoutSeconds = 60;
-
-    [Header("SOT Gemini Request")]
+    [Header("SOT Gemini LLM Request")]
     [SerializeField]
     private string geminiModel = "gemini-2.5-flash-lite";
 
     [SerializeField]
-    private int geminiParserMaxOutputTokens = 450;
+    private int geminiParserMaxOutputTokens = 700;
 
     [SerializeField]
-    private int geminiDialogMaxOutputTokens = 220;
+    private int geminiDialogMaxOutputTokens = 400;
 
     [SerializeField]
     private bool geminiUseLowestThinking = true;
+
+    [Header("SOT Remote SLM Proxy")]
+    [SerializeField]
+    private string remoteSlmProxyUrl = "";
+
+    [SerializeField]
+    private string remoteSlmAppSharedToken = "wlsgur9898eoaks";
+
+    [SerializeField]
+    private int remoteSlmRequestTimeoutSeconds = 60;
+
+    [Header("SOT Remote SLM Request")]
+    [SerializeField]
+    private string remoteSlmModel = "gemma-4-e4b-it-q4-sft";
+
+    [SerializeField]
+    private int remoteSlmParserMaxOutputTokens = 700;
+
+    [SerializeField]
+    private int remoteSlmDialogMaxOutputTokens = 400;
+
+    [SerializeField]
+    private int remoteSlmParserNumCtx = 6000;
+
+    [SerializeField]
+    private int remoteSlmDialogNumCtx = 4000;
 
     [Header("SOT Timing Diagnostics")]
     [SerializeField]
@@ -199,17 +235,17 @@ public sealed class BattleOrdersManager : MonoBehaviour
         if (useMockInput)
         {
             RunSotLayerPipeline(sotOrderText);
+            return;
         }
-        else
-        {
-            if (_serverSotPipelineRunning)
-            {
-                Debug.LogWarning("[BattleOrdersManager] Server SOT pipeline ignored. Previous request is still running.", this);
-                return;
-            }
 
-            StartCoroutine(RunServerSotLayerPipeline(sotOrderText));
+        if (_serverSotPipelineRunning)
+        {
+            Debug.LogWarning("[BattleOrdersManager] Server SOT pipeline ignored. Previous request is still running.", this);
+            return;
         }
+
+        SotServerRouteKind routeKind = useSLM ? SotServerRouteKind.RemoteSlm : SotServerRouteKind.GeminiLlm;
+        StartCoroutine(RunServerSotLayerPipeline(sotOrderText, routeKind));
     }
 
     public void SubmitSingleOrder(BattleRuntimeUnit targetAlly, string rawOrderText)
@@ -305,7 +341,7 @@ public sealed class BattleOrdersManager : MonoBehaviour
         }
     }
 
-    private IEnumerator RunServerSotLayerPipeline(string sanitizedRawText)
+    private IEnumerator RunServerSotLayerPipeline(string sanitizedRawText, SotServerRouteKind routeKind)
     {
         _serverSotPipelineRunning = true;
 
@@ -326,31 +362,36 @@ public sealed class BattleOrdersManager : MonoBehaviour
             simulationManager
         );
 
-        string selectedBackendId = GetSelectedSotBackendId();
+        string selectedBackendId = GetSelectedSotBackendId(routeKind);
+        string routeLabel = GetSotRouteLabel(routeKind);
 
         SotParserRequestDto parserRequest = _serverParserInputBuilder.Build(sanitizedRawText, context);
         SotLayerPromptBundle parserPrompt = FullPromptBuilderForSlmLayers.BuildParserPrompt(parserRequest);
 
         if (shouldLogPreview)
         {
-            Debug.Log("<color=#4FC3F7><b>[SOT SERVER PARSER PROMPT]</b></color>\n" + parserPrompt.ToDebugText(), this);
+            Debug.Log(
+                "<color=#4FC3F7><b>[SOT " + routeLabel + " PARSER PROMPT]</b></color>\n" + parserPrompt.ToDebugText(),
+                this
+            );
         }
 
         string parserRawResponse = null;
         string parserRequestError = null;
 
         yield return PostSotLayerRequest(
+            routeKind,
             "parser",
             selectedBackendId,
             parserPrompt,
-            BuildParserLayerGenerationSettings(),
+            BuildParserLayerGenerationSettings(routeKind),
             (responseBackendId, responseProvider, responseModel, responseText) =>
             {
                 parserRawResponse = responseText;
                 if (shouldLogPreview)
                 {
                     Debug.Log(
-                        "<color=#81C784><b>[SOT SERVER PARSER RAW RESPONSE]</b></color>\n"
+                        "<color=#81C784><b>[SOT " + routeLabel + " PARSER RAW RESPONSE]</b></color>\n"
                             + $"Backend={responseBackendId}, Provider={responseProvider}, Model={responseModel}\n"
                             + responseText,
                         this
@@ -430,24 +471,28 @@ public sealed class BattleOrdersManager : MonoBehaviour
 
         if (shouldLogPreview)
         {
-            Debug.Log("<color=#BA68C8><b>[SOT SERVER DIALOG PROMPT]</b></color>\n" + dialogPrompt.ToDebugText(), this);
+            Debug.Log(
+                "<color=#BA68C8><b>[SOT " + routeLabel + " DIALOG PROMPT]</b></color>\n" + dialogPrompt.ToDebugText(),
+                this
+            );
         }
 
         string dialogRawResponse = null;
         string dialogRequestError = null;
 
         yield return PostSotLayerRequest(
+            routeKind,
             "dialog",
             selectedBackendId,
             dialogPrompt,
-            BuildDialogLayerGenerationSettings(),
+            BuildDialogLayerGenerationSettings(routeKind),
             (responseBackendId, responseProvider, responseModel, responseText) =>
             {
                 dialogRawResponse = responseText;
                 if (shouldLogPreview)
                 {
                     Debug.Log(
-                        "<color=#CE93D8><b>[SOT SERVER DIALOG RAW RESPONSE]</b></color>\n"
+                        "<color=#CE93D8><b>[SOT " + routeLabel + " DIALOG RAW RESPONSE]</b></color>\n"
                             + $"Backend={responseBackendId}, Provider={responseProvider}, Model={responseModel}\n"
                             + responseText,
                         this
@@ -481,12 +526,12 @@ public sealed class BattleOrdersManager : MonoBehaviour
         if (shouldLogPreview)
         {
             Debug.Log(
-                "<color=#FFB74D><b>[SOT SERVER POSTPROCESS RESULT]</b></color>\n"
+                "<color=#FFB74D><b>[SOT " + routeLabel + " POSTPROCESS RESULT]</b></color>\n"
                     + FullPromptBuilderForSlmLayers.ToCompactJson(postprocessResult),
                 this
             );
             Debug.Log(
-                "<color=#CE93D8><b>[SOT SERVER DIALOG RESPONSE]</b></color>\n"
+                "<color=#CE93D8><b>[SOT " + routeLabel + " DIALOG RESPONSE]</b></color>\n"
                     + FullPromptBuilderForSlmLayers.ToCompactJson(dialogResponse),
                 this
             );
@@ -503,6 +548,7 @@ public sealed class BattleOrdersManager : MonoBehaviour
     }
 
     private IEnumerator PostSotLayerRequest(
+        SotServerRouteKind routeKind,
         string layerName,
         string backendId,
         SotLayerPromptBundle promptBundle,
@@ -511,24 +557,39 @@ public sealed class BattleOrdersManager : MonoBehaviour
         Action<string> onError
     )
     {
-        if (string.IsNullOrWhiteSpace(slmProxyUrl))
+        string proxyUrl = GetSotProxyUrl(routeKind);
+        string appSharedToken = GetSotAppSharedToken(routeKind);
+        string model = GetSotModel(routeKind);
+        string provider = GetSotProvider(routeKind);
+        int requestTimeoutSeconds = GetSotRequestTimeoutSeconds(routeKind);
+
+        if (string.IsNullOrWhiteSpace(proxyUrl))
         {
-            onError?.Invoke("SOT proxy URL is empty.");
+            onError?.Invoke(GetSotRouteLabel(routeKind) + " proxy URL is empty.");
             yield break;
         }
 
-        if (string.IsNullOrWhiteSpace(geminiModel))
+        if (string.IsNullOrWhiteSpace(model))
         {
-            onError?.Invoke("Gemini model is empty.");
+            onError?.Invoke(GetSotRouteLabel(routeKind) + " model is empty.");
+            yield break;
+        }
+
+        if (routeKind == SotServerRouteKind.RemoteSlm && string.IsNullOrWhiteSpace(appSharedToken))
+        {
+            onError?.Invoke("Remote SLM app shared token is empty.");
             yield break;
         }
 
         UnityConfiguredGeminiRequestDto requestDto = new UnityConfiguredGeminiRequestDto
         {
+            remoteSlmProxyUrl = routeKind == SotServerRouteKind.RemoteSlm
+                ? remoteSlmUpstreamUrl.Trim()
+                : string.Empty,
             backendId = backendId,
-            provider = "gemini",
+            provider = provider,
             layerName = layerName,
-            model = geminiModel.Trim(),
+            model = model.Trim(),
             systemInstruction = promptBundle.SystemInstruction,
             userPayloadJson = promptBundle.UserPayloadJson,
             generationSettings = generationSettings,
@@ -542,15 +603,15 @@ public sealed class BattleOrdersManager : MonoBehaviour
         string requestJson = JsonUtility.ToJson(requestDto);
         byte[] bodyRaw = Encoding.UTF8.GetBytes(requestJson);
 
-        using UnityWebRequest request = new UnityWebRequest(slmProxyUrl, UnityWebRequest.kHttpVerbPOST);
+        using UnityWebRequest request = new UnityWebRequest(proxyUrl, UnityWebRequest.kHttpVerbPOST);
         request.uploadHandler = new UploadHandlerRaw(bodyRaw);
         request.downloadHandler = new DownloadHandlerBuffer();
-        request.timeout = Mathf.Max(1, slmRequestTimeoutSeconds);
+        request.timeout = Mathf.Max(1, requestTimeoutSeconds);
         request.SetRequestHeader("Content-Type", "application/json; charset=utf-8");
 
-        if (!string.IsNullOrWhiteSpace(slmAppSharedToken))
+        if (!string.IsNullOrWhiteSpace(appSharedToken))
         {
-            request.SetRequestHeader("X-App-Token", slmAppSharedToken);
+            request.SetRequestHeader("X-App-Token", appSharedToken);
         }
 
         System.Diagnostics.Stopwatch clientStopwatch = System.Diagnostics.Stopwatch.StartNew();
@@ -563,7 +624,7 @@ public sealed class BattleOrdersManager : MonoBehaviour
         if (request.result != UnityWebRequest.Result.Success)
         {
             onError?.Invoke(
-                $"Status={request.responseCode}, Error={request.error}, Body={responseBody}"
+                $"Route={GetSotRouteLabel(routeKind)}, Status={request.responseCode}, Error={request.error}, Body={responseBody}"
             );
             yield break;
         }
@@ -622,9 +683,9 @@ public sealed class BattleOrdersManager : MonoBehaviour
         sb.AppendLine("ProxyTotalMs=" + FormatMs(proxyTotalMs));
         sb.AppendLine("ApproxUnityProxyNetworkMs=" + FormatMs(approximateUnityProxyNetworkMs));
         sb.AppendLine("ProxyPreUpstreamMs=" + FormatMs(preUpstreamMs));
-        sb.AppendLine("GeminiUpstreamTotalMs=" + FormatMs(upstreamTotalMs));
-        sb.AppendLine("GeminiTTFTMs=" + FormatMs(upstreamTtftMs));
-        sb.AppendLine("GeminiAfterTTFTMs=" + FormatMs(upstreamAfterTtftMs));
+        sb.AppendLine("UpstreamTotalMs=" + FormatMs(upstreamTotalMs));
+        sb.AppendLine("UpstreamTTFTMs=" + FormatMs(upstreamTtftMs));
+        sb.AppendLine("UpstreamAfterTTFTMs=" + FormatMs(upstreamAfterTtftMs));
         sb.AppendLine("ProxyResponseParseMs=" + FormatMs(responseParseMs));
         sb.AppendLine("ProxyPostUpstreamMs=" + FormatMs(postUpstreamMs));
         sb.AppendLine("UsedUpstreamStreaming=" + (timing != null && timing.usedUpstreamStreaming));
@@ -637,33 +698,53 @@ public sealed class BattleOrdersManager : MonoBehaviour
         return value < 0f ? "N/A" : value.ToString("0.0") + " ms";
     }
 
-    private GeminiGenerationSettingsDto BuildParserLayerGenerationSettings()
+    private GeminiGenerationSettingsDto BuildParserLayerGenerationSettings(SotServerRouteKind routeKind)
     {
+        int maxOutputTokens = Mathf.Max(1, GetParserMaxOutputTokens(routeKind));
+        int numCtx = Mathf.Max(1, GetParserNumCtx(routeKind));
+        float temperature = 0f;
+        float topP = 0.8f;
+
         return new GeminiGenerationSettingsDto
         {
-            temperature = 0f,
-            topP = 1f,
-            topK = 1,
-            maxOutputTokens = Mathf.Max(1, geminiParserMaxOutputTokens),
-            stream = false,
+            temperature = temperature,
+            topP = topP,
+            top_p = topP,
+            topK = routeKind == SotServerRouteKind.GeminiLlm ? 1 : 0,
+            maxOutputTokens = maxOutputTokens,
+            num_predict = maxOutputTokens,
+            numCtx = numCtx,
+            num_ctx = numCtx,
+            stream = routeKind == SotServerRouteKind.RemoteSlm,
+            think = false,
             candidateCount = 1,
             responseMimeType = "application/json",
-            thinkingConfig = BuildGeminiThinkingConfig(),
+            thinkingConfig = routeKind == SotServerRouteKind.GeminiLlm ? BuildGeminiThinkingConfig() : null,
         };
     }
 
-    private GeminiGenerationSettingsDto BuildDialogLayerGenerationSettings()
+    private GeminiGenerationSettingsDto BuildDialogLayerGenerationSettings(SotServerRouteKind routeKind)
     {
+        int maxOutputTokens = Mathf.Max(1, GetDialogMaxOutputTokens(routeKind));
+        int numCtx = Mathf.Max(1, GetDialogNumCtx(routeKind));
+        float temperature = 0.2f;
+        float topP = 0.8f;
+
         return new GeminiGenerationSettingsDto
         {
-            temperature = 0.2f,
-            topP = 0.9f,
-            topK = 20,
-            maxOutputTokens = Mathf.Max(1, geminiDialogMaxOutputTokens),
-            stream = false,
+            temperature = temperature,
+            topP = topP,
+            top_p = topP,
+            topK = routeKind == SotServerRouteKind.GeminiLlm ? 20 : 0,
+            maxOutputTokens = maxOutputTokens,
+            num_predict = maxOutputTokens,
+            numCtx = numCtx,
+            num_ctx = numCtx,
+            stream = routeKind == SotServerRouteKind.RemoteSlm,
+            think = false,
             candidateCount = 1,
             responseMimeType = "application/json",
-            thinkingConfig = BuildGeminiThinkingConfig(),
+            thinkingConfig = routeKind == SotServerRouteKind.GeminiLlm ? BuildGeminiThinkingConfig() : null,
         };
     }
 
@@ -674,6 +755,69 @@ public sealed class BattleOrdersManager : MonoBehaviour
             thinkingBudget = geminiUseLowestThinking ? 0 : -1,
             thinkingLevel = geminiUseLowestThinking ? "minimal" : "low",
         };
+    }
+
+    private string GetSotProxyUrl(SotServerRouteKind routeKind)
+    {
+        return routeKind == SotServerRouteKind.RemoteSlm ? remoteSlmProxyUrl : geminiProxyUrl;
+    }
+
+    private string GetSotAppSharedToken(SotServerRouteKind routeKind)
+    {
+        return routeKind == SotServerRouteKind.RemoteSlm ? remoteSlmAppSharedToken : geminiAppSharedToken;
+    }
+
+    private string GetSotModel(SotServerRouteKind routeKind)
+    {
+        return routeKind == SotServerRouteKind.RemoteSlm ? remoteSlmModel : geminiModel;
+    }
+
+    private int GetSotRequestTimeoutSeconds(SotServerRouteKind routeKind)
+    {
+        return routeKind == SotServerRouteKind.RemoteSlm
+            ? remoteSlmRequestTimeoutSeconds
+            : geminiRequestTimeoutSeconds;
+    }
+
+    private int GetParserMaxOutputTokens(SotServerRouteKind routeKind)
+    {
+        return routeKind == SotServerRouteKind.RemoteSlm
+            ? remoteSlmParserMaxOutputTokens
+            : geminiParserMaxOutputTokens;
+    }
+
+    private int GetDialogMaxOutputTokens(SotServerRouteKind routeKind)
+    {
+        return routeKind == SotServerRouteKind.RemoteSlm
+            ? remoteSlmDialogMaxOutputTokens
+            : geminiDialogMaxOutputTokens;
+    }
+
+    private int GetParserNumCtx(SotServerRouteKind routeKind)
+    {
+        return routeKind == SotServerRouteKind.RemoteSlm ? remoteSlmParserNumCtx : 6000;
+    }
+
+    private int GetDialogNumCtx(SotServerRouteKind routeKind)
+    {
+        return routeKind == SotServerRouteKind.RemoteSlm ? remoteSlmDialogNumCtx : 4000;
+    }
+
+    private static string GetSotProvider(SotServerRouteKind routeKind)
+    {
+        return routeKind == SotServerRouteKind.RemoteSlm ? "remote_slm" : "gemini";
+    }
+
+    private static string GetSelectedSotBackendId(SotServerRouteKind routeKind)
+    {
+        return routeKind == SotServerRouteKind.RemoteSlm
+            ? "remote_slm_llama_cpp_gemma4_e4b_q4_sft"
+            : "unity_configured_gemini";
+    }
+
+    private static string GetSotRouteLabel(SotServerRouteKind routeKind)
+    {
+        return routeKind == SotServerRouteKind.RemoteSlm ? "REMOTE SLM" : "GEMINI LLM";
     }
 
     private void LogSotServerFailure(
@@ -931,26 +1075,6 @@ public sealed class BattleOrdersManager : MonoBehaviour
         return count;
     }
 
-    private string GetSelectedSotBackendId()
-    {
-        return "unity_configured_gemini";
-    }
-
-    private static string GetSelectedBackendId(BattleLlmBackend backend)
-    {
-        switch (backend)
-        {
-            case BattleLlmBackend.TogetherGemma3nE4B:
-                return "together_gemma_3n";
-
-            case BattleLlmBackend.Gemini25FlashLite:
-                return "gemini_25_flash_lite";
-
-            default:
-                return "together_gemma_3n";
-        }
-    }
-
     private static string BuildGlobalAllyLine(int allyNumber, BattleRuntimeUnit unit)
     {
         if (unit == null)
@@ -989,9 +1113,11 @@ public sealed class BattleOrdersManager : MonoBehaviour
 
         return rawOrderText.Replace("\r", " ").Replace("\n", " ");
     }
+
     [Serializable]
     private sealed class UnityConfiguredGeminiRequestDto
     {
+        public string remoteSlmProxyUrl;
         public string backendId;
         public string provider;
         public string layerName;
@@ -1007,11 +1133,16 @@ public sealed class BattleOrdersManager : MonoBehaviour
     {
         public float temperature;
         public float topP;
+        public float top_p;
         public int topK;
         public int maxOutputTokens;
+        public int num_predict;
+        public int numCtx;
+        public int num_ctx;
         public string responseMimeType;
         public GeminiThinkingConfigDto thinkingConfig;
         public bool stream;
+        public bool think;
         public int candidateCount;
     }
 
@@ -1053,5 +1184,4 @@ public sealed class BattleOrdersManager : MonoBehaviour
         public bool usedUpstreamStreaming;
         public bool retriedWithoutReasoning;
     }
-
 }

@@ -52,7 +52,10 @@ public static class FullPromptBuilderForSlmLayers
         "IsSkillOnSelf와 IsSkillOnOtherAlly가 모두 false이면 적 unitId를 skill target으로 사용한다.",
         "canSkillTargetDead가 true이고 죽은 아군 대상 스킬이 명령 의미에 맞으면 commandAnalysis.deadAllies에서 target을 고른다.",
         "canSkillTargetDead가 false이면 죽은 유닛을 skill target으로 선택하지 않는다.",
-        "move.subtype은 approachOpponent, escape, help, holdFront 중 하나만 사용한다.",
+        "move.subtype은 반드시 approachOpponent, escape, help, holdFront 중 하나만 사용한다.",
+        "move.subtype은 그 어떤 일이 있어도 approachOpponent, escape, help, holdFront 외에는 사용하지 않는다.",
+        "돌진, 돌격 등의 명령에는 approachOpponent 또는 holdFront를 사용한다.",
+        "엄격하게 금지되는 subtype 예시: charge, rush, retreat, back, support, assist, guard, defend, advance, attackMove.",
         "move.movementType은 direct 또는 flank만 사용한다.",
         "dialog는 action actor당 하나만 출력한다.",
         "thinking과 dialog.text는 짧은 한국어로 쓴다.",
@@ -253,6 +256,11 @@ Move:
 - move는 항상 unitId를 to로 사용한다.
 - move.to는 이동의 종착지 unitId다.
 - subtype은 전술 의도를 나타낸다.
+- move.subtype은 반드시 approachOpponent, escape, help, holdFront 중 하나만 사용한다.
+- move.subtype은 그 어떤 일이 있어도 approachOpponent, escape, help, holdFront 외에는 사용하지 않는다.
+- 돌진, 돌격 등의 명령에는 approachOpponent 또는 holdFront를 사용한다.
+- move.subtype에는 이외의 자연어 동사나 임의 라벨을 쓰지 않는다.
+- 엄격하게 금지되는 subtype 예시: charge, rush, retreat, back, support, assist, guard, defend, advance, attackMove.
 - movementType은 direct 또는 flank만 사용한다.
 - direct는 직접적인 이동, 직선적 접근, 단순 후퇴, 단순 지원에 사용한다.
 - flank는 명령 의미나 전술 상황상 측면 각도, 후방 각도, 우회, 포위 보조가 필요한 경우 사용한다.

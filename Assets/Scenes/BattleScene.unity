@@ -13087,15 +13087,23 @@ MonoBehaviour:
   verboseLog: 1
   logSotLayerInputPreview: 1
   useMockInput: 0
-  useSLM: 0
-  slmProxyUrl: https://together-proxy-fn-769017230258.asia-northeast3.run.app
-  slmAppSharedToken: rlawlsgur212
-  selectedSlmBackend: 0
-  slmRequestTimeoutSeconds: 60
+  useSLM: 1
+  remoteSlmUpstreamUrl: http://142.115.153.129:7880/
+  geminiProxyUrl: https://together-proxy-fn-769017230258.asia-northeast3.run.app
+  geminiAppSharedToken: rlawlsgur212
+  geminiRequestTimeoutSeconds: 60
   geminiModel: gemini-3.1-flash-lite
   geminiParserMaxOutputTokens: 650
   geminiDialogMaxOutputTokens: 300
   geminiUseLowestThinking: 1
+  remoteSlmProxyUrl: https://together-proxy-fn-769017230258.asia-northeast3.run.app
+  remoteSlmAppSharedToken: wlsgur9898eoaks
+  remoteSlmRequestTimeoutSeconds: 60
+  remoteSlmModel: gemma-4-e4b-it-q4-sft
+  remoteSlmParserMaxOutputTokens: 700
+  remoteSlmDialogMaxOutputTokens: 400
+  remoteSlmParserNumCtx: 6000
+  remoteSlmDialogNumCtx: 4000
   logSotTimingBreakdown: 1
   measureUpstreamTtftByStreaming: 1
   issuePostprocessedSotCommands: 1
