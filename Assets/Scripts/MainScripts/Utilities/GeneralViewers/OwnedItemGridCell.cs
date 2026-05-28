@@ -69,22 +69,10 @@ public sealed class OwnedItemGridCell : MonoBehaviour
 
         if (weaponPreviewView != null)
         {
-            if (data.IsWeaponPreview && !data.IsPlaceholder)
-            {
-                weaponPreviewView.Show(data.LeftWeaponPrefab, data.RightWeaponPrefab);
-            }
-            else
-            {
-                weaponPreviewView.Clear();
-            }
+            weaponPreviewView.Clear();
         }
 
-        bool useModelPreview =
-            !data.IsPlaceholder
-            && (
-                (modelPreviewView != null && data.ModelPrefab != null)
-                || (weaponPreviewView != null && data.IsWeaponPreview && HasWeaponPreviewPrefab(data))
-            );
+        bool useModelPreview = !data.IsPlaceholder && modelPreviewView != null && data.ModelPrefab != null;
 
         if (iconImage != null)
         {
@@ -197,11 +185,6 @@ public sealed class OwnedItemGridCell : MonoBehaviour
     private static bool ShouldShowPriceText(OwnedItemViewData data)
     {
         return !data.IsPlaceholder && !string.IsNullOrEmpty(data.PriceText);
-    }
-
-    private static bool HasWeaponPreviewPrefab(OwnedItemViewData data)
-    {
-        return data.LeftWeaponPrefab != null || data.RightWeaponPrefab != null;
     }
 
     private void SetLevelInfoVisible(bool visible)

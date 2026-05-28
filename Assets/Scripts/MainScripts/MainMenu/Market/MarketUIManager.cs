@@ -702,8 +702,6 @@ public sealed class MarketUIManager : MonoBehaviour
     {
         WeaponSO weaponSo = weapon?.Weapon;
         return new OwnedItemViewData(
-            weaponSo?.leftWeaponPrefab,
-            weaponSo?.rightWeaponPrefab,
             weaponSo?.icon,
             weapon?.DisplayName,
             weapon != null ? $"Lv.{weapon.Level}" : string.Empty,
@@ -730,8 +728,8 @@ public sealed class MarketUIManager : MonoBehaviour
             offer.Weapon.Weapon != null ? offer.Weapon.Weapon.icon : null,
             null,
             null,
-            offer.Weapon.Weapon?.leftWeaponPrefab,
-            offer.Weapon.Weapon?.rightWeaponPrefab
+            null,
+            null
         );
     }
 
@@ -797,8 +795,8 @@ public sealed class MarketUIManager : MonoBehaviour
             weapon.Weapon != null ? weapon.Weapon.icon : null,
             null,
             null,
-            weapon.Weapon?.leftWeaponPrefab,
-            weapon.Weapon?.rightWeaponPrefab
+            null,
+            null
         );
     }
 
@@ -1097,9 +1095,7 @@ public sealed class MarketUIManager : MonoBehaviour
         SetText(skillText, skill);
         SetText(detailText, detail);
 
-        bool hasWeaponPreview = leftWeaponPrefab != null || rightWeaponPrefab != null;
         bool useModelPreview = modelPreviewView != null && modelPrefab != null;
-        bool useWeaponPreview = weaponPreviewView != null && !useModelPreview && hasWeaponPreview;
         if (modelPreviewView != null)
         {
             if (useModelPreview)
@@ -1114,14 +1110,7 @@ public sealed class MarketUIManager : MonoBehaviour
 
         if (weaponPreviewView != null)
         {
-            if (useWeaponPreview)
-            {
-                weaponPreviewView.Show(leftWeaponPrefab, rightWeaponPrefab);
-            }
-            else
-            {
-                weaponPreviewView.Clear();
-            }
+            weaponPreviewView.Clear();
         }
 
         if (image == null)
@@ -1130,7 +1119,7 @@ public sealed class MarketUIManager : MonoBehaviour
         }
 
         image.sprite = icon;
-        image.enabled = !useModelPreview && !useWeaponPreview && icon != null;
+        image.enabled = !useModelPreview && icon != null;
         image.preserveAspect = true;
     }
 

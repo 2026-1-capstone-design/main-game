@@ -203,8 +203,6 @@ public sealed class InventoryUIManager : MonoBehaviour
 
                 _weaponViewBuffer.Add(
                     new OwnedItemViewData(
-                        weapon.Weapon?.leftWeaponPrefab,
-                        weapon.Weapon?.rightWeaponPrefab,
                         weapon.Weapon?.icon,
                         weapon.DisplayName,
                         $"Lv.{weapon.Level}",
@@ -338,23 +336,12 @@ public sealed class InventoryUIManager : MonoBehaviour
 
     private void SetSelectedWeaponPreview(OwnedWeaponData weapon)
     {
-        GameObject leftPrefab = weapon?.Weapon?.leftWeaponPrefab;
-        GameObject rightPrefab = weapon?.Weapon?.rightWeaponPrefab;
-        bool usePreview = selectedItemWeaponPreviewView != null && (leftPrefab != null || rightPrefab != null);
-
         if (selectedItemWeaponPreviewView != null)
         {
-            if (usePreview)
-            {
-                selectedItemWeaponPreviewView.Show(leftPrefab, rightPrefab);
-            }
-            else
-            {
-                selectedItemWeaponPreviewView.Clear();
-            }
+            selectedItemWeaponPreviewView.Clear();
         }
 
-        SetSelectedImageFallback(usePreview ? null : weapon?.Weapon?.icon);
+        SetSelectedImageFallback(weapon?.Weapon?.icon);
     }
 
     private void SetEquippedGladiator(OwnedGladiatorData gladiator)
@@ -513,7 +500,7 @@ public sealed class InventoryUIManager : MonoBehaviour
         SetComponentGameObjectActive(equipmentSkillText, value);
         SetComponentGameObjectActive(equipmentDetailText, value);
         SetSelectedItemVisualRootActive(value);
-        SetComponentGameObjectActive(selectedItemWeaponPreviewView, value && selectedItemWeaponPreviewView != null);
+        SetComponentGameObjectActive(selectedItemWeaponPreviewView, false);
         SetComponentGameObjectActive(helpText, value);
         bool hasEquippedGladiator = value && _hasEquippedGladiatorDetail;
         SetComponentGameObjectActive(equippedGladiatorText, hasEquippedGladiator);

@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: df9d8b62f4a040845a470ef2178797ef, type: 3}
   m_Name: HeroTwohanded
   m_EditorClassIdentifier: 
-  icon: {fileID: 21300000, guid: 7ab74e659e1f0a34d9cfec21c478fc12, type: 3}
+  icon: {fileID: 21300000, guid: b523b7ddba5096b448f3b25a87e4a5f4, type: 3}
   weaponName: HeroTwohanded
   weaponType: 2
   lore: 

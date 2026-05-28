@@ -721,26 +721,15 @@ public sealed class SquadUIManager : MonoBehaviour
         OwnedWeaponData weapon
     )
     {
-        GameObject leftPrefab = weapon?.Weapon?.leftWeaponPrefab;
-        GameObject rightPrefab = weapon?.Weapon?.rightWeaponPrefab;
-        bool usePreview = previewView != null && (leftPrefab != null || rightPrefab != null);
-
         if (previewView != null)
         {
-            if (usePreview)
-            {
-                previewView.Show(leftPrefab, rightPrefab);
-            }
-            else
-            {
-                previewView.Clear();
-            }
+            previewView.Clear();
         }
 
         if (fallbackImage != null)
         {
-            fallbackImage.sprite = usePreview ? null : weapon?.Weapon?.icon;
-            fallbackImage.enabled = !usePreview && weapon?.Weapon?.icon != null;
+            fallbackImage.sprite = weapon?.Weapon?.icon;
+            fallbackImage.enabled = weapon?.Weapon?.icon != null;
             fallbackImage.preserveAspect = true;
         }
     }

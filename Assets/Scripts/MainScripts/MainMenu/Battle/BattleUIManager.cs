@@ -1817,23 +1817,12 @@ public sealed class BattleUIManager : MonoBehaviour
         OwnedWeaponData weapon
     )
     {
-        GameObject leftPrefab = weapon?.Weapon?.leftWeaponPrefab;
-        GameObject rightPrefab = weapon?.Weapon?.rightWeaponPrefab;
-        bool usePreview = modelPreviewView != null && (leftPrefab != null || rightPrefab != null);
-
         if (modelPreviewView != null)
         {
-            if (usePreview)
-            {
-                modelPreviewView.Show(leftPrefab, rightPrefab);
-            }
-            else
-            {
-                modelPreviewView.Clear();
-            }
+            modelPreviewView.Clear();
         }
 
-        SetImage(fallbackImage, usePreview ? null : weapon?.Weapon?.icon);
+        SetImage(fallbackImage, weapon?.Weapon?.icon);
     }
 
     private static void SetImage(Image target, Sprite sprite)

@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: df9d8b62f4a040845a470ef2178797ef, type: 3}
   m_Name: Staff
   m_EditorClassIdentifier: Assembly-CSharp::WeaponSO
-  icon: {fileID: 21300000, guid: 1526ed37ad2f8094db5515e5e99bf136, type: 3}
+  icon: {fileID: 21300000, guid: 60706aa3d04afce49bce40fa295deda2, type: 3}
   weaponName: Staff
   weaponType: 10
   lore: "\uC2A4\uD0DC\uD504\uC774\uB2E4."

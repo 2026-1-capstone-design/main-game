@@ -67,7 +67,16 @@ public sealed class EquipmentFactory : MonoBehaviour
             return null;
 
         // 1. 무기 및 스킬 선정
-        WeaponSO weapon = PickRandomNonNull(_contentDatabaseProvider.Weapons);
+        WeaponSO weapon = PickRandomWeapon();
+        if (weapon == null)
+        {
+            Debug.LogError(
+                "[EquipmentFactory] Failed to create market weapon offer because no random weapon is available.",
+                this
+            );
+            return null;
+        }
+
         WeaponSkillSO weaponSkill = PickRandomMatchingWeaponSkill(weapon.weaponType);
 
         // 2. 🌟 가격(예산) 먼저 결정 (등급가 + 레벨가)
@@ -122,7 +131,7 @@ public sealed class EquipmentFactory : MonoBehaviour
             return null;
         }
 
-        WeaponSO weapon = PickRandomNonNull(_contentDatabaseProvider.Weapons);
+        WeaponSO weapon = PickRandomWeapon();
         if (weapon == null)
         {
             Debug.LogError("[EquipmentFactory] Failed to create random weapon preview because WeaponSO is null.", this);
@@ -440,46 +449,55 @@ public sealed class EquipmentFactory : MonoBehaviour
         return candidates[pickedIndex];
     }
 
-    private T PickRandomNonNull<T>(IReadOnlyList<T> list)
-        where T : class
+    private WeaponSO PickRandomWeapon()
     {
-        if (list == null || list.Count == 0)
+        IReadOnlyList<WeaponSO> allWeapons = _contentDatabaseProvider.Weapons;
+        if (allWeapons == null || allWeapons.Count == 0)
         {
             return null;
         }
 
-        int validCount = 0;
-        for (int i = 0; i < list.Count; i++)
+        List<WeaponSO> candidates = new List<WeaponSO>(allWeapons.Count);
+        for (int i = 0; i < allWeapons.Count; i++)
         {
-            if (list[i] != null)
-            {
-                validCount++;
-            }
-        }
-
-        if (validCount == 0)
-        {
-            return null;
-        }
-
-        int targetIndex = _randomManager.NextInt(RandomStreamType.Equipment, 0, validCount);
-
-        for (int i = 0; i < list.Count; i++)
-        {
-            T item = list[i];
-            if (item == null)
+            WeaponSO weapon = allWeapons[i];
+            if (weapon == null || IsExcludedRandomWeapon(weapon))
             {
                 continue;
             }
 
-            if (targetIndex == 0)
-            {
-                return item;
-            }
-
-            targetIndex--;
+            candidates.Add(weapon);
         }
 
-        return null;
+        if (candidates.Count == 0)
+        {
+            return null;
+        }
+
+        int pickedIndex = _randomManager.NextInt(RandomStreamType.Equipment, 0, candidates.Count);
+        return candidates[pickedIndex];
+    }
+
+    private static bool IsExcludedRandomWeapon(WeaponSO weapon)
+    {
+        if (weapon == null)
+        {
+            return true;
+        }
+
+        return weapon.weaponName switch
+        {
+            "Bow" => true,
+            "Dagger" => true,
+            "DualGun" => true,
+            "DualHand" => true,
+            "OneHandSword" => true,
+            "Rifle" => true,
+            "Shield" => true,
+            "Spear" => true,
+            "Staff" => true,
+            "TwoHandSword" => true,
+            _ => false,
+        };
     }
 }

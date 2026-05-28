@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: df9d8b62f4a040845a470ef2178797ef, type: 3}
   m_Name: StrongAxe
   m_EditorClassIdentifier: 
-  icon: {fileID: 21300000, guid: 7ab74e659e1f0a34d9cfec21c478fc12, type: 3}
+  icon: {fileID: 21300000, guid: 2b4ffcebd1aa4a743a0b0ce0647ce724, type: 3}
   weaponName: StrongAxe
   weaponType: 1
   lore: 

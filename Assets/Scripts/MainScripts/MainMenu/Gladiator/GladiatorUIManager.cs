@@ -297,8 +297,6 @@ public sealed class GladiatorUIManager : MonoBehaviour
 
                 _weaponViewBuffer.Add(
                     new OwnedItemViewData(
-                        weapon.Weapon.leftWeaponPrefab,
-                        weapon.Weapon.rightWeaponPrefab,
                         weapon.Weapon.icon,
                         weapon.DisplayName,
                         $"Lv.{weapon.Level}",
@@ -1250,23 +1248,12 @@ public sealed class GladiatorUIManager : MonoBehaviour
         Sprite fallbackIcon
     )
     {
-        GameObject leftPrefab = weapon?.Weapon?.leftWeaponPrefab;
-        GameObject rightPrefab = weapon?.Weapon?.rightWeaponPrefab;
-        bool usePreview = previewView != null && (leftPrefab != null || rightPrefab != null);
-
         if (previewView != null)
         {
-            if (usePreview)
-            {
-                previewView.Show(leftPrefab, rightPrefab);
-            }
-            else
-            {
-                previewView.Clear();
-            }
+            previewView.Clear();
         }
 
-        SetPassiveImage(fallbackImage, usePreview ? null : fallbackIcon);
+        SetPassiveImage(fallbackImage, fallbackIcon);
     }
 
     private static void SetPassiveImage(Image image, Sprite icon)
