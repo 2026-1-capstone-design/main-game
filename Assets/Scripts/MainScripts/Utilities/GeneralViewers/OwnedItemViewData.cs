@@ -12,6 +12,7 @@ public readonly struct OwnedItemViewData
     public readonly string DisplayName;
     public readonly string LevelText;
     public readonly string EquippedMarkText;
+    public readonly string PriceText;
     public readonly object Source;
     public readonly bool IsPlaceholder;
 
@@ -27,6 +28,7 @@ public readonly struct OwnedItemViewData
         DisplayName = displayName;
         LevelText = string.Empty;
         EquippedMarkText = string.Empty;
+        PriceText = string.Empty;
         Source = source;
         IsPlaceholder = false;
     }
@@ -43,6 +45,31 @@ public readonly struct OwnedItemViewData
         DisplayName = displayName;
         LevelText = levelText;
         EquippedMarkText = equippedMarkText;
+        PriceText = string.Empty;
+        Source = source;
+        IsPlaceholder = false;
+    }
+
+    public OwnedItemViewData(
+        Sprite icon,
+        string displayName,
+        string levelText,
+        string equippedMarkText,
+        string priceText,
+        object source
+    )
+    {
+        Icon = icon;
+        RawIcon = null;
+        ModelPrefab = null;
+        ModelCustomizeIndicates = null;
+        LeftWeaponPrefab = null;
+        RightWeaponPrefab = null;
+        IsWeaponPreview = false;
+        DisplayName = displayName;
+        LevelText = levelText;
+        EquippedMarkText = equippedMarkText;
+        PriceText = priceText;
         Source = source;
         IsPlaceholder = false;
     }
@@ -67,9 +94,36 @@ public readonly struct OwnedItemViewData
         DisplayName = displayName;
         LevelText = levelText;
         EquippedMarkText = equippedMarkText;
+        PriceText = string.Empty;
         Source = source;
         IsPlaceholder = isPlaceholder;
     }
+
+    public OwnedItemViewData(
+        GameObject modelPrefab,
+        int[] modelCustomizeIndicates,
+        GameObject leftWeaponPrefab,
+        GameObject rightWeaponPrefab,
+        Sprite fallbackIcon,
+        string displayName,
+        string levelText,
+        string equippedMarkText,
+        string priceText,
+        object source
+    )
+        : this(
+            modelPrefab,
+            modelCustomizeIndicates,
+            leftWeaponPrefab,
+            rightWeaponPrefab,
+            false,
+            fallbackIcon,
+            displayName,
+            levelText,
+            equippedMarkText,
+            priceText,
+            source
+        ) { }
 
     public OwnedItemViewData(
         GameObject modelPrefab,
@@ -92,6 +146,7 @@ public readonly struct OwnedItemViewData
             displayName,
             levelText,
             equippedMarkText,
+            string.Empty,
             source
         ) { }
 
@@ -105,6 +160,7 @@ public readonly struct OwnedItemViewData
         string displayName,
         string levelText,
         string equippedMarkText,
+        string priceText,
         object source
     )
     {
@@ -118,9 +174,36 @@ public readonly struct OwnedItemViewData
         DisplayName = displayName;
         LevelText = levelText;
         EquippedMarkText = equippedMarkText;
+        PriceText = priceText;
         Source = source;
         IsPlaceholder = false;
     }
+
+    public OwnedItemViewData(
+        GameObject modelPrefab,
+        int[] modelCustomizeIndicates,
+        GameObject leftWeaponPrefab,
+        GameObject rightWeaponPrefab,
+        bool isWeaponPreview,
+        Sprite fallbackIcon,
+        string displayName,
+        string levelText,
+        string equippedMarkText,
+        object source
+    )
+        : this(
+            modelPrefab,
+            modelCustomizeIndicates,
+            leftWeaponPrefab,
+            rightWeaponPrefab,
+            isWeaponPreview,
+            fallbackIcon,
+            displayName,
+            levelText,
+            equippedMarkText,
+            string.Empty,
+            source
+        ) { }
 
     public OwnedItemViewData(
         GameObject modelPrefab,
@@ -141,6 +224,7 @@ public readonly struct OwnedItemViewData
             displayName,
             levelText,
             equippedMarkText,
+            string.Empty,
             source
         ) { }
 
@@ -161,6 +245,7 @@ public readonly struct OwnedItemViewData
         string displayName,
         string levelText,
         string equippedMarkText,
+        string priceText,
         object source
     )
         : this(
@@ -173,6 +258,27 @@ public readonly struct OwnedItemViewData
             displayName,
             levelText,
             equippedMarkText,
+            priceText,
+            source
+        ) { }
+
+    public OwnedItemViewData(
+        GameObject leftWeaponPrefab,
+        GameObject rightWeaponPrefab,
+        Sprite fallbackIcon,
+        string displayName,
+        string levelText,
+        string equippedMarkText,
+        object source
+    )
+        : this(
+            leftWeaponPrefab,
+            rightWeaponPrefab,
+            fallbackIcon,
+            displayName,
+            levelText,
+            equippedMarkText,
+            string.Empty,
             source
         ) { }
 

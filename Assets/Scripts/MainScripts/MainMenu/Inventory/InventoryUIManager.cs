@@ -207,7 +207,7 @@ public sealed class InventoryUIManager : MonoBehaviour
                         weapon.Weapon?.rightWeaponPrefab,
                         weapon.Weapon?.icon,
                         weapon.DisplayName,
-                        string.Empty,
+                        $"Lv.{weapon.Level}",
                         string.Empty,
                         weapon
                     )

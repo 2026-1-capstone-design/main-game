@@ -135,12 +135,6 @@ public sealed class MarketUIManager : MonoBehaviour
     [SerializeField]
     private WeaponModelPreviewView buyEquipmentWeaponPreviewView;
 
-    [SerializeField]
-    private TMP_Text buyPriceText;
-
-    [SerializeField]
-    private TMP_Text buyBalanceAfterTradeText;
-
     [Header("Sell Detail")]
     [SerializeField]
     private TMP_Text sellGoldText;
@@ -168,12 +162,6 @@ public sealed class MarketUIManager : MonoBehaviour
 
     [SerializeField]
     private WeaponModelPreviewView sellEquipmentWeaponPreviewView;
-
-    [SerializeField]
-    private TMP_Text sellPriceText;
-
-    [SerializeField]
-    private TMP_Text sellBalanceAfterTradeText;
 
     [Header("Cannot Sell Equipped Item")]
     [SerializeField]
@@ -510,7 +498,9 @@ public sealed class MarketUIManager : MonoBehaviour
                     continue;
                 }
 
-                _buyEquipmentViewBuffer.Add(BuildWeaponViewData(offer.Weapon, string.Empty, offer));
+                _buyEquipmentViewBuffer.Add(
+                    BuildWeaponViewData(offer.Weapon, string.Empty, FormatGridPriceText(offer.Price), offer)
+                );
             }
         }
 
@@ -541,6 +531,7 @@ public sealed class MarketUIManager : MonoBehaviour
                         offer.Artifact.artifactName,
                         string.Empty,
                         string.Empty,
+                        FormatGridPriceText(offer.Price),
                         offer
                     )
                 );
@@ -568,7 +559,9 @@ public sealed class MarketUIManager : MonoBehaviour
                     continue;
                 }
 
-                _buyGladiatorViewBuffer.Add(BuildGladiatorViewData(offer.Gladiator, offer));
+                _buyGladiatorViewBuffer.Add(
+                    BuildGladiatorViewData(offer.Gladiator, FormatGridPriceText(offer.Price), offer)
+                );
             }
         }
 
@@ -598,7 +591,9 @@ public sealed class MarketUIManager : MonoBehaviour
                     _gladiatorManager != null && _gladiatorManager.FindOwnerOfEquippedWeapon(weapon) != null
                         ? "E"
                         : string.Empty;
-                _sellEquipmentViewBuffer.Add(BuildWeaponViewData(weapon, equippedMark, weapon));
+                _sellEquipmentViewBuffer.Add(
+                    BuildWeaponViewData(weapon, equippedMark, FormatGridPriceText(price), weapon)
+                );
             }
         }
 
@@ -634,6 +629,7 @@ public sealed class MarketUIManager : MonoBehaviour
                         artifact.DisplayName,
                         string.Empty,
                         equippedMark,
+                        FormatGridPriceText(price),
                         artifact
                     )
                 );
@@ -661,7 +657,8 @@ public sealed class MarketUIManager : MonoBehaviour
                     continue;
                 }
 
-                _sellGladiatorViewBuffer.Add(BuildGladiatorViewData(gladiator, gladiator));
+                int price = _marketManager != null ? _marketManager.GetGladiatorSellPrice(gladiator) : 0;
+                _sellGladiatorViewBuffer.Add(BuildGladiatorViewData(gladiator, FormatGridPriceText(price), gladiator));
             }
         }
 
@@ -671,7 +668,11 @@ public sealed class MarketUIManager : MonoBehaviour
         }
     }
 
-    private static OwnedItemViewData BuildGladiatorViewData(OwnedGladiatorData gladiator, object source)
+    private static OwnedItemViewData BuildGladiatorViewData(
+        OwnedGladiatorData gladiator,
+        string priceText,
+        object source
+    )
     {
         GameObject modelPrefab =
             gladiator != null && gladiator.GladiatorClass != null ? gladiator.GladiatorClass.previewModelPrefab : null;
@@ -687,11 +688,17 @@ public sealed class MarketUIManager : MonoBehaviour
             gladiator?.DisplayName,
             gladiator != null ? $"Lv.{gladiator.Level}" : string.Empty,
             string.Empty,
+            priceText,
             source
         );
     }
 
-    private static OwnedItemViewData BuildWeaponViewData(OwnedWeaponData weapon, string equippedMark, object source)
+    private static OwnedItemViewData BuildWeaponViewData(
+        OwnedWeaponData weapon,
+        string equippedMark,
+        string priceText,
+        object source
+    )
     {
         WeaponSO weaponSo = weapon?.Weapon;
         return new OwnedItemViewData(
@@ -699,8 +706,9 @@ public sealed class MarketUIManager : MonoBehaviour
             weaponSo?.rightWeaponPrefab,
             weaponSo?.icon,
             weapon?.DisplayName,
-            string.Empty,
+            weapon != null ? $"Lv.{weapon.Level}" : string.Empty,
             equippedMark,
+            priceText,
             source
         );
     }
@@ -720,8 +728,6 @@ public sealed class MarketUIManager : MonoBehaviour
             GetWeaponSkillText(offer.Weapon),
             BuildBuyEquipmentDetailText(offer),
             offer.Weapon.Weapon != null ? offer.Weapon.Weapon.icon : null,
-            offer.Price,
-            GetBalanceAfterBuy(offer.Price),
             null,
             null,
             offer.Weapon.Weapon?.leftWeaponPrefab,
@@ -744,8 +750,10 @@ public sealed class MarketUIManager : MonoBehaviour
             string.Empty,
             BuildBuyArtifactDetailText(offer),
             offer.Artifact.icon,
-            offer.Price,
-            GetBalanceAfterBuy(offer.Price)
+            null,
+            null,
+            null,
+            null
         );
     }
 
@@ -764,8 +772,6 @@ public sealed class MarketUIManager : MonoBehaviour
             string.Empty,
             BuildBuyGladiatorDetailText(offer),
             offer.Gladiator.GladiatorClass != null ? offer.Gladiator.GladiatorClass.icon : null,
-            offer.Price,
-            GetBalanceAfterBuy(offer.Price),
             offer.Gladiator.GladiatorClass != null ? offer.Gladiator.GladiatorClass.previewModelPrefab : null,
             offer.Gladiator.CustomizeIndicates,
             offer.Gladiator.EquippedWeapon?.Weapon?.leftWeaponPrefab,
@@ -783,15 +789,12 @@ public sealed class MarketUIManager : MonoBehaviour
         ClearPendingSelections();
         CloseSellEquippedConfirmPanel();
         _pendingSellWeapon = weapon;
-        int price = _marketManager != null ? _marketManager.GetWeaponSellPrice(weapon) : 0;
         SetSellDetail(
             weapon.DisplayName,
             GetWeaponKindText(weapon),
             GetWeaponSkillText(weapon),
             BuildSellEquipmentDetailText(weapon),
             weapon.Weapon != null ? weapon.Weapon.icon : null,
-            price,
-            GetBalanceAfterSell(price),
             null,
             null,
             weapon.Weapon?.leftWeaponPrefab,
@@ -809,15 +812,12 @@ public sealed class MarketUIManager : MonoBehaviour
         ClearPendingSelections();
         CloseSellEquippedConfirmPanel();
         _pendingSellArtifact = artifact;
-        int price = _marketManager != null ? _marketManager.GetArtifactSellPrice() : 0;
         SetSellDetail(
             artifact.DisplayName,
             string.Empty,
             string.Empty,
             BuildSellArtifactDetailText(artifact),
-            artifact.Artifact != null ? artifact.Artifact.icon : null,
-            price,
-            GetBalanceAfterSell(price)
+            artifact.Artifact != null ? artifact.Artifact.icon : null
         );
     }
 
@@ -830,15 +830,12 @@ public sealed class MarketUIManager : MonoBehaviour
 
         ClearPendingSelections();
         _pendingSellGladiator = gladiator;
-        int price = _marketManager != null ? _marketManager.GetGladiatorSellPrice(gladiator) : 0;
         SetSellDetail(
             gladiator.DisplayName,
             GetGladiatorKindText(gladiator),
             string.Empty,
             BuildSellGladiatorDetailText(gladiator),
             gladiator.GladiatorClass != null ? gladiator.GladiatorClass.icon : null,
-            price,
-            GetBalanceAfterSell(price),
             gladiator.GladiatorClass != null ? gladiator.GladiatorClass.previewModelPrefab : null,
             gladiator.CustomizeIndicates,
             gladiator.EquippedWeapon?.Weapon?.leftWeaponPrefab,
@@ -945,24 +942,12 @@ public sealed class MarketUIManager : MonoBehaviour
         }
     }
 
-    private int GetBalanceAfterBuy(int price)
-    {
-        return (_resourceManager != null ? _resourceManager.CurrentGold : 0) - Mathf.Max(0, price);
-    }
-
-    private int GetBalanceAfterSell(int price)
-    {
-        return (_resourceManager != null ? _resourceManager.CurrentGold : 0) + Mathf.Max(0, price);
-    }
-
     private void SetBuyDetail(
         string name,
         string kind,
         string skill,
         string detail,
         Sprite icon,
-        int price,
-        int balanceAfterTrade,
         GameObject modelPrefab = null,
         int[] modelCustomizeIndicates = null,
         GameObject leftWeaponPrefab = null,
@@ -987,12 +972,6 @@ public sealed class MarketUIManager : MonoBehaviour
             leftWeaponPrefab,
             rightWeaponPrefab
         );
-        if (buyPriceText != null)
-        {
-            buyPriceText.text = $"가격: {price}";
-        }
-
-        SetBuyBalanceAfterTrade(balanceAfterTrade);
     }
 
     private void SetSellDetail(
@@ -1001,8 +980,6 @@ public sealed class MarketUIManager : MonoBehaviour
         string skill,
         string detail,
         Sprite icon,
-        int price,
-        int balanceAfterTrade,
         GameObject modelPrefab = null,
         int[] modelCustomizeIndicates = null,
         GameObject leftWeaponPrefab = null,
@@ -1027,12 +1004,6 @@ public sealed class MarketUIManager : MonoBehaviour
             leftWeaponPrefab,
             rightWeaponPrefab
         );
-        if (sellPriceText != null)
-        {
-            sellPriceText.text = $"가격: {price}";
-        }
-
-        SetSellBalanceAfterTrade(balanceAfterTrade);
     }
 
     private void ClearBuyDetail()
@@ -1055,12 +1026,6 @@ public sealed class MarketUIManager : MonoBehaviour
             null,
             null
         );
-        if (buyPriceText != null)
-        {
-            buyPriceText.text = "가격: -";
-        }
-
-        SetBuyBalanceAfterTrade(null);
     }
 
     private void ClearSellDetail()
@@ -1083,32 +1048,6 @@ public sealed class MarketUIManager : MonoBehaviour
             null,
             null
         );
-        if (sellPriceText != null)
-        {
-            sellPriceText.text = "가격: -";
-        }
-
-        SetSellBalanceAfterTrade(null);
-    }
-
-    private void SetBuyBalanceAfterTrade(int? balanceAfterTrade)
-    {
-        if (buyBalanceAfterTradeText != null)
-        {
-            buyBalanceAfterTradeText.text = balanceAfterTrade.HasValue
-                ? $"거래 후 잔금: {balanceAfterTrade.Value}"
-                : "거래 후 잔금: -";
-        }
-    }
-
-    private void SetSellBalanceAfterTrade(int? balanceAfterTrade)
-    {
-        if (sellBalanceAfterTradeText != null)
-        {
-            sellBalanceAfterTradeText.text = balanceAfterTrade.HasValue
-                ? $"거래 후 잔금: {balanceAfterTrade.Value}"
-                : "거래 후 잔금: -";
-        }
     }
 
     private void CacheDetailPreviewViews()
@@ -1360,6 +1299,11 @@ public sealed class MarketUIManager : MonoBehaviour
         };
     }
 
+    private static string FormatGridPriceText(int price)
+    {
+        return $"{Mathf.Max(0, price)} G";
+    }
+
     private void ClearPendingSelections()
     {
         _pendingBuyGladiatorOffer = null;
@@ -1377,7 +1321,7 @@ public sealed class MarketUIManager : MonoBehaviour
 
     private void RefreshGoldText(int currentGold)
     {
-        string text = $"골드: {currentGold}";
+        string text = $"{currentGold}G";
 
         if (buyGoldText != null)
         {

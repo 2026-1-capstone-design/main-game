@@ -3,12 +3,31 @@ using System.Collections.Generic;
 using System.Globalization;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 [DisallowMultipleComponent]
 public sealed class MainUIManager : MonoBehaviour
 {
+    [Serializable]
+    private sealed class MainMenuTooltipEntry
+    {
+        [SerializeField]
+        private Button targetButton;
+
+        [SerializeField]
+        private string title;
+
+        [SerializeField]
+        [TextArea]
+        private string detail;
+
+        public Button TargetButton => targetButton;
+        public string Title => title;
+        public string Detail => detail;
+    }
+
     [Header("Main Buttons")]
     [SerializeField]
     private Button gladiatorButton;
@@ -34,6 +53,22 @@ public sealed class MainUIManager : MonoBehaviour
     [SerializeField]
     private Button stampButton;
 
+    [Header("Main Menu Tooltip")]
+    [SerializeField]
+    private GameObject mainMenuTooltipRoot;
+
+    [SerializeField]
+    private TMP_Text mainMenuTooltipTitleText;
+
+    [SerializeField]
+    private TMP_Text mainMenuTooltipDetailText;
+
+    [SerializeField]
+    private Vector2 mainMenuTooltipOffset = new Vector2(24f, -24f);
+
+    [SerializeField]
+    private MainMenuTooltipEntry[] mainMenuTooltipEntries = Array.Empty<MainMenuTooltipEntry>();
+
     [Header("Account Panel")]
     [SerializeField]
     private GameObject accountPanelRoot;
@@ -52,6 +87,38 @@ public sealed class MainUIManager : MonoBehaviour
 
     [SerializeField]
     private int projectedExpenseDays = 3;
+
+    [Header("EOD Panel")]
+    [SerializeField]
+    private GameObject eodPanelRoot;
+
+    [SerializeField]
+    private Button eodBackgroundButton;
+
+    [SerializeField]
+    private TMP_Text eodTitleText;
+
+    [SerializeField]
+    private TMP_Text eodGoldStatisticsText;
+
+    [Header("Game Over Panel")]
+    [SerializeField]
+    private GameObject gameOverPanelRoot;
+
+    [SerializeField]
+    private GameObject gameOverPanel1Root;
+
+    [SerializeField]
+    private Button gameOverPanel1Button;
+
+    [SerializeField]
+    private GameObject gameOverPanel2Root;
+
+    [SerializeField]
+    private Button gameOverPanel2BackgroundButton;
+
+    [SerializeField]
+    private TMP_Text gameOverPanel2StoryText;
 
     [Header("Escape Menu")]
     [SerializeField]
@@ -120,6 +187,9 @@ public sealed class MainUIManager : MonoBehaviour
     private bool _mainMenuInteractable = true;
     private Button _saveBackdropButton;
     private Button _settingsBackdropButton;
+    private RectTransform _mainMenuTooltipRectTransform;
+    private RectTransform _mainMenuTooltipParentRectTransform;
+    private Canvas _mainMenuTooltipCanvas;
 
     // 메인 버튼들을 모두 MainFlowManager 핸들러에 연결하고,
     // !!DayChanged 이벤트를 구독해!! 날짜 UI를 동기화
@@ -152,6 +222,11 @@ public sealed class MainUIManager : MonoBehaviour
         BindButton(escapeSaveButton, OnSaveClicked);
         BindButton(escapeTitleButton, OnTitleClicked);
         BindButton(accountBackButton, OnAccountBackClicked);
+        BindButton(eodBackgroundButton, OnEodPanelClicked);
+        BindButton(gameOverPanel1Button, OnGameOverPanel1Clicked);
+        BindButton(gameOverPanel2BackgroundButton, OnGameOverPanel2BackgroundClicked);
+        CacheMainMenuTooltipReferences();
+        RegisterMainMenuTooltips();
 
         CacheSaveModalControls();
         CacheSettingsModalControls();
@@ -179,6 +254,15 @@ public sealed class MainUIManager : MonoBehaviour
         {
             accountPanelRoot.SetActive(false);
         }
+
+        HideMainMenuTooltip();
+
+        if (eodPanelRoot != null)
+        {
+            eodPanelRoot.SetActive(false);
+        }
+
+        CloseGameOverPanel();
 
         if (_sessionManager != null)
         {
@@ -221,6 +305,8 @@ public sealed class MainUIManager : MonoBehaviour
         }
 
         Keyboard keyboard = Keyboard.current;
+        UpdateMainMenuTooltipPosition();
+
         if (keyboard == null || !keyboard.escapeKey.wasPressedThisFrame)
         {
             return;
@@ -240,6 +326,11 @@ public sealed class MainUIManager : MonoBehaviour
     public void SetMainMenuInteractable(bool value)
     {
         _mainMenuInteractable = value;
+        if (!value)
+        {
+            HideMainMenuTooltip();
+        }
+
         SetButtonInteractable(gladiatorButton, value);
         SetButtonInteractable(squadButton, value);
         SetButtonInteractable(battleButton, value);
@@ -292,6 +383,7 @@ public sealed class MainUIManager : MonoBehaviour
 
     private void OnGladiatorClicked()
     {
+        HideMainMenuTooltip();
         if (_flow != null)
         {
             _flow.HandleGladiatorMenuRequested();
@@ -300,6 +392,7 @@ public sealed class MainUIManager : MonoBehaviour
 
     private void OnSquadClicked()
     {
+        HideMainMenuTooltip();
         if (_flow != null)
         {
             _flow.HandleSquadMenuRequested();
@@ -308,6 +401,7 @@ public sealed class MainUIManager : MonoBehaviour
 
     private void OnBattleClicked()
     {
+        HideMainMenuTooltip();
         if (_flow != null)
         {
             _flow.HandleBattleMenuRequested();
@@ -316,6 +410,7 @@ public sealed class MainUIManager : MonoBehaviour
 
     private void OnInventoryClicked()
     {
+        HideMainMenuTooltip();
         if (_flow != null)
         {
             _flow.HandleInventoryMenuRequested();
@@ -324,6 +419,7 @@ public sealed class MainUIManager : MonoBehaviour
 
     private void OnMarketClicked()
     {
+        HideMainMenuTooltip();
         if (_flow != null)
         {
             _flow.HandleMarketMenuRequested();
@@ -332,15 +428,128 @@ public sealed class MainUIManager : MonoBehaviour
 
     private void OnEodClicked()
     {
+        HideMainMenuTooltip();
+        if (eodPanelRoot != null)
+        {
+            OpenEodPanel();
+            return;
+        }
+
+        AdvanceDayAfterEod();
+    }
+
+    private void OpenEodPanel()
+    {
+        if (eodTitleText != null)
+        {
+            eodTitleText.text = $"{GetCurrentDay()}일차 정산";
+        }
+
+        if (eodGoldStatisticsText != null)
+        {
+            int currentGold = GetCurrentGold();
+            int eodExpense = GetTotalUpkeep();
+            int remainingGold = currentGold - eodExpense;
+            string remainingColor = remainingGold >= 0 ? "#3366FF" : "#FF0000";
+
+            eodGoldStatisticsText.text =
+                $"{currentGold}G\n\n" + $"{eodExpense}G\n\n" + $"<color={remainingColor}>{remainingGold}G</color>";
+        }
+
+        eodPanelRoot.SetActive(true);
+    }
+
+    private void OnEodPanelClicked()
+    {
+        if (eodPanelRoot != null)
+        {
+            eodPanelRoot.SetActive(false);
+        }
+
+        int eodExpense = GetTotalUpkeep();
+        int remainingGold = GetCurrentGold() - eodExpense;
+        if (remainingGold < 0 || _resourceManager == null || !_resourceManager.TrySpendGold(eodExpense))
+        {
+            OpenGameOverPanel();
+            return;
+        }
+
+        AdvanceDayAfterEod();
+    }
+
+    private void AdvanceDayAfterEod()
+    {
         if (_flow != null)
         {
-            Debug.Log("EOd clicked");
             _flow.HandleEodRequested();
+        }
+    }
+
+    private void OpenGameOverPanel()
+    {
+        if (gameOverPanelRoot != null)
+        {
+            gameOverPanelRoot.SetActive(true);
+        }
+
+        if (gameOverPanel1Root != null)
+        {
+            gameOverPanel1Root.SetActive(true);
+        }
+
+        if (gameOverPanel2Root != null)
+        {
+            gameOverPanel2Root.SetActive(false);
+        }
+    }
+
+    private void CloseGameOverPanel()
+    {
+        if (gameOverPanelRoot != null)
+        {
+            gameOverPanelRoot.SetActive(false);
+        }
+
+        if (gameOverPanel1Root != null)
+        {
+            gameOverPanel1Root.SetActive(false);
+        }
+
+        if (gameOverPanel2Root != null)
+        {
+            gameOverPanel2Root.SetActive(false);
+        }
+    }
+
+    private void OnGameOverPanel1Clicked()
+    {
+        if (gameOverPanel1Root != null)
+        {
+            gameOverPanel1Root.SetActive(false);
+        }
+
+        if (gameOverPanel2Root != null)
+        {
+            gameOverPanel2Root.SetActive(true);
+        }
+
+        if (gameOverPanel2StoryText != null)
+        {
+            gameOverPanel2StoryText.text = $"제 {GetCurrentDay()}일,\n{GetTeamNameForStory()}은 역사 속으로 사라졌다.";
+        }
+    }
+
+    private void OnGameOverPanel2BackgroundClicked()
+    {
+        if (_flow != null)
+        {
+            _flow.HandleReturnToTitleRequested();
         }
     }
 
     private void OnAccountbookClicked()
     {
+        HideMainMenuTooltip();
         if (accountPanelRoot == null)
         {
             return;
@@ -689,6 +898,17 @@ public sealed class MainUIManager : MonoBehaviour
 
     private void HandleEscapePressed()
     {
+        if (gameOverPanelRoot != null && gameOverPanelRoot.activeSelf)
+        {
+            return;
+        }
+
+        if (eodPanelRoot != null && eodPanelRoot.activeSelf)
+        {
+            eodPanelRoot.SetActive(false);
+            return;
+        }
+
         if (accountPanelRoot != null && accountPanelRoot.activeSelf)
         {
             OnAccountBackClicked();
@@ -723,6 +943,7 @@ public sealed class MainUIManager : MonoBehaviour
 
     private void OpenEscapeMenu()
     {
+        HideMainMenuTooltip();
         if (escapeMenuRoot != null)
         {
             escapeMenuRoot.SetActive(true);
@@ -765,6 +986,22 @@ public sealed class MainUIManager : MonoBehaviour
     private int GetOwnedGladiatorCount()
     {
         return _gladiatorManager != null ? _gladiatorManager.GetOwnedGladiatorCount() : 0;
+    }
+
+    private int GetCurrentGold()
+    {
+        return _resourceManager != null ? _resourceManager.CurrentGold : 0;
+    }
+
+    private int GetCurrentDay()
+    {
+        return _sessionManager != null ? _sessionManager.CurrentDay : 1;
+    }
+
+    private string GetTeamNameForStory()
+    {
+        string teamName = teamNameText != null ? teamNameText.text : string.Empty;
+        return string.IsNullOrWhiteSpace(teamName) ? "검투사단" : teamName.Trim();
     }
 
     private int GetTotalUpkeep()
@@ -896,6 +1133,121 @@ public sealed class MainUIManager : MonoBehaviour
         }
 
         return child.GetComponent<T>();
+    }
+
+    private void RegisterMainMenuTooltips()
+    {
+        if (mainMenuTooltipEntries == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < mainMenuTooltipEntries.Length; i++)
+        {
+            MainMenuTooltipEntry entry = mainMenuTooltipEntries[i];
+            if (entry == null || entry.TargetButton == null)
+            {
+                continue;
+            }
+
+            EventTrigger trigger = entry.TargetButton.GetComponent<EventTrigger>();
+            if (trigger == null)
+            {
+                trigger = entry.TargetButton.gameObject.AddComponent<EventTrigger>();
+            }
+
+            MainMenuTooltipEntry capturedEntry = entry;
+            AddEventTriggerListener(trigger, EventTriggerType.PointerEnter, _ => ShowMainMenuTooltip(capturedEntry));
+            AddEventTriggerListener(trigger, EventTriggerType.PointerExit, _ => HideMainMenuTooltip());
+        }
+    }
+
+    private void CacheMainMenuTooltipReferences()
+    {
+        if (mainMenuTooltipRoot == null)
+        {
+            return;
+        }
+
+        _mainMenuTooltipRectTransform = mainMenuTooltipRoot.GetComponent<RectTransform>();
+        _mainMenuTooltipParentRectTransform = mainMenuTooltipRoot.transform.parent as RectTransform;
+        _mainMenuTooltipCanvas = mainMenuTooltipRoot.GetComponentInParent<Canvas>();
+    }
+
+    private void ShowMainMenuTooltip(MainMenuTooltipEntry entry)
+    {
+        if (!_mainMenuInteractable || entry == null || mainMenuTooltipRoot == null)
+        {
+            return;
+        }
+
+        if (mainMenuTooltipTitleText != null)
+        {
+            mainMenuTooltipTitleText.text = entry.Title;
+        }
+
+        if (mainMenuTooltipDetailText != null)
+        {
+            mainMenuTooltipDetailText.text = entry.Detail;
+        }
+
+        mainMenuTooltipRoot.SetActive(true);
+        UpdateMainMenuTooltipPosition();
+    }
+
+    private void HideMainMenuTooltip()
+    {
+        if (mainMenuTooltipRoot != null)
+        {
+            mainMenuTooltipRoot.SetActive(false);
+        }
+    }
+
+    private void UpdateMainMenuTooltipPosition()
+    {
+        if (
+            mainMenuTooltipRoot == null
+            || !mainMenuTooltipRoot.activeSelf
+            || _mainMenuTooltipRectTransform == null
+            || _mainMenuTooltipParentRectTransform == null
+            || Mouse.current == null
+        )
+        {
+            return;
+        }
+
+        Camera eventCamera =
+            _mainMenuTooltipCanvas != null && _mainMenuTooltipCanvas.renderMode != RenderMode.ScreenSpaceOverlay
+                ? _mainMenuTooltipCanvas.worldCamera
+                : null;
+        Vector2 screenPosition = Mouse.current.position.ReadValue() + mainMenuTooltipOffset;
+        if (
+            RectTransformUtility.ScreenPointToWorldPointInRectangle(
+                _mainMenuTooltipParentRectTransform,
+                screenPosition,
+                eventCamera,
+                out Vector3 worldPosition
+            )
+        )
+        {
+            _mainMenuTooltipRectTransform.position = worldPosition;
+        }
+    }
+
+    private static void AddEventTriggerListener(
+        EventTrigger trigger,
+        EventTriggerType eventType,
+        UnityEngine.Events.UnityAction<BaseEventData> action
+    )
+    {
+        if (trigger == null || action == null)
+        {
+            return;
+        }
+
+        EventTrigger.Entry triggerEntry = new EventTrigger.Entry { eventID = eventType };
+        triggerEntry.callback.AddListener(action);
+        trigger.triggers.Add(triggerEntry);
     }
 
     private static void BindButton(Button button, UnityEngine.Events.UnityAction action)
