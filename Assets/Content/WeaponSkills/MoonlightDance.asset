@@ -1,4 +1,4 @@
-﻿%YAML 1.1
+%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
 --- !u!114 &11400000
 MonoBehaviour:
@@ -19,5 +19,9 @@ MonoBehaviour:
     \uB9C8\uC9C0\uB9C9 \uACF5\uACA9 \uB300\uC0C1 \uADFC\uCC98\uC5D0 \uCC29\uC9C0"
   weaponType: 3
   skillId: 48
+  isSkillOnSelf: 0
+  isSkillOnOtherAlly: 0
+  isSkillAoe: 0
+  canSkillTargetDead: 0
   defaultDur: 1
   duration: 1

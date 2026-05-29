@@ -15,36 +15,54 @@ MonoBehaviour:
   gladiatorClasses:
   - {fileID: 11400000, guid: 6846407ed22928941b371aab2d355ecf, type: 2}
   weapons:
-  - {fileID: 11400000, guid: 72083519813a3ab4098ce19d38d566cd, type: 2}
-  - {fileID: 11400000, guid: 1125cefdf7e96c04cb5c836ceef728b5, type: 2}
-  - {fileID: 11400000, guid: 57a45c0a1bc261f4486e00585a46083b, type: 2}
-  - {fileID: 11400000, guid: dbdb181f9c76fca4d932bbbdbf2ded9b, type: 2}
-  - {fileID: 11400000, guid: 3da7b72ba791cd940915b68cc3d6a124, type: 2}
-  - {fileID: 11400000, guid: 8f15a2a951e32fa44914883dd11d291f, type: 2}
-  - {fileID: 11400000, guid: 3f69dd2a1b6d04140a0d6b09f9c06b82, type: 2}
-  - {fileID: 11400000, guid: ab1629e5d89986f4595fdae5ee52b07e, type: 2}
   - {fileID: 11400000, guid: c7db1e8aa8a9903449d61d1642ff0080, type: 2}
-  - {fileID: 11400000, guid: 49f58fc97c9c10647be2df2f8b820cda, type: 2}
-  - {fileID: 11400000, guid: edc5b2f26bcdd9f4f9d65b26e18e3cd6, type: 2}
   - {fileID: 11400000, guid: fd05c9e13114efd41b554141d341e5b5, type: 2}
-  - {fileID: 11400000, guid: 967910f36473084438ec0460ac257689, type: 2}
-  - {fileID: 11400000, guid: 464d6e9032f1fe64a9123b0b577c4504, type: 2}
-  - {fileID: 11400000, guid: 3e599b970d7c28e4695ab461e5c7a318, type: 2}
   - {fileID: 11400000, guid: 768c978a98e4f564591a90c43e482080, type: 2}
-  - {fileID: 11400000, guid: 78a5c612804f41d4db317b0c69400347, type: 2}
+  - {fileID: 11400000, guid: edc5b2f26bcdd9f4f9d65b26e18e3cd6, type: 2}
+  - {fileID: 11400000, guid: 4da5ce47782c51f47b0eae194fa389da, type: 2}
+  - {fileID: 11400000, guid: 967910f36473084438ec0460ac257689, type: 2}
+  - {fileID: 11400000, guid: 49f58fc97c9c10647be2df2f8b820cda, type: 2}
+  - {fileID: 11400000, guid: 3e599b970d7c28e4695ab461e5c7a318, type: 2}
+  - {fileID: 11400000, guid: 3d92c3414488aba4f8599c66d9da95f2, type: 2}
+  - {fileID: 11400000, guid: 2e262f276dd84364e9a956961446da8d, type: 2}
+  - {fileID: 11400000, guid: 232998af65867c4418c9d1617a4543de, type: 2}
+  - {fileID: 11400000, guid: 464d6e9032f1fe64a9123b0b577c4504, type: 2}
+  - {fileID: 11400000, guid: 3a8b94d16f42dd349bd4f6168cb8fb95, type: 2}
+  - {fileID: 11400000, guid: c9e7f04f625aee7498d72428e7d2e592, type: 2}
+  - {fileID: 11400000, guid: f14230ca9d2b541478f951510c865927, type: 2}
+  - {fileID: 11400000, guid: 2e27341372c97a74fb2f128a3539005b, type: 2}
+  - {fileID: 11400000, guid: 48a39c3ecc4df914db0ff96e8feadb49, type: 2}
+  - {fileID: 11400000, guid: 3174ffaac9c7bbe4db606b0b36d0685d, type: 2}
   - {fileID: 11400000, guid: e48ec9a5c5f22254da438528eae3be52, type: 2}
   - {fileID: 11400000, guid: c4ca5413269e0ff4b94e2a57ddaf37d4, type: 2}
+  - {fileID: 11400000, guid: 5d955ca9da4fe494a931fa68b383e51c, type: 2}
   - {fileID: 11400000, guid: 1b435f2c1d6a7f044bf04fdfe126fb81, type: 2}
   - {fileID: 11400000, guid: 67766c2b52606b34796476b59134b6f0, type: 2}
+  - {fileID: 11400000, guid: 9f9449101132acc468a5dbd15c1d1c00, type: 2}
+  - {fileID: 11400000, guid: d83939d4c8646ff45864c02b38b400cc, type: 2}
+  - {fileID: 11400000, guid: 4b01589fc6644174889d4105efb14638, type: 2}
   - {fileID: 11400000, guid: 8fa06782f60c4d042820730a20c918a8, type: 2}
+  - {fileID: 11400000, guid: 78a5c612804f41d4db317b0c69400347, type: 2}
   - {fileID: 11400000, guid: 1f96155ca6975844ca903cff7d7feb0b, type: 2}
+  - {fileID: 11400000, guid: 06864a02dc9f8b648982a97571953d7e, type: 2}
+  - {fileID: 11400000, guid: 54df605aef5fee34684432065bda0a01, type: 2}
+  - {fileID: 11400000, guid: c23323f12cfcf414dbc3f18a5d9d0781, type: 2}
+  - {fileID: 11400000, guid: caa8d54e104161b49873165ed975f1f0, type: 2}
   - {fileID: 11400000, guid: f2784ea9c64c07146a2c4b5ac02713e0, type: 2}
   - {fileID: 11400000, guid: 7089321e6c1d54a49be1a79d42cd4f89, type: 2}
-  - {fileID: 11400000, guid: c47f4bb61ae12474189e59ba6f404b8c, type: 2}
+  - {fileID: 11400000, guid: b0bc60c5d78f96944b4c674f17873247, type: 2}
   - {fileID: 11400000, guid: 9b40a9c9b81b63647a2aae242aa009c4, type: 2}
+  - {fileID: 11400000, guid: d5528caa83141924e92971714e7707e9, type: 2}
+  - {fileID: 11400000, guid: c151e5e3f5837f7489734919c586b718, type: 2}
+  - {fileID: 11400000, guid: 05dba1feafaac2a4c8e5d3ff63643e25, type: 2}
+  - {fileID: 11400000, guid: c47f4bb61ae12474189e59ba6f404b8c, type: 2}
+  - {fileID: 11400000, guid: 845aec6b7bfaaa04fad4573ce81b2bb6, type: 2}
+  - {fileID: 11400000, guid: fa968edb00b827a41b99dbbfd9af82d1, type: 2}
   - {fileID: 11400000, guid: e7d1490b33e51fb4aa5339d1406caf12, type: 2}
-  - {fileID: 11400000, guid: 57b07abdf773aae4ab1a2a56c897b55a, type: 2}
+  - {fileID: 11400000, guid: b00e2d3d1aba2f243b2c5a7984792751, type: 2}
   - {fileID: 11400000, guid: 7107f2425b7f17f40a6b7896411a4397, type: 2}
+  - {fileID: 11400000, guid: 1a36a21d8a2d3dd46aad48d6da159dd2, type: 2}
+  - {fileID: 11400000, guid: 57b07abdf773aae4ab1a2a56c897b55a, type: 2}
   weaponSkills:
   - {fileID: 11400000, guid: 86a621cddad462e4da42608a4f9cbd57, type: 2}
   - {fileID: 11400000, guid: d76b2906a973a934b953c69511438bc4, type: 2}

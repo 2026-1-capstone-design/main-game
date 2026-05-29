@@ -1,4 +1,4 @@
-﻿%YAML 1.1
+%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
 --- !u!114 &11400000
 MonoBehaviour:
@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   icon: {fileID: 21300000, guid: e62e72af7548cd2449124923253fe701, type: 3}
   artifactName: BrokenCrown
-  artifactId: 7
+  artifactPerkId: 7
   artifactLevel: 1
-  description: "\uC804\uD22C \uC2DC\uC791 \uD6C4 20\uCD08\uAC04 \uACF5\uACA9\uB825
+  artifactLore: "\uC804\uD22C \uC2DC\uC791 \uD6C4 20\uCD08\uAC04 \uACF5\uACA9\uB825
     \uC99D\uAC00"

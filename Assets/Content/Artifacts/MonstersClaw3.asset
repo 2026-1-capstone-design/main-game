@@ -1,4 +1,4 @@
-﻿%YAML 1.1
+%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
 --- !u!114 &11400000
 MonoBehaviour:
@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   icon: {fileID: 21300000, guid: 7b8bd7f68574655419d14c1e3be7bebe, type: 3}
   artifactName: MonstersClaw
-  artifactId: 8
+  artifactPerkId: 8
   artifactLevel: 3
-  description: "\uCCB4\uB825\uC774 50% \uC774\uD558\uC778 \uC801\uC5D0\uAC8C \uC8FC\uB294
+  artifactLore: "\uCCB4\uB825\uC774 50% \uC774\uD558\uC778 \uC801\uC5D0\uAC8C \uC8FC\uB294
     \uB370\uBBF8\uC9C0 \uC99D\uAC00"

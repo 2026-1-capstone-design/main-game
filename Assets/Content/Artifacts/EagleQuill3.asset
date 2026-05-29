@@ -1,4 +1,4 @@
-﻿%YAML 1.1
+%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
 --- !u!114 &11400000
 MonoBehaviour:
@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   icon: {fileID: 21300000, guid: 09e19a1f646a5454391c0d511152b354, type: 3}
   artifactName: EagleQuill
-  artifactId: 15
+  artifactPerkId: 15
   artifactLevel: 3
-  description: "\uC801 \uCC98\uCE58 \uC2DC 7\uCD08\uAC04 \uACF5\uACA9\uC18D\uB3C4\uC640
+  artifactLore: "\uC801 \uCC98\uCE58 \uC2DC 7\uCD08\uAC04 \uACF5\uACA9\uC18D\uB3C4\uC640
     \uC774\uB3D9\uC18D\uB3C4 \uD06C\uAC8C \uC99D\uAC00"

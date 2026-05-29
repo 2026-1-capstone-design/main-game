@@ -1,4 +1,4 @@
-﻿%YAML 1.1
+%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
 --- !u!114 &11400000
 MonoBehaviour:
@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   icon: {fileID: 21300000, guid: e02b8da342340624b8abf653ee44eb30, type: 3}
   artifactName: AssassinsDagger
-  artifactId: 12
+  artifactPerkId: 12
   artifactLevel: 3
-  description: "\uC790\uC2E0\uC744 \uACF5\uACA9\uD558\uB294 \uC801\uC774 1\uBA85
+  artifactLore: "\uC790\uC2E0\uC744 \uACF5\uACA9\uD558\uB294 \uC801\uC774 1\uBA85
     \uC774\uD558\uC77C \uB54C \uACF5\uACA9\uB825 % \uC99D\uAC00"

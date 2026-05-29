@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: df9d8b62f4a040845a470ef2178797ef, type: 3}
+  m_Name: GiantKiller
+  m_EditorClassIdentifier: 
+  icon: {fileID: 21300000, guid: 3a71241be14c1f9468f9cff42bb8a1a3, type: 3}
+  weaponName: GiantKiller
+  weaponType: 2
+  lore: 
+  leftWeaponPrefab: {fileID: 26744791562570188, guid: 49e6000adfc1e4947a3d1e139883ac4f, type: 3}
+  rightWeaponPrefab: {fileID: 6355684400211210520, guid: c900fbe39aa66034293debd1d96521a2, type: 3}
+  isRanged: 0
+  useProjectile: 0
+  defaultDur: 0
+  duration: 0.5
+  baseAttackBonus: 90
+  baseHealthBonus: 1500
+  baseAttackSpeedBonus: 0
+  baseMoveSpeedBonus: 0
+  baseAttackRangeBonus: 3
+  calculatedPrice: 9100
+  weaponGrade: 4
