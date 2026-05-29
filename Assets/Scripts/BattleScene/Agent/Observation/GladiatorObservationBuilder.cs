@@ -113,14 +113,13 @@ public readonly struct GladiatorObservationStats
 {
     private const float Epsilon = 1e-6f;
 
-    public readonly float MedianMaxHealth;
-    public readonly float MedianAttack;
+    // 에피소드 중 유닛 사망/버프에 따라 정규화 기준이 흔들리지 않도록 전투 시작 시점의 roster 최대 체력을 사용한다.
+    public readonly float MaxRosterMaxHealth;
     public readonly float MaxMoveSpeed;
 
-    public GladiatorObservationStats(float medianMaxHealth, float medianAttack, float maxMoveSpeed)
+    public GladiatorObservationStats(float maxRosterMaxHealth, float maxMoveSpeed)
     {
-        MedianMaxHealth = Mathf.Max(Epsilon, medianMaxHealth);
-        MedianAttack = Mathf.Max(Epsilon, medianAttack);
+        MaxRosterMaxHealth = Mathf.Max(Epsilon, maxRosterMaxHealth);
         MaxMoveSpeed = Mathf.Max(Epsilon, maxMoveSpeed);
     }
 }
@@ -128,7 +127,6 @@ public readonly struct GladiatorObservationStats
 public static class GladiatorObservationBuilder
 {
     private const float Epsilon = 1e-6f;
-    private const float LogCompressDecadeWindow = 3f;
 
     public static void Write(VectorSensor sensor, GladiatorObservationContext context)
     {
@@ -146,7 +144,7 @@ public static class GladiatorObservationBuilder
         Vector2 arenaDelta = context.WorldToObservationAxes(context.ArenaCenter - self.Position);
         IReadOnlyList<BattleUnitCombatState> teammates = context.Teammates;
         IReadOnlyList<BattleUnitCombatState> opponents = context.Opponents;
-        float healthRatio = self.MaxHealth > 0f ? Mathf.Clamp01(self.CurrentHealth / self.MaxHealth) : 1f;
+        float currentHealthRatio = NormalizeByRosterMaxHealth(self.CurrentHealth, context);
         GladiatorCombatSignalFeatures features = GladiatorCombatSignalFeatures.Builder.Build(context);
         float distanceFromCenter = Vector3.Distance(
             new Vector3(self.Position.x, 0f, self.Position.z),
@@ -160,9 +158,8 @@ public static class GladiatorObservationBuilder
         GladiatorSelfObservation selfObservation = new GladiatorSelfObservation(
             GladiatorObservationNormalization.NormalizeSignedByArenaRadius(arenaDelta.x, context.ArenaRadius),
             GladiatorObservationNormalization.NormalizeSignedByArenaRadius(arenaDelta.y, context.ArenaRadius),
-            healthRatio,
-            LogCompress(self.MaxHealth, context.Stats.MedianMaxHealth),
-            LogCompress(self.Attack, context.Stats.MedianAttack),
+            currentHealthRatio,
+            NormalizeByRosterMaxHealth(self.Attack, context),
             GladiatorObservationNormalization.NormalizeByArenaRadius(self.AttackRange, context.ArenaRadius),
             GladiatorObservationNormalization.NormalizePositiveByReference(self.MoveSpeed, context.Stats.MaxMoveSpeed),
             NormalizeAttackCooldown(self),
@@ -257,9 +254,8 @@ public static class GladiatorObservationBuilder
             GladiatorObservationNormalization.NormalizeSignedByArenaRadius(relativePos.x, context.ArenaRadius),
             GladiatorObservationNormalization.NormalizeSignedByArenaRadius(relativePos.y, context.ArenaRadius),
             NormalizeHorizontalDistance(self.Position, unit.Position, context.ArenaRadius),
-            unit.MaxHealth > 0f ? Mathf.Clamp01(unit.CurrentHealth / unit.MaxHealth) : 1f,
-            LogCompress(unit.MaxHealth, context.Stats.MedianMaxHealth),
-            LogCompress(unit.Attack, context.Stats.MedianAttack),
+            NormalizeByRosterMaxHealth(unit.CurrentHealth, context),
+            NormalizeByRosterMaxHealth(unit.Attack, context),
             GladiatorObservationNormalization.NormalizeByArenaRadius(unit.AttackRange, context.ArenaRadius),
             GladiatorObservationNormalization.NormalizePositiveByReference(unit.MoveSpeed, context.Stats.MaxMoveSpeed),
             NormalizeAttackCooldown(unit),
@@ -274,12 +270,9 @@ public static class GladiatorObservationBuilder
         return GladiatorObservationNormalization.NormalizeByArenaRadius(delta.magnitude, arenaRadius);
     }
 
-    private static float LogCompress(float value, float reference)
+    private static float NormalizeByRosterMaxHealth(float value, GladiatorObservationContext context)
     {
-        float safeValue = Mathf.Max(Epsilon, value);
-        float safeReference = Mathf.Max(Epsilon, reference);
-        float ratio = safeValue / safeReference;
-        return Mathf.Clamp(Mathf.Log10(ratio) / LogCompressDecadeWindow, -1f, 1f);
+        return GladiatorObservationNormalization.NormalizePositiveByReference(value, context.Stats.MaxRosterMaxHealth);
     }
 
     private static float NormalizeAttackCooldown(BattleUnitCombatState unit)

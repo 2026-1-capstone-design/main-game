@@ -587,8 +587,7 @@ public class GladiatorAgent : Agent
 
     private GladiatorObservationStats ComputeInitialObservationStats()
     {
-        var maxHealthValues = new List<float>();
-        var attackValues = new List<float>();
+        float maxRosterMaxHealth = 0f;
         float maxMoveSpeed = 0f;
 
         IReadOnlyList<BattleUnitCombatState> states = ToStates(_flowManager != null ? _flowManager.RuntimeUnits : null);
@@ -603,30 +602,27 @@ public class GladiatorAgent : Agent
                     sawSelf = true;
                 }
 
-                AddInitialUnitStats(state, maxHealthValues, attackValues, ref maxMoveSpeed);
+                AddInitialUnitStats(state, ref maxRosterMaxHealth, ref maxMoveSpeed);
             }
         }
 
         if (!sawSelf)
         {
-            AddInitialUnitStats(_selfState, maxHealthValues, attackValues, ref maxMoveSpeed);
+            AddInitialUnitStats(_selfState, ref maxRosterMaxHealth, ref maxMoveSpeed);
         }
 
         float fallbackMaxHealth = _selfState != null ? _selfState.MaxHealth : 1f;
-        float fallbackAttack = _selfState != null ? _selfState.Attack : 1f;
         float fallbackMoveSpeed = _selfState != null ? _selfState.MoveSpeed : 1f;
 
         return new GladiatorObservationStats(
-            Median(maxHealthValues, fallbackMaxHealth),
-            Median(attackValues, fallbackAttack),
+            maxRosterMaxHealth > 0f ? maxRosterMaxHealth : fallbackMaxHealth,
             maxMoveSpeed > 0f ? maxMoveSpeed : fallbackMoveSpeed
         );
     }
 
     private static void AddInitialUnitStats(
         BattleUnitCombatState state,
-        List<float> maxHealthValues,
-        List<float> attackValues,
+        ref float maxRosterMaxHealth,
         ref float maxMoveSpeed
     )
     {
@@ -637,12 +633,7 @@ public class GladiatorAgent : Agent
 
         if (state.MaxHealth > 0f)
         {
-            maxHealthValues.Add(state.MaxHealth);
-        }
-
-        if (state.Attack > 0f)
-        {
-            attackValues.Add(state.Attack);
+            maxRosterMaxHealth = Mathf.Max(maxRosterMaxHealth, state.MaxHealth);
         }
 
         maxMoveSpeed = Mathf.Max(maxMoveSpeed, state.MoveSpeed);
@@ -674,21 +665,4 @@ public class GladiatorAgent : Agent
         return unit.Snapshot.PersonalityBias;
     }
 
-    private static float Median(List<float> values, float fallback)
-    {
-        if (values.Count == 0)
-        {
-            return Mathf.Max(1e-6f, fallback);
-        }
-
-        values.Sort();
-
-        int mid = values.Count / 2;
-        if (values.Count % 2 == 1)
-        {
-            return values[mid];
-        }
-
-        return (values[mid - 1] + values[mid]) * 0.5f;
-    }
 }

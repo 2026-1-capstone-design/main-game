@@ -73,9 +73,8 @@ public readonly struct GladiatorSelfObservation
 {
     public readonly float ArenaCenterAnchorRelativeX;
     public readonly float ArenaCenterAnchorRelativeZ;
-    public readonly float HealthRatio;
-    public readonly float MaxHealthLogRatio;
-    public readonly float AttackLogRatio;
+    public readonly float CurrentHealthToRosterMaxHealthRatio;
+    public readonly float AttackToRosterMaxHealthRatio;
     public readonly float AttackRangeRatio;
     public readonly float MoveSpeedRatio;
     public readonly float AttackCooldownRatio;
@@ -107,9 +106,8 @@ public readonly struct GladiatorSelfObservation
     public GladiatorSelfObservation(
         float arenaCenterAnchorRelativeX,
         float arenaCenterAnchorRelativeZ,
-        float healthRatio,
-        float maxHealthLogRatio,
-        float attackLogRatio,
+        float currentHealthToRosterMaxHealthRatio,
+        float attackToRosterMaxHealthRatio,
         float attackRangeRatio,
         float moveSpeedRatio,
         float attackCooldownRatio,
@@ -141,9 +139,8 @@ public readonly struct GladiatorSelfObservation
     {
         ArenaCenterAnchorRelativeX = arenaCenterAnchorRelativeX;
         ArenaCenterAnchorRelativeZ = arenaCenterAnchorRelativeZ;
-        HealthRatio = healthRatio;
-        MaxHealthLogRatio = maxHealthLogRatio;
-        AttackLogRatio = attackLogRatio;
+        CurrentHealthToRosterMaxHealthRatio = currentHealthToRosterMaxHealthRatio;
+        AttackToRosterMaxHealthRatio = attackToRosterMaxHealthRatio;
         AttackRangeRatio = attackRangeRatio;
         MoveSpeedRatio = moveSpeedRatio;
         AttackCooldownRatio = attackCooldownRatio;
@@ -177,9 +174,8 @@ public readonly struct GladiatorSelfObservation
     {
         sensor.AddObservation(ArenaCenterAnchorRelativeX);
         sensor.AddObservation(ArenaCenterAnchorRelativeZ);
-        sensor.AddObservation(HealthRatio);
-        sensor.AddObservation(MaxHealthLogRatio);
-        sensor.AddObservation(AttackLogRatio);
+        sensor.AddObservation(CurrentHealthToRosterMaxHealthRatio);
+        sensor.AddObservation(AttackToRosterMaxHealthRatio);
         sensor.AddObservation(AttackRangeRatio);
         sensor.AddObservation(MoveSpeedRatio);
         sensor.AddObservation(AttackCooldownRatio);
@@ -224,9 +220,8 @@ public readonly struct GladiatorUnitObservation
     public readonly float AnchorRelativePositionX;
     public readonly float AnchorRelativePositionZ;
     public readonly float DistanceToSelfRatio;
-    public readonly float HealthRatio;
-    public readonly float MaxHealthLogRatio;
-    public readonly float AttackLogRatio;
+    public readonly float CurrentHealthToRosterMaxHealthRatio;
+    public readonly float AttackToRosterMaxHealthRatio;
     public readonly float AttackRangeRatio;
     public readonly float MoveSpeedRatio;
     public readonly float AttackCooldownRatio;
@@ -236,9 +231,8 @@ public readonly struct GladiatorUnitObservation
         float anchorRelativePositionX,
         float anchorRelativePositionZ,
         float distanceToSelfRatio,
-        float healthRatio,
-        float maxHealthLogRatio,
-        float attackLogRatio,
+        float currentHealthToRosterMaxHealthRatio,
+        float attackToRosterMaxHealthRatio,
         float attackRangeRatio,
         float moveSpeedRatio,
         float attackCooldownRatio,
@@ -248,9 +242,8 @@ public readonly struct GladiatorUnitObservation
         AnchorRelativePositionX = anchorRelativePositionX;
         AnchorRelativePositionZ = anchorRelativePositionZ;
         DistanceToSelfRatio = distanceToSelfRatio;
-        HealthRatio = healthRatio;
-        MaxHealthLogRatio = maxHealthLogRatio;
-        AttackLogRatio = attackLogRatio;
+        CurrentHealthToRosterMaxHealthRatio = currentHealthToRosterMaxHealthRatio;
+        AttackToRosterMaxHealthRatio = attackToRosterMaxHealthRatio;
         AttackRangeRatio = attackRangeRatio;
         MoveSpeedRatio = moveSpeedRatio;
         AttackCooldownRatio = attackCooldownRatio;
@@ -273,9 +266,8 @@ public readonly struct GladiatorUnitObservation
         sensor.AddObservation(AnchorRelativePositionX);
         sensor.AddObservation(AnchorRelativePositionZ);
         sensor.AddObservation(DistanceToSelfRatio);
-        sensor.AddObservation(HealthRatio);
-        sensor.AddObservation(MaxHealthLogRatio);
-        sensor.AddObservation(AttackLogRatio);
+        sensor.AddObservation(CurrentHealthToRosterMaxHealthRatio);
+        sensor.AddObservation(AttackToRosterMaxHealthRatio);
         sensor.AddObservation(AttackRangeRatio);
         sensor.AddObservation(MoveSpeedRatio);
         sensor.AddObservation(AttackCooldownRatio);
