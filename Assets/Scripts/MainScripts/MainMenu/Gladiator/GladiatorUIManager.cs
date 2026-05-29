@@ -1102,7 +1102,34 @@ public sealed class GladiatorUIManager : MonoBehaviour
         {
             RefreshInventoryWeaponViewer();
         }
+
         SetInventoryActive(true);
+        OpenEquippedItemDetailForCurrentInventoryMode();
+    }
+
+    private void OpenEquippedItemDetailForCurrentInventoryMode()
+    {
+        if (_currentDetailGladiator == null)
+        {
+            return;
+        }
+
+        if (_inventoryMode == DetailInventoryMode.Artifact)
+        {
+            OwnedArtifactData equippedArtifact = _currentDetailGladiator.EquippedArtifact;
+            if (equippedArtifact != null && equippedArtifact.Artifact != null)
+            {
+                OpenArtifactDetail(equippedArtifact);
+            }
+
+            return;
+        }
+
+        OwnedWeaponData equippedWeapon = _currentDetailGladiator.EquippedWeapon;
+        if (equippedWeapon != null && equippedWeapon.Weapon != null)
+        {
+            OpenWeaponDetail(equippedWeapon);
+        }
     }
 
     //이미 장착/탈착 직후 RefreshDetail()을 호출하고 있어서 아이콘은 뜬느데 혹시 모르니
