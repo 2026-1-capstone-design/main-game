@@ -125,6 +125,8 @@ public sealed class BattleUnitTooltipUIManager : MonoBehaviour
     private readonly List<BattleRuntimeUnit> _runtimeUnits = new List<BattleRuntimeUnit>();
     private BattleRuntimeUnit _selectedUnit;
     private bool _initialized;
+    private Vector3 _healthBarRedFillBaseScale = Vector3.one;
+    private bool _hasHealthBarRedFillBaseScale;
     private ContentDatabaseProvider _contentDatabaseProvider;
 
     private void Awake()
@@ -540,7 +542,7 @@ public sealed class BattleUnitTooltipUIManager : MonoBehaviour
         }
 
         SetHealthRatio(Mathf.Clamp01(unit.CurrentHealth / unit.MaxHealth));
-        SetText(healthBarText, $"[{FormatHealth(unit.CurrentHealth)}/{FormatHealth(unit.MaxHealth)}]");
+        SetText(healthBarText, $"{FormatHealth(unit.CurrentHealth)}/{FormatHealth(unit.MaxHealth)}");
     }
 
     private void SetHealthRatio(float ratio)
@@ -552,6 +554,16 @@ public sealed class BattleUnitTooltipUIManager : MonoBehaviour
 
         healthBarRedFillImage.enabled = ratio > 0f;
         healthBarRedFillImage.fillAmount = ratio;
+
+        if (!_hasHealthBarRedFillBaseScale)
+        {
+            CacheHealthBarRedFillBaseScale();
+        }
+
+        Transform fillTransform = healthBarRedFillImage.transform;
+        Vector3 scale = _healthBarRedFillBaseScale;
+        scale.x *= ratio;
+        fillTransform.localScale = scale;
     }
 
     private void ConfigureHealthBarFillImage()
@@ -564,6 +576,28 @@ public sealed class BattleUnitTooltipUIManager : MonoBehaviour
         healthBarRedFillImage.type = Image.Type.Filled;
         healthBarRedFillImage.fillMethod = Image.FillMethod.Horizontal;
         healthBarRedFillImage.fillOrigin = (int)Image.OriginHorizontal.Left;
+        CacheHealthBarRedFillBaseScale();
+
+        RectTransform fillRect = healthBarRedFillImage.rectTransform;
+        if (fillRect != null)
+        {
+            Vector2 pivot = fillRect.pivot;
+            pivot.x = 0f;
+            fillRect.pivot = pivot;
+        }
+    }
+
+    private void CacheHealthBarRedFillBaseScale()
+    {
+        if (healthBarRedFillImage == null)
+        {
+            _healthBarRedFillBaseScale = Vector3.one;
+            _hasHealthBarRedFillBaseScale = false;
+            return;
+        }
+
+        _healthBarRedFillBaseScale = healthBarRedFillImage.transform.localScale;
+        _hasHealthBarRedFillBaseScale = true;
     }
 
     private void WireDetailButtons()
