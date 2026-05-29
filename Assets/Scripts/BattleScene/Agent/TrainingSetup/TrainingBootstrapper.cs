@@ -20,6 +20,24 @@ public class TrainingBootstrapper : MonoBehaviour, ITrainingEnvironment, IGladia
     [SerializeField]
     private TrainingGladiatorPreset[] randomPresetPool;
 
+    [Header("Unit Generation")]
+    [SerializeField]
+    private TrainingBattleUnitGenerationMode unitGenerationMode =
+        TrainingBattleUnitGenerationMode.InGameEnemyGeneration;
+
+    [SerializeField]
+    private BattleEncounterDifficulty inGameGenerationDifficulty = BattleEncounterDifficulty.Low;
+
+    private ContentDatabaseProvider contentDatabaseProvider;
+
+    private RandomManager randomManager;
+
+    private SessionManager sessionManager;
+
+    private EquipmentFactory equipmentFactory;
+
+    private RecruitFactory recruitFactory;
+
     [Header("Training Stat Advantage")]
     [SerializeField]
     private string allyStatMultiplierEnvironmentParameter = "ally_stat_multiplier";
@@ -215,7 +233,11 @@ public class TrainingBootstrapper : MonoBehaviour, ITrainingEnvironment, IGladia
 
     private void BuildServices()
     {
-        TrainingBattlePayloadFactory payloadFactory = new TrainingBattlePayloadFactory(this);
+        InitializeInGameGenerationServices();
+        TrainingBattlePayloadFactory payloadFactory = new TrainingBattlePayloadFactory(
+            this,
+            unitGenerationMode == TrainingBattleUnitGenerationMode.InGameEnemyGeneration ? recruitFactory : null
+        );
         TrainingSpawnPlacementSampler placementSampler = new TrainingSpawnPlacementSampler();
         _agentBinder = new TrainingAgentBinder(battleSceneFlowManager, this, this);
         _episodeController = new TrainingEpisodeController(
@@ -268,15 +290,74 @@ public class TrainingBootstrapper : MonoBehaviour, ITrainingEnvironment, IGladia
     private TrainingBattlePayloadSettings CreatePayloadSettings()
     {
         return new TrainingBattlePayloadSettings(
+            unitGenerationMode,
             useCurriculumTeamSize,
             teamSizeEnvironmentParameter,
             defaultTeamSize,
             randomPresetPool,
+            inGameGenerationDifficulty,
             allyStatMultiplierEnvironmentParameter,
             enemyStatMultiplierEnvironmentParameter,
             defaultAllyStatMultiplier,
             defaultEnemyStatMultiplier
         );
+    }
+
+    private void InitializeInGameGenerationServices()
+    {
+        if (unitGenerationMode != TrainingBattleUnitGenerationMode.InGameEnemyGeneration)
+        {
+            return;
+        }
+
+        contentDatabaseProvider =
+            contentDatabaseProvider != null ? contentDatabaseProvider
+            : ContentDatabaseProvider.Instance != null ? ContentDatabaseProvider.Instance
+            : FindFirstObjectByType<ContentDatabaseProvider>();
+        randomManager =
+            randomManager != null ? randomManager
+            : RandomManager.Instance != null ? RandomManager.Instance
+            : FindFirstObjectByType<RandomManager>();
+        sessionManager =
+            sessionManager != null ? sessionManager
+            : SessionManager.Instance != null ? SessionManager.Instance
+            : FindFirstObjectByType<SessionManager>();
+        equipmentFactory = ResolveOrCreateFactory(equipmentFactory);
+        recruitFactory = ResolveOrCreateFactory(recruitFactory);
+
+        if (
+            contentDatabaseProvider == null
+            || randomManager == null
+            || equipmentFactory == null
+            || recruitFactory == null
+        )
+        {
+            Debug.LogError(
+                "[TrainingBootstrapper] In-game unit generation is enabled, but required services could not be resolved.",
+                this
+            );
+            return;
+        }
+
+        equipmentFactory.Initialize(contentDatabaseProvider, randomManager);
+        recruitFactory.Initialize(contentDatabaseProvider, sessionManager, randomManager, equipmentFactory);
+    }
+
+    private T ResolveOrCreateFactory<T>(T configuredFactory)
+        where T : Component
+    {
+        if (configuredFactory != null)
+        {
+            return configuredFactory;
+        }
+
+        T existingFactory = FindFirstObjectByType<T>();
+        if (existingFactory != null)
+        {
+            return existingFactory;
+        }
+
+        return gameObject.AddComponent<T>();
     }
 
     private TrainingAgentBindingSettings CreateBindingSettings()
