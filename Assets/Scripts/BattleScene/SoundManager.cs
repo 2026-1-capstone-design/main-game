@@ -18,6 +18,11 @@ public class SoundManager : MonoBehaviour
     {
         _audioSource = GetComponent<AudioSource>();
 
+        if (buttonImage == null)
+        {
+            Debug.LogWarning("SoundManager: Button Image가 인스펙터에서 할당되지 않았습니다.", this);
+        }
+
         // 시작할 때 현재 소리 상태에 맞춰 버튼 색상을 초기화합니다.
         UpdateButtonColor();
     }
@@ -33,8 +38,8 @@ public class SoundManager : MonoBehaviour
 
     private void UpdateButtonColor()
     {
-        // 버튼 이미지가 정상적으로 연결되어 있을 때만 색상을 변경합니다.
-        if (buttonImage != null)
+        // 버튼 이미지와 오디오 소스가 모두 정상적으로 연결되어 있을 때만 색상을 변경합니다.
+        if (buttonImage != null && _audioSource != null)
         {
             buttonImage.color = _audioSource.mute ? soundOffColor : soundOnColor;
         }

@@ -21,10 +21,11 @@ MonoBehaviour:
   isRanged: 1
   useProjectile: 0
   defaultDur: 0
-  duration: 1
+  duration: 0.5
   baseAttackBonus: 10
   baseHealthBonus: 10
   baseAttackSpeedBonus: 0.7
   baseMoveSpeedBonus: 1
   baseAttackRangeBonus: 3
-  calculatedPrice: 4980
+  calculatedPrice: 5360
+  weaponGrade: 1

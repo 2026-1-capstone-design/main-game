@@ -21,7 +21,7 @@ MonoBehaviour:
   isRanged: 0
   useProjectile: 0
   defaultDur: 0
-  duration: 2
+  duration: 0.5
   baseAttackBonus: 162
   baseHealthBonus: 0
   baseAttackSpeedBonus: 0
