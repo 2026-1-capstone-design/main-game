@@ -11,6 +11,7 @@ public sealed class GladiatorAgentEpisodeMetrics
     private const string CommandSwitchKey = "Combat/CommandSwitch";
     private const string AnchorSwitchKey = "Combat/AnchorSwitch";
     private const string StrategySwitchKey = "Combat/StrategySwitch";
+    private const string PersonalityAlignmentKey = "PersonalityBehavior/PersonalityAlignment";
     private const string CommandMaintenanceKey = "Combat/CommandMaintenance";
     private const string AnchorMaintenanceKey = "Combat/AnchorMaintenance";
     private const string StrategyMaintenanceKey = "Combat/StrategyMaintenance";
@@ -41,6 +42,7 @@ public sealed class GladiatorAgentEpisodeMetrics
 
     private readonly int[] _commandShareCounts = new int[GladiatorActionSchema.CommandBranchSize];
     private readonly int[] _strategyShareCounts = new int[GladiatorActionSchema.StrategyBranchSize];
+    private readonly int[] _episodeStrategyCounts = new int[GladiatorActionSchema.StrategyBranchSize];
     private readonly int[] _anchorSlotShareCounts = new int[GladiatorActionSchema.AnchorActionBranchSize];
     private readonly float[] _strategyRewardSums = new float[GladiatorActionSchema.StrategyBranchSize];
     private readonly int[] _strategyRewardSamples = new int[GladiatorActionSchema.StrategyBranchSize];
@@ -73,16 +75,20 @@ public sealed class GladiatorAgentEpisodeMetrics
     private int _anchorRunLengthSum;
     private int _strategyRunLengthSum;
 
+    private GladiatorPersonalityBias _personalityBias = GladiatorPersonalityBias.Neutral;
+
     private bool _flushed;
 
-    public void Reset()
+    public void Reset(GladiatorPersonalityBias personalityBias = default)
     {
+        _personalityBias = personalityBias.IsValid ? personalityBias : GladiatorPersonalityBias.Neutral;
         _totalDamageDealt = 0f;
         _expectedDamageBudget = 0f;
         _enemyRangeOffsetSum = 0f;
         _enemyRangeOffsetSamples = 0;
         Array.Clear(_commandShareCounts, 0, _commandShareCounts.Length);
         Array.Clear(_strategyShareCounts, 0, _strategyShareCounts.Length);
+        Array.Clear(_episodeStrategyCounts, 0, _episodeStrategyCounts.Length);
         Array.Clear(_anchorSlotShareCounts, 0, _anchorSlotShareCounts.Length);
         Array.Clear(_strategyRewardSums, 0, _strategyRewardSums.Length);
         Array.Clear(_strategyRewardSamples, 0, _strategyRewardSamples.Length);
@@ -199,6 +205,11 @@ public sealed class GladiatorAgentEpisodeMetrics
             recorder.Add(CommandSwitchKey, _commandSwitchCount * inverseStepCount, StatAggregationMethod.Average);
             recorder.Add(AnchorSwitchKey, _anchorSwitchCount * inverseStepCount, StatAggregationMethod.Average);
             recorder.Add(StrategySwitchKey, _strategySwitchCount * inverseStepCount, StatAggregationMethod.Average);
+            recorder.Add(
+                PersonalityAlignmentKey,
+                CalculatePersonalityAlignment(inverseStepCount),
+                StatAggregationMethod.Average
+            );
         }
 
         if (_commandRunCount > 0)
@@ -244,6 +255,7 @@ public sealed class GladiatorAgentEpisodeMetrics
     {
         _commandShareCounts[(int)action.Command]++;
         _strategyShareCounts[(int)action.Strategy]++;
+        _episodeStrategyCounts[(int)action.Strategy]++;
         _anchorSlotShareCounts[action.AnchorSlot]++;
         _localMetricStepCount++;
 
@@ -292,6 +304,19 @@ public sealed class GladiatorAgentEpisodeMetrics
                 StatAggregationMethod.Average
             );
         }
+    }
+
+    private float CalculatePersonalityAlignment(float inverseStepCount)
+    {
+        float pressureShare = _episodeStrategyCounts[(int)GladiatorStrategy.Pressure] * inverseStepCount;
+        float defensiveShare =
+            (
+                _episodeStrategyCounts[(int)GladiatorStrategy.KeepRange]
+                + _episodeStrategyCounts[(int)GladiatorStrategy.Retreat]
+            ) * inverseStepCount;
+        float aggressiveBias = 1f - _personalityBias.Passiveness;
+        float passiveBias = _personalityBias.Passiveness;
+        return aggressiveBias * pressureShare + passiveBias * defensiveShare;
     }
 
     private void UpdateCommandMetrics(GladiatorCommand command)

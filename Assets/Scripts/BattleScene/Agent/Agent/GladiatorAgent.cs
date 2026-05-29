@@ -94,7 +94,7 @@ public class GladiatorAgent : Agent
         _commandCommitmentSteps = 0;
         _anchorCommitmentSteps = 0;
         _strategyCommitmentSteps = 0;
-        _episodeMetrics.Reset();
+        _episodeMetrics.Reset(_personalityBias);
 
         if (useBuiltInAiHeuristic)
         {
@@ -212,7 +212,7 @@ public class GladiatorAgent : Agent
         _strategyCommitmentSteps = 0;
         _rewardEvaluator?.Reset();
         _actionSink?.Clear();
-        _episodeMetrics.Reset();
+        _episodeMetrics.Reset(_personalityBias);
     }
 
     public void FlushEpisodeMetrics()
@@ -664,5 +664,4 @@ public class GladiatorAgent : Agent
 
         return unit.Snapshot.PersonalityBias;
     }
-
 }
