@@ -130,6 +130,7 @@ public sealed class BattleUnitTooltipUIManager : MonoBehaviour
     private void Awake()
     {
         WireDetailButtons();
+        ConfigureHealthBarFillImage();
         HideTooltip();
     }
 
@@ -177,7 +178,7 @@ public sealed class BattleUnitTooltipUIManager : MonoBehaviour
 
         if (_selectedUnit != null)
         {
-            RefreshTooltipStats(_selectedUnit);
+            RefreshHealthBar(_selectedUnit);
         }
     }
 
@@ -504,7 +505,7 @@ public sealed class BattleUnitTooltipUIManager : MonoBehaviour
 
     private static void SetText(TMP_Text target, string value)
     {
-        if (target != null)
+        if (target != null && target.text != value)
         {
             target.text = value;
         }
@@ -551,14 +552,18 @@ public sealed class BattleUnitTooltipUIManager : MonoBehaviour
 
         healthBarRedFillImage.enabled = ratio > 0f;
         healthBarRedFillImage.fillAmount = ratio;
+    }
 
-        RectTransform fillRect = healthBarRedFillImage.rectTransform;
-        if (fillRect != null)
+    private void ConfigureHealthBarFillImage()
+    {
+        if (healthBarRedFillImage == null)
         {
-            Vector2 anchorMax = fillRect.anchorMax;
-            anchorMax.x = ratio;
-            fillRect.anchorMax = anchorMax;
+            return;
         }
+
+        healthBarRedFillImage.type = Image.Type.Filled;
+        healthBarRedFillImage.fillMethod = Image.FillMethod.Horizontal;
+        healthBarRedFillImage.fillOrigin = (int)Image.OriginHorizontal.Left;
     }
 
     private void WireDetailButtons()
