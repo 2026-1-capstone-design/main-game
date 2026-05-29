@@ -1,30 +1,23 @@
 using System.Collections.Generic;
-using Unity.MLAgents;
-using Unity.MLAgents.Actuators;
-using Unity.MLAgents.Policies;
 using UnityEngine;
 
 [DisallowMultipleComponent]
 public sealed class BattleSceneGladiatorAgentBinder : MonoBehaviour
 {
-    private static readonly int[] ExpectedDiscreteBranches =
-    {
-        GladiatorActionSchema.CommandBranchSize,
-        GladiatorActionSchema.StrategyBranchSize,
-        GladiatorActionSchema.AnchorActionBranchSize,
-    };
-
     [SerializeField]
     private BattleSceneFlowManager flowManager;
-
-    [SerializeField]
-    private GladiatorAgentInferenceConfig config;
 
     [SerializeField]
     private GladiatorAgent agentPrefab;
 
     [SerializeField]
     private Transform agentHostParent;
+
+    [SerializeField]
+    private GladiatorControlledSide controlledSide = GladiatorControlledSide.HostileTeam;
+
+    [SerializeField]
+    private int maxAgentCount = BattleTeamConstants.MaxUnitsPerTeam * 2;
 
     [SerializeField]
     private bool bindAlreadySpawnedUnitsOnEnable = true;
@@ -38,6 +31,8 @@ public sealed class BattleSceneGladiatorAgentBinder : MonoBehaviour
         {
             agentHostParent = transform;
         }
+
+        maxAgentCount = Mathf.Clamp(maxAgentCount, 0, BattleTeamConstants.MaxUnitsPerTeam * 2);
     }
 
     private void Awake()
@@ -97,7 +92,7 @@ public sealed class BattleSceneGladiatorAgentBinder : MonoBehaviour
 
         BattleRosterProjection projection = new BattleRosterProjection(payload);
         List<BattleRuntimeUnit> controlledUnits = ResolveControlledUnits(payload, projection);
-        int bindCount = Mathf.Min(controlledUnits.Count, config.maxAgentCount);
+        int bindCount = Mathf.Min(controlledUnits.Count, maxAgentCount);
         EnsureAgentPool(bindCount);
 
         for (int i = 0; i < bindCount; i++)
@@ -124,61 +119,20 @@ public sealed class BattleSceneGladiatorAgentBinder : MonoBehaviour
             return false;
         }
 
-        BehaviorParameters behaviorParameters = agent.GetComponent<BehaviorParameters>();
-        DecisionRequester decisionRequester = agent.GetComponent<DecisionRequester>();
-        if (behaviorParameters == null)
-        {
-            Debug.LogError("[BattleSceneGladiatorAgentBinder] Agent host is missing BehaviorParameters.", agent);
-            return false;
-        }
-
-        if (decisionRequester == null)
-        {
-            Debug.LogError("[BattleSceneGladiatorAgentBinder] Agent host is missing DecisionRequester.", agent);
-            return false;
-        }
-
-        behaviorParameters.BehaviorName = config.behaviorName;
-        behaviorParameters.Model = config.model;
-        behaviorParameters.InferenceDevice = config.inferenceDevice;
-        behaviorParameters.BehaviorType = BehaviorType.Default;
-        behaviorParameters.DeterministicInference = config.deterministicInference;
-        behaviorParameters.TeamId = unit.TeamId.GetHashCode();
-        behaviorParameters.UseChildSensors = false;
-        behaviorParameters.UseChildActuators = true;
-        behaviorParameters.BrainParameters.VectorObservationSize = GladiatorObservationSchema.TotalSize;
-        behaviorParameters.BrainParameters.ActionSpec = new ActionSpec(
-            GladiatorActionSchema.ContinuousSize,
-            (int[])GladiatorActionSchema.DiscreteBranchSizes.Clone()
+        return GladiatorAgentContract.TryApplyRuntimeOverrides(
+            agent,
+            unit,
+            agentIndex,
+            true,
+            this,
+            "[BattleSceneGladiatorAgentBinder]"
         );
-
-        decisionRequester.DecisionPeriod = Mathf.Max(1, config.decisionPeriod);
-        decisionRequester.DecisionStep = agentIndex % decisionRequester.DecisionPeriod;
-        decisionRequester.TakeActionsBetweenDecisions = config.takeActionsBetweenDecisions;
-
-        agent.SetModel(config.behaviorName, config.model, config.inferenceDevice);
-        return ValidateAgentContract(agent, behaviorParameters, decisionRequester);
     }
 
     private bool ValidateConfig()
     {
-        if (config == null)
+        if (controlledSide == GladiatorControlledSide.None)
         {
-            Debug.LogWarning(
-                "[BattleSceneGladiatorAgentBinder] Inference config is not assigned. ML agent binding skipped.",
-                this
-            );
-            return false;
-        }
-
-        if (config.controlledSide == GladiatorControlledSide.None)
-        {
-            return false;
-        }
-
-        if (config.model == null)
-        {
-            Debug.LogError("[BattleSceneGladiatorAgentBinder] Inference config model is not assigned.", config);
             return false;
         }
 
@@ -194,95 +148,7 @@ public sealed class BattleSceneGladiatorAgentBinder : MonoBehaviour
             return false;
         }
 
-        if (string.IsNullOrWhiteSpace(config.behaviorName))
-        {
-            Debug.LogError("[BattleSceneGladiatorAgentBinder] Behavior name is empty.", config);
-            return false;
-        }
-
-        if (config.decisionPeriod < 1)
-        {
-            Debug.LogError("[BattleSceneGladiatorAgentBinder] Decision period must be >= 1.", config);
-            return false;
-        }
-
-        if (config.contractVersion != GladiatorActionSchema.ContractVersion)
-        {
-            Debug.LogError(
-                $"[BattleSceneGladiatorAgentBinder] Contract version mismatch. Expected {GladiatorActionSchema.ContractVersion}, actual {config.contractVersion}.",
-                config
-            );
-            return false;
-        }
-
-        if (
-            config.expectedContinuousActions != GladiatorActionSchema.ContinuousSize
-            || config.expectedObservationSize != GladiatorObservationSchema.TotalSize
-        )
-        {
-            Debug.LogError(
-                "[BattleSceneGladiatorAgentBinder] Inference config action/observation counts are stale.",
-                config
-            );
-            return false;
-        }
-
-        return true;
-    }
-
-    private bool ValidateAgentContract(
-        GladiatorAgent agent,
-        BehaviorParameters behaviorParameters,
-        DecisionRequester decisionRequester
-    )
-    {
-        if (behaviorParameters.BehaviorName != config.behaviorName)
-        {
-            Debug.LogError("[BattleSceneGladiatorAgentBinder] Behavior name does not match inference config.", agent);
-            return false;
-        }
-
-        if (behaviorParameters.BrainParameters.VectorObservationSize != GladiatorObservationSchema.TotalSize)
-        {
-            Debug.LogError(
-                $"[BattleSceneGladiatorAgentBinder] Observation size mismatch. Expected {GladiatorObservationSchema.TotalSize}, actual {behaviorParameters.BrainParameters.VectorObservationSize}.",
-                agent
-            );
-            return false;
-        }
-
-        ActionSpec actionSpec = behaviorParameters.BrainParameters.ActionSpec;
-        if (actionSpec.NumContinuousActions != GladiatorActionSchema.ContinuousSize)
-        {
-            Debug.LogError(
-                $"[BattleSceneGladiatorAgentBinder] Continuous action count mismatch. Expected {GladiatorActionSchema.ContinuousSize}, actual {actionSpec.NumContinuousActions}.",
-                agent
-            );
-            return false;
-        }
-
-        if (!MatchesExpectedBranches(actionSpec.BranchSizes))
-        {
-            Debug.LogError(
-                "[BattleSceneGladiatorAgentBinder] Discrete action branches do not match GladiatorActionSchema.",
-                agent
-            );
-            return false;
-        }
-
-        if (behaviorParameters.Model == null)
-        {
-            Debug.LogError("[BattleSceneGladiatorAgentBinder] BehaviorParameters model is missing.", agent);
-            return false;
-        }
-
-        if (decisionRequester.DecisionPeriod < 1)
-        {
-            Debug.LogError("[BattleSceneGladiatorAgentBinder] DecisionRequester.DecisionPeriod must be >= 1.", agent);
-            return false;
-        }
-
-        return true;
+        return GladiatorAgentContract.ValidatePrefab(agentPrefab, true, this, "[BattleSceneGladiatorAgentBinder]");
     }
 
     private List<BattleRuntimeUnit> ResolveControlledUnits(
@@ -292,10 +158,7 @@ public sealed class BattleSceneGladiatorAgentBinder : MonoBehaviour
     {
         var controlledUnits = new List<BattleRuntimeUnit>();
 
-        if (
-            config.controlledSide == GladiatorControlledSide.PlayerTeam
-            || config.controlledSide == GladiatorControlledSide.BothTeams
-        )
+        if (controlledSide == GladiatorControlledSide.PlayerTeam || controlledSide == GladiatorControlledSide.BothTeams)
         {
             controlledUnits.AddRange(
                 GladiatorUnitSelection.GetSortedUnitsForTeam(
@@ -307,8 +170,8 @@ public sealed class BattleSceneGladiatorAgentBinder : MonoBehaviour
         }
 
         if (
-            config.controlledSide == GladiatorControlledSide.HostileTeam
-            || config.controlledSide == GladiatorControlledSide.BothTeams
+            controlledSide == GladiatorControlledSide.HostileTeam
+            || controlledSide == GladiatorControlledSide.BothTeams
         )
         {
             controlledUnits.AddRange(
@@ -376,23 +239,5 @@ public sealed class BattleSceneGladiatorAgentBinder : MonoBehaviour
         {
             agentHostParent = transform;
         }
-    }
-
-    private static bool MatchesExpectedBranches(int[] branchSizes)
-    {
-        if (branchSizes == null || branchSizes.Length != ExpectedDiscreteBranches.Length)
-        {
-            return false;
-        }
-
-        for (int i = 0; i < ExpectedDiscreteBranches.Length; i++)
-        {
-            if (branchSizes[i] != ExpectedDiscreteBranches[i])
-            {
-                return false;
-            }
-        }
-
-        return true;
     }
 }

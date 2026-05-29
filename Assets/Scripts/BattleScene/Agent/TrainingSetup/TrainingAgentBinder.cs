@@ -1,7 +1,5 @@
 using System.Collections.Generic;
 using Unity.MLAgents;
-using Unity.MLAgents.Actuators;
-using Unity.MLAgents.Policies;
 using UnityEngine;
 
 public readonly struct TrainingAgentBindingSettings
@@ -54,13 +52,6 @@ public readonly struct TrainingAgentBindingSettings
 
 public sealed class TrainingAgentBinder
 {
-    private static readonly int[] ExpectedDiscreteBranches =
-    {
-        GladiatorActionSchema.CommandBranchSize,
-        GladiatorActionSchema.StrategyBranchSize,
-        GladiatorActionSchema.AnchorActionBranchSize,
-    };
-
     private readonly BattleSceneFlowManager _flowManager;
     private readonly IGladiatorCurriculumSource _curriculumSource;
     private readonly Object _logContext;
@@ -282,36 +273,25 @@ public sealed class TrainingAgentBinder
             {
                 agent.gameObject.SetActive(false);
             }
-            ConfigureAgentContract(agent, unit, i);
+            if (
+                !GladiatorAgentContract.TryApplyRuntimeOverrides(
+                    agent,
+                    unit,
+                    i,
+                    false,
+                    _logContext,
+                    "[TrainingAgentBinder]"
+                )
+            )
+            {
+                agent.gameObject.SetActive(false);
+                continue;
+            }
+
             agent.gameObject.SetActive(true);
             agent.Initialize(unit, _flowManager, _curriculumSource);
             group.RegisterAgent(agent);
         }
-    }
-
-    private static void ConfigureAgentContract(GladiatorAgent agent, BattleRuntimeUnit unit, int agentIndex)
-    {
-        if (agent == null)
-        {
-            return;
-        }
-
-        BehaviorParameters behaviorParameters = agent.GetComponent<BehaviorParameters>();
-        DecisionRequester decisionRequester = agent.GetComponent<DecisionRequester>();
-        if (behaviorParameters == null || decisionRequester == null)
-        {
-            return;
-        }
-
-        behaviorParameters.BrainParameters.VectorObservationSize = GladiatorObservationSchema.TotalSize;
-        behaviorParameters.BrainParameters.ActionSpec = new ActionSpec(
-            GladiatorActionSchema.ContinuousSize,
-            (int[])GladiatorActionSchema.DiscreteBranchSizes.Clone()
-        );
-        behaviorParameters.TeamId = unit != null ? unit.TeamId.GetHashCode() : 0;
-
-        decisionRequester.DecisionPeriod = Mathf.Max(1, decisionRequester.DecisionPeriod);
-        decisionRequester.DecisionStep = agentIndex % decisionRequester.DecisionPeriod;
     }
 
     private static void ApplyControlMode(IReadOnlyList<BattleRuntimeUnit> units, bool usesAgentPolicyControl)

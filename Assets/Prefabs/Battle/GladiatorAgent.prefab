@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 11400002}
   - component: {fileID: 11400003}
   m_Layer: 0
-  m_Name: GladiatorInferenceAgent
+  m_Name: GladiatorAgent
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -95,6 +95,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3a5c9d521e5ef4759a8246a07d52221e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  DecisionPeriod: 1
+  DecisionPeriod: 5
   DecisionStep: 0
   TakeActionsBetweenDecisions: 1

@@ -285,13 +285,7 @@ public sealed class SlmCommandUnitPlanner
             ? BattleFacingIntent.TargetEnemy
             : BattleFacingIntent.KeepCurrent;
 
-        return new BattleControlPlan(
-            target,
-            null,
-            move,
-            combatIntent,
-            facingIntent
-        );
+        return new BattleControlPlan(target, null, move, combatIntent, facingIntent);
     }
 
     // move: subtype/style별 좌표를 산출해 절대 위치 이동으로 둔다.
@@ -395,13 +389,7 @@ public sealed class SlmCommandUnitPlanner
         BattleMove move = inRange ? BattleMove.Hold() : BattleMove.ToTarget(threatState);
         BattleCombatIntent combatIntent = inRange ? BattleCombatIntent.Attack : BattleCombatIntent.None;
 
-        return new BattleControlPlan(
-            threatState,
-            null,
-            move,
-            combatIntent,
-            BattleFacingIntent.TargetEnemy
-        );
+        return new BattleControlPlan(threatState, null, move, combatIntent, BattleFacingIntent.TargetEnemy);
     }
 
     // skill: cooldown 또는 SkillDisabled status면 Hold.
@@ -442,13 +430,7 @@ public sealed class SlmCommandUnitPlanner
         if (inRange)
             entry.SkillFired = true;
 
-        return new BattleControlPlan(
-            target,
-            null,
-            move,
-            combatIntent,
-            BattleFacingIntent.TargetEnemy
-        );
+        return new BattleControlPlan(target, null, move, combatIntent, BattleFacingIntent.TargetEnemy);
     }
 
     private static BattleControlPlan BuildHoldPlan()

@@ -28,7 +28,9 @@ namespace BattleTest
         public float attackRangeOverride;
 
         [Header("Weapon Overrides")]
+        public bool ignoreWeaponStat;
         public bool overrideWeaponSettings;
+        public float attackDuration;
         public bool isRanged;
         public bool useProjectile;
 
