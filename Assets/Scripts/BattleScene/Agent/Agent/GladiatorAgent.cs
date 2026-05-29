@@ -482,7 +482,9 @@ public class GladiatorAgent : Agent
 
     private bool IsKeepRangeUnsupported()
     {
-        return _selfUnit == null || _selfUnit.Snapshot == null || !_selfUnit.Snapshot.IsRanged;
+        // Temp: 원거리 무기가 아니어도 창 같은 중거리 무기도 있어서, 일단 모든 무기에 대해 카이팅이 가능하도록 함
+        // return _selfUnit == null || _selfUnit.Snapshot == null || !_selfUnit.Snapshot.IsRanged;
+        return _selfUnit == null || _selfUnit.Snapshot == null;
     }
 
     private bool IsValidEnemySlot(int slot)
