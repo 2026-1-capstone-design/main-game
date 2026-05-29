@@ -1,4 +1,4 @@
-﻿%YAML 1.1
+%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
 --- !u!114 &11400000
 MonoBehaviour:
@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   icon: {fileID: 21300000, guid: ebd23e6fcf6d7f648999cd71fc7a869e, type: 3}
   artifactName: MaleficStarGaze
-  artifactId: 3
+  artifactPerkId: 3
   artifactLevel: 2
-  description: "\uBC1B\uB294 \uD53C\uD574\uAC00 \uC99D\uAC00\uD558\uACE0, \uACF5\uACA9\uB825\uC774
+  artifactLore: "\uBC1B\uB294 \uD53C\uD574\uAC00 \uC99D\uAC00\uD558\uACE0, \uACF5\uACA9\uB825\uC774
     \uC99D\uAC00\uD55C\uB2E4."

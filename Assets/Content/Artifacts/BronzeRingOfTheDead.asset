@@ -1,4 +1,4 @@
-﻿%YAML 1.1
+%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
 --- !u!114 &11400000
 MonoBehaviour:
@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   icon: {fileID: 21300000, guid: c4df8983e1d28b4489af70ed3bf5cb72, type: 3}
   artifactName: BronzeRingOfTheDead
-  artifactId: 16
+  artifactPerkId: 16
   artifactLevel: 1
-  description: "\uCCB4\uB825\uC774 \uB0AE\uC744\uC218\uB85D \uBC1B\uB294\uD53C\uD574
+  artifactLore: "\uCCB4\uB825\uC774 \uB0AE\uC744\uC218\uB85D \uBC1B\uB294\uD53C\uD574
     \uAC10\uC18C"

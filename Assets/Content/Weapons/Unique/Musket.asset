@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: df9d8b62f4a040845a470ef2178797ef, type: 3}
+  m_Name: Musket
+  m_EditorClassIdentifier: 
+  icon: {fileID: 21300000, guid: 00cf8e110bb82164e98610681c4ee8a4, type: 3}
+  weaponName: Musket
+  weaponType: 9
+  lore: 
+  leftWeaponPrefab: {fileID: 26744791562570188, guid: 49e6000adfc1e4947a3d1e139883ac4f, type: 3}
+  rightWeaponPrefab: {fileID: 104870942242198648, guid: e2f9bea91a72b3f41a1a3a0245390e4b, type: 3}
+  isRanged: 1
+  useProjectile: 0
+  defaultDur: 0
+  duration: 1
+  baseAttackBonus: 12
+  baseHealthBonus: 0
+  baseAttackSpeedBonus: 0
+  baseMoveSpeedBonus: 0
+  baseAttackRangeBonus: 9
+  calculatedPrice: 7900
+  weaponGrade: 3

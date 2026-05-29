@@ -16,12 +16,12 @@ MonoBehaviour:
   weaponName: OldBow
   weaponType: 11
   lore: 
-  leftWeaponPrefab: {fileID: 9024806707909862384, guid: 224f1e772bf15404aad234c389bd6c3d, type: 3}
+  leftWeaponPrefab: {fileID: 1242854479534021254, guid: f2ddacf589d1f204da2ace0239fc72f4, type: 3}
   rightWeaponPrefab: {fileID: 26744791562570188, guid: 49e6000adfc1e4947a3d1e139883ac4f, type: 3}
   isRanged: 1
   useProjectile: 1
   defaultDur: 0
-  duration: 1
+  duration: 0.7
   baseAttackBonus: 8
   baseHealthBonus: 0
   baseAttackSpeedBonus: 0
