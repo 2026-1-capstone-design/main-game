@@ -498,7 +498,23 @@ public sealed class RecruitFactory : MonoBehaviour
         float averageLevel = units.Count > 0 ? totalLevel / units.Count : 0f;
         int previewRewardGold = CalculatePreviewRewardForDifficulty(currentDay, difficulty);
 
-        return new BattleEncounterPreview(encounterIndex, units, averageLevel, previewRewardGold, difficulty);
+        IReadOnlyList<Vector2> randomEnemyPositions = BattleDeploymentPositionUtility.BuildRandomEnemyPositions(
+            _randomManager,
+            units.Count,
+            RandomStreamType.BattleEncounter
+        );
+        IReadOnlyList<Vector2> enemyPositions = BattleDeploymentPositionUtility.AssignEnemyPositionsByAttackRange(
+            randomEnemyPositions,
+            units
+        );
+        return new BattleEncounterPreview(
+            encounterIndex,
+            units,
+            averageLevel,
+            previewRewardGold,
+            difficulty,
+            enemyPositions
+        );
     }
 
     // 레벨 = DAY 규칙에 맞춰 적 팀 유닛 레벨을 고정한다.

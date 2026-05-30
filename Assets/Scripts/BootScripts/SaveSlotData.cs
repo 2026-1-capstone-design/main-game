@@ -163,6 +163,13 @@ public sealed class SaveBattleEncounterUnitData
 }
 
 [Serializable]
+public sealed class SaveNormalizedPositionData
+{
+    public float x;
+    public float y;
+}
+
+[Serializable]
 public sealed class SaveBattleEncounterData
 {
     public int encounterIndex;
@@ -170,4 +177,5 @@ public sealed class SaveBattleEncounterData
     public float averageLevel;
     public int previewRewardGold;
     public SaveBattleEncounterUnitData[] enemyUnits;
+    public SaveNormalizedPositionData[] enemyDeploymentNormalizedPositions;
 }

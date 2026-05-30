@@ -1667,7 +1667,9 @@ public sealed class BattleUIManager : MonoBehaviour
         {
             _enemyUnitIndicesByDeploymentSlot[i] = i;
             _enemyNormalizedPositionsByDeploymentSlot[i] =
-                BattleDeploymentPositionUtility.BuildEnemyPlaceholderPosition(i);
+                i < encounter.EnemyDeploymentNormalizedPositions.Count
+                    ? encounter.EnemyDeploymentNormalizedPositions[i]
+                    : BattleDeploymentPositionUtility.BuildDefaultPosition(i, count, false);
         }
     }
 
