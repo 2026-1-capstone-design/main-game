@@ -1,12 +1,8 @@
 fileFormatVersion: 2
-<<<<<<<< HEAD:Assets/Fonts/Outline Mulmaru SDF.asset.meta
-guid: 0b27a4c605b38d3478f36735c9670e91
-========
-guid: 64539583c1674cc4a84959fd65a18834
->>>>>>>> bfbfd520 (feat: unify gladiator agent config entry):Assets/Content/TestPresets/TrainingSceneCopyTest.asset.meta
+guid: 8194ce7a84385d04da782240765d6c55
 NativeFormatImporter:
   externalObjects: {}
-  mainObjectFileID: 11400000
+  mainObjectFileID: 0
   userData: 
   assetBundleName: 
   assetBundleVariant: 
