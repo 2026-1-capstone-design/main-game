@@ -39,10 +39,16 @@ public class BattleUnitCoolBar : MonoBehaviour
     private Dictionary<BattleStatusType, Sprite> _iconDict = new Dictionary<BattleStatusType, Sprite>();
 
     // BattleRuntimeUnit이 초기화될 때 이 함수를 통해 State를 전달해 줍니다.[cite: 16]
-    public void Setup(BattleUnitCombatState state)
+    public void Setup(BattleUnitCombatState state, Sprite weaponSkillIcon)
     {
         _targetState = state;
         _isInitialized = true;
+
+        if (SkillCoolBarFillImage != null)
+        {
+            SkillCoolBarFillImage.sprite = weaponSkillIcon;
+            SkillCoolBarFillImage.enabled = weaponSkillIcon != null;
+        }
 
         // 딕셔너리 세팅 (빠른 검색용)
         foreach (var data in statusIconDatabase)

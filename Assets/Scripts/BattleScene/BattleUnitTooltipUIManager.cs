@@ -523,7 +523,9 @@ public sealed class BattleUnitTooltipUIManager : MonoBehaviour
 
     private void RefreshHealthBar(BattleRuntimeUnit unit)
     {
-        bool hasHealth = unit != null && unit.MaxHealth > 0f;
+        float currentHealth = unit != null ? Mathf.Max(0f, unit.CurrentHealth) : 0f;
+        float maxHealth = unit != null ? ResolveDisplayedMaxHealth(unit) : 0f;
+        bool hasHealth = unit != null && maxHealth > 0f;
         if (healthBarRoot != null)
         {
             healthBarRoot.SetActive(hasHealth);
@@ -541,8 +543,18 @@ public sealed class BattleUnitTooltipUIManager : MonoBehaviour
             return;
         }
 
-        SetHealthRatio(Mathf.Clamp01(unit.CurrentHealth / unit.MaxHealth));
-        SetText(healthBarText, $"{FormatHealth(unit.CurrentHealth)}/{FormatHealth(unit.MaxHealth)}");
+        SetHealthRatio(Mathf.Clamp01(currentHealth / maxHealth));
+        SetText(healthBarText, $"{FormatHealth(currentHealth)}/{FormatHealth(maxHealth)}");
+    }
+
+    private static float ResolveDisplayedMaxHealth(BattleRuntimeUnit unit)
+    {
+        if (unit == null)
+        {
+            return 0f;
+        }
+
+        return Mathf.Max(0f, unit.MaxHealth, unit.CurrentHealth);
     }
 
     private void SetHealthRatio(float ratio)
@@ -827,7 +839,7 @@ public sealed class BattleUnitTooltipUIManager : MonoBehaviour
             return string.Empty;
         }
 
-        string nameColor = unit.IsPlayerOwned ? "#3366FF" : "#FF0000";
+        const string nameColor = "#FFFFFF";
 
         return $"<color={nameColor}>{unit.DisplayName}</color>";
     }

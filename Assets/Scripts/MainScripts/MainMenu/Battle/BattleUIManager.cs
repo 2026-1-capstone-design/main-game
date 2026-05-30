@@ -8,6 +8,13 @@ using UnityEngine.UI;
 [DisallowMultipleComponent]
 public sealed class BattleUIManager : MonoBehaviour
 {
+    private enum TooltipDetailTab
+    {
+        Personality,
+        Weapon,
+        WeaponSkill,
+    }
+
     private static readonly BattleEncounterDifficulty[] DifficultyOrder =
     {
         BattleEncounterDifficulty.VeryLow,
@@ -162,6 +169,12 @@ public sealed class BattleUIManager : MonoBehaviour
     private GladiatorModelPreviewView enemyTooltipModelPreviewView;
 
     [SerializeField]
+    private TMP_Text enemyTooltipPersonalityNameText;
+
+    [SerializeField]
+    private TMP_Text enemyTooltipPersonalityText;
+
+    [SerializeField]
     private TMP_Text enemyTooltipLevelText;
 
     [SerializeField]
@@ -178,6 +191,19 @@ public sealed class BattleUIManager : MonoBehaviour
 
     [SerializeField]
     private RawImage enemyTooltipHealthIcon;
+
+    [Header("Enemy Tooltip Health Bar")]
+    [SerializeField]
+    private GameObject enemyTooltipHealthBarRoot;
+
+    [SerializeField]
+    private Image enemyTooltipHealthBarBlackBackground;
+
+    [SerializeField]
+    private Image enemyTooltipHealthBarRedFillImage;
+
+    [SerializeField]
+    private TMP_Text enemyTooltipHealthBarText;
 
     [SerializeField]
     private TMP_Text enemyTooltipAttackSpeedText;
@@ -196,6 +222,22 @@ public sealed class BattleUIManager : MonoBehaviour
 
     [SerializeField]
     private RawImage enemyTooltipRangeIcon;
+
+    [Header("Enemy Tooltip Details")]
+    [SerializeField]
+    private Button enemyTooltipPersonalityDetailImage;
+
+    [SerializeField]
+    private Button enemyTooltipWeaponImageIcon;
+
+    [SerializeField]
+    private Button enemyTooltipWeaponSkillImageIcon;
+
+    [SerializeField]
+    private TMP_Text enemyTooltipSelectedTitleText;
+
+    [SerializeField]
+    private TMP_Text enemyTooltipSelectedDetailText;
 
     [Header("Preparation Buttons")]
     [SerializeField]
@@ -292,6 +334,11 @@ public sealed class BattleUIManager : MonoBehaviour
     private bool _initialized;
     private bool _enemyTooltipVisible;
     private bool _loggedMissingEnemyTooltipRoot;
+    private BattleUnitSnapshot _selectedTooltipUnit;
+    private TooltipDetailTab _activeTooltipDetailTab;
+    private ContentDatabaseProvider _contentDatabaseProvider;
+    private Vector3 _enemyTooltipHealthBarRedFillBaseScale = Vector3.one;
+    private bool _hasEnemyTooltipHealthBarRedFillBaseScale;
 
     public void Initialize(MainFlowManager flow, BattleManager battleManager, SquadManager squadManager = null)
     {
@@ -314,6 +361,8 @@ public sealed class BattleUIManager : MonoBehaviour
         BindEnemyHoverTargets();
         BindAllyHoverTargets();
         BindDeploymentAllyDragTargets();
+        BindEnemyTooltipDetailButtons();
+        ConfigureEnemyTooltipHealthBarFillImage();
 
         CloseAll();
 
@@ -892,19 +941,23 @@ public sealed class BattleUIManager : MonoBehaviour
             return;
         }
 
-        Debug.Log($"{logPrefix} hover 감지됨: {unit.DisplayName}");
+        _selectedTooltipUnit = unit;
 
         if (enemyTooltipIcon != null)
         {
             SetUnitPreview(enemyTooltipIcon, enemyTooltipModelPreviewView, unit, unit.PortraitSprite);
         }
 
+        SetText(enemyTooltipPersonalityNameText, BuildTooltipUnitNameText(unit));
+        SetText(enemyTooltipPersonalityText, ResolvePersonalityName(unit));
         SetText(enemyTooltipLevelText, unit.Level.ToString());
         SetText(enemyTooltipAttackText, FormatStat(unit.Attack));
-        SetText(enemyTooltipHealthText, FormatHealth(unit.MaxHealth));
         SetText(enemyTooltipAttackSpeedText, FormatStat(unit.AttackSpeed));
         SetText(enemyTooltipMoveSpeedText, FormatStat(unit.MoveSpeed));
         SetText(enemyTooltipRangeText, FormatStat(unit.AttackRange));
+        RefreshEnemyTooltipHealthBar(unit);
+        RefreshEnemyTooltipDetailIcons(unit);
+        RefreshEnemyTooltipSelectedDetail(_activeTooltipDetailTab);
 
         SetTooltipStatIconsActive(true);
         enemyTooltipRoot.gameObject.SetActive(true);
@@ -920,6 +973,7 @@ public sealed class BattleUIManager : MonoBehaviour
         _enemyTooltipVisible = false;
         _hoveredEnemyIndex = -1;
         _hoveredAllyIndex = -1;
+        _selectedTooltipUnit = null;
 
         if (enemyTooltipRoot != null)
         {
@@ -927,6 +981,9 @@ public sealed class BattleUIManager : MonoBehaviour
         }
 
         SetUnitPreview(enemyTooltipIcon, enemyTooltipModelPreviewView, null, null);
+        SetText(enemyTooltipSelectedTitleText, string.Empty);
+        SetText(enemyTooltipSelectedDetailText, string.Empty);
+        RefreshEnemyTooltipHealthBar(null);
     }
 
     private void RefreshEnemyTooltipHoverFallback()
@@ -946,7 +1003,7 @@ public sealed class BattleUIManager : MonoBehaviour
         {
             ShowAllyTooltip(allyIndex);
         }
-        else
+        else if (!IsPointerInsideEnemyTooltip())
         {
             HideEnemyTooltip();
         }
@@ -1031,6 +1088,104 @@ public sealed class BattleUIManager : MonoBehaviour
         return -1;
     }
 
+    private bool IsPointerInsideEnemyTooltip()
+    {
+        if (enemyTooltipRoot == null || Mouse.current == null || !enemyTooltipRoot.gameObject.activeInHierarchy)
+        {
+            return false;
+        }
+
+        Canvas canvas = enemyTooltipRoot.GetComponentInParent<Canvas>();
+        Camera eventCamera =
+            canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
+        return RectTransformUtility.RectangleContainsScreenPoint(
+            enemyTooltipRoot,
+            Mouse.current.position.ReadValue(),
+            eventCamera
+        );
+    }
+
+    private void RefreshEnemyTooltipHealthBar(BattleUnitSnapshot unit)
+    {
+        float currentHealth = unit != null ? Mathf.Max(0f, unit.CurrentHealth) : 0f;
+        float maxHealth = unit != null ? Mathf.Max(0f, unit.MaxHealth, unit.CurrentHealth) : 0f;
+        bool hasHealth = unit != null && maxHealth > 0f;
+
+        SetActive(enemyTooltipHealthBarRoot, hasHealth);
+        if (enemyTooltipHealthBarBlackBackground != null)
+        {
+            enemyTooltipHealthBarBlackBackground.enabled = hasHealth;
+        }
+
+        SetComponentActive(enemyTooltipHealthText, false);
+        SetComponentActive(enemyTooltipHealthIcon, false);
+
+        if (!hasHealth)
+        {
+            SetEnemyTooltipHealthRatio(0f);
+            SetText(enemyTooltipHealthBarText, string.Empty);
+            return;
+        }
+
+        SetEnemyTooltipHealthRatio(Mathf.Clamp01(currentHealth / maxHealth));
+        SetText(enemyTooltipHealthBarText, $"{FormatHealth(currentHealth)}/{FormatHealth(maxHealth)}");
+    }
+
+    private void SetEnemyTooltipHealthRatio(float ratio)
+    {
+        if (enemyTooltipHealthBarRedFillImage == null)
+        {
+            return;
+        }
+
+        enemyTooltipHealthBarRedFillImage.enabled = ratio > 0f;
+        enemyTooltipHealthBarRedFillImage.fillAmount = ratio;
+
+        if (!_hasEnemyTooltipHealthBarRedFillBaseScale)
+        {
+            CacheEnemyTooltipHealthBarRedFillBaseScale();
+        }
+
+        Transform fillTransform = enemyTooltipHealthBarRedFillImage.transform;
+        Vector3 scale = _enemyTooltipHealthBarRedFillBaseScale;
+        scale.x *= ratio;
+        fillTransform.localScale = scale;
+    }
+
+    private void ConfigureEnemyTooltipHealthBarFillImage()
+    {
+        if (enemyTooltipHealthBarRedFillImage == null)
+        {
+            return;
+        }
+
+        enemyTooltipHealthBarRedFillImage.type = Image.Type.Filled;
+        enemyTooltipHealthBarRedFillImage.fillMethod = Image.FillMethod.Horizontal;
+        enemyTooltipHealthBarRedFillImage.fillOrigin = (int)Image.OriginHorizontal.Left;
+        CacheEnemyTooltipHealthBarRedFillBaseScale();
+
+        RectTransform fillRect = enemyTooltipHealthBarRedFillImage.rectTransform;
+        if (fillRect != null)
+        {
+            Vector2 pivot = fillRect.pivot;
+            pivot.x = 0f;
+            fillRect.pivot = pivot;
+        }
+    }
+
+    private void CacheEnemyTooltipHealthBarRedFillBaseScale()
+    {
+        if (enemyTooltipHealthBarRedFillImage == null)
+        {
+            _enemyTooltipHealthBarRedFillBaseScale = Vector3.one;
+            _hasEnemyTooltipHealthBarRedFillBaseScale = false;
+            return;
+        }
+
+        _enemyTooltipHealthBarRedFillBaseScale = enemyTooltipHealthBarRedFillImage.transform.localScale;
+        _hasEnemyTooltipHealthBarRedFillBaseScale = true;
+    }
+
     private void UpdateEnemyTooltipPosition()
     {
         if (enemyTooltipRoot == null || Mouse.current == null)
@@ -1088,11 +1243,76 @@ public sealed class BattleUIManager : MonoBehaviour
         enemyTooltipRoot.anchoredPosition = anchoredPosition;
     }
 
+    private void BindEnemyTooltipDetailButtons()
+    {
+        BindButton(enemyTooltipPersonalityDetailImage, ShowEnemyTooltipPersonalityDetail);
+        BindButton(enemyTooltipWeaponImageIcon, ShowEnemyTooltipWeaponDetail);
+        BindButton(enemyTooltipWeaponSkillImageIcon, ShowEnemyTooltipWeaponSkillDetail);
+    }
+
+    private void ShowEnemyTooltipPersonalityDetail()
+    {
+        RefreshEnemyTooltipSelectedDetail(TooltipDetailTab.Personality);
+    }
+
+    private void ShowEnemyTooltipWeaponDetail()
+    {
+        RefreshEnemyTooltipSelectedDetail(TooltipDetailTab.Weapon);
+    }
+
+    private void ShowEnemyTooltipWeaponSkillDetail()
+    {
+        RefreshEnemyTooltipSelectedDetail(TooltipDetailTab.WeaponSkill);
+    }
+
+    private void RefreshEnemyTooltipDetailIcons(BattleUnitSnapshot unit)
+    {
+        SetButtonSprite(enemyTooltipWeaponImageIcon, unit != null ? unit.WeaponIconSprite : null);
+
+        WeaponSkillSO skill = ResolveWeaponSkill(unit);
+        SetButtonSprite(enemyTooltipWeaponSkillImageIcon, skill != null ? skill.icon : null);
+
+        if (enemyTooltipPersonalityDetailImage != null)
+        {
+            enemyTooltipPersonalityDetailImage.interactable = unit != null && unit.Personality != null;
+        }
+    }
+
+    private void RefreshEnemyTooltipSelectedDetail(TooltipDetailTab tab)
+    {
+        _activeTooltipDetailTab = tab;
+        BattleUnitSnapshot unit = _selectedTooltipUnit;
+        if (unit == null)
+        {
+            SetText(enemyTooltipSelectedTitleText, string.Empty);
+            SetText(enemyTooltipSelectedDetailText, string.Empty);
+            return;
+        }
+
+        switch (tab)
+        {
+            case TooltipDetailTab.Personality:
+                SetText(enemyTooltipSelectedTitleText, ResolvePersonalityName(unit));
+                SetText(enemyTooltipSelectedDetailText, ResolvePersonalityDetailText(unit.Personality));
+                break;
+            case TooltipDetailTab.Weapon:
+                WeaponSO weapon = ResolveWeapon(unit);
+                SetText(enemyTooltipSelectedTitleText, ResolveWeaponName(unit, weapon));
+                SetText(enemyTooltipSelectedDetailText, BuildWeaponDetailText(weapon));
+                break;
+            case TooltipDetailTab.WeaponSkill:
+                WeaponSkillSO skill = ResolveWeaponSkill(unit);
+                SetText(enemyTooltipSelectedTitleText, skill != null ? skill.skillName : "스킬 없음");
+                SetText(enemyTooltipSelectedDetailText, skill != null ? skill.description : string.Empty);
+                break;
+        }
+    }
+
     private void SetTooltipStatIconsActive(bool value)
     {
         SetComponentActive(enemyTooltipLevelIcon, value);
         SetComponentActive(enemyTooltipAttackIcon, value);
-        SetComponentActive(enemyTooltipHealthIcon, value);
+
         SetComponentActive(enemyTooltipAttackSpeedIcon, value);
         SetComponentActive(enemyTooltipMoveSpeedIcon, value);
         SetComponentActive(enemyTooltipRangeIcon, value);
@@ -1863,6 +2083,164 @@ public sealed class BattleUIManager : MonoBehaviour
         target.enabled = true;
     }
 
+    private WeaponSO ResolveWeapon(BattleUnitSnapshot unit)
+    {
+        if (unit == null || string.IsNullOrWhiteSpace(unit.WeaponName))
+        {
+            return null;
+        }
+
+        ContentDatabaseProvider provider = ResolveContentDatabaseProvider();
+        IReadOnlyList<WeaponSO> weapons = provider != null ? provider.Weapons : null;
+        if (weapons == null)
+        {
+            return null;
+        }
+
+        for (int i = 0; i < weapons.Count; i++)
+        {
+            WeaponSO weapon = weapons[i];
+            if (weapon != null && weapon.weaponName == unit.WeaponName)
+            {
+                return weapon;
+            }
+        }
+
+        return null;
+    }
+
+    private WeaponSkillSO ResolveWeaponSkill(BattleUnitSnapshot unit)
+    {
+        if (unit == null || unit.WeaponSkillId == WeaponSkillId.None)
+        {
+            return null;
+        }
+
+        ContentDatabaseProvider provider = ResolveContentDatabaseProvider();
+        IReadOnlyList<WeaponSkillSO> skills = provider != null ? provider.WeaponSkills : null;
+        if (skills == null)
+        {
+            return null;
+        }
+
+        for (int i = 0; i < skills.Count; i++)
+        {
+            WeaponSkillSO skill = skills[i];
+            if (skill != null && skill.skillId == unit.WeaponSkillId)
+            {
+                return skill;
+            }
+        }
+
+        return null;
+    }
+
+    private ContentDatabaseProvider ResolveContentDatabaseProvider()
+    {
+        if (_contentDatabaseProvider == null)
+        {
+            _contentDatabaseProvider = ContentDatabaseProvider.Instance;
+        }
+
+        return _contentDatabaseProvider;
+    }
+
+    private static void SetButtonSprite(Button button, Sprite sprite)
+    {
+        if (button == null)
+        {
+            return;
+        }
+
+        Image image = button.GetComponent<Image>();
+        if (image == null)
+        {
+            image = button.targetGraphic as Image;
+        }
+
+        if (image == null)
+        {
+            button.interactable = sprite != null;
+            return;
+        }
+
+        image.sprite = sprite;
+        image.enabled = sprite != null;
+        button.interactable = sprite != null;
+    }
+
+    private static string BuildTooltipUnitNameText(BattleUnitSnapshot unit)
+    {
+        if (unit == null)
+        {
+            return string.Empty;
+        }
+
+        const string nameColor = "#FFFFFF";
+        return $"<color={nameColor}>{unit.DisplayName}</color>";
+    }
+
+    private static string ResolvePersonalityName(BattleUnitSnapshot unit)
+    {
+        return unit != null && unit.Personality != null && !string.IsNullOrWhiteSpace(unit.Personality.personalityName)
+            ? unit.Personality.personalityName
+            : "성격 없음";
+    }
+
+    private static string ResolvePersonalityDetailText(PersonalitySO personality)
+    {
+        if (personality == null)
+        {
+            return string.Empty;
+        }
+
+        if (!string.IsNullOrWhiteSpace(personality.dialogPersonalityDescription))
+        {
+            return personality.dialogPersonalityDescription;
+        }
+
+        if (!string.IsNullOrWhiteSpace(personality.detailText))
+        {
+            return personality.detailText;
+        }
+
+        return string.IsNullOrWhiteSpace(personality.description) ? string.Empty : personality.description;
+    }
+
+    private static string ResolveWeaponName(BattleUnitSnapshot unit, WeaponSO weapon)
+    {
+        if (weapon != null && !string.IsNullOrWhiteSpace(weapon.weaponName))
+        {
+            return weapon.weaponName;
+        }
+
+        return unit != null && !string.IsNullOrWhiteSpace(unit.WeaponName) ? unit.WeaponName : "무기 없음";
+    }
+
+    private static string BuildWeaponDetailText(WeaponSO weapon)
+    {
+        if (weapon == null)
+        {
+            return string.Empty;
+        }
+
+        return $"체력 : {FormatSignedStat(weapon.baseHealthBonus)}\n"
+            + $"공격력 : {FormatSignedStat(weapon.baseAttackBonus)}\n"
+            + $"공격속도 : {FormatSignedStat(weapon.baseAttackSpeedBonus)}\n"
+            + $"이동속도 : {FormatSignedStat(weapon.baseMoveSpeedBonus)}\n"
+            + $"사거리 : {FormatSignedStat(weapon.baseAttackRangeBonus)}";
+    }
+
+    private static string FormatSignedStat(float value)
+    {
+        if (Mathf.Approximately(value, 0f))
+        {
+            return "0";
+        }
+
+        return value > 0f ? $"+{value:0.#}" : value.ToString("0.#");
+    }
+
     private static string FormatStat(float value)
     {
         return value.ToString("0.#");
@@ -1880,7 +2258,10 @@ public sealed class BattleUIManager : MonoBehaviour
 
     public void OnEnemyPointerExited(int enemyIndex)
     {
-        HideEnemyTooltip();
+        if (!IsPointerInsideEnemyTooltip())
+        {
+            HideEnemyTooltip();
+        }
     }
 
     public void OnAllyPointerEntered(int allyIndex)
@@ -1890,6 +2271,9 @@ public sealed class BattleUIManager : MonoBehaviour
 
     public void OnAllyPointerExited(int allyIndex)
     {
-        HideEnemyTooltip();
+        if (!IsPointerInsideEnemyTooltip())
+        {
+            HideEnemyTooltip();
+        }
     }
 }
