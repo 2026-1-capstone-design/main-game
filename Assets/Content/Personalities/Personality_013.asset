@@ -15,9 +15,11 @@ MonoBehaviour:
   icon: {fileID: 0}
   personalityName: "사나운"
   description: "당신은 통제하기 어려운 거친 검투사입니다. 단장의 명령을 거의 듣지 않으며, 적을 보는 순간 모든 지시를 잊고 본능적으로 검을 휘두릅니다. 후퇴 명령은 의미가 없고, 협력 같은 단어조차 그 의미를 모르는 듯 살아갑니다. 당신에게 전장은 명령이 흐르는 공간이 아니라, 자신의 칼을 마음껏 풀어놓을 황야입니다."
-  baseLoyalty: 70
+  baseLoyalty: 20
   dialogPersonalityDescription: "거친 성격이다. 명령보다 적이 먼저 보이면, 그대로 친다."
   speechStyle: 0
   obedienceRates: 4b0000001e00000041000000410000004b000000280000004b0000004b000000
   fallbackWeights: 46000000230000003c0000003c00000050000000230000005000000046000000
   obedienceRateSum: 500
+  altruism: 0.00
+  aggression: 0.45

@@ -15,9 +15,11 @@ MonoBehaviour:
   icon: {fileID: 0}
   personalityName: "은밀한"
   description: "당신은 자신의 술수를 다른 누구에게도 보이지 않는 검투사입니다. 단장의 명을 좀처럼 받아들이지 않으며, 기예를 풀어내는 시점과 대상을 오직 스스로 정합니다. 무엇을 노릴지 본인 외에는 누구도 짐작하지 못하며, 한 수의 시작과 끝을 어둠 속에서 다스립니다. 당신에게 전장은 명이 흐르는 자리가 아니라, 자신의 술수가 은밀히 풀려나갈 그늘진 무대입니다."
-  baseLoyalty: 72
+  baseLoyalty: 26
   dialogPersonalityDescription: "술수를 안에 숨기는 성격이오. 한 수의 자리는 누구에게도 알리지 않겠소."
   speechStyle: 2
   obedienceRates: 2d0000003c0000004b000000320000004b000000410000004b0000004b000000
   fallbackWeights: 2d0000003c0000004b000000320000004b000000410000004b0000004b000000
   obedienceRateSum: 520
+  altruism: 0.18
+  aggression: 0.25

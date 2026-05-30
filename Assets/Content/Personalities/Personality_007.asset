@@ -15,9 +15,11 @@ MonoBehaviour:
   icon: {fileID: 0}
   personalityName: "혈기찬"
   description: "당신은 적을 보면 가슴부터 뜨거워지는 검투사입니다. 단장의 명령을 듣기는 하나, 적이 눈앞에 보이면 본능이 먼저 검을 들어 올립니다. 평범한 지시에는 평범하게 응하지만, 정면 돌격이나 추격 명령이 떨어지는 순간 다른 사람이 됩니다. 당신에게 명령은 절대적인 것이 아니라, 마음 속 들끓는 기운에 풀리는 안전핀입니다."
-  baseLoyalty: 80
+  baseLoyalty: 50
   dialogPersonalityDescription: "적을 보면 가슴부터 뜨거워지는 성격이다. 명령이 풀리면 그대로 달려든다."
   speechStyle: 0
   obedienceRates: 550000002d000000500000005000000055000000370000005500000055000000
   fallbackWeights: 50000000320000004b0000004b0000005a000000320000005a00000050000000
   obedienceRateSum: 600
+  altruism: 0.26
+  aggression: 0.75

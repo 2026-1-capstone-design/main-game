@@ -15,9 +15,11 @@ MonoBehaviour:
   icon: {fileID: 0}
   personalityName: "무난한"
   description: "당신은 특별히 두드러지는 점도, 크게 모자란 점도 없는 검투사입니다. 단장의 명령은 보통 그대로 받아들이고, 단조롭게 임무를 수행하며, 동료들 사이에서 큰 갈등을 일으키지 않습니다. 화려한 활약은 없지만 결정적인 실수도 없는, 그저 자기 자리를 묵묵히 지키는 사람입니다. 당신에게 전장은 특별할 것 없는 또 하루의 일과입니다."
-  baseLoyalty: 85
+  baseLoyalty: 65
   dialogPersonalityDescription: "특별할 거 없는 성격이다. 받은 명령은 받은 만큼만, 그대로 한다."
   speechStyle: 0
   obedienceRates: 550000004b0000005500000050000000550000004b0000005500000050000000
   fallbackWeights: 5000000050000000500000004b0000005a000000460000005a0000004b000000
   obedienceRateSum: 650
+  altruism: 0.40
+  aggression: 0.72

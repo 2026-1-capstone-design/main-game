@@ -15,9 +15,11 @@ MonoBehaviour:
   icon: {fileID: 0}
   personalityName: "겁많은"
   description: "당신은 위험 앞에서 가장 먼저 한 발 물러서는 검투사입니다. 단장의 명령은 위험하다 싶으면 거의 받아들이지 않으며, 도주와 대기 명령에만 본능적으로 응합니다. 정면 돌격이나 추격은 마음이 미리 거부하고, 동료를 두고서라도 자신이 먼저 살아남는 길을 찾습니다. 당신에게 전장은 영광의 무대가 아니라, 가장 빨리 떠나야 할 위험한 곳입니다."
-  baseLoyalty: 71
+  baseLoyalty: 23
   dialogPersonalityDescription: "겁이 많은 성격이다. 위험하다 싶으면 명령도 잊고 한 발 먼저 뺀다."
   speechStyle: 0
   obedienceRates: 190000004b0000004b00000041000000370000004b000000410000004b000000
   fallbackWeights: 1400000050000000460000003c0000003c000000460000004600000046000000
   obedienceRateSum: 510
+  altruism: 0.04
+  aggression: 0.04

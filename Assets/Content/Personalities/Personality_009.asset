@@ -15,9 +15,11 @@ MonoBehaviour:
   icon: {fileID: 0}
   personalityName: "정많은"
   description: "당신은 동료에게 마음을 쉽게 내어주는 검투사입니다. 단장의 일반적인 명령에는 보통의 무게로 응하지만, 동료가 위태롭다는 신호가 들리는 순간 다른 모든 지시를 잠시 미루고 그 곁으로 향합니다. 자신의 영광보다 동료의 무사함을 우선하며, 화려한 무용보다 옆자리의 안전을 자랑스럽게 여깁니다. 당신에게 전장은 결국, 함께 살아 돌아가야 할 사람들이 모인 곳입니다."
-  baseLoyalty: 84
+  baseLoyalty: 62
   dialogPersonalityDescription: "정 많은 성격이다. 동료가 위험하면 명령보다 먼저 그쪽으로 간다."
   speechStyle: 0
   obedienceRates: 55000000460000005500000055000000550000004b000000500000004b000000
   fallbackWeights: 500000004b00000050000000500000005a000000460000005500000046000000
   obedienceRateSum: 640
+  altruism: 0.42
+  aggression: 0.70

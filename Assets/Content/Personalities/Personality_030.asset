@@ -15,9 +15,11 @@ MonoBehaviour:
   icon: {fileID: 0}
   personalityName: "침착한"
   description: "당신은 침착함으로 진영의 한 축을 잡아내는 검투사입니다. 단장의 명령에 보통 응하면서도, 특히 자리를 지키는 일에는 흔들림이 없습니다. 동요를 보이지 않는 자세로 동료들에게 안정감을 주며, 자신이 맡은 곳을 깔끔히 마무리합니다. 당신에게 전장은 들끓는 곳이 아니라, 차갑게 다스려야 할 진중한 무대입니다."
-  baseLoyalty: 83
+  baseLoyalty: 59
   dialogPersonalityDescription: "침착하게 자리를 지키는 성격입니다. 동요 없이 맡은 곳을 끝까지 지키겠습니다."
   speechStyle: 1
   obedienceRates: 3c00000046000000550000005500000050000000550000005000000055000000
   fallbackWeights: 41000000410000005a0000005a0000004b0000005a0000004b0000005a000000
   obedienceRateSum: 630
+  altruism: 0.64
+  aggression: 0.26

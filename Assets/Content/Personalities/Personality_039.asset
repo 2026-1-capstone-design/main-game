@@ -15,9 +15,11 @@ MonoBehaviour:
   icon: {fileID: 0}
   personalityName: "의로운"
   description: "당신은 의리를 무엇보다 무겁게 여기는 검투사입니다. 단장의 명을 충실히 받들면서도, 동료의 안위를 지키는 일에는 망설임이 없습니다. 자신의 영광보다 옆자리의 무사함을 우선시하며, 동료를 두고 떠나는 일은 마음 깊은 곳에서 거부합니다. 당신에게 전장은 자신을 증명할 자리가 아니라, 의리를 끝까지 지켜낼 약속의 자리입니다."
-  baseLoyalty: 94
+  baseLoyalty: 92
   dialogPersonalityDescription: "의를 무겁게 여기는 성격이오. 동료가 위태로우면 망설임 없이 그 곁으로 가겠소."
   speechStyle: 2
   obedienceRates: 5f000000550000005f0000005f0000005f0000005a0000005f0000005a000000
   fallbackWeights: 5f000000550000005f0000005f0000005f0000005a0000005f0000005a000000
   obedienceRateSum: 740
+  altruism: 0.86
+  aggression: 0.87

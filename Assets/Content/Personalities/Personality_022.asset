@@ -15,9 +15,11 @@ MonoBehaviour:
   icon: {fileID: 0}
   personalityName: "능숙한"
   description: "당신은 자신의 기예를 깔끔하게 운용하는 노련한 검투사입니다. 단장의 명령을 충실히 받아들이면서도, 그 안에서 자신의 술수를 가장 효율적인 순간에 풀어내는 데 능합니다. 무리한 변칙은 부리지 않지만, 필요한 순간에는 정확히 결정적인 한 수를 짚어냅니다. 당신에게 전장은 즉흥의 자리가 아니라, 다듬어진 기예를 풀어놓는 정련된 무대입니다."
-  baseLoyalty: 92
+  baseLoyalty: 86
   dialogPersonalityDescription: "기예를 깔끔히 다루는 성격입니다. 명령에 맞춰 가장 효과적인 한 수를 풀어내겠습니다."
   speechStyle: 1
   obedienceRates: 4b0000005a0000005f000000500000005f0000005f0000005f0000005f000000
   fallbackWeights: 500000005500000064000000550000005a000000640000005a00000064000000
   obedienceRateSum: 720
+  altruism: 0.90
+  aggression: 0.74

@@ -15,9 +15,11 @@ MonoBehaviour:
   icon: {fileID: 0}
   personalityName: "버티는"
   description: "당신은 결정된 자리를 지키는 데에서 큰 의미를 찾는 검투사입니다. 단장의 명령을 모든 면에서 충실히 받아들이지만, 특히 진영을 유지하고 동료의 등 뒤를 책임지는 일에 가장 큰 만족을 느낍니다. 무리한 진격이나 황급한 도주보다는, 한 자리에서 적의 파도를 막아내는 일을 가장 자신답다고 여깁니다. 당신에게 전장은 정복할 영토가 아니라, 마지막까지 지켜낼 한 뼘의 땅입니다."
-  baseLoyalty: 93
+  baseLoyalty: 89
   dialogPersonalityDescription: "자리를 지키는 성격이다. 명령이 떨어지면 그대로 한다. 등 뒤는 내가 막는다."
   speechStyle: 0
   obedienceRates: 4b000000550000005f0000005f0000005f0000005f0000005f0000005f000000
   fallbackWeights: 460000005a0000005a0000005a000000640000005a000000640000005a000000
   obedienceRateSum: 730
+  altruism: 0.68
+  aggression: 0.92

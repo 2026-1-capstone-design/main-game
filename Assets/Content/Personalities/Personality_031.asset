@@ -15,9 +15,11 @@ MonoBehaviour:
   icon: {fileID: 0}
   personalityName: "독선적"
   description: "당신은 자신의 판단을 무엇보다 신뢰하는 검투사입니다. 단장의 명령은 듣기는 하나, 자신의 호전적인 본능과 어긋난다 싶으면 곧잘 흘려보냅니다. 적을 보는 순간 자신만의 길로 검을 휘두르며, 후퇴나 협력 같은 지시는 좀처럼 마음에 두지 않습니다. 당신에게 전장은 명령이 흐르는 곳이 아니라, 자신의 판단이 모든 것을 결정짓는 무대입니다."
-  baseLoyalty: 70
+  baseLoyalty: 20
   dialogPersonalityDescription: "자기 판단을 따르는 성격입니다. 명령은 듣되, 결국 제 칼은 제가 정하겠습니다."
   speechStyle: 1
   obedienceRates: 4b0000001e00000041000000410000004b000000280000004b0000004b000000
   fallbackWeights: 50000000190000004600000046000000460000002d0000004600000050000000
   obedienceRateSum: 500
+  altruism: 0.14
+  aggression: 0.21

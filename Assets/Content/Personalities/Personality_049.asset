@@ -15,9 +15,11 @@ MonoBehaviour:
   icon: {fileID: 0}
   personalityName: "오만한"
   description: "당신은 자신의 무력에 깊은 자부심을 두는 검투사입니다. 단장의 명을 좀처럼 받아들이지 않으며, 자신의 검 한 수가 어떤 지시보다 정확하다고 믿습니다. 적을 마주하는 자리에 다른 사람의 결정이 끼어드는 것을 받아들이지 못하며, 매번 자신만의 판단으로 검을 휘두릅니다. 당신에게 전장은 명이 흐르는 곳이 아니라, 자신의 무력을 증명할 오만한 무대입니다."
-  baseLoyalty: 70
+  baseLoyalty: 20
   dialogPersonalityDescription: "내 무력에 자부심을 둔 성격이오. 명보다는 내 검의 판단이 먼저요."
   speechStyle: 2
   obedienceRates: 4b0000001e00000041000000410000004b000000280000004b0000004b000000
   fallbackWeights: 4b0000001e00000041000000410000004b000000280000004b0000004b000000
   obedienceRateSum: 500
+  altruism: 0.02
+  aggression: 0.32

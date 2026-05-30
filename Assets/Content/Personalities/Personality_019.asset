@@ -15,9 +15,11 @@ MonoBehaviour:
   icon: {fileID: 0}
   personalityName: "용감한"
   description: "당신은 단장의 명령에 따라 정확히 적을 베어내는 정직한 검투사입니다. 어떤 지시든 망설임 없이 받아들이지만, 그 중에서도 정면 승부와 적진 돌격에 가장 큰 자부심을 느낍니다. 무리한 도주나 술수보다는 곧게 뻗은 한 수의 검을, 화려한 무용보다 충실한 임무 수행을 자랑스럽게 여깁니다. 당신에게 전장은 자신의 용기를 증명할 깨끗한 무대입니다."
-  baseLoyalty: 90
+  baseLoyalty: 80
   dialogPersonalityDescription: "정직한 정면 승부를 즐기는 성격입니다. 명령이 내려지면 그대로 적의 가슴팍을 노리겠습니다."
   speechStyle: 1
   obedienceRates: 5f0000003c0000005f0000005f0000005f000000460000005f0000005f000000
   fallbackWeights: 640000003700000064000000640000005a0000004b0000005a00000064000000
   obedienceRateSum: 700
+  altruism: 0.94
+  aggression: 0.81

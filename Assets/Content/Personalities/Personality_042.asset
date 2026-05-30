@@ -15,9 +15,11 @@ MonoBehaviour:
   icon: {fileID: 0}
   personalityName: "확고한"
   description: "당신은 한 번 정한 자리에서 결코 물러서지 않는 검투사입니다. 단장의 명을 충실히 받들면서도, 진영을 지키는 일에 가장 깊은 의미를 둡니다. 격렬한 공세에도 발끝 하나 흐트러지지 않으며, 동료들의 등 뒤를 책임지는 일을 자신의 본분으로 삼습니다. 당신에게 전장은 진격할 곳이 아니라, 마지막까지 지켜낼 약속의 자리입니다."
-  baseLoyalty: 93
+  baseLoyalty: 89
   dialogPersonalityDescription: "한 자리를 끝까지 지키는 성격이오. 명이 내려도 진영을 비우지 않겠소."
   speechStyle: 2
   obedienceRates: 4b000000550000005f0000005f0000005f0000005f0000005f0000005f000000
   fallbackWeights: 4b000000550000005f0000005f0000005f0000005f0000005f0000005f000000
   obedienceRateSum: 730
+  altruism: 0.80
+  aggression: 0.83

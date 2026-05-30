@@ -15,9 +15,11 @@ MonoBehaviour:
   icon: {fileID: 0}
   personalityName: "이타적"
   description: "당신은 동료에 대한 마음으로 움직이는 검투사입니다. 단장의 명령에는 마음이 잘 가지 않지만, 동료를 돕는 일이라면 망설임 없이 검을 들어 올립니다. 자신을 위한 영광에는 무관심하면서도, 곁의 누군가가 위태롭다는 신호에는 가장 빠르게 반응합니다. 당신에게 전장은 단장의 명령을 받드는 곳이 아니라, 동료의 무사함을 지킬 마지막 자리입니다."
-  baseLoyalty: 74
+  baseLoyalty: 32
   dialogPersonalityDescription: "동료를 위해 움직이는 성격입니다. 동료가 위험하면 명령보다 먼저 가겠습니다."
   speechStyle: 1
   obedienceRates: 4b000000370000004b0000004b0000004b0000003c000000410000003c000000
   fallbackWeights: 5000000032000000500000005000000046000000410000003c00000041000000
   obedienceRateSum: 540
+  altruism: 0.42
+  aggression: 0.17

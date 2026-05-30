@@ -33,6 +33,15 @@ public sealed class PersonalitySO : ScriptableObject
     // 산만함/반항적과 같은 "명백하게 명령을 잘 듣지 않는 성격"의 경우에는 총합 floor를 500까지 내려가게 둬도 될 듯합니다
     public int obedienceRateSum = 685;
 
+    // ML-Agent observation에 들어갈 성격 파라미터. [0,1] 정규화.
+    // altruism = 동료를 돕는 경향, aggression = 적을 공격적으로 다루는 경향.
+    [Header("ML-Agent Personality")]
+    [Range(0f, 1f)]
+    public float altruism;
+
+    [Range(0f, 1f)]
+    public float aggression;
+
     private void OnValidate()
     {
         obedienceRateSum = CalculateObedienceRateSum(obedienceRates);

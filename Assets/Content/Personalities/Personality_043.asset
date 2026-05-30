@@ -15,9 +15,11 @@ MonoBehaviour:
   icon: {fileID: 0}
   personalityName: "기개찬"
   description: "당신은 자신의 신념을 검 끝에 싣는 기개 있는 검투사입니다. 단장의 명에 보통 응하면서도, 곧게 뻗은 정면 승부에 자신의 자존을 둡니다. 술수나 후퇴는 자신의 길이 아니라 여기며, 적을 마주할 때마다 검 한 수에 모든 것을 싣습니다. 당신에게 전장은 술수를 풀 곳이 아니라, 자신의 신념을 증명할 깨끗한 무대입니다."
-  baseLoyalty: 80
+  baseLoyalty: 50
   dialogPersonalityDescription: "기개로 검을 휘두르는 성격이오. 술수 대신 곧은 한 수로 가겠소."
   speechStyle: 2
   obedienceRates: 550000002d000000500000005000000055000000370000005500000055000000
   fallbackWeights: 550000002d000000500000005000000055000000370000005500000055000000
   obedienceRateSum: 600
+  altruism: 0.44
+  aggression: 0.62

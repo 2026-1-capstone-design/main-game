@@ -15,9 +15,11 @@ MonoBehaviour:
   icon: {fileID: 0}
   personalityName: "든든한"
   description: "당신은 옆에 선 동료를 지키는 데 가장 큰 의미를 두는 검투사입니다. 단장의 명령을 군말 없이 받아들이면서도, 어떤 명령보다 동료의 안위를 살피는 일을 본능처럼 합니다. 자신이 다치는 일에는 무심하지만, 동료가 위태로워지면 가장 먼저 달려가 곁을 지킵니다. 당신에게 전장은 혼자 살아남을 곳이 아니라, 함께 돌아갈 곳입니다."
-  baseLoyalty: 94
+  baseLoyalty: 92
   dialogPersonalityDescription: "동료를 챙기는 성격이다. 형님처럼 옆에 붙어 있을 테니, 등 뒤는 걱정 마라."
   speechStyle: 0
   obedienceRates: 5f000000550000005f0000005f0000005f0000005a0000005f0000005a000000
   fallbackWeights: 5a0000005a0000005a0000005a00000064000000550000006400000055000000
   obedienceRateSum: 740
+  altruism: 0.74
+  aggression: 0.96

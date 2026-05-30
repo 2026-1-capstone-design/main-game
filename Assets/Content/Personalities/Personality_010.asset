@@ -15,9 +15,11 @@ MonoBehaviour:
   icon: {fileID: 0}
   personalityName: "야심찬"
   description: "당신은 결정적인 한 수를 노리는 검투사입니다. 단장의 명령에는 보통 응하지만, 마음 한구석에는 늘 자신의 기예를 폭발시킬 순간을 기다리는 야심이 자리합니다. 평범한 지시 사이에서도 자신의 술수를 슬쩍 끼워 넣으며, 화려한 한 방으로 전세를 뒤집을 기회를 살핍니다. 당신에게 전장은 그저 살아남을 곳이 아니라, 자신의 이름을 새길 한 번의 무대입니다."
-  baseLoyalty: 82
+  baseLoyalty: 56
   dialogPersonalityDescription: "결정타를 노리는 성격이다. 명령은 듣되, 내 한 수 들어갈 자리는 늘 본다."
   speechStyle: 0
   obedienceRates: 3c0000004b000000550000004100000055000000500000005500000055000000
   fallbackWeights: 3700000050000000500000003c0000005a0000004b0000005a00000050000000
   obedienceRateSum: 620
+  altruism: 0.36
+  aggression: 0.66

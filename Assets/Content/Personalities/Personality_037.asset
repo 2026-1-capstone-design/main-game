@@ -15,9 +15,11 @@ MonoBehaviour:
   icon: {fileID: 0}
   personalityName: "결연한"
   description: "당신은 단장의 명에 따라 적을 베어내는 결연한 검투사입니다. 어떤 지시도 의심 없이 받들며, 그 중에서도 정면 돌격과 적진 추격에 가장 큰 의미를 느낍니다. 도주나 술수보다는 곧게 뻗은 한 수의 검을 가장 자신답다고 여기며, 매 전투를 단장을 향한 충심의 증명으로 삼습니다. 당신에게 전장은 영광을 다툴 곳이 아니라, 받은 명을 끝까지 이행할 자리입니다."
-  baseLoyalty: 90
+  baseLoyalty: 80
   dialogPersonalityDescription: "받은 명에 따라 적을 베는 성격이오. 명이 내려지면 그대로 적의 가운데로 가겠소."
   speechStyle: 2
   obedienceRates: 5f0000003c0000005f0000005f0000005f000000460000005f0000005f000000
   fallbackWeights: 5f0000003c0000005f0000005f0000005f000000460000005f0000005f000000
   obedienceRateSum: 700
+  altruism: 0.82
+  aggression: 0.91
