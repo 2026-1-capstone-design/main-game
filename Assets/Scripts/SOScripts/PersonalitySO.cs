@@ -8,6 +8,10 @@ public sealed class PersonalitySO : ScriptableObject
 
     [TextArea]
     public string description;
+
+    [TextArea]
+    public string detailText;
+
     public int baseLoyalty = 70;
 
     [Header("SOT Dialog")]

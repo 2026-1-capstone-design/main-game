@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 // BattleRuntimeUnit은 전투 중 비주얼 렌더러다.
@@ -11,6 +12,7 @@ using UnityEngine.UI;
 // prefab 구조: Root -> BattleRuntimeUnit -> Dot_ally / Dot_enemy / Dot_dead / StatusText
 // - 아군이면 Dot_ally 활성, 적군이면 Dot_enemy 활성, 죽으면 팀 상관없이 Dot_dead 활성
 // - StatusText는 항상 두 줄: 첫 줄 = 유닛 번호, 둘째 줄 = 현재 행동명
+// - NameText는 유닛의 표시 이름(DisplayName)을 모델 상단 UI에 별도로 보여준다.
 // 스폰 시에는 Root 프리팹 전체를 instantiate하고, GetComponentInChildren<BattleRuntimeUnit>(true)로 내부 컴포넌트를 찾는다.
 [DisallowMultipleComponent]
 public sealed class BattleRuntimeUnit : MonoBehaviour
@@ -32,17 +34,22 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     [SerializeField]
     private TMP_Text statusText;
 
+    [SerializeField]
+    private TextMeshProUGUI nameText;
+
     private bool _isStatusTextVisible = true;
 
     [SerializeField]
-    private Image HPbar;
+    private GameObject healthBarRoot;
+
+    [SerializeField]
+    private Image blueHealthBarFillImage;
+
+    [FormerlySerializedAs("HPbar")]
+    [SerializeField]
+    private Image redHealthBarFillImage;
+
     public BattleUnitCoolBar attackCoolBar;
-
-    [SerializeField]
-    private Sprite AllybarSprite;
-
-    [SerializeField]
-    private Sprite EnemybarSprite;
 
     // ── 순수 전투 상태 (Animator/UI 없음) ─────────────────────────
     [Header("Runtime State (Debug)")]
@@ -256,15 +263,12 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
 
         EquipSkinFromSnapshot();
 
-        if (!isPlayerOwned)
-            HPbar.sprite = EnemybarSprite;
-        else
-            HPbar.sprite = AllybarSprite;
-
         RefreshHPbar();
+
+        RefreshNameText();
         if (attackCoolBar != null)
         {
-            attackCoolBar.Setup(State);
+            attackCoolBar.Setup(State, ResolveWeaponSkillIcon());
         }
 
         string runtimeName = $"{(isPlayerOwned ? "Player" : "Hostile")}_{UnitNumber}_{DisplayName}";
@@ -773,6 +777,19 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         SetActive(dotDead, isDead);
 
         RefreshStatusText();
+        RefreshNameText();
+    }
+
+    private void RefreshNameText()
+    {
+        if (nameText == null)
+        {
+            return;
+        }
+
+        string displayName = string.IsNullOrWhiteSpace(DisplayName) ? string.Empty : DisplayName;
+        nameText.text = displayName;
+        SetActive(nameText.gameObject, displayName.Length > 0 && !IsCombatDisabled && CurrentHealth > 0f);
     }
 
     private void RefreshStatusText()
@@ -794,9 +811,74 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
 
     private void RefreshHPbar()
     {
-        if (HPbar == null || MaxHealth <= 0f)
+        bool isAlive = !IsCombatDisabled && CurrentHealth > 0f;
+        SetActive(healthBarRoot, isAlive);
+        if (!isAlive || MaxHealth <= 0f)
+        {
+            SetHealthFillActive(blueHealthBarFillImage, false);
+            SetHealthFillActive(redHealthBarFillImage, false);
             return;
-        HPbar.fillAmount = CurrentHealth / MaxHealth;
+        }
+
+        float ratio = Mathf.Clamp01(CurrentHealth / MaxHealth);
+        SetHealthFillActive(blueHealthBarFillImage, IsPlayerOwned);
+        SetHealthFillActive(redHealthBarFillImage, !IsPlayerOwned);
+        ApplyHealthFillRatio(IsPlayerOwned ? blueHealthBarFillImage : redHealthBarFillImage, ratio);
+    }
+
+    private static void SetHealthFillActive(Image fillImage, bool isActive)
+    {
+        if (fillImage != null)
+        {
+            SetActive(fillImage.gameObject, isActive);
+        }
+    }
+
+    private static void ApplyHealthFillRatio(Image fillImage, float ratio)
+    {
+        if (fillImage == null)
+        {
+            return;
+        }
+
+        fillImage.enabled = ratio > 0f;
+        fillImage.fillAmount = ratio;
+
+        RectTransform fillRect = fillImage.rectTransform;
+        if (fillRect != null)
+        {
+            fillRect.anchorMin = Vector2.zero;
+            fillRect.anchorMax = new Vector2(ratio, 1f);
+            fillRect.pivot = new Vector2(0f, 0.5f);
+            fillRect.offsetMin = Vector2.zero;
+            fillRect.offsetMax = Vector2.zero;
+        }
+    }
+
+    private Sprite ResolveWeaponSkillIcon()
+    {
+        if (Snapshot == null || Snapshot.WeaponSkillId == WeaponSkillId.None)
+        {
+            return null;
+        }
+
+        ContentDatabaseProvider provider = ContentDatabaseProvider.Instance;
+        IReadOnlyList<WeaponSkillSO> skills = provider != null ? provider.WeaponSkills : null;
+        if (skills == null)
+        {
+            return null;
+        }
+
+        for (int i = 0; i < skills.Count; i++)
+        {
+            WeaponSkillSO skill = skills[i];
+            if (skill != null && skill.skillId == Snapshot.WeaponSkillId)
+            {
+                return skill.icon;
+            }
+        }
+
+        return null;
     }
 
     private static void SetActive(GameObject target, bool value)

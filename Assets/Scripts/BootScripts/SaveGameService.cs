@@ -703,7 +703,26 @@ public static class SaveGameService
                 averageLevel = preview.AverageLevel,
                 previewRewardGold = preview.PreviewRewardGold,
                 enemyUnits = units,
+                enemyDeploymentNormalizedPositions = ToSaveNormalizedPositions(
+                    preview.EnemyDeploymentNormalizedPositions
+                ),
             };
+        }
+
+        return result;
+    }
+
+    private static SaveNormalizedPositionData[] ToSaveNormalizedPositions(IReadOnlyList<Vector2> positions)
+    {
+        if (positions == null)
+        {
+            return Array.Empty<SaveNormalizedPositionData>();
+        }
+
+        SaveNormalizedPositionData[] result = new SaveNormalizedPositionData[positions.Count];
+        for (int i = 0; i < positions.Count; i++)
+        {
+            result[i] = new SaveNormalizedPositionData { x = positions[i].x, y = positions[i].y };
         }
 
         return result;
@@ -1190,10 +1209,28 @@ public static class SaveGameService
                 units,
                 savedEncounter.averageLevel,
                 savedEncounter.previewRewardGold,
-                (BattleEncounterDifficulty)savedEncounter.difficulty
+                (BattleEncounterDifficulty)savedEncounter.difficulty,
+                FromSaveNormalizedPositions(savedEncounter.enemyDeploymentNormalizedPositions)
             );
 
             result.Add(preview);
+        }
+
+        return result;
+    }
+
+    private static IReadOnlyList<Vector2> FromSaveNormalizedPositions(SaveNormalizedPositionData[] positions)
+    {
+        if (positions == null)
+        {
+            return Array.Empty<Vector2>();
+        }
+
+        Vector2[] result = new Vector2[positions.Length];
+        for (int i = 0; i < positions.Length; i++)
+        {
+            SaveNormalizedPositionData position = positions[i];
+            result[i] = position != null ? new Vector2(position.x, position.y) : Vector2.zero;
         }
 
         return result;

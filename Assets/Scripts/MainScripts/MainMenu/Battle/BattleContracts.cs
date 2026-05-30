@@ -39,17 +39,6 @@ public sealed class BattleDeploymentPlan
 // 메인 씬의 원형 배치 UI와 전투 씬의 battlefield bounds가 같은 좌표계를 공유하도록 정규화 좌표를 만든다.
 public static class BattleDeploymentPositionUtility
 {
-    private const float BattleSceneColosseumRadius = 28f;
-    private static readonly Vector2[] EnemyPlaceholderWorldPositions =
-    {
-        new Vector2(-12f, 12f),
-        new Vector2(-9f, 12f),
-        new Vector2(-15f, 12f),
-        new Vector2(-12f, 9f),
-        new Vector2(-12f, 15f),
-        new Vector2(-9f, 9f),
-    };
-
     public static Vector2 ClampToDeploymentHalf(Vector2 normalizedPosition, bool isPlayerTeam)
     {
         if (
@@ -87,11 +76,129 @@ public static class BattleDeploymentPositionUtility
         return ClampToDeploymentHalf(new Vector2(x, y), isPlayerTeam);
     }
 
-    public static Vector2 BuildEnemyPlaceholderPosition(int index)
+    public static IReadOnlyList<Vector2> BuildRandomEnemyPositions(
+        RandomManager randomManager,
+        int count,
+        RandomStreamType streamType
+    )
     {
-        index = Mathf.Clamp(index, 0, EnemyPlaceholderWorldPositions.Length - 1);
-        Vector2 worldPosition = EnemyPlaceholderWorldPositions[index];
-        return ClampToDeploymentHalf(worldPosition / BattleSceneColosseumRadius, false);
+        const float minRadius = 0.28f;
+        const float maxRadius = 0.82f;
+        const float minSpacing = 0.24f;
+        const int maxAttemptsPerUnit = 64;
+
+        count = Mathf.Clamp(count, 0, BattleTeamConstants.MaxUnitsPerTeam);
+        List<Vector2> positions = new List<Vector2>(count);
+
+        for (int i = 0; i < count; i++)
+        {
+            bool placed = false;
+            for (int attempt = 0; attempt < maxAttemptsPerUnit; attempt++)
+            {
+                float angle = NextFloatRange(randomManager, streamType, 90f, 270f) * Mathf.Deg2Rad;
+                float radius = Mathf.Sqrt(
+                    NextFloatRange(randomManager, streamType, minRadius * minRadius, maxRadius * maxRadius)
+                );
+                Vector2 candidate = ClampToDeploymentHalf(
+                    new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius,
+                    false
+                );
+
+                if (HasMinimumSpacing(positions, candidate, minSpacing))
+                {
+                    positions.Add(candidate);
+                    placed = true;
+                    break;
+                }
+            }
+
+            if (!placed)
+            {
+                positions.Add(BuildDefaultPosition(i, count, false));
+            }
+        }
+
+        return positions;
+    }
+
+    public static IReadOnlyList<Vector2> AssignEnemyPositionsByAttackRange(
+        IReadOnlyList<Vector2> positions,
+        IReadOnlyList<BattleUnitSnapshot> units
+    )
+    {
+        int count = units != null ? units.Count : 0;
+        List<Vector2> assignedPositions = new List<Vector2>(count);
+        for (int i = 0; i < count; i++)
+        {
+            assignedPositions.Add(BuildDefaultPosition(i, count, false));
+        }
+
+        if (positions == null || positions.Count < count || count <= 1)
+        {
+            return assignedPositions;
+        }
+
+        List<Vector2> sortedPositions = new List<Vector2>(positions);
+        sortedPositions.Sort(CompareByDistanceFromCenter);
+
+        List<int> unitIndices = new List<int>(count);
+        for (int i = 0; i < count; i++)
+        {
+            unitIndices.Add(i);
+        }
+
+        unitIndices.Sort(
+            (left, right) =>
+            {
+                int rangeComparison = units[left].AttackRange.CompareTo(units[right].AttackRange);
+                return rangeComparison != 0 ? rangeComparison : left.CompareTo(right);
+            }
+        );
+
+        for (int i = 0; i < count; i++)
+        {
+            assignedPositions[unitIndices[i]] = sortedPositions[i];
+        }
+
+        return assignedPositions;
+    }
+
+    private static int CompareByDistanceFromCenter(Vector2 left, Vector2 right)
+    {
+        int distanceComparison = left.sqrMagnitude.CompareTo(right.sqrMagnitude);
+        if (distanceComparison != 0)
+        {
+            return distanceComparison;
+        }
+
+        int xComparison = left.x.CompareTo(right.x);
+        return xComparison != 0 ? xComparison : left.y.CompareTo(right.y);
+    }
+
+    private static bool HasMinimumSpacing(IReadOnlyList<Vector2> positions, Vector2 candidate, float minSpacing)
+    {
+        float minSpacingSquared = minSpacing * minSpacing;
+        for (int i = 0; i < positions.Count; i++)
+        {
+            if ((positions[i] - candidate).sqrMagnitude < minSpacingSquared)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static float NextFloatRange(
+        RandomManager randomManager,
+        RandomStreamType streamType,
+        float minInclusive,
+        float maxInclusive
+    )
+    {
+        return randomManager != null
+            ? randomManager.NextFloatRange(streamType, minInclusive, maxInclusive)
+            : UnityEngine.Random.Range(minInclusive, maxInclusive);
     }
 }
 
@@ -361,6 +468,7 @@ public sealed class BattleUnitSnapshot
 public sealed class BattleEncounterPreview
 {
     private readonly List<BattleUnitSnapshot> _enemyUnits = new List<BattleUnitSnapshot>();
+    private readonly List<Vector2> _enemyDeploymentNormalizedPositions = new List<Vector2>();
 
     public int EncounterIndex { get; set; } // '메인 씬의 전투 패널 상의' 전투 후보 목록에서 이 적 팀이 몇 번째 줄인지 나타내는 인덱스
     public BattleEncounterDifficulty Difficulty { get; set; }
@@ -370,6 +478,7 @@ public sealed class BattleEncounterPreview
     // 전투 준비 화면에 보여주고,
     // 실제 전투 시작 시 enemy payload의 원본이 되는 적 팀 snapshot 목록임
     public IReadOnlyList<BattleUnitSnapshot> EnemyUnits => _enemyUnits;
+    public IReadOnlyList<Vector2> EnemyDeploymentNormalizedPositions => _enemyDeploymentNormalizedPositions;
 
     // 하루치 전투 후보 1줄을 구성하는 데이터들
     // 적 유닛 목록, 평균레벨, 보상, 난이도를 모두 들고 있음
@@ -378,7 +487,8 @@ public sealed class BattleEncounterPreview
         IEnumerable<BattleUnitSnapshot> enemyUnits,
         float averageLevel,
         int previewRewardGold,
-        BattleEncounterDifficulty difficulty
+        BattleEncounterDifficulty difficulty,
+        IEnumerable<Vector2> enemyDeploymentNormalizedPositions = null
     )
     {
         EncounterIndex = Mathf.Max(0, encounterIndex);
@@ -395,6 +505,32 @@ public sealed class BattleEncounterPreview
                     _enemyUnits.Add(unit);
                 }
             }
+        }
+
+        if (enemyDeploymentNormalizedPositions != null)
+        {
+            foreach (Vector2 position in enemyDeploymentNormalizedPositions)
+            {
+                if (_enemyDeploymentNormalizedPositions.Count >= _enemyUnits.Count)
+                {
+                    break;
+                }
+
+                _enemyDeploymentNormalizedPositions.Add(
+                    BattleDeploymentPositionUtility.ClampToDeploymentHalf(position, false)
+                );
+            }
+        }
+
+        while (_enemyDeploymentNormalizedPositions.Count < _enemyUnits.Count)
+        {
+            _enemyDeploymentNormalizedPositions.Add(
+                BattleDeploymentPositionUtility.BuildDefaultPosition(
+                    _enemyDeploymentNormalizedPositions.Count,
+                    _enemyUnits.Count,
+                    false
+                )
+            );
         }
     }
 }

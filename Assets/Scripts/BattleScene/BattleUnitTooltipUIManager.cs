@@ -2,15 +2,23 @@ using System;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
-// BattleScene의 3D 전투 유닛 hover tooltip을 관리한다.
-// MainScene BattlePanel의 툴팁과 같은 UI 구성을 쓰되, 감지는 UI pointer가 아니라 월드 모델 raycast로 처리한다.
+// BattleScene의 3D 전투 유닛 정보 팝업을 관리한다.
+// MainScene BattlePanel의 툴팁 구성을 재사용하되, hover가 아니라 월드 모델 좌클릭으로 팝업을 연다.
 [DisallowMultipleComponent]
 public sealed class BattleUnitTooltipUIManager : MonoBehaviour
 {
-    [Header("Hover")]
+    private enum DetailTab
+    {
+        Personality,
+        Weapon,
+        WeaponSkill,
+    }
+
+    [Header("Click")]
     [SerializeField]
     private Camera raycastCamera;
 
@@ -37,7 +45,7 @@ public sealed class BattleUnitTooltipUIManager : MonoBehaviour
     private RectTransform tooltipRoot;
 
     [SerializeField]
-    private Vector2 tooltipOffset = new Vector2(16f, -8f);
+    private Vector2 popupOffset = new Vector2(16f, -8f);
 
     [SerializeField]
     private RawImage tooltipIcon;
@@ -47,6 +55,9 @@ public sealed class BattleUnitTooltipUIManager : MonoBehaviour
 
     [SerializeField]
     private TMP_Text personalityNameText;
+
+    [SerializeField]
+    private TMP_Text personalityText;
 
     [SerializeField]
     private TMP_Text levelText;
@@ -59,12 +70,6 @@ public sealed class BattleUnitTooltipUIManager : MonoBehaviour
 
     [SerializeField]
     private RawImage attackIcon;
-
-    [SerializeField]
-    private TMP_Text healthText;
-
-    [SerializeField]
-    private RawImage healthIcon;
 
     [SerializeField]
     private TMP_Text attackSpeedText;
@@ -84,17 +89,56 @@ public sealed class BattleUnitTooltipUIManager : MonoBehaviour
     [SerializeField]
     private RawImage rangeIcon;
 
+    [Header("Health Bar")]
+    [SerializeField]
+    private GameObject healthBarRoot;
+
+    [SerializeField]
+    private Image healthBarBlackBackground;
+
+    [SerializeField]
+    private Image healthBarRedFillImage;
+
+    [SerializeField]
+    private TMP_Text healthBarText;
+
+    [Header("Details")]
+    [SerializeField]
+    private Button personalityDetailImage;
+
+    [SerializeField]
+    private Button weaponImageIcon;
+
+    [SerializeField]
+    private Button weaponSkillImageIcon;
+
+    [SerializeField]
+    private TMP_Text selectedTitleText;
+
+    [SerializeField]
+    private TMP_Text selectedDetailText;
+
     [Header("Debug")]
     [SerializeField]
     private bool verboseLog;
 
     private readonly List<BattleRuntimeUnit> _runtimeUnits = new List<BattleRuntimeUnit>();
-    private BattleRuntimeUnit _hoveredUnit;
+    private BattleRuntimeUnit _selectedUnit;
     private bool _initialized;
+    private Vector3 _healthBarRedFillBaseScale = Vector3.one;
+    private bool _hasHealthBarRedFillBaseScale;
+    private ContentDatabaseProvider _contentDatabaseProvider;
 
     private void Awake()
     {
+        WireDetailButtons();
+        ConfigureHealthBarFillImage();
         HideTooltip();
+    }
+
+    private void OnDestroy()
+    {
+        UnwireDetailButtons();
     }
 
     private void Update()
@@ -110,12 +154,23 @@ public sealed class BattleUnitTooltipUIManager : MonoBehaviour
             return;
         }
 
-        BattleRuntimeUnit hoveredUnit = ResolveHoveredUnit();
-        if (hoveredUnit != _hoveredUnit)
+        if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
         {
-            if (hoveredUnit != null)
+            if (IsPointerInsideTooltip())
             {
-                ShowTooltip(hoveredUnit);
+                return;
+            }
+
+            if (IsPointerOverUi())
+            {
+                HideTooltip();
+                return;
+            }
+
+            BattleRuntimeUnit clickedUnit = ResolvePointedUnit();
+            if (clickedUnit != null)
+            {
+                ShowTooltip(clickedUnit);
             }
             else
             {
@@ -123,10 +178,9 @@ public sealed class BattleUnitTooltipUIManager : MonoBehaviour
             }
         }
 
-        if (_hoveredUnit != null)
+        if (_selectedUnit != null)
         {
-            RefreshTooltipStats(_hoveredUnit);
-            UpdateTooltipPosition();
+            RefreshHealthBar(_selectedUnit);
         }
     }
 
@@ -154,7 +208,8 @@ public sealed class BattleUnitTooltipUIManager : MonoBehaviour
             tooltipModelPreviewView = tooltipIcon.GetComponentInChildren<GladiatorModelPreviewView>(true);
         }
 
-        _hoveredUnit = null;
+        _selectedUnit = null;
+        _contentDatabaseProvider = ContentDatabaseProvider.Instance;
         _initialized = true;
         HideTooltip();
     }
@@ -176,7 +231,7 @@ public sealed class BattleUnitTooltipUIManager : MonoBehaviour
         return battleSceneUIManager != null && battleSceneUIManager.IsBattleEndPanelOpen;
     }
 
-    private BattleRuntimeUnit ResolveHoveredUnit()
+    private BattleRuntimeUnit ResolvePointedUnit()
     {
         if (Mouse.current == null)
         {
@@ -224,7 +279,7 @@ public sealed class BattleUnitTooltipUIManager : MonoBehaviour
 
     private void ShowTooltip(BattleRuntimeUnit unit)
     {
-        _hoveredUnit = unit;
+        _selectedUnit = unit;
 
         if (tooltipRoot == null)
         {
@@ -238,15 +293,17 @@ public sealed class BattleUnitTooltipUIManager : MonoBehaviour
 
         SetUnitPreview(unit);
         RefreshTooltipStats(unit);
+        RefreshDetailIcons(unit);
+        RefreshSelectedDetail(DetailTab.Personality);
         SetTooltipStatIconsActive(true);
         tooltipRoot.gameObject.SetActive(true);
         tooltipRoot.SetAsLastSibling();
-        UpdateTooltipPosition();
+        PositionTooltipAtPointer();
     }
 
     private void HideTooltip()
     {
-        _hoveredUnit = null;
+        _selectedUnit = null;
 
         if (tooltipRoot != null)
         {
@@ -266,6 +323,9 @@ public sealed class BattleUnitTooltipUIManager : MonoBehaviour
             tooltipIcon.texture = null;
             tooltipIcon.enabled = false;
         }
+
+        SetText(selectedTitleText, string.Empty);
+        SetText(selectedDetailText, string.Empty);
     }
 
     private void SetUnitPreview(BattleRuntimeUnit unit)
@@ -334,16 +394,40 @@ public sealed class BattleUnitTooltipUIManager : MonoBehaviour
             return;
         }
 
-        SetText(personalityNameText, BuildPersonalityNameText(unit));
+        SetText(personalityNameText, BuildUnitNameText(unit));
+        SetText(personalityText, ResolvePersonalityName(unit));
         SetText(levelText, unit.Level.ToString());
         SetText(attackText, FormatStat(unit.Attack));
-        SetText(healthText, FormatHealth(unit.CurrentHealth));
+        RefreshHealthBar(unit);
         SetText(attackSpeedText, FormatStat(unit.AttackSpeed));
         SetText(moveSpeedText, FormatStat(unit.MoveSpeed));
         SetText(rangeText, FormatStat(unit.AttackRange));
     }
 
-    private void UpdateTooltipPosition()
+    private bool IsPointerInsideTooltip()
+    {
+        if (tooltipRoot == null || Mouse.current == null)
+        {
+            return false;
+        }
+
+        Canvas canvas = tooltipRoot.GetComponentInParent<Canvas>();
+        Camera eventCamera =
+            canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
+        return tooltipRoot.gameObject.activeInHierarchy
+            && RectTransformUtility.RectangleContainsScreenPoint(
+                tooltipRoot,
+                Mouse.current.position.ReadValue(),
+                eventCamera
+            );
+    }
+
+    private static bool IsPointerOverUi()
+    {
+        return EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
+    }
+
+    private void PositionTooltipAtPointer()
     {
         if (tooltipRoot == null || Mouse.current == null)
         {
@@ -359,12 +443,11 @@ public sealed class BattleUnitTooltipUIManager : MonoBehaviour
         Canvas canvas = tooltipRoot.GetComponentInParent<Canvas>();
         Camera eventCamera =
             canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
-        Vector2 screenPosition = Mouse.current.position.ReadValue();
 
         if (
             !RectTransformUtility.ScreenPointToLocalPointInRectangle(
                 parentRect,
-                screenPosition,
+                Mouse.current.position.ReadValue(),
                 eventCamera,
                 out Vector2 localPosition
             )
@@ -373,14 +456,15 @@ public sealed class BattleUnitTooltipUIManager : MonoBehaviour
             return;
         }
 
-        Vector2 tooltipSize = tooltipRoot.rect.size;
         Rect parentBounds = parentRect.rect;
+        Vector2 tooltipSize = tooltipRoot.rect.size;
+
         tooltipRoot.anchorMin = new Vector2(0f, 1f);
         tooltipRoot.anchorMax = new Vector2(0f, 1f);
         tooltipRoot.pivot = new Vector2(0f, 1f);
 
         Vector2 anchoredPosition =
-            new Vector2(localPosition.x - parentBounds.xMin, localPosition.y - parentBounds.yMax) + tooltipOffset;
+            new Vector2(localPosition.x - parentBounds.xMin, localPosition.y - parentBounds.yMax) + popupOffset;
 
         float minX = 0f;
         float maxX = Mathf.Max(0f, parentBounds.width - tooltipSize.x);
@@ -396,7 +480,6 @@ public sealed class BattleUnitTooltipUIManager : MonoBehaviour
     {
         SetComponentActive(levelIcon, value);
         SetComponentActive(attackIcon, value);
-        SetComponentActive(healthIcon, value);
         SetComponentActive(attackSpeedIcon, value);
         SetComponentActive(moveSpeedIcon, value);
         SetComponentActive(rangeIcon, value);
@@ -424,7 +507,7 @@ public sealed class BattleUnitTooltipUIManager : MonoBehaviour
 
     private static void SetText(TMP_Text target, string value)
     {
-        if (target != null)
+        if (target != null && target.text != value)
         {
             target.text = value;
         }
@@ -438,6 +521,297 @@ public sealed class BattleUnitTooltipUIManager : MonoBehaviour
         }
     }
 
+    private void RefreshHealthBar(BattleRuntimeUnit unit)
+    {
+        float currentHealth = unit != null ? Mathf.Max(0f, unit.CurrentHealth) : 0f;
+        float maxHealth = unit != null ? ResolveDisplayedMaxHealth(unit) : 0f;
+        bool hasHealth = unit != null && maxHealth > 0f;
+        if (healthBarRoot != null)
+        {
+            healthBarRoot.SetActive(hasHealth);
+        }
+
+        if (healthBarBlackBackground != null)
+        {
+            healthBarBlackBackground.enabled = hasHealth;
+        }
+
+        if (!hasHealth)
+        {
+            SetHealthRatio(0f);
+            SetText(healthBarText, string.Empty);
+            return;
+        }
+
+        SetHealthRatio(Mathf.Clamp01(currentHealth / maxHealth));
+        SetText(healthBarText, $"{FormatHealth(currentHealth)}/{FormatHealth(maxHealth)}");
+    }
+
+    private static float ResolveDisplayedMaxHealth(BattleRuntimeUnit unit)
+    {
+        if (unit == null)
+        {
+            return 0f;
+        }
+
+        return Mathf.Max(0f, unit.MaxHealth, unit.CurrentHealth);
+    }
+
+    private void SetHealthRatio(float ratio)
+    {
+        if (healthBarRedFillImage == null)
+        {
+            return;
+        }
+
+        healthBarRedFillImage.enabled = ratio > 0f;
+        healthBarRedFillImage.fillAmount = ratio;
+
+        if (!_hasHealthBarRedFillBaseScale)
+        {
+            CacheHealthBarRedFillBaseScale();
+        }
+
+        Transform fillTransform = healthBarRedFillImage.transform;
+        Vector3 scale = _healthBarRedFillBaseScale;
+        scale.x *= ratio;
+        fillTransform.localScale = scale;
+    }
+
+    private void ConfigureHealthBarFillImage()
+    {
+        if (healthBarRedFillImage == null)
+        {
+            return;
+        }
+
+        healthBarRedFillImage.type = Image.Type.Filled;
+        healthBarRedFillImage.fillMethod = Image.FillMethod.Horizontal;
+        healthBarRedFillImage.fillOrigin = (int)Image.OriginHorizontal.Left;
+        CacheHealthBarRedFillBaseScale();
+
+        RectTransform fillRect = healthBarRedFillImage.rectTransform;
+        if (fillRect != null)
+        {
+            Vector2 pivot = fillRect.pivot;
+            pivot.x = 0f;
+            fillRect.pivot = pivot;
+        }
+    }
+
+    private void CacheHealthBarRedFillBaseScale()
+    {
+        if (healthBarRedFillImage == null)
+        {
+            _healthBarRedFillBaseScale = Vector3.one;
+            _hasHealthBarRedFillBaseScale = false;
+            return;
+        }
+
+        _healthBarRedFillBaseScale = healthBarRedFillImage.transform.localScale;
+        _hasHealthBarRedFillBaseScale = true;
+    }
+
+    private void WireDetailButtons()
+    {
+        if (personalityDetailImage != null)
+            personalityDetailImage.onClick.AddListener(ShowPersonalityDetail);
+
+        if (weaponImageIcon != null)
+            weaponImageIcon.onClick.AddListener(ShowWeaponDetail);
+
+        if (weaponSkillImageIcon != null)
+            weaponSkillImageIcon.onClick.AddListener(ShowWeaponSkillDetail);
+    }
+
+    private void UnwireDetailButtons()
+    {
+        if (personalityDetailImage != null)
+            personalityDetailImage.onClick.RemoveListener(ShowPersonalityDetail);
+
+        if (weaponImageIcon != null)
+            weaponImageIcon.onClick.RemoveListener(ShowWeaponDetail);
+
+        if (weaponSkillImageIcon != null)
+            weaponSkillImageIcon.onClick.RemoveListener(ShowWeaponSkillDetail);
+    }
+
+    private void ShowPersonalityDetail() => RefreshSelectedDetail(DetailTab.Personality);
+
+    private void ShowWeaponDetail() => RefreshSelectedDetail(DetailTab.Weapon);
+
+    private void ShowWeaponSkillDetail() => RefreshSelectedDetail(DetailTab.WeaponSkill);
+
+    private void RefreshDetailIcons(BattleRuntimeUnit unit)
+    {
+        BattleUnitSnapshot snapshot = unit != null ? unit.Snapshot : null;
+        SetButtonSprite(weaponImageIcon, snapshot != null ? snapshot.WeaponIconSprite : null);
+
+        WeaponSkillSO skill = ResolveWeaponSkill(snapshot);
+        SetButtonSprite(weaponSkillImageIcon, skill != null ? skill.icon : null);
+    }
+
+    private void RefreshSelectedDetail(DetailTab tab)
+    {
+        BattleRuntimeUnit unit = _selectedUnit;
+        BattleUnitSnapshot snapshot = unit != null ? unit.Snapshot : null;
+
+        if (snapshot == null)
+        {
+            SetText(selectedTitleText, string.Empty);
+            SetText(selectedDetailText, string.Empty);
+            return;
+        }
+
+        switch (tab)
+        {
+            case DetailTab.Personality:
+                PersonalitySO personality = snapshot.Personality;
+                SetText(selectedTitleText, ResolvePersonalityName(unit));
+                SetText(selectedDetailText, ResolvePersonalityDetailText(personality));
+                break;
+            case DetailTab.Weapon:
+                WeaponSO weapon = ResolveWeapon(snapshot);
+                SetText(selectedTitleText, ResolveWeaponName(snapshot, weapon));
+                SetText(selectedDetailText, BuildWeaponDetailText(weapon));
+                break;
+            case DetailTab.WeaponSkill:
+                WeaponSkillSO skill = ResolveWeaponSkill(snapshot);
+                SetText(selectedTitleText, skill != null ? skill.skillName : "스킬 없음");
+                SetText(selectedDetailText, skill != null ? skill.description : string.Empty);
+                break;
+        }
+    }
+
+    private WeaponSO ResolveWeapon(BattleUnitSnapshot snapshot)
+    {
+        if (snapshot == null || string.IsNullOrWhiteSpace(snapshot.WeaponName))
+        {
+            return null;
+        }
+
+        ContentDatabaseProvider provider = ResolveContentDatabaseProvider();
+        IReadOnlyList<WeaponSO> weapons = provider != null ? provider.Weapons : null;
+        if (weapons == null)
+        {
+            return null;
+        }
+
+        for (int i = 0; i < weapons.Count; i++)
+        {
+            WeaponSO weapon = weapons[i];
+            if (weapon != null && string.Equals(weapon.weaponName, snapshot.WeaponName, StringComparison.Ordinal))
+            {
+                return weapon;
+            }
+        }
+
+        return null;
+    }
+
+    private WeaponSkillSO ResolveWeaponSkill(BattleUnitSnapshot snapshot)
+    {
+        if (snapshot == null || snapshot.WeaponSkillId == WeaponSkillId.None)
+        {
+            return null;
+        }
+
+        ContentDatabaseProvider provider = ResolveContentDatabaseProvider();
+        IReadOnlyList<WeaponSkillSO> skills = provider != null ? provider.WeaponSkills : null;
+        if (skills == null)
+        {
+            return null;
+        }
+
+        for (int i = 0; i < skills.Count; i++)
+        {
+            WeaponSkillSO skill = skills[i];
+            if (skill != null && skill.skillId == snapshot.WeaponSkillId)
+            {
+                return skill;
+            }
+        }
+
+        return null;
+    }
+
+    private ContentDatabaseProvider ResolveContentDatabaseProvider()
+    {
+        if (_contentDatabaseProvider == null)
+        {
+            _contentDatabaseProvider = ContentDatabaseProvider.Instance;
+        }
+
+        return _contentDatabaseProvider;
+    }
+
+    private static void SetButtonSprite(Button button, Sprite sprite)
+    {
+        if (button == null)
+        {
+            return;
+        }
+
+        Image image = button.GetComponent<Image>();
+        if (image == null)
+        {
+            image = button.targetGraphic as Image;
+        }
+
+        if (image == null)
+        {
+            return;
+        }
+
+        image.sprite = sprite;
+        image.enabled = sprite != null;
+        button.interactable = sprite != null;
+    }
+
+    private static string ResolveWeaponName(BattleUnitSnapshot snapshot, WeaponSO weapon)
+    {
+        if (weapon != null && !string.IsNullOrWhiteSpace(weapon.weaponName))
+        {
+            return weapon.weaponName;
+        }
+
+        return snapshot != null && !string.IsNullOrWhiteSpace(snapshot.WeaponName) ? snapshot.WeaponName : "무기 없음";
+    }
+
+    private static string BuildWeaponDetailText(WeaponSO weapon)
+    {
+        if (weapon == null)
+        {
+            return string.Empty;
+        }
+
+        return $"체력 : {FormatSignedStat(weapon.baseHealthBonus)}\n"
+            + $"공격력 : {FormatSignedStat(weapon.baseAttackBonus)}\n"
+            + $"공격속도 : {FormatSignedStat(weapon.baseAttackSpeedBonus)}\n"
+            + $"이동속도 : {FormatSignedStat(weapon.baseMoveSpeedBonus)}\n"
+            + $"사거리 : {FormatSignedStat(weapon.baseAttackRangeBonus)}";
+    }
+
+    private static string ResolvePersonalityDetailText(PersonalitySO personality)
+    {
+        if (personality == null)
+        {
+            return string.Empty;
+        }
+
+        if (!string.IsNullOrWhiteSpace(personality.dialogPersonalityDescription))
+        {
+            return personality.dialogPersonalityDescription;
+        }
+
+        if (!string.IsNullOrWhiteSpace(personality.detailText))
+        {
+            return personality.detailText;
+        }
+
+        return string.IsNullOrWhiteSpace(personality.description) ? string.Empty : personality.description;
+    }
+
     private static string FormatStat(float value)
     {
         return value.ToString("0.#");
@@ -448,22 +822,36 @@ public sealed class BattleUnitTooltipUIManager : MonoBehaviour
         return Mathf.RoundToInt(value).ToString();
     }
 
-    private static string BuildPersonalityNameText(BattleRuntimeUnit unit)
+    private static string FormatSignedStat(float value)
+    {
+        if (Mathf.Approximately(value, 0f))
+        {
+            return "0";
+        }
+
+        return value > 0f ? $"+{value:0.#}" : value.ToString("0.#");
+    }
+
+    private static string BuildUnitNameText(BattleRuntimeUnit unit)
     {
         if (unit == null)
         {
             return string.Empty;
         }
 
-        BattleUnitSnapshot snapshot = unit.Snapshot;
-        string personalityName =
+        const string nameColor = "#FFFFFF";
+
+        return $"<color={nameColor}>{unit.DisplayName}</color>";
+    }
+
+    private static string ResolvePersonalityName(BattleRuntimeUnit unit)
+    {
+        BattleUnitSnapshot snapshot = unit != null ? unit.Snapshot : null;
+        return
             snapshot != null
             && snapshot.Personality != null
             && !string.IsNullOrWhiteSpace(snapshot.Personality.personalityName)
-                ? snapshot.Personality.personalityName
-                : "성격 없음";
-        string nameColor = unit.IsPlayerOwned ? "#3366FF" : "#FF0000";
-
-        return $"<color=#FFFFFF>{personalityName}</color> <color={nameColor}>{unit.DisplayName}</color>";
+            ? snapshot.Personality.personalityName
+            : "성격 없음";
     }
 }
