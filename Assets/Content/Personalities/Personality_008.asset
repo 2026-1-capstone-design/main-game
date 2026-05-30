@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 91ecfa8d70b03484ca21f220db70b39b, type: 3}
+  m_Name: Personality_008
+  m_EditorClassIdentifier: Assembly-CSharp::PersonalitySO
+  icon: {fileID: 0}
+  personalityName: "꾀많은"
+  description: "당신은 전장의 흐름을 영리하게 읽는 검투사입니다. 단장의 안전한 지시에는 빠르게 응하지만, 무모해 보이는 명령은 한 번 더 헤아린 뒤 자기 식으로 풀어냅니다. 정면 돌격은 좀처럼 받아들이지 않고, 위험을 느끼는 순간 즉시 다른 길을 찾습니다. 당신에게 전장은 정해진 시나리오가 아니라, 매 순간 머리를 굴려야 하는 살얼음판입니다."
+  baseLoyalty: 81
+  dialogPersonalityDescription: "눈치 빠른 성격이다. 무리한 명령은 적당히 다른 길로 풀어낸다."
+  speechStyle: 0
+  obedienceRates: 2800000055000000550000005000000046000000550000005000000055000000
+  fallbackWeights: 230000005a000000500000004b0000004b000000500000005500000050000000
+  obedienceRateSum: 610

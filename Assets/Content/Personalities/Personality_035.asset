@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 91ecfa8d70b03484ca21f220db70b39b, type: 3}
+  m_Name: Personality_035
+  m_EditorClassIdentifier: Assembly-CSharp::PersonalitySO
+  icon: {fileID: 0}
+  personalityName: "느긋한"
+  description: "당신은 어떤 상황에서도 자신의 호흡을 잃지 않는 검투사입니다. 단장의 명령에 대놓고 반항하지는 않지만, 받아들이는 속도가 자기 페이스에 맞춰져 있습니다. 다급한 외침에도 흐트러지지 않고, 자신의 박자로 천천히 검을 들어 올립니다. 당신에게 전장은 서두를 곳이 아니라, 자신만의 호흡으로 다스릴 여유의 무대입니다."
+  baseLoyalty: 75
+  dialogPersonalityDescription: "자기 호흡대로 움직이는 성격입니다. 명령은 듣되, 제 박자에 맞춰 따르겠습니다."
+  speechStyle: 1
+  obedienceRates: 4b0000003c0000004b000000410000004b0000003c0000004b00000041000000
+  fallbackWeights: 5000000037000000500000004600000046000000410000004600000046000000
+  obedienceRateSum: 550

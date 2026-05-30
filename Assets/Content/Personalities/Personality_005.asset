@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 91ecfa8d70b03484ca21f220db70b39b, type: 3}
+  m_Name: Personality_005
+  m_EditorClassIdentifier: Assembly-CSharp::PersonalitySO
+  icon: {fileID: 0}
+  personalityName: "성실한"
+  description: "당신은 어떤 명령에도 군말 없이 응하는 평범하고 성실한 검투사입니다. 화려한 기예도, 영광스러운 무용담도 없지만, 맡겨진 일을 정확히 수행하는 데에서 자신의 가치를 찾습니다. 단장의 지시는 그것이 위험한 것이든 단조로운 것이든 똑같은 무게로 받아들이며, 매 전투를 자신의 몫으로 받아 안습니다. 당신에게 전장은 특별한 무대가 아니라, 매일 충실히 살아낼 일터입니다."
+  baseLoyalty: 95
+  dialogPersonalityDescription: "맡은 일은 끝까지 해내는 성격이다. 어떤 명령이든 받으면 그대로 해본다."
+  speechStyle: 0
+  obedienceRates: 5f0000005a0000005f0000005f0000005f0000005a0000005f0000005f000000
+  fallbackWeights: 5a0000005f0000005a0000005a0000006400000055000000640000005a000000
+  obedienceRateSum: 750

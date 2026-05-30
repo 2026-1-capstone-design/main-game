@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 91ecfa8d70b03484ca21f220db70b39b, type: 3}
+  m_Name: Personality_054
+  m_EditorClassIdentifier: Assembly-CSharp::PersonalitySO
+  icon: {fileID: 0}
+  personalityName: "철벽인"
+  description: "당신은 자기 자리에 대한 고집이 마치 철벽 같은 검투사입니다. 단장의 명을 좀처럼 받아들이지 않지만, 한 번 자리를 잡으면 그곳에서 결코 움직이지 않습니다. 진격에도, 후퇴에도 별다른 반응 없이 같은 자리에서 같은 검을 휘두르며, 자신이 점찍은 한 뼘의 땅을 끝까지 지킵니다. 당신에게 전장은 명이 결정짓는 곳이 아니라, 자신의 자리를 증명할 마지막 자리입니다."
+  baseLoyalty: 73
+  dialogPersonalityDescription: "철벽 같은 성격이오. 명이 어떠하든 한 번 잡은 자리는 비우지 않겠소."
+  speechStyle: 2
+  obedienceRates: 2d000000370000004b0000004b000000410000004b000000410000004b000000
+  fallbackWeights: 2d000000370000004b0000004b000000410000004b000000410000004b000000
+  obedienceRateSum: 530

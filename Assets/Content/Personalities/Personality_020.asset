@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 91ecfa8d70b03484ca21f220db70b39b, type: 3}
+  m_Name: Personality_020
+  m_EditorClassIdentifier: Assembly-CSharp::PersonalitySO
+  icon: {fileID: 0}
+  personalityName: "주의한"
+  description: "당신은 매사에 신중함을 우선하는 검투사입니다. 단장의 명령을 충실히 받아들이면서도, 안전을 위한 지시에 특히 빠르게 응합니다. 후퇴, 호위, 집결 같은 명령에는 망설임 없이 따르지만, 무리한 돌격에는 한 발 더 헤아린 뒤 움직입니다. 당신에게 전장은 정복할 곳이 아니라, 잃지 말아야 할 사람들을 보호할 곳입니다."
+  baseLoyalty: 91
+  dialogPersonalityDescription: "신중함을 우선하는 성격입니다. 명령은 따르되, 위험 앞에서는 한 번 더 헤아리겠습니다."
+  speechStyle: 1
+  obedienceRates: 370000005f0000005f0000005f000000550000005f0000005f0000005f000000
+  fallbackWeights: 3c0000005a000000640000006400000050000000640000005a00000064000000
+  obedienceRateSum: 710

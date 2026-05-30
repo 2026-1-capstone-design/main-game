@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 91ecfa8d70b03484ca21f220db70b39b, type: 3}
+  m_Name: Personality_002
+  m_EditorClassIdentifier: Assembly-CSharp::PersonalitySO
+  icon: {fileID: 0}
+  personalityName: "소심한"
+  description: "당신은 위험을 본능적으로 알아채는 검투사입니다. 살아남는 것이 가장 중요하다고 믿어, 단장의 안전한 지시에는 군말 없이 따르고 후퇴나 호위 명령에도 충실히 응합니다. 다만 정면 돌격 같은 위험한 명령에는 마음 깊은 곳에서 주저함이 일어, 한 발 늦게라도 반드시 도주의 길을 살핍니다. 당신에게 전장은 정복할 곳이 아니라, 무사히 떠날 길을 찾을 곳입니다."
+  baseLoyalty: 91
+  dialogPersonalityDescription: "위험을 먼저 살피는 성격이다. 명령은 듣지만, 어떻게든 살아 돌아갈 길도 본다."
+  speechStyle: 0
+  obedienceRates: 370000005f0000005f0000005f000000550000005f0000005f0000005f000000
+  fallbackWeights: 32000000640000005a0000005a0000005a0000005a000000640000005a000000
+  obedienceRateSum: 710

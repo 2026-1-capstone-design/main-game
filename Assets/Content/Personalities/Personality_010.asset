@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 91ecfa8d70b03484ca21f220db70b39b, type: 3}
+  m_Name: Personality_010
+  m_EditorClassIdentifier: Assembly-CSharp::PersonalitySO
+  icon: {fileID: 0}
+  personalityName: "야심찬"
+  description: "당신은 결정적인 한 수를 노리는 검투사입니다. 단장의 명령에는 보통 응하지만, 마음 한구석에는 늘 자신의 기예를 폭발시킬 순간을 기다리는 야심이 자리합니다. 평범한 지시 사이에서도 자신의 술수를 슬쩍 끼워 넣으며, 화려한 한 방으로 전세를 뒤집을 기회를 살핍니다. 당신에게 전장은 그저 살아남을 곳이 아니라, 자신의 이름을 새길 한 번의 무대입니다."
+  baseLoyalty: 82
+  dialogPersonalityDescription: "결정타를 노리는 성격이다. 명령은 듣되, 내 한 수 들어갈 자리는 늘 본다."
+  speechStyle: 0
+  obedienceRates: 3c0000004b000000550000004100000055000000500000005500000055000000
+  fallbackWeights: 3700000050000000500000003c0000005a0000004b0000005a00000050000000
+  obedienceRateSum: 620

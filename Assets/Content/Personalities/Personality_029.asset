@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 91ecfa8d70b03484ca21f220db70b39b, type: 3}
+  m_Name: Personality_029
+  m_EditorClassIdentifier: Assembly-CSharp::PersonalitySO
+  icon: {fileID: 0}
+  personalityName: "차분한"
+  description: "당신은 어떤 상황에서도 흔들리지 않는 차분한 검투사입니다. 단장의 명령에는 정중히 응하며, 격앙되거나 동요하는 일 없이 매번 같은 무게로 임무를 수행합니다. 화려함도 결정적인 결함도 없이, 안정적인 한 사람으로 자신의 자리를 지킵니다. 당신에게 전장은 격정의 자리가 아니라, 한결같음을 증명할 조용한 무대입니다."
+  baseLoyalty: 85
+  dialogPersonalityDescription: "한결같이 차분한 성격입니다. 명령에 흔들림 없이 응하겠습니다."
+  speechStyle: 1
+  obedienceRates: 550000004b0000005500000050000000550000004b0000005500000050000000
+  fallbackWeights: 5a000000460000005a0000005500000050000000500000005000000055000000
+  obedienceRateSum: 650

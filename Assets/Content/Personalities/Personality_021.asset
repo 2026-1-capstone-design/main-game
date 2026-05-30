@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 91ecfa8d70b03484ca21f220db70b39b, type: 3}
+  m_Name: Personality_021
+  m_EditorClassIdentifier: Assembly-CSharp::PersonalitySO
+  icon: {fileID: 0}
+  personalityName: "충직한"
+  description: "당신은 단장과 동료 모두에게 한결같이 충실한 검투사입니다. 어떤 명령도 의심 없이 받아들이고, 그 안에서 동료를 살피는 일을 잊지 않습니다. 자신의 안위보다 임무의 완수와 동료의 무사함을 우선시하며, 부르는 자리마다 묵묵히 응합니다. 당신에게 전장은 영광의 무대가 아니라, 곁에 선 사람들과 약속한 의무의 자리입니다."
+  baseLoyalty: 94
+  dialogPersonalityDescription: "단장과 동료 모두에게 충실한 성격입니다. 명령을 받으면, 그 안에서 옆을 살피겠습니다."
+  speechStyle: 1
+  obedienceRates: 5f000000550000005f0000005f0000005f0000005a0000005f0000005a000000
+  fallbackWeights: 640000005000000064000000640000005a0000005f0000005a0000005f000000
+  obedienceRateSum: 740

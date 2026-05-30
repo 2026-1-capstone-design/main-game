@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 91ecfa8d70b03484ca21f220db70b39b, type: 3}
+  m_Name: Personality_017
+  m_EditorClassIdentifier: Assembly-CSharp::PersonalitySO
+  icon: {fileID: 0}
+  personalityName: "느슨한"
+  description: "당신은 매사에 큰 의지를 보이지 않는 검투사입니다. 단장의 명령에 대놓고 반항하지는 않지만, 받아들이는 강도가 늘 절반 정도에 머뭅니다. 특별히 잘하는 것도, 특별히 못하는 것도 없이, 모든 일을 적당히 해치우고 자리에 앉습니다. 당신에게 전장은 진지하게 임할 무대가 아니라, 그저 견뎌낼 또 하나의 일과입니다."
+  baseLoyalty: 75
+  dialogPersonalityDescription: "적당히 하는 성격이다. 명령 받으면 받은 만큼만, 거기서 더는 안 한다."
+  speechStyle: 0
+  obedienceRates: 4b0000003c0000004b000000410000004b0000003c0000004b00000041000000
+  fallbackWeights: 4600000041000000460000003c0000005000000037000000500000003c000000
+  obedienceRateSum: 550

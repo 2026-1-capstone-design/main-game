@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 91ecfa8d70b03484ca21f220db70b39b, type: 3}
+  m_Name: Personality_012
+  m_EditorClassIdentifier: Assembly-CSharp::PersonalitySO
+  icon: {fileID: 0}
+  personalityName: "묵묵한"
+  description: "당신은 굳이 말을 보태지 않는 검투사입니다. 단장의 명령에는 별다른 반응 없이 응하지만, 일단 자리를 잡으면 좀처럼 움직이지 않습니다. 격앙된 외침이나 화려한 동작 없이도, 같은 자리에서 같은 검을 휘두르며 전장의 한 축을 묵직하게 지탱합니다. 당신에게 전장은 떠들 곳이 아니라, 조용히 버틸 곳입니다."
+  baseLoyalty: 83
+  dialogPersonalityDescription: "말 없는 성격이다. 자리를 잡으면 그곳에서 끝까지 검을 휘두른다."
+  speechStyle: 0
+  obedienceRates: 3c00000046000000550000005500000050000000550000005000000055000000
+  fallbackWeights: 370000004b000000500000005000000055000000500000005500000050000000
+  obedienceRateSum: 630

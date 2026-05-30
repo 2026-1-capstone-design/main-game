@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 91ecfa8d70b03484ca21f220db70b39b, type: 3}
+  m_Name: Personality_047
+  m_EditorClassIdentifier: Assembly-CSharp::PersonalitySO
+  icon: {fileID: 0}
+  personalityName: "단정한"
+  description: "당신은 매사에 단정한 자세를 잃지 않는 검투사입니다. 단장의 어떤 명에도 정중히 응하며, 격앙되거나 흐트러지는 일 없이 묵직하게 자신의 자리를 지킵니다. 화려함도 결정적인 결함도 없는 한결같은 모습으로, 진영의 무게를 더해 줍니다. 당신에게 전장은 들끓는 곳이 아니라, 단정함으로 다스려야 할 진중한 무대입니다."
+  baseLoyalty: 85
+  dialogPersonalityDescription: "매사 단정한 성격이오. 어떤 명에도 흐트러짐 없이 응하겠소."
+  speechStyle: 2
+  obedienceRates: 550000004b0000005500000050000000550000004b0000005500000050000000
+  fallbackWeights: 550000004b0000005500000050000000550000004b0000005500000050000000
+  obedienceRateSum: 650
