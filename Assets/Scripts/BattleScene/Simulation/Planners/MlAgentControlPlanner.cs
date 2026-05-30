@@ -17,7 +17,7 @@ public sealed class MlAgentControlPlanner : IBattleControlPlanner
         BattleAgentControlInput input = _buffer != null ? _buffer.GetInput(self) : default;
         BattleUnitCombatState target = BattleFieldSnapshot.IsValidEnemyTarget(self, input.Target) ? input.Target : null;
         Vector2 resolvedMove = Vector2.ClampMagnitude(input.ResolvedRelativeMove, 1f);
-        BattleCombatIntent combatIntent = ResolveCombatIntent(input.Command);
+        BattleCombatIntent combatIntent = ResolveSkillAwareCombatIntent(self, target, input.Command);
         BattleMove move = ResolveMove(target, resolvedMove, combatIntent);
         BattleFacingIntent facingIntent = ResolveFacingIntent(target, move, combatIntent);
         plan = new BattleControlPlan(target, null, move, combatIntent, facingIntent);
@@ -31,6 +31,31 @@ public sealed class MlAgentControlPlanner : IBattleControlPlanner
             BattleCombatCommand.Skill => BattleCombatIntent.Skill,
             _ => BattleCombatIntent.None,
         };
+
+    private static BattleCombatIntent ResolveSkillAwareCombatIntent(
+        BattleUnitCombatState self,
+        BattleUnitCombatState target,
+        BattleCombatCommand command
+    )
+    {
+        BattleCombatIntent combatIntent = ResolveCombatIntent(command);
+        if (self == null || self.IsSkillDisabled)
+            return combatIntent;
+
+        if (self.IsCastingSkill)
+            return BattleCombatIntent.Skill;
+
+        if (command != BattleCombatCommand.BasicAttack)
+            return combatIntent;
+
+        if (target == null || self.GetSkill() == WeaponSkillId.None)
+            return combatIntent;
+
+        if (!BattleFieldSnapshot.IsWithinEffectiveAttackDistance(self, target))
+            return combatIntent;
+
+        return self.SkillCooldownRemaining <= 0f ? BattleCombatIntent.Skill : combatIntent;
+    }
 
     private static BattleMove ResolveMove(
         BattleUnitCombatState target,
