@@ -13,6 +13,8 @@ public sealed class SquadManager : SingletonBehaviour<SquadManager>
         BattleTeamConstants.MaxUnitsPerTeam
     ];
 
+    private readonly string[] _teamNames = new string[SquadTeamCount];
+
     private int _activeTeamIndex;
 
     public int SlotCount => BattleTeamConstants.MaxUnitsPerTeam;
@@ -28,6 +30,7 @@ public sealed class SquadManager : SingletonBehaviour<SquadManager>
             return;
         }
 
+        ResetTeamNames();
         DontDestroyOnLoad(gameObject);
     }
 
@@ -40,6 +43,61 @@ public sealed class SquadManager : SingletonBehaviour<SquadManager>
 
         _activeTeamIndex = teamIndex;
         return true;
+    }
+
+    public string GetTeamName(int teamIndex)
+    {
+        if (!IsValidTeamIndex(teamIndex))
+        {
+            return string.Empty;
+        }
+
+        return string.IsNullOrWhiteSpace(_teamNames[teamIndex])
+            ? BuildDefaultTeamName(teamIndex)
+            : _teamNames[teamIndex];
+    }
+
+    public bool TrySetTeamName(int teamIndex, string teamName)
+    {
+        if (!IsValidTeamIndex(teamIndex))
+        {
+            return false;
+        }
+
+        string normalizedName = teamName?.Trim();
+        if (string.IsNullOrWhiteSpace(normalizedName))
+        {
+            return false;
+        }
+
+        _teamNames[teamIndex] = normalizedName;
+        return true;
+    }
+
+    public string[] GetTeamNamesSnapshot()
+    {
+        string[] names = new string[SquadTeamCount];
+        for (int teamIndex = 0; teamIndex < SquadTeamCount; teamIndex++)
+        {
+            names[teamIndex] = GetTeamName(teamIndex);
+        }
+
+        return names;
+    }
+
+    public void RestoreTeamNames(string[] teamNames)
+    {
+        ResetTeamNames();
+        if (teamNames == null)
+        {
+            return;
+        }
+
+        int count = Mathf.Min(teamNames.Length, SquadTeamCount);
+        for (int teamIndex = 0; teamIndex < count; teamIndex++)
+        {
+            TrySetTeamName(teamIndex, teamNames[teamIndex]);
+        }
     }
 
     public OwnedGladiatorData GetSlot(int slotIndex)
@@ -233,6 +291,20 @@ public sealed class SquadManager : SingletonBehaviour<SquadManager>
         }
 
         _activeTeamIndex = 0;
+        ResetTeamNames();
+    }
+
+    private void ResetTeamNames()
+    {
+        for (int teamIndex = 0; teamIndex < SquadTeamCount; teamIndex++)
+        {
+            _teamNames[teamIndex] = BuildDefaultTeamName(teamIndex);
+        }
+    }
+
+    private static string BuildDefaultTeamName(int teamIndex)
+    {
+        return teamIndex == 0 ? "메인 스쿼드" : $"스쿼드 {teamIndex + 1}";
     }
 
     private bool IsValidTeamIndex(int teamIndex)

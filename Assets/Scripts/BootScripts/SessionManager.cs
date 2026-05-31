@@ -5,6 +5,8 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public sealed class SessionManager : SingletonBehaviour<SessionManager>
 {
+    private const string DefaultTeamName = "검투사단";
+
     private readonly Dictionary<string, int> _classNameCounters = new(); // 클래스별 이름 번호를 누적 관리함.
 
     public int CurrentDay { get; private set; } = 1; // 현재 메인 루프의 날짜 (시장 재생성, 전투 후보 재생성, 보상 계산 등의 기준)
@@ -14,6 +16,7 @@ public sealed class SessionManager : SingletonBehaviour<SessionManager>
     public int TotalBattleCount { get; private set; }
     public int VictoryBattleCount { get; private set; }
     public int DefeatedEnemyCount { get; private set; }
+    public string TeamName { get; private set; } = DefaultTeamName;
 
     public event Action<int> DayChanged;
     public event Action<bool> BattleUsageChanged;
@@ -28,6 +31,7 @@ public sealed class SessionManager : SingletonBehaviour<SessionManager>
         TotalBattleCount = 0;
         VictoryBattleCount = 0;
         DefeatedEnemyCount = 0;
+        TeamName = DefaultTeamName;
         _classNameCounters.Clear();
 
         DayChanged?.Invoke(CurrentDay);
@@ -125,6 +129,23 @@ public sealed class SessionManager : SingletonBehaviour<SessionManager>
         }
 
         DefeatedEnemyCount += Mathf.Max(0, defeatedEnemyCount);
+    }
+
+    public bool TrySetTeamName(string teamName)
+    {
+        string normalizedName = teamName?.Trim();
+        if (string.IsNullOrWhiteSpace(normalizedName))
+        {
+            return false;
+        }
+
+        TeamName = normalizedName;
+        return true;
+    }
+
+    public void SetTeamNameForLoad(string teamName)
+    {
+        TeamName = string.IsNullOrWhiteSpace(teamName) ? DefaultTeamName : teamName.Trim();
     }
 
     public SaveClassCounterEntry[] GetClassCounterEntriesForSave()

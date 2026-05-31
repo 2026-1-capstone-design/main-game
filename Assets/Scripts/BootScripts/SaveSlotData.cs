@@ -14,6 +14,7 @@ public sealed class SaveSlotData
     public int totalBattleCount;
     public int victoryBattleCount;
     public int defeatedEnemyCount;
+    public string teamName;
 
     public SaveClassCounterEntry[] classCounters;
     public SaveOwnedWeaponData[] ownedWeapons;
@@ -33,6 +34,7 @@ public sealed class SaveSlotData
 
     public int[] squadSlotRuntimeIds;
     public int activeSquadTeamIndex;
+    public string[] squadTeamNames;
 }
 
 [Serializable]

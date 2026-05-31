@@ -8348,8 +8348,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 1117, y: -58}
-  m_SizeDelta: {x: 209, y: 70}
+  m_AnchoredPosition: {x: 1117, y: -34}
+  m_SizeDelta: {x: 209, y: 120}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &681771168
 MonoBehaviour:
@@ -21512,8 +21512,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 593, y: -58}
-  m_SizeDelta: {x: 209, y: 70}
+  m_AnchoredPosition: {x: 593, y: -34}
+  m_SizeDelta: {x: 209, y: 120}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &1800198555
 MonoBehaviour:
@@ -23928,6 +23928,17 @@ MonoBehaviour:
   allyAliveCountText: {fileID: 1925731037}
   clockText: {fileID: 659659322}
   dayDifficultyText: {fileID: 1331399780}
+  enemySquadNames:
+  - "\uD0C0\uC624\uB974\uB294 \uC0AC\uB9C9\uC758 \uC6A9\uBCD1\uB2E8"
+  - "\uC774\uBC29\uC758 \uAD81\uC911 \uAC80\uD22C\uB2E8"
+  - "\uCE60\uD751\uC758 \uB9E4\uB9C8\uB978 \uBC40\uAE30\uC0AC\uB2E8"
+  - "\uBBFC\uCCA9\uD55C \uAC00\uC744\uC232\uC758 \uC18D\uC0AC\uB2E8"
+  - "\uD654\uB824\uD55C \uB4B7\uACE8\uBAA9\uC758 \uADF8\uB9BC\uC790\uB2E8"
+  - "\uC6A9\uAC10\uD55C \uCD08\uC6D0\uC758 \uC591\uCE58\uAE30\uB2E8"
+  - "\uB9F9\uB82C\uD55C \uC804\uC7A5\uC758 \uC545\uB2E8"
+  - "\uB5A0\uB3C4\uB294 \uD669\uC57C\uC758 \uBC29\uB791\uC790"
+  - "\uACE0\uC694\uD55C \uB2EC\uC758 \uAE30\uC0AC\uB2E8"
+  - "\uCE7C\uAC19\uC740 \uC7A5\uBBF8\uC758 \uAC80\uD22C\uB2E8"
   surrenderButton: {fileID: 1097204896}
   surrenderMaskRoot: {fileID: 957281080}
   surrenderPanelRoot: {fileID: 16475530}

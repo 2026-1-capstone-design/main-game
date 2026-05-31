@@ -139,7 +139,7 @@ public static class BattleDeploymentPositionUtility
         }
 
         List<Vector2> sortedPositions = new List<Vector2>(positions);
-        sortedPositions.Sort(CompareByDistanceFromCenter);
+        sortedPositions.Sort(CompareByDistanceFromCenterLine);
 
         List<int> unitIndices = new List<int>(count);
         for (int i = 0; i < count; i++)
@@ -163,16 +163,16 @@ public static class BattleDeploymentPositionUtility
         return assignedPositions;
     }
 
-    private static int CompareByDistanceFromCenter(Vector2 left, Vector2 right)
+    private static int CompareByDistanceFromCenterLine(Vector2 left, Vector2 right)
     {
-        int distanceComparison = left.sqrMagnitude.CompareTo(right.sqrMagnitude);
-        if (distanceComparison != 0)
+        int centerLineDistanceComparison = Mathf.Abs(left.x).CompareTo(Mathf.Abs(right.x));
+        if (centerLineDistanceComparison != 0)
         {
-            return distanceComparison;
+            return centerLineDistanceComparison;
         }
 
-        int xComparison = left.x.CompareTo(right.x);
-        return xComparison != 0 ? xComparison : left.y.CompareTo(right.y);
+        int centerDistanceComparison = left.sqrMagnitude.CompareTo(right.sqrMagnitude);
+        return centerDistanceComparison != 0 ? centerDistanceComparison : left.y.CompareTo(right.y);
     }
 
     private static bool HasMinimumSpacing(IReadOnlyList<Vector2> positions, Vector2 candidate, float minSpacing)

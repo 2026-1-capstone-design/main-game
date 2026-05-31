@@ -175,6 +175,7 @@ public static class SaveGameService
         SquadManager squadManager = SquadManager.Instance;
         int[] squadSlotRuntimeIds = BuildSquadSlotRuntimeIdsSnapshot(squadManager);
         int activeSquadTeamIndex = squadManager != null ? squadManager.ActiveTeamIndex : 0;
+        string[] squadTeamNames = squadManager != null ? squadManager.GetTeamNamesSnapshot() : Array.Empty<string>();
 
         SaveSlotData data = new()
         {
@@ -188,6 +189,7 @@ public static class SaveGameService
             totalBattleCount = sessionManager != null ? sessionManager.TotalBattleCount : 0,
             victoryBattleCount = sessionManager != null ? sessionManager.VictoryBattleCount : 0,
             defeatedEnemyCount = sessionManager != null ? sessionManager.DefeatedEnemyCount : 0,
+            teamName = sessionManager != null ? sessionManager.TeamName : string.Empty,
             classCounters =
                 sessionManager != null
                     ? sessionManager.GetClassCounterEntriesForSave()
@@ -204,6 +206,7 @@ public static class SaveGameService
             battleEncounters = battleEncounters,
             squadSlotRuntimeIds = squadSlotRuntimeIds,
             activeSquadTeamIndex = activeSquadTeamIndex,
+            squadTeamNames = squadTeamNames,
         };
 
         return data;
@@ -267,6 +270,7 @@ public static class SaveGameService
                 data.defeatedEnemyCount
             );
             sessionManager.SetClassCounterEntriesForLoad(data.classCounters);
+            sessionManager.SetTeamNameForLoad(data.teamName);
         }
 
         if (randomManager != null)
@@ -381,10 +385,15 @@ public static class SaveGameService
 
             // 검투사 복원 이후에 스쿼드 슬롯을 복원한다.
             SquadManager squadManager = SquadManager.Instance;
-            if (squadManager != null && gladiatorManager != null && data.squadSlotRuntimeIds != null)
+            if (squadManager != null)
             {
-                squadManager.RestoreFromSave(data.squadSlotRuntimeIds, gladiatorManager);
+                if (gladiatorManager != null && data.squadSlotRuntimeIds != null)
+                {
+                    squadManager.RestoreFromSave(data.squadSlotRuntimeIds, gladiatorManager);
+                }
+
                 squadManager.RestoreActiveTeamIndex(data.activeSquadTeamIndex);
+                squadManager.RestoreTeamNames(data.squadTeamNames);
             }
         }
 
