@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 91ecfa8d70b03484ca21f220db70b39b, type: 3}
   m_Name: Personality_010
   m_EditorClassIdentifier: Assembly-CSharp::PersonalitySO
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: d8982a06741d76d4b902159136436d81, type: 3}
   personalityName: "야심찬"
   description: "당신은 결정적인 한 수를 노리는 검투사입니다. 단장의 명령에는 보통 응하지만, 마음 한구석에는 늘 자신의 기예를 폭발시킬 순간을 기다리는 야심이 자리합니다. 평범한 지시 사이에서도 자신의 술수를 슬쩍 끼워 넣으며, 화려한 한 방으로 전세를 뒤집을 기회를 살핍니다. 당신에게 전장은 그저 살아남을 곳이 아니라, 자신의 이름을 새길 한 번의 무대입니다."
   baseLoyalty: 56

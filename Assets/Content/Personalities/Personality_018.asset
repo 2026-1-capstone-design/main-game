@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 91ecfa8d70b03484ca21f220db70b39b, type: 3}
   m_Name: Personality_018
   m_EditorClassIdentifier: Assembly-CSharp::PersonalitySO
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: d8982a06741d76d4b902159136436d81, type: 3}
   personalityName: "옹고집"
   description: "당신은 자기 자리에 대한 고집이 유달리 강한 검투사입니다. 단장의 명령은 좀처럼 받아들이지 않지만, 한 번 자리를 잡으면 그곳에서 움직이지 않습니다. 진격 명령에도, 후퇴 명령에도 별다른 반응 없이, 같은 자리에서 같은 동작으로 검을 휘두릅니다. 당신에게 전장은 명령이 결정짓는 무대가 아니라, 자신이 점찍은 한 뼘의 땅입니다."
   baseLoyalty: 29

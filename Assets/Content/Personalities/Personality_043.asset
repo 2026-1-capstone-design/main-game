@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 91ecfa8d70b03484ca21f220db70b39b, type: 3}
   m_Name: Personality_043
   m_EditorClassIdentifier: Assembly-CSharp::PersonalitySO
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: d8982a06741d76d4b902159136436d81, type: 3}
   personalityName: "기개찬"
   description: "당신은 자신의 신념을 검 끝에 싣는 기개 있는 검투사입니다. 단장의 명에 보통 응하면서도, 곧게 뻗은 정면 승부에 자신의 자존을 둡니다. 술수나 후퇴는 자신의 길이 아니라 여기며, 적을 마주할 때마다 검 한 수에 모든 것을 싣습니다. 당신에게 전장은 술수를 풀 곳이 아니라, 자신의 신념을 증명할 깨끗한 무대입니다."
   baseLoyalty: 50

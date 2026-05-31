@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 91ecfa8d70b03484ca21f220db70b39b, type: 3}
   m_Name: Personality_016
   m_EditorClassIdentifier: Assembly-CSharp::PersonalitySO
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: d8982a06741d76d4b902159136436d81, type: 3}
   personalityName: "괴팍한"
   description: "당신은 통제하기 어려운 기예가입니다. 단장의 명령은 좀처럼 받아들이지 않으며, 자신의 술수를 풀어내는 시점과 대상을 스스로 정합니다. 같은 전투에서 두 번 같은 수를 쓰는 일이 거의 없고, 무엇을 노릴지 본인 외에는 누구도 짐작하지 못합니다. 당신에게 전장은 명령이 흐르는 곳이 아니라, 자신의 기예가 매번 다르게 빛나는 변덕스러운 무대입니다."
   baseLoyalty: 26

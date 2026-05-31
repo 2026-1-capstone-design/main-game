@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 91ecfa8d70b03484ca21f220db70b39b, type: 3}
   m_Name: Personality_047
   m_EditorClassIdentifier: Assembly-CSharp::PersonalitySO
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: d8982a06741d76d4b902159136436d81, type: 3}
   personalityName: "단정한"
   description: "당신은 매사에 단정한 자세를 잃지 않는 검투사입니다. 단장의 어떤 명에도 정중히 응하며, 격앙되거나 흐트러지는 일 없이 묵직하게 자신의 자리를 지킵니다. 화려함도 결정적인 결함도 없는 한결같은 모습으로, 진영의 무게를 더해 줍니다. 당신에게 전장은 들끓는 곳이 아니라, 단정함으로 다스려야 할 진중한 무대입니다."
   baseLoyalty: 65

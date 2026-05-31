@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 91ecfa8d70b03484ca21f220db70b39b, type: 3}
   m_Name: Personality_024
   m_EditorClassIdentifier: Assembly-CSharp::PersonalitySO
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: d8982a06741d76d4b902159136436d81, type: 3}
   personalityName: "견고한"
   description: "당신은 흔들림 없는 검투사입니다. 단장의 명령을 충실히 따르면서도, 일단 진영의 한 자리를 맡으면 그곳을 결코 비우지 않습니다. 격렬한 공세 앞에서도 발걸음이 어긋나지 않으며, 동료들의 등 뒤를 책임지는 일을 가장 큰 자부심으로 여깁니다. 당신에게 전장은 진격할 곳이 아니라, 마지막까지 지켜야 할 약속의 자리입니다."
   baseLoyalty: 89

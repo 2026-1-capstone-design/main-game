@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 91ecfa8d70b03484ca21f220db70b39b, type: 3}
   m_Name: Personality_041
   m_EditorClassIdentifier: Assembly-CSharp::PersonalitySO
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: d8982a06741d76d4b902159136436d81, type: 3}
   personalityName: "충실한"
   description: "당신은 단장에게 모든 것을 바치는 충실한 검투사입니다. 어떤 명도 빠짐없이 받들며, 그 안에서 자신의 자리를 묵묵히 지킵니다. 화려한 무용도, 변칙적인 술수도 없이, 그저 받은 명을 끝까지 이행하는 데 가장 큰 만족을 느낍니다. 당신에게 전장은 영광을 다툴 곳이 아니라, 평생 바쳐온 충심을 증명할 마지막 자리입니다."
   baseLoyalty: 95

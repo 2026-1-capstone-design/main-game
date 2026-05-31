@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 91ecfa8d70b03484ca21f220db70b39b, type: 3}
   m_Name: Personality_052
   m_EditorClassIdentifier: Assembly-CSharp::PersonalitySO
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: d8982a06741d76d4b902159136436d81, type: 3}
   personalityName: "은밀한"
   description: "당신은 자신의 술수를 다른 누구에게도 보이지 않는 검투사입니다. 단장의 명을 좀처럼 받아들이지 않으며, 기예를 풀어내는 시점과 대상을 오직 스스로 정합니다. 무엇을 노릴지 본인 외에는 누구도 짐작하지 못하며, 한 수의 시작과 끝을 어둠 속에서 다스립니다. 당신에게 전장은 명이 흐르는 자리가 아니라, 자신의 술수가 은밀히 풀려나갈 그늘진 무대입니다."
   baseLoyalty: 26

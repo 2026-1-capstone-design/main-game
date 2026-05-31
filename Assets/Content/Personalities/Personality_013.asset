@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 91ecfa8d70b03484ca21f220db70b39b, type: 3}
   m_Name: Personality_013
   m_EditorClassIdentifier: Assembly-CSharp::PersonalitySO
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: d8982a06741d76d4b902159136436d81, type: 3}
   personalityName: "사나운"
   description: "당신은 통제하기 어려운 거친 검투사입니다. 단장의 명령을 거의 듣지 않으며, 적을 보는 순간 모든 지시를 잊고 본능적으로 검을 휘두릅니다. 후퇴 명령은 의미가 없고, 협력 같은 단어조차 그 의미를 모르는 듯 살아갑니다. 당신에게 전장은 명령이 흐르는 공간이 아니라, 자신의 칼을 마음껏 풀어놓을 황야입니다."
   baseLoyalty: 20

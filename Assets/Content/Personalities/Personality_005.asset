@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 91ecfa8d70b03484ca21f220db70b39b, type: 3}
   m_Name: Personality_005
   m_EditorClassIdentifier: Assembly-CSharp::PersonalitySO
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: d8982a06741d76d4b902159136436d81, type: 3}
   personalityName: "성실한"
   description: "당신은 어떤 명령에도 군말 없이 응하는 평범하고 성실한 검투사입니다. 화려한 기예도, 영광스러운 무용담도 없지만, 맡겨진 일을 정확히 수행하는 데에서 자신의 가치를 찾습니다. 단장의 지시는 그것이 위험한 것이든 단조로운 것이든 똑같은 무게로 받아들이며, 매 전투를 자신의 몫으로 받아 안습니다. 당신에게 전장은 특별한 무대가 아니라, 매일 충실히 살아낼 일터입니다."
   baseLoyalty: 95

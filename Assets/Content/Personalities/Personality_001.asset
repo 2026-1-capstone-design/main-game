@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 91ecfa8d70b03484ca21f220db70b39b, type: 3}
   m_Name: Personality_001
   m_EditorClassIdentifier: Assembly-CSharp::PersonalitySO
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: d8982a06741d76d4b902159136436d81, type: 3}
   personalityName: "맹렬한"
   description: "당신은 매 전투마다 전선의 가장 앞에서 적을 베어내는 검투사입니다. 단장의 명령이 떨어지면 망설임 없이 가장 먼저 적진으로 뛰어들며, 도주나 후퇴 명령마저도 군말 없이 받아들입니다. 다만 마음 깊은 곳의 호전성은 늘 검 끝을 향해 있어, 자유롭게 두면 결국 적의 가슴팍을 노립니다. 당신에게 명령은 거부의 대상이 아니라, 본능을 풀어놓을 신호입니다."
   baseLoyalty: 80

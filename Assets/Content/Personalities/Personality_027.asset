@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 91ecfa8d70b03484ca21f220db70b39b, type: 3}
   m_Name: Personality_027
   m_EditorClassIdentifier: Assembly-CSharp::PersonalitySO
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: d8982a06741d76d4b902159136436d81, type: 3}
   personalityName: "정중한"
   description: "당신은 예의와 절제를 갖춘 검투사입니다. 단장의 명령에는 정중히 응하지만, 자신만의 판단을 잃지 않습니다. 동료의 안위를 지키는 일에는 흔들림 없이 임하면서도, 무리한 지시에는 잠시 시간을 두고 답합니다. 당신에게 전장은 충동의 자리가 아니라, 절제된 무게로 다뤄야 할 진중한 무대입니다."
   baseLoyalty: 62

@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 91ecfa8d70b03484ca21f220db70b39b, type: 3}
   m_Name: Personality_030
   m_EditorClassIdentifier: Assembly-CSharp::PersonalitySO
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: d8982a06741d76d4b902159136436d81, type: 3}
   personalityName: "침착한"
   description: "당신은 침착함으로 진영의 한 축을 잡아내는 검투사입니다. 단장의 명령에 보통 응하면서도, 특히 자리를 지키는 일에는 흔들림이 없습니다. 동요를 보이지 않는 자세로 동료들에게 안정감을 주며, 자신이 맡은 곳을 깔끔히 마무리합니다. 당신에게 전장은 들끓는 곳이 아니라, 차갑게 다스려야 할 진중한 무대입니다."
   baseLoyalty: 59

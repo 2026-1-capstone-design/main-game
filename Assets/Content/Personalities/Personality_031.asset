@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 91ecfa8d70b03484ca21f220db70b39b, type: 3}
   m_Name: Personality_031
   m_EditorClassIdentifier: Assembly-CSharp::PersonalitySO
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: d8982a06741d76d4b902159136436d81, type: 3}
   personalityName: "독선적"
   description: "당신은 자신의 판단을 무엇보다 신뢰하는 검투사입니다. 단장의 명령은 듣기는 하나, 자신의 호전적인 본능과 어긋난다 싶으면 곧잘 흘려보냅니다. 적을 보는 순간 자신만의 길로 검을 휘두르며, 후퇴나 협력 같은 지시는 좀처럼 마음에 두지 않습니다. 당신에게 전장은 명령이 흐르는 곳이 아니라, 자신의 판단이 모든 것을 결정짓는 무대입니다."
   baseLoyalty: 20

@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 91ecfa8d70b03484ca21f220db70b39b, type: 3}
   m_Name: Personality_053
   m_EditorClassIdentifier: Assembly-CSharp::PersonalitySO
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: d8982a06741d76d4b902159136436d81, type: 3}
   personalityName: "초연한"
   description: "당신은 매사에 한 발 떨어져 서 있는 검투사입니다. 단장의 명에 큰 의미를 두지 않으며, 응하는 것 같으면서도 거리감을 유지합니다. 동료들을 돕는 듯 보이지만 깊이 마음을 내어주지 않고, 어떤 격정 앞에서도 흔들리지 않는 자세를 지킵니다. 당신에게 전장은 마음을 쏟을 곳이 아니라, 그저 한 발 떨어져 바라볼 거리 있는 자리입니다."
   baseLoyalty: 35

@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 91ecfa8d70b03484ca21f220db70b39b, type: 3}
   m_Name: Personality_035
   m_EditorClassIdentifier: Assembly-CSharp::PersonalitySO
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: d8982a06741d76d4b902159136436d81, type: 3}
   personalityName: "느긋한"
   description: "당신은 어떤 상황에서도 자신의 호흡을 잃지 않는 검투사입니다. 단장의 명령에 대놓고 반항하지는 않지만, 받아들이는 속도가 자기 페이스에 맞춰져 있습니다. 다급한 외침에도 흐트러지지 않고, 자신의 박자로 천천히 검을 들어 올립니다. 당신에게 전장은 서두를 곳이 아니라, 자신만의 호흡으로 다스릴 여유의 무대입니다."
   baseLoyalty: 35

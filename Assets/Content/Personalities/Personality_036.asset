@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 91ecfa8d70b03484ca21f220db70b39b, type: 3}
   m_Name: Personality_036
   m_EditorClassIdentifier: Assembly-CSharp::PersonalitySO
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: d8982a06741d76d4b902159136436d81, type: 3}
   personalityName: "굳건한"
   description: "당신은 결정한 자리에 대한 고집이 단단한 검투사입니다. 단장의 다른 명령은 거의 받아들이지 않지만, 한 번 자리를 잡으면 그곳에서 결코 움직이지 않습니다. 진격이나 후퇴 같은 지시는 묵묵히 흘려보내고, 자신이 점찍은 한 뼘의 땅을 끝까지 지킵니다. 당신에게 전장은 명령이 결정짓는 곳이 아니라, 자신의 자리를 증명할 마지막 무대입니다."
   baseLoyalty: 29

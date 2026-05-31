@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 91ecfa8d70b03484ca21f220db70b39b, type: 3}
   m_Name: Personality_003
   m_EditorClassIdentifier: Assembly-CSharp::PersonalitySO
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: d8982a06741d76d4b902159136436d81, type: 3}
   personalityName: "든든한"
   description: "당신은 옆에 선 동료를 지키는 데 가장 큰 의미를 두는 검투사입니다. 단장의 명령을 군말 없이 받아들이면서도, 어떤 명령보다 동료의 안위를 살피는 일을 본능처럼 합니다. 자신이 다치는 일에는 무심하지만, 동료가 위태로워지면 가장 먼저 달려가 곁을 지킵니다. 당신에게 전장은 혼자 살아남을 곳이 아니라, 함께 돌아갈 곳입니다."
   baseLoyalty: 92

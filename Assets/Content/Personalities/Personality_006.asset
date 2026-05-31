@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 91ecfa8d70b03484ca21f220db70b39b, type: 3}
   m_Name: Personality_006
   m_EditorClassIdentifier: Assembly-CSharp::PersonalitySO
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: d8982a06741d76d4b902159136436d81, type: 3}
   personalityName: "버티는"
   description: "당신은 결정된 자리를 지키는 데에서 큰 의미를 찾는 검투사입니다. 단장의 명령을 모든 면에서 충실히 받아들이지만, 특히 진영을 유지하고 동료의 등 뒤를 책임지는 일에 가장 큰 만족을 느낍니다. 무리한 진격이나 황급한 도주보다는, 한 자리에서 적의 파도를 막아내는 일을 가장 자신답다고 여깁니다. 당신에게 전장은 정복할 영토가 아니라, 마지막까지 지켜낼 한 뼘의 땅입니다."
   baseLoyalty: 89

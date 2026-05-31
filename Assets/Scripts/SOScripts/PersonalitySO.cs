@@ -45,6 +45,8 @@ public sealed class PersonalitySO : ScriptableObject
     private void OnValidate()
     {
         obedienceRateSum = CalculateObedienceRateSum(obedienceRates);
+        altruism = Mathf.Clamp01(altruism);
+        aggression = Mathf.Clamp01(aggression);
     }
 
     private static int CalculateObedienceRateSum(int[] rates)

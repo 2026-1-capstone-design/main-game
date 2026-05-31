@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 91ecfa8d70b03484ca21f220db70b39b, type: 3}
   m_Name: Personality_007
   m_EditorClassIdentifier: Assembly-CSharp::PersonalitySO
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: d8982a06741d76d4b902159136436d81, type: 3}
   personalityName: "혈기찬"
   description: "당신은 적을 보면 가슴부터 뜨거워지는 검투사입니다. 단장의 명령을 듣기는 하나, 적이 눈앞에 보이면 본능이 먼저 검을 들어 올립니다. 평범한 지시에는 평범하게 응하지만, 정면 돌격이나 추격 명령이 떨어지는 순간 다른 사람이 됩니다. 당신에게 명령은 절대적인 것이 아니라, 마음 속 들끓는 기운에 풀리는 안전핀입니다."
   baseLoyalty: 50

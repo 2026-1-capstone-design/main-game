@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 91ecfa8d70b03484ca21f220db70b39b, type: 3}
   m_Name: Personality_017
   m_EditorClassIdentifier: Assembly-CSharp::PersonalitySO
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: d8982a06741d76d4b902159136436d81, type: 3}
   personalityName: "느슨한"
   description: "당신은 매사에 큰 의지를 보이지 않는 검투사입니다. 단장의 명령에 대놓고 반항하지는 않지만, 받아들이는 강도가 늘 절반 정도에 머뭅니다. 특별히 잘하는 것도, 특별히 못하는 것도 없이, 모든 일을 적당히 해치우고 자리에 앉습니다. 당신에게 전장은 진지하게 임할 무대가 아니라, 그저 견뎌낼 또 하나의 일과입니다."
   baseLoyalty: 35

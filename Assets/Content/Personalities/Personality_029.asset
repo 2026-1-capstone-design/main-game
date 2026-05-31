@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 91ecfa8d70b03484ca21f220db70b39b, type: 3}
   m_Name: Personality_029
   m_EditorClassIdentifier: Assembly-CSharp::PersonalitySO
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: d8982a06741d76d4b902159136436d81, type: 3}
   personalityName: "차분한"
   description: "당신은 어떤 상황에서도 흔들리지 않는 차분한 검투사입니다. 단장의 명령에는 정중히 응하며, 격앙되거나 동요하는 일 없이 매번 같은 무게로 임무를 수행합니다. 화려함도 결정적인 결함도 없이, 안정적인 한 사람으로 자신의 자리를 지킵니다. 당신에게 전장은 격정의 자리가 아니라, 한결같음을 증명할 조용한 무대입니다."
   baseLoyalty: 65

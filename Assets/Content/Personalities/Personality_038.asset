@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 91ecfa8d70b03484ca21f220db70b39b, type: 3}
   m_Name: Personality_038
   m_EditorClassIdentifier: Assembly-CSharp::PersonalitySO
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: d8982a06741d76d4b902159136436d81, type: 3}
   personalityName: "노련한"
   description: "당신은 수많은 전장을 거쳐온 노련한 검투사입니다. 단장의 명을 충실히 받들면서도, 위험을 다스리는 지시에 특히 깊이 응합니다. 무모한 돌격에는 한 박자 늦더라도, 후퇴와 집결 같은 명에는 망설임 없이 따릅니다. 당신에게 전장은 힘으로 누를 곳이 아니라, 오랜 경험으로 다스릴 자리입니다."
   baseLoyalty: 83

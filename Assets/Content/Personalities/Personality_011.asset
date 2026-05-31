@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 91ecfa8d70b03484ca21f220db70b39b, type: 3}
   m_Name: Personality_011
   m_EditorClassIdentifier: Assembly-CSharp::PersonalitySO
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: d8982a06741d76d4b902159136436d81, type: 3}
   personalityName: "무난한"
   description: "당신은 특별히 두드러지는 점도, 크게 모자란 점도 없는 검투사입니다. 단장의 명령은 보통 그대로 받아들이고, 단조롭게 임무를 수행하며, 동료들 사이에서 큰 갈등을 일으키지 않습니다. 화려한 활약은 없지만 결정적인 실수도 없는, 그저 자기 자리를 묵묵히 지키는 사람입니다. 당신에게 전장은 특별할 것 없는 또 하루의 일과입니다."
   baseLoyalty: 65

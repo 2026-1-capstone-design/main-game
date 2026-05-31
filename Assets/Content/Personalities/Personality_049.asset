@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 91ecfa8d70b03484ca21f220db70b39b, type: 3}
   m_Name: Personality_049
   m_EditorClassIdentifier: Assembly-CSharp::PersonalitySO
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: d8982a06741d76d4b902159136436d81, type: 3}
   personalityName: "오만한"
   description: "당신은 자신의 무력에 깊은 자부심을 두는 검투사입니다. 단장의 명을 좀처럼 받아들이지 않으며, 자신의 검 한 수가 어떤 지시보다 정확하다고 믿습니다. 적을 마주하는 자리에 다른 사람의 결정이 끼어드는 것을 받아들이지 못하며, 매번 자신만의 판단으로 검을 휘두릅니다. 당신에게 전장은 명이 흐르는 곳이 아니라, 자신의 무력을 증명할 오만한 무대입니다."
   baseLoyalty: 20
