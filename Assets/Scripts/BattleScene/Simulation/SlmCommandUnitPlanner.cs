@@ -279,28 +279,16 @@ public sealed class SlmCommandUnitPlanner
             inRange = diff.sqrMagnitude <= threshold * threshold;
         }
 
-        BattleMoveIntent moveIntent = inRange
-            ? BattleMoveIntent.Hold
-            : (hasValidTarget ? BattleMoveIntent.MoveToTarget : BattleMoveIntent.Hold);
+        BattleMove move = inRange || !hasValidTarget ? BattleMove.Hold() : BattleMove.ToTarget(target);
         BattleCombatIntent combatIntent = inRange ? BattleCombatIntent.Attack : BattleCombatIntent.None;
         BattleFacingIntent facingIntent = hasValidTarget
             ? BattleFacingIntent.TargetEnemy
             : BattleFacingIntent.KeepCurrent;
 
-        return new BattleControlPlan(
-            target,
-            null,
-            Vector3.zero,
-            false,
-            default,
-            Vector2.zero,
-            moveIntent,
-            combatIntent,
-            facingIntent
-        );
+        return new BattleControlPlan(target, null, move, combatIntent, facingIntent);
     }
 
-    // move: subtype/style별 좌표를 산출해 MoveToPosition으로 둔다.
+    // move: subtype/style별 좌표를 산출해 절대 위치 이동으로 둔다.
     // help는 좌표 산출 없이 위협 적을 attack으로 처리한다 (BuildHelpAttackPlan).
     private BattleControlPlan BuildMovePlan(
         BattleUnitCombatState self,
@@ -359,11 +347,7 @@ public sealed class SlmCommandUnitPlanner
         return new BattleControlPlan(
             null,
             null,
-            resolved.Position,
-            true,
-            default,
-            Vector2.zero,
-            BattleMoveIntent.MoveToPosition,
+            BattleMove.ToAbsolutePosition(resolved.Position),
             BattleCombatIntent.None,
             facing
         );
@@ -402,20 +386,10 @@ public sealed class SlmCommandUnitPlanner
             inRange = diff.sqrMagnitude <= threshold * threshold;
         }
 
-        BattleMoveIntent moveIntent = inRange ? BattleMoveIntent.Hold : BattleMoveIntent.MoveToTarget;
+        BattleMove move = inRange ? BattleMove.Hold() : BattleMove.ToTarget(threatState);
         BattleCombatIntent combatIntent = inRange ? BattleCombatIntent.Attack : BattleCombatIntent.None;
 
-        return new BattleControlPlan(
-            threatState,
-            null,
-            Vector3.zero,
-            false,
-            default,
-            Vector2.zero,
-            moveIntent,
-            combatIntent,
-            BattleFacingIntent.TargetEnemy
-        );
+        return new BattleControlPlan(threatState, null, move, combatIntent, BattleFacingIntent.TargetEnemy);
     }
 
     // skill: cooldown 또는 SkillDisabled status면 Hold.
@@ -450,23 +424,13 @@ public sealed class SlmCommandUnitPlanner
         diff.y = 0f;
         bool inRange = diff.sqrMagnitude <= effectiveRange * effectiveRange;
 
-        BattleMoveIntent moveIntent = inRange ? BattleMoveIntent.Hold : BattleMoveIntent.MoveToTarget;
+        BattleMove move = inRange ? BattleMove.Hold() : BattleMove.ToTarget(target);
         BattleCombatIntent combatIntent = inRange ? BattleCombatIntent.Skill : BattleCombatIntent.None;
 
         if (inRange)
             entry.SkillFired = true;
 
-        return new BattleControlPlan(
-            target,
-            null,
-            Vector3.zero,
-            false,
-            default,
-            Vector2.zero,
-            moveIntent,
-            combatIntent,
-            BattleFacingIntent.TargetEnemy
-        );
+        return new BattleControlPlan(target, null, move, combatIntent, BattleFacingIntent.TargetEnemy);
     }
 
     private static BattleControlPlan BuildHoldPlan()
@@ -474,11 +438,7 @@ public sealed class SlmCommandUnitPlanner
         return new BattleControlPlan(
             null,
             null,
-            Vector3.zero,
-            false,
-            default,
-            Vector2.zero,
-            BattleMoveIntent.Hold,
+            BattleMove.Hold(),
             BattleCombatIntent.None,
             BattleFacingIntent.KeepCurrent
         );

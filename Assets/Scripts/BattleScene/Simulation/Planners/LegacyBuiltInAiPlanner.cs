@@ -79,7 +79,7 @@ public sealed class LegacyBuiltInAiPlanner : IBattleControlPlanner
         }
         else if (executionPlan.HasDesiredPosition)
         {
-            moveIntent = BattleMoveIntent.MoveToPosition;
+            moveIntent = BattleMoveIntent.MoveToAbsolutePosition;
             combatIntent = BattleCombatIntent.None;
             facingIntent = BattleFacingIntent.DesiredPosition;
         }
@@ -96,17 +96,14 @@ public sealed class LegacyBuiltInAiPlanner : IBattleControlPlanner
             facingIntent = BattleFacingIntent.KeepCurrent;
         }
 
-        return new BattleControlPlan(
-            targetEnemy,
-            executionPlan.TargetAlly,
-            executionPlan.DesiredPosition,
-            executionPlan.HasDesiredPosition,
-            default,
-            default,
-            moveIntent,
-            combatIntent,
-            facingIntent
-        );
+        BattleMove move = moveIntent switch
+        {
+            BattleMoveIntent.MoveToAbsolutePosition => BattleMove.ToAbsolutePosition(executionPlan.DesiredPosition),
+            BattleMoveIntent.MoveToTarget => BattleMove.ToTarget(targetEnemy),
+            _ => BattleMove.Hold(),
+        };
+
+        return new BattleControlPlan(targetEnemy, executionPlan.TargetAlly, move, combatIntent, facingIntent);
     }
 
     private static bool CanAutoCastSkillToEnemy(BattleUnitCombatState self, bool inAttackRange)

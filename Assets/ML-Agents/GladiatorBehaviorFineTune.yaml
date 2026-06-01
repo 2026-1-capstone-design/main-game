@@ -1,0 +1,70 @@
+# Defines all ML-Agents behavior trainer configurations in this file.
+behaviors:
+  # Trainer configuration used by Unity agents whose Behavior Name is GladiatorBehavior.
+  GladiatorBehavior:
+    # Uses the POCA trainer for cooperative multi-agent training with a centralized critic.
+    trainer_type: poca
+    # Configures self-play so the policy learns against historical and recent opponent snapshots.
+    self_play:
+      # Number of trainer steps between saving policy snapshots for future opponents.
+      save_steps: 50000
+      # Number of trainer steps before swapping the learning team in asymmetric self-play.
+      team_change: 200000
+      # Number of trainer steps between switching which saved opponent snapshot is used.
+      swap_steps: 20000
+      # Maximum number of saved opponent snapshots kept in the self-play opponent pool.
+      window: 10
+      # Probability of playing against the latest policy instead of sampling from older snapshots.
+      play_against_latest_model_ratio: 0.7
+      # Starting Elo rating assigned to new policies for self-play matchmaking.
+      initial_elo: 1200.0
+    # PPO/POCA optimization settings that control how collected experience updates the policy.
+    hyperparameters:
+      # Number of experiences used in each gradient update batch.
+      batch_size: 4096
+      # Number of experiences collected before a policy update is performed.
+      buffer_size: 81920
+      # Initial optimizer step size for updating the neural network weights.
+      learning_rate: 0.00002
+      # Entropy regularization strength, encouraging exploration during training.
+      beta: 0.004
+      # PPO clipping range that limits how much the policy can change in one update.
+      epsilon: 0.1
+      # GAE lambda value that balances bias and variance in advantage estimation.
+      lambd: 0.95
+      # Number of optimization passes made over the collected buffer per update.
+      num_epoch: 3
+      # Schedule used to adjust the learning rate over training.
+      learning_rate_schedule: linear
+    # Neural network architecture and observation preprocessing settings.
+    network_settings:
+      # Normalizes vector observations before they are passed into the network.
+      normalize: true
+      # Number of units in each hidden layer of the policy/value networks.
+      hidden_units: 256
+      # Number of hidden layers in the policy/value networks.
+      num_layers: 2
+      # Encoder type used for visual observations, when visual sensors are present.
+      vis_encode_type: simple
+    # Reward sources used to train the policy.
+    reward_signals:
+      # Environment-provided reward signal.
+      extrinsic:
+        # Discount factor for future extrinsic rewards.
+        gamma: 0.995
+        # Multiplier applied to extrinsic rewards before training.
+        strength: 1.0
+    # Number of recent checkpoints to retain during training.
+    keep_checkpoints: 5
+    # Maximum number of trainer steps before training stops.
+    max_steps: 10000000
+    # Number of agent steps to collect before adding a trajectory segment to the trainer buffer.
+    time_horizon: 512
+    # Number of trainer steps between writing summary statistics.
+    summary_freq: 8192
+# Environment-side parameters exposed to Unity through Academy.EnvironmentParameters.
+environment_parameters:
+  # Selects the opponent control mode used by the training environment.
+  opponent_mode: 1.0
+  # Sets the number of gladiators assigned to each team in the training scene.
+  team_size: 6.0

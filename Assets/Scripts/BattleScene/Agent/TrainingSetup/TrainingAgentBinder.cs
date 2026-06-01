@@ -1,7 +1,5 @@
 using System.Collections.Generic;
 using Unity.MLAgents;
-using Unity.MLAgents.Actuators;
-using Unity.MLAgents.Policies;
 using UnityEngine;
 
 public readonly struct TrainingAgentBindingSettings
@@ -54,14 +52,6 @@ public readonly struct TrainingAgentBindingSettings
 
 public sealed class TrainingAgentBinder
 {
-    private static readonly int[] ExpectedDiscreteBranches =
-    {
-        GladiatorActionSchema.CommandBranchSize,
-        GladiatorActionSchema.RoleBranchSize,
-        GladiatorActionSchema.FightModeBranchSize,
-        GladiatorActionSchema.AnchorActionBranchSize,
-    };
-
     private readonly BattleSceneFlowManager _flowManager;
     private readonly IGladiatorCurriculumSource _curriculumSource;
     private readonly Object _logContext;
@@ -136,6 +126,11 @@ public sealed class TrainingAgentBinder
         float enemyHpRatio = 0f
     )
     {
+        if (reason == TrainingEpisodeEndReason.BattleFinished)
+        {
+            ForEachControlledAgent(agent => agent.RewardTerminalSurvivalIfAlive());
+        }
+
         ForEachControlledAgent(agent => agent.FlushEpisodeMetrics());
         RecordEpisodeOutcome(reason, winnerTeamId);
 
@@ -152,10 +147,14 @@ public sealed class TrainingAgentBinder
             float hpMultiplier = 1f + (_settings.WinHpBonus - 1f) * winnerHpRatio;
             float combinedMultiplier = speedMultiplier * hpMultiplier;
             _allyGroup.AddGroupReward(
-                (allyWon ? _settings.GroupWinReward : _settings.GroupLossReward) * combinedMultiplier
+                NormalizeTeamOutcomeReward(
+                    (allyWon ? _settings.GroupWinReward : _settings.GroupLossReward) * combinedMultiplier
+                )
             );
             _enemyGroup.AddGroupReward(
-                (allyWon ? _settings.GroupLossReward : _settings.GroupWinReward) * combinedMultiplier
+                NormalizeTeamOutcomeReward(
+                    (allyWon ? _settings.GroupLossReward : _settings.GroupWinReward) * combinedMultiplier
+                )
             );
             _allyGroup.EndGroupEpisode();
             _enemyGroup.EndGroupEpisode();
@@ -169,7 +168,9 @@ public sealed class TrainingAgentBinder
             * _settings.TimeoutMultiplier
             * ComputeTimeoutHpMultiplier(enemyHpRatio);
         float interruptionReward =
-            reason == TrainingEpisodeEndReason.Timeout ? timeoutReward : _settings.GroupInterruptedReward;
+            reason == TrainingEpisodeEndReason.Timeout
+                ? NormalizeTeamOutcomeReward(timeoutReward)
+                : NormalizeTeamOutcomeReward(_settings.GroupInterruptedReward);
         _allyGroup.AddGroupReward(interruptionReward);
         _enemyGroup.AddGroupReward(interruptionReward);
         _allyGroup.GroupEpisodeInterrupted();
@@ -272,36 +273,25 @@ public sealed class TrainingAgentBinder
             {
                 agent.gameObject.SetActive(false);
             }
-            ConfigureAgentContract(agent, unit, i);
+            if (
+                !GladiatorAgentContract.TryApplyRuntimeOverrides(
+                    agent,
+                    unit,
+                    i,
+                    false,
+                    _logContext,
+                    "[TrainingAgentBinder]"
+                )
+            )
+            {
+                agent.gameObject.SetActive(false);
+                continue;
+            }
+
             agent.gameObject.SetActive(true);
             agent.Initialize(unit, _flowManager, _curriculumSource);
             group.RegisterAgent(agent);
         }
-    }
-
-    private static void ConfigureAgentContract(GladiatorAgent agent, BattleRuntimeUnit unit, int agentIndex)
-    {
-        if (agent == null)
-        {
-            return;
-        }
-
-        BehaviorParameters behaviorParameters = agent.GetComponent<BehaviorParameters>();
-        DecisionRequester decisionRequester = agent.GetComponent<DecisionRequester>();
-        if (behaviorParameters == null || decisionRequester == null)
-        {
-            return;
-        }
-
-        behaviorParameters.BrainParameters.VectorObservationSize = GladiatorObservationSchema.TotalSize;
-        behaviorParameters.BrainParameters.ActionSpec = new ActionSpec(
-            GladiatorActionSchema.ContinuousSize,
-            (int[])ExpectedDiscreteBranches.Clone()
-        );
-        behaviorParameters.TeamId = unit != null ? unit.TeamId.GetHashCode() : 0;
-
-        decisionRequester.DecisionPeriod = Mathf.Max(1, decisionRequester.DecisionPeriod);
-        decisionRequester.DecisionStep = agentIndex % decisionRequester.DecisionPeriod;
     }
 
     private static void ApplyControlMode(IReadOnlyList<BattleRuntimeUnit> units, bool usesAgentPolicyControl)
@@ -350,6 +340,25 @@ public sealed class TrainingAgentBinder
     {
         float t = Mathf.Clamp01(enemyHpRatio);
         return 1f + (_settings.TimeoutHpRatioMultiplierMax - 1f) * t;
+    }
+
+    private float NormalizeTeamOutcomeReward(float reward)
+    {
+        float theoreticalMinReward =
+            _settings.GroupLossReward
+            * _settings.WinSpeedBonus
+            * _settings.WinHpBonus
+            * _settings.TimeoutMultiplier
+            * _settings.TimeoutHpRatioMultiplierMax;
+        float theoreticalMaxReward = _settings.GroupWinReward * _settings.WinSpeedBonus * _settings.WinHpBonus;
+
+        if (Mathf.Approximately(theoreticalMinReward, theoreticalMaxReward))
+        {
+            return Mathf.Clamp(reward, -5f, 5f);
+        }
+
+        float normalizedReward = Mathf.InverseLerp(theoreticalMinReward, theoreticalMaxReward, reward);
+        return Mathf.Lerp(-5f, 5f, normalizedReward);
     }
 
     private float ComputeFinalBattleRemainingHealthRatio()

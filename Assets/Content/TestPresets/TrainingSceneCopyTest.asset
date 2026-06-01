@@ -1,0 +1,180 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6d1e5538de34e1a4d89097cdbe7490f0, type: 3}
+  m_Name: TrainingSceneCopyTest
+  m_EditorClassIdentifier: 
+  scenarioName: Test Scenario
+  allyTeam:
+  - classSO: {fileID: 11400000, guid: 6846407ed22928941b371aab2d355ecf, type: 2}
+    level: 1
+    weaponData: {fileID: 11400000, guid: 72083519813a3ab4098ce19d38d566cd, type: 2}
+    weaponSkillId: 0
+    equippedArtifact: {fileID: 0}
+    healthOverride: 2500
+    attackOverride: 250
+    attackSpeedOverride: 1
+    moveSpeedOverride: 3
+    attackRangeOverride: 1.5
+    ignoreWeaponStat: 1
+    overrideWeaponSettings: 1
+    attackDuration: 1
+    isRanged: 0
+    useProjectile: 0
+    statMultiplier: 0
+  - classSO: {fileID: 11400000, guid: 6846407ed22928941b371aab2d355ecf, type: 2}
+    level: 1
+    weaponData: {fileID: 11400000, guid: 1d2860a42ffe5fc42bbb744a5049ca67, type: 2}
+    weaponSkillId: 0
+    equippedArtifact: {fileID: 0}
+    healthOverride: 3000
+    attackOverride: 120
+    attackSpeedOverride: 0.8
+    moveSpeedOverride: 2.5
+    attackRangeOverride: 1.2
+    ignoreWeaponStat: 1
+    overrideWeaponSettings: 1
+    attackDuration: 1
+    isRanged: 0
+    useProjectile: 0
+    statMultiplier: 0
+  - classSO: {fileID: 11400000, guid: 6846407ed22928941b371aab2d355ecf, type: 2}
+    level: 1
+    weaponData: {fileID: 11400000, guid: 3da7b72ba791cd940915b68cc3d6a124, type: 2}
+    weaponSkillId: 0
+    equippedArtifact: {fileID: 0}
+    healthOverride: 1800
+    attackOverride: 300
+    attackSpeedOverride: 0.8
+    moveSpeedOverride: 2.8
+    attackRangeOverride: 8
+    ignoreWeaponStat: 1
+    overrideWeaponSettings: 1
+    attackDuration: 1
+    isRanged: 1
+    useProjectile: 1
+    statMultiplier: 0
+  - classSO: {fileID: 11400000, guid: 6846407ed22928941b371aab2d355ecf, type: 2}
+    level: 1
+    weaponData: {fileID: 11400000, guid: 8f15a2a951e32fa44914883dd11d291f, type: 2}
+    weaponSkillId: 0
+    equippedArtifact: {fileID: 0}
+    healthOverride: 1750
+    attackOverride: 280
+    attackSpeedOverride: 1.5
+    moveSpeedOverride: 5
+    attackRangeOverride: 1.1
+    ignoreWeaponStat: 1
+    overrideWeaponSettings: 1
+    attackDuration: 0.7
+    isRanged: 0
+    useProjectile: 0
+    statMultiplier: 0
+  - classSO: {fileID: 11400000, guid: 6846407ed22928941b371aab2d355ecf, type: 2}
+    level: 1
+    weaponData: {fileID: 11400000, guid: 1125cefdf7e96c04cb5c836ceef728b5, type: 2}
+    weaponSkillId: 0
+    equippedArtifact: {fileID: 0}
+    healthOverride: 2000
+    attackOverride: 200
+    attackSpeedOverride: 1
+    moveSpeedOverride: 3
+    attackRangeOverride: 10
+    ignoreWeaponStat: 1
+    overrideWeaponSettings: 1
+    attackDuration: 0.5
+    isRanged: 1
+    useProjectile: 1
+    statMultiplier: 0
+  enemyTeam:
+  - classSO: {fileID: 11400000, guid: 6846407ed22928941b371aab2d355ecf, type: 2}
+    level: 1
+    weaponData: {fileID: 11400000, guid: 72083519813a3ab4098ce19d38d566cd, type: 2}
+    weaponSkillId: 0
+    equippedArtifact: {fileID: 0}
+    healthOverride: 2500
+    attackOverride: 250
+    attackSpeedOverride: 1
+    moveSpeedOverride: 3
+    attackRangeOverride: 1.5
+    ignoreWeaponStat: 1
+    overrideWeaponSettings: 1
+    attackDuration: 1
+    isRanged: 0
+    useProjectile: 0
+    statMultiplier: 0
+  - classSO: {fileID: 11400000, guid: 6846407ed22928941b371aab2d355ecf, type: 2}
+    level: 1
+    weaponData: {fileID: 11400000, guid: 1d2860a42ffe5fc42bbb744a5049ca67, type: 2}
+    weaponSkillId: 0
+    equippedArtifact: {fileID: 0}
+    healthOverride: 3000
+    attackOverride: 120
+    attackSpeedOverride: 0.8
+    moveSpeedOverride: 2.5
+    attackRangeOverride: 1.2
+    ignoreWeaponStat: 1
+    overrideWeaponSettings: 1
+    attackDuration: 1
+    isRanged: 0
+    useProjectile: 0
+    statMultiplier: 0
+  - classSO: {fileID: 11400000, guid: 6846407ed22928941b371aab2d355ecf, type: 2}
+    level: 1
+    weaponData: {fileID: 11400000, guid: 3da7b72ba791cd940915b68cc3d6a124, type: 2}
+    weaponSkillId: 0
+    equippedArtifact: {fileID: 0}
+    healthOverride: 1800
+    attackOverride: 300
+    attackSpeedOverride: 0.8
+    moveSpeedOverride: 2.8
+    attackRangeOverride: 8
+    ignoreWeaponStat: 1
+    overrideWeaponSettings: 1
+    attackDuration: 1
+    isRanged: 1
+    useProjectile: 1
+    statMultiplier: 0
+  - classSO: {fileID: 11400000, guid: 6846407ed22928941b371aab2d355ecf, type: 2}
+    level: 1
+    weaponData: {fileID: 11400000, guid: 8f15a2a951e32fa44914883dd11d291f, type: 2}
+    weaponSkillId: 0
+    equippedArtifact: {fileID: 0}
+    healthOverride: 1750
+    attackOverride: 280
+    attackSpeedOverride: 1.5
+    moveSpeedOverride: 5
+    attackRangeOverride: 1.1
+    ignoreWeaponStat: 1
+    overrideWeaponSettings: 1
+    attackDuration: 0.7
+    isRanged: 0
+    useProjectile: 0
+    statMultiplier: 0
+  - classSO: {fileID: 11400000, guid: 6846407ed22928941b371aab2d355ecf, type: 2}
+    level: 1
+    weaponData: {fileID: 11400000, guid: 1125cefdf7e96c04cb5c836ceef728b5, type: 2}
+    weaponSkillId: 0
+    equippedArtifact: {fileID: 0}
+    healthOverride: 2000
+    attackOverride: 200
+    attackSpeedOverride: 1
+    moveSpeedOverride: 3
+    attackRangeOverride: 10
+    ignoreWeaponStat: 1
+    overrideWeaponSettings: 1
+    attackDuration: 0.5
+    isRanged: 1
+    useProjectile: 1
+    statMultiplier: 0
+  battleSeed: 12345
+  enemyAverageLevel: 1
+  previewRewardGold: 100

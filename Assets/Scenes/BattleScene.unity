@@ -25934,9 +25934,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   flowManager: {fileID: 235651749}
-  config: {fileID: 11400000, guid: 7fcf761c99c94f3880c52840211f144f, type: 2}
   agentPrefab: {fileID: 11400002, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
   agentHostParent: {fileID: 2100000002}
+  controlledSide: 3
+  maxAgentCount: 12
   bindAlreadySpawnedUnitsOnEnable: 1
 --- !u!1 &2101355247
 GameObject:

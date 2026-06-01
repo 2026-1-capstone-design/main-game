@@ -1,20 +1,17 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// BattleAgentControlBuffer는 ML-Agents action을 전투 시뮬레이션이 읽는 유닛별 제어 입력으로 보관한다.
-// 입력 벡터 정규화, Agent 명령을 전투 명령으로 변환, 타겟 유효성 검사, fight mode 상태 반영,
-// 실행된 일회성 명령 소비, observation용 입력 스냅샷 제공, 제어 해제 시 입력 초기화를 담당한다.
+// GladiatorAgent가 출력한 Action을 보관하고 있다가 ML Planner의 TryBuildPlan() 시 Action을 제공한다.
 public sealed class BattleAgentControlBuffer
 {
     private readonly Dictionary<BattleUnitCombatState, BattleAgentControlInput> _inputs =
         new Dictionary<BattleUnitCombatState, BattleAgentControlInput>();
 
-    public void SetRawInput(
+    public void SetResolvedInput(
         BattleUnitCombatState self,
         Vector2 rawRelativeMove,
-        GladiatorActionRole role,
-        GladiatorFightMode fightMode,
-        GladiatorAnchorKind anchorKind,
+        Vector2 resolvedRelativeMove,
+        GladiatorStrategy strategy,
         int anchorSlot,
         GladiatorCommand command,
         BattleUnitCombatState target
@@ -25,26 +22,22 @@ public sealed class BattleAgentControlBuffer
             return;
         }
 
-        if (rawRelativeMove.sqrMagnitude > 1f)
-        {
-            rawRelativeMove.Normalize();
-        }
+        rawRelativeMove = Vector2.ClampMagnitude(rawRelativeMove, 1f);
+        resolvedRelativeMove = Vector2.ClampMagnitude(resolvedRelativeMove, 1f);
 
         _inputs.TryGetValue(self, out BattleAgentControlInput input);
         input.PreviousRawLocalMove = input.RawLocalMove;
         input.RawLocalMove = rawRelativeMove;
-        input.Role = role;
-        input.FightMode = fightMode;
-        input.AnchorKind = anchorKind;
-        input.AnchorSlot = anchorSlot;
+        input.ResolvedRelativeMove = resolvedRelativeMove;
+        input.Strategy = strategy;
+        input.AnchorSlot = Mathf.Clamp(anchorSlot, 0, BattleTeamConstants.MaxUnitsPerTeam - 1);
         input.Command = ToCommand(command);
 
         bool hasValidTarget = BattleFieldSnapshot.IsValidEnemyTarget(self, target);
-        input.AnchorTarget = target;
         input.Target = hasValidTarget ? target : null;
 
         _inputs[self] = input;
-        self.SetAgentFightMode(fightMode);
+        self.SetAgentStrategy(strategy);
     }
 
     public BattleAgentControlInput GetInput(BattleUnitCombatState self)
@@ -70,7 +63,7 @@ public sealed class BattleAgentControlBuffer
         }
 
         _inputs.Remove(self);
-        self.SetAgentFightMode(GladiatorFightMode.Neutral);
+        self.SetAgentStrategy(GladiatorStrategy.Neutral);
         self.SetPlannedTargets(null, null);
     }
 
@@ -85,6 +78,8 @@ public sealed class BattleAgentControlBuffer
         {
             case GladiatorCommand.Attack:
                 return BattleCombatCommand.BasicAttack;
+            case GladiatorCommand.Withdraw:
+                return BattleCombatCommand.Withdraw;
             default:
                 return BattleCombatCommand.None;
         }

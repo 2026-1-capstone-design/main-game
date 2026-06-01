@@ -26,10 +26,8 @@ public static class BuiltInAiHeuristicTranslator
         discrete[GladiatorActionSchema.CommandBranch] = ResolveCommand(plan, selfState);
         BattleActionType currentAction =
             selfState != null ? selfState.CurrentActionType : BattleActionType.EngageNearest;
-        discrete[GladiatorActionSchema.RoleBranch] = ResolveRole(currentAction);
-        discrete[GladiatorActionSchema.FightModeBranch] = ResolveFightMode(currentAction);
-        discrete[GladiatorActionSchema.AnchorBranch] = GladiatorActionSchema.EncodeAnchorAction(
-            GladiatorAnchorKind.Enemy,
+        discrete[GladiatorActionSchema.StrategyBranch] = ResolveStrategy(currentAction);
+        discrete[GladiatorActionSchema.AnchorBranch] = GladiatorActionSchema.EncodeEnemyAnchorAction(
             ResolveTargetSlot(plan.TargetEnemy, rosterView)
         );
     }
@@ -49,13 +47,13 @@ public static class BuiltInAiHeuristicTranslator
             return;
         }
 
-        if (plan.MoveIntent != BattleMoveIntent.MoveToPosition || !plan.HasDesiredPosition || self == null)
+        if (plan.Move.Intent != BattleMoveIntent.MoveToAbsolutePosition || self == null)
         {
             WriteIdleMovement(continuous);
             return;
         }
 
-        Vector3 toTarget = plan.DesiredPosition - self.Position;
+        Vector3 toTarget = plan.Move.Position - self.Position;
         toTarget.y = 0f;
         float dist = toTarget.magnitude;
         if (dist < 0.01f)
@@ -101,11 +99,35 @@ public static class BuiltInAiHeuristicTranslator
     {
         if (plan.TargetEnemy == null || plan.TargetEnemy.IsCombatDisabled)
             return (int)GladiatorCommand.Move;
+        if (IsWithdrawMove(plan, self))
+            return (int)GladiatorCommand.Withdraw;
         if (self == null || self.AttackCooldownRemaining > 0f)
             return (int)GladiatorCommand.Move;
         return plan.CombatIntent == BattleCombatIntent.Attack
             ? (int)GladiatorCommand.Attack
             : (int)GladiatorCommand.Move;
+    }
+
+    private static bool IsWithdrawMove(BattleControlPlan plan, BattleUnitCombatState self)
+    {
+        if (
+            plan.Move.Intent != BattleMoveIntent.MoveToAbsolutePosition
+            || !BattleFieldSnapshot.IsValidEnemyTarget(self, plan.TargetEnemy)
+        )
+        {
+            return false;
+        }
+
+        float currentDistance = Distance2D(self.Position, plan.TargetEnemy.Position);
+        float desiredDistance = Distance2D(plan.Move.Position, plan.TargetEnemy.Position);
+        return desiredDistance > currentDistance;
+    }
+
+    private static float Distance2D(Vector3 a, Vector3 b)
+    {
+        Vector3 delta = a - b;
+        delta.y = 0f;
+        return delta.magnitude;
     }
 
     private static int ResolveTargetSlot(BattleUnitCombatState target, GladiatorStateRosterView rosterView)
@@ -125,22 +147,13 @@ public static class BuiltInAiHeuristicTranslator
         return 0;
     }
 
-    private static int ResolveFightMode(BattleActionType actionType) =>
+    private static int ResolveStrategy(BattleActionType actionType) =>
         actionType switch
         {
-            BattleActionType.EscapeFromPressure => (int)GladiatorFightMode.KeepRange,
-            BattleActionType.AssassinateIsolatedEnemy => (int)GladiatorFightMode.Pressure,
-            BattleActionType.DiveEnemyBackline => (int)GladiatorFightMode.Pressure,
-            BattleActionType.CollapseOnCluster => (int)GladiatorFightMode.Pressure,
-            _ => (int)GladiatorFightMode.Neutral,
-        };
-
-    private static int ResolveRole(BattleActionType actionType) =>
-        actionType switch
-        {
-            BattleActionType.AssassinateIsolatedEnemy => (int)GladiatorActionRole.Assassinate,
-            BattleActionType.EscapeFromPressure => (int)GladiatorActionRole.Regroup,
-            BattleActionType.PeelForWeakAlly => (int)GladiatorActionRole.Regroup,
-            _ => (int)GladiatorActionRole.Engage,
+            BattleActionType.EscapeFromPressure => (int)GladiatorStrategy.Retreat,
+            BattleActionType.AssassinateIsolatedEnemy => (int)GladiatorStrategy.Pressure,
+            BattleActionType.DiveEnemyBackline => (int)GladiatorStrategy.Pressure,
+            BattleActionType.CollapseOnCluster => (int)GladiatorStrategy.Pressure,
+            _ => (int)GladiatorStrategy.Neutral,
         };
 }

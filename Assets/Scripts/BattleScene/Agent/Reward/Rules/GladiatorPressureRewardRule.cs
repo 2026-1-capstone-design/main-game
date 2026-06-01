@@ -1,4 +1,4 @@
-public sealed class GladiatorPressureRewardRule : IGladiatorFightModeRewardRule
+public sealed class GladiatorPressureRewardRule : IGladiatorStrategyRewardRule
 {
     private readonly GladiatorRewardConfig _config;
 

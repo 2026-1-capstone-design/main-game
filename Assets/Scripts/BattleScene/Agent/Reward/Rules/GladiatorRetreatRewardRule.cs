@@ -1,4 +1,6 @@
-public sealed class GladiatorRetreatRewardRule : IGladiatorFightModeRewardRule
+using UnityEngine;
+
+public sealed class GladiatorRetreatRewardRule : IGladiatorStrategyRewardRule
 {
     private readonly GladiatorRewardConfig _config;
 
@@ -13,13 +15,17 @@ public sealed class GladiatorRetreatRewardRule : IGladiatorFightModeRewardRule
         GladiatorCombatSignalFeatures features
     )
     {
-        if (!context.HasValidTarget || context.TargetDistance >= float.MaxValue)
+        if (
+            !context.HasValidTarget
+            || context.TargetDistance >= float.MaxValue
+            || context.PreviousTargetDistance >= float.MaxValue
+            || context.IsAttackBlocked
+        )
         {
             return 0f;
         }
 
-        float separationDelta = context.TargetDistance - context.PreviousTargetDistance;
-        float reward = separationDelta > 0f ? separationDelta * _config.retreatSeparationReward : 0f;
+        float reward = action.RelativeMove.y < 0f ? _config.retreatSeparationReward : 0f;
         if (
             context.PreviousTargetDistance <= context.TargetEffectiveRange
             && context.TargetDistance > context.TargetEffectiveRange

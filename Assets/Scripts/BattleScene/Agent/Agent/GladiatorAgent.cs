@@ -6,30 +6,6 @@ using Unity.MLAgents.Sensors;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-// BehaviorParameters 설정 (Inspector):
-//   Space Size         = GladiatorObservationSchema.TotalSize (= 149)
-//   Continuous Actions = GladiatorActionSchema.ContinuousSize (= 2)
-//     0=anchor strafe, 1=anchor forward
-//   Discrete Branches  = 4
-//     Branch 0 Size = GladiatorActionSchema.CommandBranchSize (= 2)
-//     Branch 1 Size = GladiatorActionSchema.RoleBranchSize (= 3)
-//     Branch 2 Size = GladiatorActionSchema.FightModeBranchSize (= 4)
-//     Branch 3 Size = GladiatorActionSchema.AnchorActionBranchSize (= 12)
-//
-// Observation (148 floats):
-//   자신      (43):     월드 좌표축 기준 정규화된 경기장 중심 상대좌표(x,z), 체력비, 최대 체력 로그비, 공격력 로그비,
-//                       정규화된 사거리/이동속도/공격 쿨타임, 최근접 적/자신 대상 피해비, 최근접 적 거리,
-//                       공격 가능 여부, 피격 위험 여부, 근처 적/아군 비율, 경계 압박, role/commitment/anchor relation 요약,
-//                       timeout까지 남은 시간 비율, 현재/직전 agent 월드 이동 입력, anchor kind/slot/path/role one-hot
-//   내 팀 동료 (5 × 8): 월드 좌표축 기준 정규화된 상대좌표(x,z), 체력비, 최대 체력 로그비, 공격력 로그비, 사거리, 이동속도, 공격 쿨타임
-//   상대팀    (6 × 9): 위 동일 + 자신을 Neutral/Pressure 태세로 노리고 있는지 여부
-//
-// Action:
-//   Continuous 0/1:     anchor strafe / anchor forward
-//   Branch 0 (명령):     0=없음  1=기본공격
-//   Branch 1 (역할):     0=engage  1=assassinate  2=regroup
-//   Branch 2 (전투모드): 0=중립  1=압박  2=거리유지  3=후퇴
-//   Branch 3 (anchor):   0=팀 중심  1~5=아군 슬롯 0~4  6~11=적 슬롯 0~5
 public class GladiatorAgent : Agent
 {
     private const int CommitmentWindowSteps = 8;
@@ -51,21 +27,16 @@ public class GladiatorAgent : Agent
     private GladiatorObservationStats _observationStats;
     private float _prevTargetDistance;
     private GladiatorCommand? _previousCommand;
-    private GladiatorActionRole? _previousRole;
-    private GladiatorAnchorKind? _previousAnchorKind;
     private int _previousTargetSlot = -1;
-    private GladiatorFightMode? _previousFightMode;
+    private GladiatorStrategy? _previousStrategy;
     private int _commandCommitmentSteps;
     private int _anchorCommitmentSteps;
-    private int _roleCommitmentSteps;
-    private int _fightModeCommitmentSteps;
+    private int _strategyCommitmentSteps;
     private GladiatorRewardEvaluator _rewardEvaluator;
+    private GladiatorPersonalityBias _personalityBias = GladiatorPersonalityBias.Neutral;
     private RuntimeUnitAgentActionSink _actionSink;
     private BattleAgentControlBuffer _agentControlBuffer;
     private LegacyBuiltInAiPlanner _aiHeuristic;
-    private GladiatorAction _lastAction;
-    private GladiatorTacticalContext _lastTacticalContext;
-    private bool _hasLastRewardContext;
     private readonly GladiatorAgentEpisodeMetrics _episodeMetrics = new GladiatorAgentEpisodeMetrics();
 
     public bool HasControlledUnit => _selfUnit != null;
@@ -94,7 +65,8 @@ public class GladiatorAgent : Agent
         _arenaCenter = col != null ? col.bounds.center : Vector3.zero;
         _arenaExtentsMin = col != null ? Mathf.Min(col.bounds.extents.x, col.bounds.extents.z) : float.MaxValue;
         _rosterView = CreateRosterView();
-        _rewardEvaluator = new GladiatorRewardEvaluator(rewardConfig);
+        _personalityBias = ResolvePersonalityBias(unit);
+        _rewardEvaluator = new GladiatorRewardEvaluator(rewardConfig, AddReward, _personalityBias);
         _rewardEvaluator.Reset();
         _agentControlBuffer =
             _flowManager != null && _flowManager.BattleSimulationManager != null
@@ -117,16 +89,12 @@ public class GladiatorAgent : Agent
 
         _prevTargetDistance = float.MaxValue;
         _previousCommand = null;
-        _previousRole = null;
-        _previousAnchorKind = null;
         _previousTargetSlot = -1;
-        _previousFightMode = null;
+        _previousStrategy = null;
         _commandCommitmentSteps = 0;
         _anchorCommitmentSteps = 0;
-        _roleCommitmentSteps = 0;
-        _fightModeCommitmentSteps = 0;
-        _hasLastRewardContext = false;
-        _episodeMetrics.Reset();
+        _strategyCommitmentSteps = 0;
+        _episodeMetrics.Reset(_personalityBias);
 
         if (useBuiltInAiHeuristic)
         {
@@ -140,30 +108,18 @@ public class GladiatorAgent : Agent
 
     private void HandleDamageTaken(float damage)
     {
-        float ratio =
-            _selfState != null && _selfState.MaxHealth > 0f ? Mathf.Max(0f, damage) / _selfState.MaxHealth : 0f;
-        AddReward(ratio * rewardConfig.damageTakenRatio);
-        AddReward(ratio * EvaluateConditionalDamageTakenReward());
+        _rewardEvaluator?.RewardDamageTaken(damage, _selfState);
     }
 
     private void HandleSelfDied()
     {
-        AddReward(rewardConfig.death);
+        _rewardEvaluator?.RewardDeath();
     }
 
     private void HandleAttackLanded(BattleRuntimeUnit target, float actualDamage, bool wasKill)
     {
-        AddReward(rewardConfig.attackLanded);
-        float ratio =
-            target != null && target.State != null && target.State.MaxHealth > 0f
-                ? Mathf.Max(0f, actualDamage) / target.State.MaxHealth
-                : 0f;
         _episodeMetrics.AddDamageDealt(actualDamage);
-        AddReward(ratio * rewardConfig.damageDealtRatio);
-        if (wasKill)
-        {
-            AddReward(rewardConfig.kill);
-        }
+        _rewardEvaluator?.RewardAttackLanded(target, actualDamage, wasKill);
     }
 
     public override void CollectObservations(VectorSensor sensor)
@@ -186,15 +142,8 @@ public class GladiatorAgent : Agent
             return;
         }
 
-        GladiatorAnchorCurriculum anchorCurriculum =
-            _curriculumSource != null
-                ? _curriculumSource.CurrentAnchorCurriculum
-                : GladiatorAnchorCurriculum.EnemyAnchorSlotsOnly;
-        GladiatorRoleCurriculum roleCurriculum =
-            _curriculumSource != null ? _curriculumSource.CurrentRoleCurriculum : GladiatorRoleCurriculum.EngageOnly;
-        ApplyAnchorActionMask(actionMask, branchSizes, anchorCurriculum);
-        ApplyRoleMask(actionMask, branchSizes, roleCurriculum);
-        ApplyFightModeMask(actionMask, branchSizes);
+        ApplyAnchorActionMask(actionMask, branchSizes);
+        ApplyStrategyMask(actionMask, branchSizes);
         ApplyCommandMask(actionMask, branchSizes);
     }
 
@@ -206,9 +155,14 @@ public class GladiatorAgent : Agent
         }
 
         GladiatorAction action = GladiatorAgentActionParser.Parse(actions);
-        BattleUnitCombatState target = ResolveAnchorTarget(action);
-        bool anchorFallbackApplied = TryApplyNearestEnemyAnchorFallback(ref action, ref target);
-        action = NormalizeAllyAnchorAction(action);
+        BattleUnitCombatState selectedTarget = ResolveAnchorTarget(action);
+        GladiatorAction resolvedAction = action.Resolve(
+            _selfState.Position,
+            _rosterView != null ? _rosterView.Hostiles : null,
+            selectedTarget,
+            out BattleUnitCombatState target,
+            out bool anchorFallbackApplied
+        );
         GladiatorObservationContext observationContext = CreateObservationContext();
         GladiatorTacticalContext tacticalContext = GladiatorTacticalContext.Builder.Build(
             _selfState,
@@ -217,14 +171,11 @@ public class GladiatorAgent : Agent
             target,
             CommitmentWindowSteps,
             _previousCommand,
-            _previousRole,
-            _previousAnchorKind,
             _previousTargetSlot,
-            _previousFightMode,
+            _previousStrategy,
             _commandCommitmentSteps,
             _anchorCommitmentSteps,
-            _roleCommitmentSteps,
-            _fightModeCommitmentSteps,
+            _strategyCommitmentSteps,
             _prevTargetDistance,
             anchorFallbackApplied
         );
@@ -233,48 +184,50 @@ public class GladiatorAgent : Agent
             tacticalContext,
             _selfState != null ? _selfState.Attack : 0f,
             _selfState != null ? _selfState.AttackSpeed : 0f,
-            _selfState != null ? _selfState.AttackRange : 0f,
             GetStepDurationSeconds()
         );
         GladiatorCombatSignalFeatures features = GladiatorCombatSignalFeatures.Builder.Build(observationContext);
         GladiatorRewardEvaluation evaluation = _rewardEvaluator.EvaluateActionStep(action, tacticalContext, features);
+        _episodeMetrics.RecordStrategyReward(action.Strategy, evaluation.StrategyReward);
         _episodeMetrics.RecordSmoothnessReward(evaluation.SmoothnessReward);
-        AddReward(evaluation.Reward);
-        RecordLastRewardContext(action, tacticalContext);
 
         UpdateCommitmentState(action, tacticalContext);
         _previousCommand = action.Command;
-        _previousRole = action.Role;
-        _previousAnchorKind = action.AnchorKind;
         _previousTargetSlot = action.AnchorSlot;
-        _previousFightMode = action.FightMode;
+        _previousStrategy = action.Strategy;
         _prevTargetDistance = tacticalContext.TargetDistance;
 
         BattleUnitCombatState effectiveTarget = tacticalContext.HasValidTarget ? target : null;
-        _actionSink?.Apply(evaluation.EffectiveAction, effectiveTarget);
+        _actionSink?.Apply(action, resolvedAction, effectiveTarget);
     }
 
     public override void OnEpisodeBegin()
     {
         _prevTargetDistance = float.MaxValue;
         _previousCommand = null;
-        _previousRole = null;
-        _previousAnchorKind = null;
         _previousTargetSlot = -1;
-        _previousFightMode = null;
+        _previousStrategy = null;
         _commandCommitmentSteps = 0;
         _anchorCommitmentSteps = 0;
-        _roleCommitmentSteps = 0;
-        _fightModeCommitmentSteps = 0;
-        _hasLastRewardContext = false;
+        _strategyCommitmentSteps = 0;
         _rewardEvaluator?.Reset();
         _actionSink?.Clear();
-        _episodeMetrics.Reset();
+        _episodeMetrics.Reset(_personalityBias);
     }
 
     public void FlushEpisodeMetrics()
     {
         _episodeMetrics.Flush();
+    }
+
+    public void RewardTerminalSurvivalIfAlive()
+    {
+        if (_selfState == null || _selfState.IsCombatDisabled)
+        {
+            return;
+        }
+
+        _rewardEvaluator?.RewardTerminalSurvival();
     }
 
     public override void Heuristic(in ActionBuffers actionsOut)
@@ -318,58 +271,34 @@ public class GladiatorAgent : Agent
 
         if (kb.jKey.isPressed)
             discrete[GladiatorActionSchema.CommandBranch] = (int)GladiatorCommand.Attack;
+        else if (kb.xKey.isPressed)
+            discrete[GladiatorActionSchema.CommandBranch] = (int)GladiatorCommand.Withdraw;
         else
             discrete[GladiatorActionSchema.CommandBranch] = (int)GladiatorCommand.Move;
 
-        discrete[GladiatorActionSchema.RoleBranch] =
-            kb.rKey.isPressed ? (int)GladiatorActionRole.Regroup
-            : kb.cKey.isPressed ? (int)GladiatorActionRole.Assassinate
-            : (int)GladiatorActionRole.Engage;
-
         if (kb.digit1Key.isPressed)
-            discrete[GladiatorActionSchema.AnchorBranch] = GladiatorActionSchema.EncodeAnchorAction(
-                GladiatorAnchorKind.Enemy,
-                0
-            );
+            discrete[GladiatorActionSchema.AnchorBranch] = GladiatorActionSchema.EncodeEnemyAnchorAction(0);
         else if (kb.digit2Key.isPressed)
-            discrete[GladiatorActionSchema.AnchorBranch] = GladiatorActionSchema.EncodeAnchorAction(
-                GladiatorAnchorKind.Enemy,
-                1
-            );
+            discrete[GladiatorActionSchema.AnchorBranch] = GladiatorActionSchema.EncodeEnemyAnchorAction(1);
         else if (kb.digit3Key.isPressed)
-            discrete[GladiatorActionSchema.AnchorBranch] = GladiatorActionSchema.EncodeAnchorAction(
-                GladiatorAnchorKind.Enemy,
-                2
-            );
+            discrete[GladiatorActionSchema.AnchorBranch] = GladiatorActionSchema.EncodeEnemyAnchorAction(2);
         else if (kb.digit4Key.isPressed)
-            discrete[GladiatorActionSchema.AnchorBranch] = GladiatorActionSchema.EncodeAnchorAction(
-                GladiatorAnchorKind.Enemy,
-                3
-            );
+            discrete[GladiatorActionSchema.AnchorBranch] = GladiatorActionSchema.EncodeEnemyAnchorAction(3);
         else if (kb.digit5Key.isPressed)
-            discrete[GladiatorActionSchema.AnchorBranch] = GladiatorActionSchema.EncodeAnchorAction(
-                GladiatorAnchorKind.Enemy,
-                4
-            );
+            discrete[GladiatorActionSchema.AnchorBranch] = GladiatorActionSchema.EncodeEnemyAnchorAction(4);
         else if (kb.digit6Key.isPressed)
-            discrete[GladiatorActionSchema.AnchorBranch] = GladiatorActionSchema.EncodeAnchorAction(
-                GladiatorAnchorKind.Enemy,
-                5
-            );
+            discrete[GladiatorActionSchema.AnchorBranch] = GladiatorActionSchema.EncodeEnemyAnchorAction(5);
         else
-            discrete[GladiatorActionSchema.AnchorBranch] = GladiatorActionSchema.EncodeAnchorAction(
-                GladiatorAnchorKind.Enemy,
-                0
-            );
+            discrete[GladiatorActionSchema.AnchorBranch] = GladiatorActionSchema.EncodeEnemyAnchorAction(0);
 
         if (kb.leftShiftKey.isPressed || kb.rightShiftKey.isPressed)
-            discrete[GladiatorActionSchema.FightModeBranch] = (int)GladiatorFightMode.Pressure;
+            discrete[GladiatorActionSchema.StrategyBranch] = (int)GladiatorStrategy.Pressure;
         else if (kb.sKey.isPressed)
-            discrete[GladiatorActionSchema.FightModeBranch] = (int)GladiatorFightMode.KeepRange;
+            discrete[GladiatorActionSchema.StrategyBranch] = (int)GladiatorStrategy.KeepRange;
         else if (kb.xKey.isPressed)
-            discrete[GladiatorActionSchema.FightModeBranch] = (int)GladiatorFightMode.Retreat;
+            discrete[GladiatorActionSchema.StrategyBranch] = (int)GladiatorStrategy.Retreat;
         else
-            discrete[GladiatorActionSchema.FightModeBranch] = (int)GladiatorFightMode.Neutral;
+            discrete[GladiatorActionSchema.StrategyBranch] = (int)GladiatorStrategy.Neutral;
     }
 
     private float GetStepDurationSeconds()
@@ -379,92 +308,10 @@ public class GladiatorAgent : Agent
         return 1f / Mathf.Max(1f, tickRate);
     }
 
-    private void RecordLastRewardContext(GladiatorAction action, GladiatorTacticalContext tacticalContext)
-    {
-        _lastAction = action;
-        _lastTacticalContext = tacticalContext;
-        _hasLastRewardContext = true;
-    }
-
-    private float EvaluateConditionalDamageTakenReward()
-    {
-        if (!_hasLastRewardContext || !_lastTacticalContext.HasValidTarget)
-        {
-            return 0f;
-        }
-
-        switch (_lastAction.FightMode)
-        {
-            case GladiatorFightMode.Pressure:
-                return IsUnsafePressureDamageState() ? rewardConfig.pressureUnsafeDamageTakenRatio : 0f;
-            case GladiatorFightMode.KeepRange:
-                return IsTooCloseKeepRangeDamageState() ? rewardConfig.keepRangeTooCloseDamageTakenRatio : 0f;
-            default:
-                return 0f;
-        }
-    }
-
-    private bool IsUnsafePressureDamageState()
-    {
-        return !_lastTacticalContext.IsTargetOutOfAttackRange
-            && _lastTacticalContext.SelfThreatToTargetRatio < _lastTacticalContext.TargetThreatToSelfRatio;
-    }
-
-    private bool IsTooCloseKeepRangeDamageState()
-    {
-        float effectiveRange = Mathf.Max(rewardConfig.minimumEffectiveRange, _lastTacticalContext.TargetEffectiveRange);
-        float distanceRatio = _lastTacticalContext.TargetDistance / effectiveRange;
-        return distanceRatio < rewardConfig.keepRangeBandMin;
-    }
-
     private BattleUnitCombatState ResolveOpponentSlot(int slotIndex) =>
         _rosterView != null ? _rosterView.ResolveHostileSlot(slotIndex) : null;
 
-    private BattleUnitCombatState ResolveTeammateSlot(int slotIndex) =>
-        _rosterView != null ? _rosterView.ResolveTeammateSlot(slotIndex) : null;
-
-    private BattleUnitCombatState ResolveAnchorTarget(GladiatorAction action) =>
-        action.AnchorKind switch
-        {
-            GladiatorAnchorKind.Ally => ResolveTeammateSlot(action.AnchorSlot),
-            GladiatorAnchorKind.TeamCenter => null,
-            _ => ResolveOpponentSlot(action.AnchorSlot),
-        };
-
-    private static GladiatorAction NormalizeAllyAnchorAction(GladiatorAction action)
-    {
-        if (action.AnchorKind != GladiatorAnchorKind.Ally)
-        {
-            return action;
-        }
-
-        // Ally anchors are formation references, so combat-only branches are canonicalized before reward/context use.
-        return new GladiatorAction(
-            action.RelativeMove,
-            GladiatorActionRole.Regroup,
-            GladiatorFightMode.Neutral,
-            action.AnchorKind,
-            action.AnchorSlot,
-            GladiatorCommand.Move
-        );
-    }
-
-    private bool TryApplyNearestEnemyAnchorFallback(ref GladiatorAction action, ref BattleUnitCombatState target)
-    {
-        if (action.AnchorKind == GladiatorAnchorKind.TeamCenter || IsValidAnchorTarget(target))
-        {
-            return false;
-        }
-
-        if (!TryResolveNearestOpponentAnchor(out BattleUnitCombatState fallbackTarget, out int fallbackSlot))
-        {
-            return false;
-        }
-
-        target = fallbackTarget;
-        action = action.WithAnchor(GladiatorAnchorKind.Enemy, fallbackSlot);
-        return true;
-    }
+    private BattleUnitCombatState ResolveAnchorTarget(GladiatorAction action) => ResolveOpponentSlot(action.AnchorSlot);
 
     private GladiatorObservationContext CreateObservationContext()
     {
@@ -484,15 +331,24 @@ public class GladiatorAgent : Agent
             _curriculumSource != null ? _curriculumSource.BattleTimeoutRemainingRatio : 1f,
             controlInput.RawLocalMove,
             controlInput.PreviousRawLocalMove,
-            controlInput.AnchorKind,
             controlInput.AnchorSlot,
-            controlInput.FightMode,
-            controlInput.Role,
+            ToAgentCommand(controlInput.Command),
+            controlInput.Strategy,
             _anchorCommitmentSteps,
-            _roleCommitmentSteps,
+            _strategyCommitmentSteps,
+            _personalityBias.Collectivism,
+            _personalityBias.Passiveness,
             currentAnchor
         );
     }
+
+    private static GladiatorCommand ToAgentCommand(BattleCombatCommand command) =>
+        command switch
+        {
+            BattleCombatCommand.BasicAttack => GladiatorCommand.Attack,
+            BattleCombatCommand.Withdraw => GladiatorCommand.Withdraw,
+            _ => GladiatorCommand.Move,
+        };
 
     private Vector3 ComputeTeamCenter()
     {
@@ -530,34 +386,26 @@ public class GladiatorAgent : Agent
 
     private BattleUnitCombatState ResolveObservationAnchor(BattleAgentControlInput controlInput)
     {
-        if (IsValidAnchorTarget(controlInput.AnchorTarget))
+        if (IsValidAnchorTarget(controlInput.Target))
         {
-            return controlInput.AnchorTarget;
+            return controlInput.Target;
         }
 
         if (
-            !_previousAnchorKind.HasValue
-            && TryResolveNearestOpponentAnchor(out BattleUnitCombatState initialAnchor, out _)
+            _previousTargetSlot < 0
+            && TryResolveObservationNearestOpponentAnchor(out BattleUnitCombatState initialAnchor, out _)
         )
         {
             return initialAnchor;
         }
 
-        BattleUnitCombatState selectedAnchor = controlInput.AnchorKind switch
-        {
-            GladiatorAnchorKind.Ally => ResolveTeammateSlot(controlInput.AnchorSlot),
-            GladiatorAnchorKind.TeamCenter => null,
-            _ => ResolveOpponentSlot(controlInput.AnchorSlot),
-        };
+        BattleUnitCombatState selectedAnchor = ResolveOpponentSlot(controlInput.AnchorSlot);
         if (IsValidAnchorTarget(selectedAnchor))
         {
             return selectedAnchor;
         }
 
-        if (
-            controlInput.AnchorKind != GladiatorAnchorKind.TeamCenter
-            && TryResolveNearestOpponentAnchor(out BattleUnitCombatState fallbackAnchor, out _)
-        )
+        if (TryResolveObservationNearestOpponentAnchor(out BattleUnitCombatState fallbackAnchor, out _))
         {
             return fallbackAnchor;
         }
@@ -565,11 +413,7 @@ public class GladiatorAgent : Agent
         return null;
     }
 
-    private void ApplyAnchorActionMask(
-        IDiscreteActionMask actionMask,
-        int[] branchSizes,
-        GladiatorAnchorCurriculum anchorCurriculum
-    )
+    private void ApplyAnchorActionMask(IDiscreteActionMask actionMask, int[] branchSizes)
     {
         if (branchSizes.Length <= GladiatorActionSchema.AnchorBranch)
         {
@@ -577,41 +421,33 @@ public class GladiatorAgent : Agent
         }
 
         int branchSize = branchSizes[GladiatorActionSchema.AnchorBranch];
-        bool hasEnabledAnchorAction = false;
+        bool hasEnabledAnchor = false;
         for (int i = 0; i < branchSize; i++)
         {
-            if (IsValidAnchorActionForCurrentArena(i, anchorCurriculum))
-            {
-                hasEnabledAnchorAction = true;
-                break;
-            }
-        }
-
-        for (int i = 0; i < branchSize; i++)
-        {
-            bool invalid = !IsValidAnchorActionForCurrentArena(i, anchorCurriculum);
-            bool fallbackAction = i == GladiatorActionSchema.TeamCenterAnchorAction;
-            if (invalid && (hasEnabledAnchorAction || !fallbackAction))
+            bool isValidEnemySlot = IsValidEnemySlot(i);
+            hasEnabledAnchor |= isValidEnemySlot;
+            if (!isValidEnemySlot)
             {
                 actionMask.SetActionEnabled(GladiatorActionSchema.AnchorBranch, i, false);
             }
         }
+
+        if (!hasEnabledAnchor && branchSize > 0)
+        {
+            actionMask.SetActionEnabled(GladiatorActionSchema.AnchorBranch, 0, true);
+        }
     }
 
-    private void ApplyFightModeMask(IDiscreteActionMask actionMask, int[] branchSizes)
+    private void ApplyStrategyMask(IDiscreteActionMask actionMask, int[] branchSizes)
     {
-        if (branchSizes.Length <= GladiatorActionSchema.FightModeBranch)
+        if (branchSizes.Length <= GladiatorActionSchema.StrategyBranch)
         {
             return;
         }
 
         if (IsKeepRangeUnsupported())
         {
-            actionMask.SetActionEnabled(
-                GladiatorActionSchema.FightModeBranch,
-                (int)GladiatorFightMode.KeepRange,
-                false
-            );
+            actionMask.SetActionEnabled(GladiatorActionSchema.StrategyBranch, (int)GladiatorStrategy.KeepRange, false);
         }
     }
 
@@ -622,65 +458,33 @@ public class GladiatorAgent : Agent
             return;
         }
 
+        int branchSize = branchSizes[GladiatorActionSchema.CommandBranch];
         bool canAttack = HasLivingOpponent();
         if (!canAttack)
         {
-            actionMask.SetActionEnabled(GladiatorActionSchema.CommandBranch, (int)GladiatorCommand.Attack, false);
+            DisableCommandIfPresent(actionMask, branchSize, GladiatorCommand.Attack);
+            DisableCommandIfPresent(actionMask, branchSize, GladiatorCommand.Withdraw);
         }
     }
 
-    private static void ApplyRoleMask(
+    private static void DisableCommandIfPresent(
         IDiscreteActionMask actionMask,
-        int[] branchSizes,
-        GladiatorRoleCurriculum roleCurriculum
+        int branchSize,
+        GladiatorCommand command
     )
     {
-        if (branchSizes.Length <= GladiatorActionSchema.RoleBranch)
+        int commandIndex = (int)command;
+        if (commandIndex < branchSize)
         {
-            return;
-        }
-
-        if (roleCurriculum <= GladiatorRoleCurriculum.EngageOnly)
-        {
-            actionMask.SetActionEnabled(GladiatorActionSchema.RoleBranch, (int)GladiatorActionRole.Assassinate, false);
-            actionMask.SetActionEnabled(GladiatorActionSchema.RoleBranch, (int)GladiatorActionRole.Regroup, false);
-            return;
-        }
-
-        if (roleCurriculum == GladiatorRoleCurriculum.AssassinateUnlocked)
-        {
-            actionMask.SetActionEnabled(GladiatorActionSchema.RoleBranch, (int)GladiatorActionRole.Regroup, false);
-        }
-    }
-
-    private bool IsValidAnchorActionForCurrentArena(int anchorAction, GladiatorAnchorCurriculum anchorCurriculum)
-    {
-        if (
-            !GladiatorActionSchema.TryDecodeAnchorAction(anchorAction, out GladiatorAnchorKind anchorKind, out int slot)
-        )
-        {
-            return false;
-        }
-
-        if (anchorCurriculum < GladiatorAnchorCurriculum.AllSlotsUnlocked && anchorKind != GladiatorAnchorKind.Enemy)
-        {
-            return false;
-        }
-
-        switch (anchorKind)
-        {
-            case GladiatorAnchorKind.TeamCenter:
-                return true;
-            case GladiatorAnchorKind.Ally:
-                return IsValidTeammateObservationSlot(slot);
-            default:
-                return IsValidEnemySlot(slot);
+            actionMask.SetActionEnabled(GladiatorActionSchema.CommandBranch, commandIndex, false);
         }
     }
 
     private bool IsKeepRangeUnsupported()
     {
-        return _selfUnit == null || _selfUnit.Snapshot == null || !_selfUnit.Snapshot.IsRanged;
+        // Temp: 원거리 무기가 아니어도 창 같은 중거리 무기도 있어서, 일단 모든 무기에 대해 카이팅이 가능하도록 함
+        // return _selfUnit == null || _selfUnit.Snapshot == null || !_selfUnit.Snapshot.IsRanged;
+        return _selfUnit == null || _selfUnit.Snapshot == null;
     }
 
     private bool IsValidEnemySlot(int slot)
@@ -711,7 +515,7 @@ public class GladiatorAgent : Agent
 
     private static bool IsValidAnchorTarget(BattleUnitCombatState target) => target != null && !target.IsCombatDisabled;
 
-    private bool TryResolveNearestOpponentAnchor(out BattleUnitCombatState target, out int slot)
+    private bool TryResolveObservationNearestOpponentAnchor(out BattleUnitCombatState target, out int slot)
     {
         target = null;
         slot = 0;
@@ -746,23 +550,11 @@ public class GladiatorAgent : Agent
         return target != null;
     }
 
-    private bool IsValidTeammateObservationSlot(int slot)
-    {
-        if (slot < 0 || slot >= GladiatorObservationSchema.TeammateSlots)
-        {
-            return false;
-        }
-
-        BattleUnitCombatState teammate = ResolveTeammateSlot(slot);
-        return teammate != null && !teammate.IsCombatDisabled;
-    }
-
     private void UpdateCommitmentState(GladiatorAction action, GladiatorTacticalContext context)
     {
         _commandCommitmentSteps = context.CommandCommitmentSteps;
         _anchorCommitmentSteps = context.AnchorCommitmentSteps;
-        _roleCommitmentSteps = context.RoleCommitmentSteps;
-        _fightModeCommitmentSteps = context.FightModeCommitmentSteps;
+        _strategyCommitmentSteps = context.StrategyCommitmentSteps;
     }
 
     private void OnDestroy()
@@ -795,8 +587,7 @@ public class GladiatorAgent : Agent
 
     private GladiatorObservationStats ComputeInitialObservationStats()
     {
-        var maxHealthValues = new List<float>();
-        var attackValues = new List<float>();
+        float maxRosterMaxHealth = 0f;
         float maxMoveSpeed = 0f;
 
         IReadOnlyList<BattleUnitCombatState> states = ToStates(_flowManager != null ? _flowManager.RuntimeUnits : null);
@@ -811,30 +602,27 @@ public class GladiatorAgent : Agent
                     sawSelf = true;
                 }
 
-                AddInitialUnitStats(state, maxHealthValues, attackValues, ref maxMoveSpeed);
+                AddInitialUnitStats(state, ref maxRosterMaxHealth, ref maxMoveSpeed);
             }
         }
 
         if (!sawSelf)
         {
-            AddInitialUnitStats(_selfState, maxHealthValues, attackValues, ref maxMoveSpeed);
+            AddInitialUnitStats(_selfState, ref maxRosterMaxHealth, ref maxMoveSpeed);
         }
 
         float fallbackMaxHealth = _selfState != null ? _selfState.MaxHealth : 1f;
-        float fallbackAttack = _selfState != null ? _selfState.Attack : 1f;
         float fallbackMoveSpeed = _selfState != null ? _selfState.MoveSpeed : 1f;
 
         return new GladiatorObservationStats(
-            Median(maxHealthValues, fallbackMaxHealth),
-            Median(attackValues, fallbackAttack),
+            maxRosterMaxHealth > 0f ? maxRosterMaxHealth : fallbackMaxHealth,
             maxMoveSpeed > 0f ? maxMoveSpeed : fallbackMoveSpeed
         );
     }
 
     private static void AddInitialUnitStats(
         BattleUnitCombatState state,
-        List<float> maxHealthValues,
-        List<float> attackValues,
+        ref float maxRosterMaxHealth,
         ref float maxMoveSpeed
     )
     {
@@ -845,12 +633,7 @@ public class GladiatorAgent : Agent
 
         if (state.MaxHealth > 0f)
         {
-            maxHealthValues.Add(state.MaxHealth);
-        }
-
-        if (state.Attack > 0f)
-        {
-            attackValues.Add(state.Attack);
+            maxRosterMaxHealth = Mathf.Max(maxRosterMaxHealth, state.MaxHealth);
         }
 
         maxMoveSpeed = Mathf.Max(maxMoveSpeed, state.MoveSpeed);
@@ -872,21 +655,13 @@ public class GladiatorAgent : Agent
         return states;
     }
 
-    private static float Median(List<float> values, float fallback)
+    private static GladiatorPersonalityBias ResolvePersonalityBias(BattleRuntimeUnit unit)
     {
-        if (values.Count == 0)
+        if (unit == null || unit.Snapshot == null)
         {
-            return Mathf.Max(1e-6f, fallback);
+            return GladiatorPersonalityBias.Neutral;
         }
 
-        values.Sort();
-
-        int mid = values.Count / 2;
-        if (values.Count % 2 == 1)
-        {
-            return values[mid];
-        }
-
-        return (values[mid - 1] + values[mid]) * 0.5f;
+        return unit.Snapshot.PersonalityBias;
     }
 }

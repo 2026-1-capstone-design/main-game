@@ -293,10 +293,12 @@ public sealed class RecruitFactory : MonoBehaviour
             return;
         }
 
-        if (_sessionManager == null)
+        if (_sessionManager == null && verboseLog)
         {
-            Debug.LogError("[RecruitFactory] sessionManager is null.", this);
-            return;
+            Debug.LogWarning(
+                "[RecruitFactory] sessionManager is null. Market/session flows may be unavailable, but stat preview generation can continue.",
+                this
+            );
         }
 
         if (_randomManager == null)

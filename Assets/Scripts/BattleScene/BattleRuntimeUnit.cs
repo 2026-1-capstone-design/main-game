@@ -246,7 +246,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         State.OnDied += HandleUnitDied;
         State.OnRevived += HandleUnitRevived;
         State.OnActionTypeChanged += (_, _) => RefreshStatusText();
-        State.OnAgentFightModeChanged += _ => RefreshStatusText();
+        State.OnAgentStrategyChanged += _ => RefreshStatusText();
         State.OnMovingStateChanged += isMoving => _myAnimation?.SetBool("isMoving", isMoving);
         State.OnIdleStateEntered += () => _myAnimation?.SetBool("isMoving", false);
         State.OnAttackTriggered += HandleAttackTriggered;
@@ -796,7 +796,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     {
         if (statusText == null)
             return;
-        statusText.text = $"{UnitNumber}\n{State.AgentFightMode}";
+        statusText.text = $"{UnitNumber}\n{State.AgentStrategy}";
         SetActive(statusText.gameObject, _isStatusTextVisible);
     }
 

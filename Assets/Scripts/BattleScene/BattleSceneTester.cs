@@ -190,11 +190,14 @@ public sealed class BattleSceneTester : MonoBehaviour
             defaultDur = entry.weaponData.defaultDur;
             duration = entry.weaponData.duration;
 
-            finalAtk += entry.weaponData.baseAttackBonus;
-            finalAtkSpeed += entry.weaponData.baseAttackSpeedBonus;
-            finalHp += entry.weaponData.baseHealthBonus;
-            finalMove += entry.weaponData.baseMoveSpeedBonus;
-            finalRange += entry.weaponData.baseAttackRangeBonus;
+            if (!entry.ignoreWeaponStat)
+            {
+                finalAtk += entry.weaponData.baseAttackBonus;
+                finalAtkSpeed += entry.weaponData.baseAttackSpeedBonus;
+                finalHp += entry.weaponData.baseHealthBonus;
+                finalMove += entry.weaponData.baseMoveSpeedBonus;
+                finalRange += entry.weaponData.baseAttackRangeBonus;
+            }
         }
 
         // Weapon Overrides
@@ -202,6 +205,11 @@ public sealed class BattleSceneTester : MonoBehaviour
         {
             isRanged = entry.isRanged;
             useProjectile = entry.useProjectile;
+            if (entry.attackDuration > 0)
+            {
+                defaultDur = false;
+                duration = entry.attackDuration;
+            }
         }
 
         int[] randomSkins =

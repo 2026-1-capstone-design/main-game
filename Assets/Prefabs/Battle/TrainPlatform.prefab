@@ -125,6 +125,8 @@ MonoBehaviour:
   - {fileID: 0}
   battleSimulationManager: {fileID: 8950524180265300232}
   battleStatusGridUIManager: {fileID: 0}
+  battleUnitStatusPanelUIManager: {fileID: 0}
+  battleUnitTooltipUIManager: {fileID: 0}
   battleSceneUIManager: {fileID: 0}
   battleOrdersManager: {fileID: 0}
   verboseLog: 1
@@ -160,121 +162,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 8217307799661624868}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &517183496622372029
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 8162492080774305497}
-  - component: {fileID: 1153359827509639942}
-  - component: {fileID: 5048773537209845197}
-  - component: {fileID: 5197661143870745996}
-  - component: {fileID: 3272540350620391357}
-  m_Layer: 0
-  m_Name: EnemyAgent_6
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &8162492080774305497
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 517183496622372029}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 2625219460713601796}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1153359827509639942
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 517183496622372029}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5d1c4e0b1822b495aa52bc52839ecb30, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_BrainParameters:
-    VectorObservationSize: 148
-    NumStackedVectorObservations: 1
-    m_ActionSpec:
-      m_NumContinuousActions: 2
-      BranchSizes: 0200000003000000040000000c000000
-    VectorActionSize: 
-    VectorActionDescriptions: []
-    VectorActionSpaceType: 0
-    hasUpgradedBrainParametersWithActionSpec: 1
-  m_Model: {fileID: 0}
-  m_InferenceDevice: 0
-  m_BehaviorType: 0
-  m_BehaviorName: GladiatorBehavior
-  TeamId: 2
-  m_UseChildSensors: 0
-  m_UseChildActuators: 1
-  m_DeterministicInference: 0
-  m_ObservableAttributeHandling: 0
---- !u!114 &5048773537209845197
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 517183496622372029}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2d4656c56d7142c40bcbce02e16d4d17, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  agentParameters:
-    maxStep: 0
-  hasUpgradedFromAgentParameters: 1
-  MaxStep: 0
-  rewardConfig: {fileID: 11400000, guid: 262fb219011f41b090ee980ee74cf86e, type: 2}
-  useBuiltInAiHeuristic: 0
---- !u!114 &5197661143870745996
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 517183496622372029}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3a5c9d521e5ef4759a8246a07d52221e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  DecisionPeriod: 5
-  DecisionStep: 0
-  TakeActionsBetweenDecisions: 0
---- !u!114 &3272540350620391357
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 517183496622372029}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f2902496c0120472b90269f94a0aec7e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Record: 0
-  NumStepsToRecord: 50000
-  DemonstrationName: GladiatorBuiltInAI_v5
-  DemonstrationDirectory: Assets/Demos/
 --- !u!1 &727805991372161259
 GameObject:
   m_ObjectHideFlags: 0
@@ -305,18 +192,18 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 9156325793741362351}
-  - {fileID: 948308002774288698}
-  - {fileID: 8278920404977548760}
-  - {fileID: 9182020701068826321}
-  - {fileID: 115642770756921284}
-  - {fileID: 1517516215712314079}
-  - {fileID: 3130343723835997029}
-  - {fileID: 199208791110228362}
-  - {fileID: 4864317416715287255}
-  - {fileID: 7309957926591738719}
-  - {fileID: 971728349962280139}
-  - {fileID: 8162492080774305497}
+  - {fileID: 8618540416500193869}
+  - {fileID: 6612570765156215048}
+  - {fileID: 2999560402932262596}
+  - {fileID: 4330149619662317497}
+  - {fileID: 1819402020797156867}
+  - {fileID: 6616126557319449107}
+  - {fileID: 4674274704930483756}
+  - {fileID: 4716587812105144542}
+  - {fileID: 1656220994831159839}
+  - {fileID: 2746957034864376033}
+  - {fileID: 8247352083935803687}
+  - {fileID: 8890906373040339802}
   m_Father: {fileID: 2570755887975235016}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &208713946280000597
@@ -338,6 +225,10 @@ MonoBehaviour:
   defaultTeamSize: 1
   randomPresetPool:
   - {fileID: 11400000, guid: b150030cced20c8469515251b15f22f4, type: 2}
+  - {fileID: 11400000, guid: 825e3257924e4d1790f82e3616c2a75d, type: 2}
+  - {fileID: 11400000, guid: 2508aeb6a6034c77b9115220b45f73d8, type: 2}
+  - {fileID: 11400000, guid: f0512c3461c6491cac4570e2e4853ac2, type: 2}
+  - {fileID: 11400000, guid: 92847a8a0fa74bce98a47910227e9169, type: 2}
   allyStatMultiplierEnvironmentParameter: ally_stat_multiplier
   enemyStatMultiplierEnvironmentParameter: enemy_stat_multiplier
   defaultAllyStatMultiplier: 1
@@ -349,141 +240,24 @@ MonoBehaviour:
   controlledSide: 3
   useCurriculumOpponentMode: 1
   opponentModeEnvironmentParameter: opponent_mode
-  anchorCurriculumEnvironmentParameter: anchor_curriculum
-  roleCurriculumEnvironmentParameter: role_curriculum
   allyAgents:
-  - {fileID: 7369524932478691754}
-  - {fileID: 6005745504054656703}
-  - {fileID: 4702826181089295155}
-  - {fileID: 2859665270561526611}
-  - {fileID: 6829081033480993247}
-  - {fileID: 383301773655515921}
+  - {fileID: 8618540416494252943}
+  - {fileID: 6612570765167362250}
+  - {fileID: 2999560402942103302}
+  - {fileID: 4330149619673075323}
+  - {fileID: 1819402020802914241}
+  - {fileID: 6616126557329433553}
   enemyAgents:
-  - {fileID: 5970356323823004508}
-  - {fileID: 4937576380953105501}
-  - {fileID: 119830096111051766}
-  - {fileID: 7565552461153430634}
-  - {fileID: 440912077407973630}
-  - {fileID: 5048773537209845197}
+  - {fileID: 4674274704919513070}
+  - {fileID: 4716587812111851804}
+  - {fileID: 1656220994838166493}
+  - {fileID: 2746957034874343715}
+  - {fileID: 8247352083930009829}
+  - {fileID: 8890906373051159192}
   battleTicksPerEnvironmentStep: 1
   usePocaGroupRewards: 1
   rewardConfig: {fileID: 11400000, guid: 262fb219011f41b090ee980ee74cf86e, type: 2}
   manuallyStepAcademy: 1
---- !u!1 &1050729436075428511
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 199208791110228362}
-  - component: {fileID: 2844492348438862522}
-  - component: {fileID: 4937576380953105501}
-  - component: {fileID: 3807733344414995303}
-  - component: {fileID: 6782958105486220255}
-  m_Layer: 0
-  m_Name: EnemyAgent_2
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &199208791110228362
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1050729436075428511}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 2625219460713601796}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &2844492348438862522
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1050729436075428511}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5d1c4e0b1822b495aa52bc52839ecb30, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_BrainParameters:
-    VectorObservationSize: 148
-    NumStackedVectorObservations: 1
-    m_ActionSpec:
-      m_NumContinuousActions: 2
-      BranchSizes: 0200000003000000040000000c000000
-    VectorActionSize: 
-    VectorActionDescriptions: []
-    VectorActionSpaceType: 0
-    hasUpgradedBrainParametersWithActionSpec: 1
-  m_Model: {fileID: 0}
-  m_InferenceDevice: 0
-  m_BehaviorType: 0
-  m_BehaviorName: GladiatorBehavior
-  TeamId: 2
-  m_UseChildSensors: 0
-  m_UseChildActuators: 1
-  m_DeterministicInference: 0
-  m_ObservableAttributeHandling: 0
---- !u!114 &4937576380953105501
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1050729436075428511}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2d4656c56d7142c40bcbce02e16d4d17, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  agentParameters:
-    maxStep: 0
-  hasUpgradedFromAgentParameters: 1
-  MaxStep: 0
-  rewardConfig: {fileID: 11400000, guid: 262fb219011f41b090ee980ee74cf86e, type: 2}
-  useBuiltInAiHeuristic: 0
---- !u!114 &3807733344414995303
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1050729436075428511}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3a5c9d521e5ef4759a8246a07d52221e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  DecisionPeriod: 5
-  DecisionStep: 0
-  TakeActionsBetweenDecisions: 0
---- !u!114 &6782958105486220255
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1050729436075428511}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f2902496c0120472b90269f94a0aec7e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Record: 0
-  NumStepsToRecord: 50000
-  DemonstrationName: GladiatorBuiltInAI_v5
-  DemonstrationDirectory: Assets/Demos/
 --- !u!1 &1294615182731558386
 GameObject:
   m_ObjectHideFlags: 0
@@ -535,126 +309,12 @@ MonoBehaviour:
   maxSimulationSpeed: 8
   unitBodyRadius: 0.5
   aiTuning: {fileID: 11400000, guid: 9460e7500e3182e498f0bc7ab23dd2ef, type: 2}
+  slmCommandTuningSO: {fileID: 0}
   desiredPositionStopDistance: 0.5
   escapeTowardTeamBlend: 0.35
   trainingOptimizedSimulation: 0
   projectileManager: {fileID: 0}
   _battleTextManager: {fileID: 0}
---- !u!1 &1353830932261827759
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 8278920404977548760}
-  - component: {fileID: 8813032803104026318}
-  - component: {fileID: 4702826181089295155}
-  - component: {fileID: 3966502622562698799}
-  - component: {fileID: 6781399780067691266}
-  m_Layer: 0
-  m_Name: AllyAgent_3
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &8278920404977548760
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1353830932261827759}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 2625219460713601796}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &8813032803104026318
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1353830932261827759}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5d1c4e0b1822b495aa52bc52839ecb30, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_BrainParameters:
-    VectorObservationSize: 148
-    NumStackedVectorObservations: 1
-    m_ActionSpec:
-      m_NumContinuousActions: 2
-      BranchSizes: 0200000003000000040000000c000000
-    VectorActionSize: 
-    VectorActionDescriptions: []
-    VectorActionSpaceType: 0
-    hasUpgradedBrainParametersWithActionSpec: 1
-  m_Model: {fileID: 0}
-  m_InferenceDevice: 0
-  m_BehaviorType: 0
-  m_BehaviorName: GladiatorBehavior
-  TeamId: 1
-  m_UseChildSensors: 0
-  m_UseChildActuators: 1
-  m_DeterministicInference: 0
-  m_ObservableAttributeHandling: 0
---- !u!114 &4702826181089295155
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1353830932261827759}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2d4656c56d7142c40bcbce02e16d4d17, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  agentParameters:
-    maxStep: 0
-  hasUpgradedFromAgentParameters: 1
-  MaxStep: 0
-  rewardConfig: {fileID: 11400000, guid: 262fb219011f41b090ee980ee74cf86e, type: 2}
-  useBuiltInAiHeuristic: 0
---- !u!114 &3966502622562698799
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1353830932261827759}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3a5c9d521e5ef4759a8246a07d52221e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  DecisionPeriod: 5
-  DecisionStep: 0
-  TakeActionsBetweenDecisions: 0
---- !u!114 &6781399780067691266
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1353830932261827759}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f2902496c0120472b90269f94a0aec7e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Record: 0
-  NumStepsToRecord: 50000
-  DemonstrationName: GladiatorBuiltInAI_v5
-  DemonstrationDirectory: Assets/Demos/
 --- !u!1 &1786558444409426790
 GameObject:
   m_ObjectHideFlags: 0
@@ -691,121 +351,6 @@ Transform:
   - {fileID: 5119984846322532314}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1979190726597452597
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 4864317416715287255}
-  - component: {fileID: 3648860467735091497}
-  - component: {fileID: 119830096111051766}
-  - component: {fileID: 4632115999021831236}
-  - component: {fileID: 168761567979778427}
-  m_Layer: 0
-  m_Name: EnemyAgent_3
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &4864317416715287255
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1979190726597452597}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 2625219460713601796}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &3648860467735091497
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1979190726597452597}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5d1c4e0b1822b495aa52bc52839ecb30, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_BrainParameters:
-    VectorObservationSize: 148
-    NumStackedVectorObservations: 1
-    m_ActionSpec:
-      m_NumContinuousActions: 2
-      BranchSizes: 0200000003000000040000000c000000
-    VectorActionSize: 
-    VectorActionDescriptions: []
-    VectorActionSpaceType: 0
-    hasUpgradedBrainParametersWithActionSpec: 1
-  m_Model: {fileID: 0}
-  m_InferenceDevice: 0
-  m_BehaviorType: 0
-  m_BehaviorName: GladiatorBehavior
-  TeamId: 2
-  m_UseChildSensors: 0
-  m_UseChildActuators: 1
-  m_DeterministicInference: 0
-  m_ObservableAttributeHandling: 0
---- !u!114 &119830096111051766
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1979190726597452597}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2d4656c56d7142c40bcbce02e16d4d17, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  agentParameters:
-    maxStep: 0
-  hasUpgradedFromAgentParameters: 1
-  MaxStep: 0
-  rewardConfig: {fileID: 11400000, guid: 262fb219011f41b090ee980ee74cf86e, type: 2}
-  useBuiltInAiHeuristic: 0
---- !u!114 &4632115999021831236
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1979190726597452597}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3a5c9d521e5ef4759a8246a07d52221e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  DecisionPeriod: 5
-  DecisionStep: 0
-  TakeActionsBetweenDecisions: 0
---- !u!114 &168761567979778427
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1979190726597452597}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f2902496c0120472b90269f94a0aec7e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Record: 0
-  NumStepsToRecord: 50000
-  DemonstrationName: GladiatorBuiltInAI_v5
-  DemonstrationDirectory: Assets/Demos/
 --- !u!1 &2280261313500207195
 GameObject:
   m_ObjectHideFlags: 0
@@ -837,121 +382,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 5541472281438090167}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &2501189068933260189
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 9156325793741362351}
-  - component: {fileID: 2127476726505869161}
-  - component: {fileID: 7369524932478691754}
-  - component: {fileID: 6659081350912844694}
-  - component: {fileID: 1011790816291493845}
-  m_Layer: 0
-  m_Name: AllyAgent_1
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &9156325793741362351
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2501189068933260189}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 2625219460713601796}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &2127476726505869161
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2501189068933260189}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5d1c4e0b1822b495aa52bc52839ecb30, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_BrainParameters:
-    VectorObservationSize: 148
-    NumStackedVectorObservations: 1
-    m_ActionSpec:
-      m_NumContinuousActions: 2
-      BranchSizes: 0200000003000000040000000c000000
-    VectorActionSize: 
-    VectorActionDescriptions: []
-    VectorActionSpaceType: 0
-    hasUpgradedBrainParametersWithActionSpec: 1
-  m_Model: {fileID: 0}
-  m_InferenceDevice: 0
-  m_BehaviorType: 0
-  m_BehaviorName: GladiatorBehavior
-  TeamId: 1
-  m_UseChildSensors: 0
-  m_UseChildActuators: 1
-  m_DeterministicInference: 0
-  m_ObservableAttributeHandling: 0
---- !u!114 &7369524932478691754
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2501189068933260189}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2d4656c56d7142c40bcbce02e16d4d17, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  agentParameters:
-    maxStep: 0
-  hasUpgradedFromAgentParameters: 1
-  MaxStep: 0
-  rewardConfig: {fileID: 11400000, guid: 262fb219011f41b090ee980ee74cf86e, type: 2}
-  useBuiltInAiHeuristic: 0
---- !u!114 &6659081350912844694
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2501189068933260189}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3a5c9d521e5ef4759a8246a07d52221e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  DecisionPeriod: 5
-  DecisionStep: 0
-  TakeActionsBetweenDecisions: 0
---- !u!114 &1011790816291493845
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2501189068933260189}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f2902496c0120472b90269f94a0aec7e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Record: 0
-  NumStepsToRecord: 50000
-  DemonstrationName: GladiatorBuiltInAI_v5
-  DemonstrationDirectory: Assets/Demos/
 --- !u!1 &3102902499247393385
 GameObject:
   m_ObjectHideFlags: 0
@@ -1121,121 +551,6 @@ Transform:
   - {fileID: 8121939623773088109}
   m_Father: {fileID: 370517462303777486}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &4916491091623669755
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 7309957926591738719}
-  - component: {fileID: 3652476324711818311}
-  - component: {fileID: 7565552461153430634}
-  - component: {fileID: 1386015189924383108}
-  - component: {fileID: 3323406572321257620}
-  m_Layer: 0
-  m_Name: EnemyAgent_4
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &7309957926591738719
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4916491091623669755}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 2625219460713601796}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &3652476324711818311
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4916491091623669755}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5d1c4e0b1822b495aa52bc52839ecb30, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_BrainParameters:
-    VectorObservationSize: 148
-    NumStackedVectorObservations: 1
-    m_ActionSpec:
-      m_NumContinuousActions: 2
-      BranchSizes: 0200000003000000040000000c000000
-    VectorActionSize: 
-    VectorActionDescriptions: []
-    VectorActionSpaceType: 0
-    hasUpgradedBrainParametersWithActionSpec: 1
-  m_Model: {fileID: 0}
-  m_InferenceDevice: 0
-  m_BehaviorType: 0
-  m_BehaviorName: GladiatorBehavior
-  TeamId: 2
-  m_UseChildSensors: 0
-  m_UseChildActuators: 1
-  m_DeterministicInference: 0
-  m_ObservableAttributeHandling: 0
---- !u!114 &7565552461153430634
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4916491091623669755}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2d4656c56d7142c40bcbce02e16d4d17, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  agentParameters:
-    maxStep: 0
-  hasUpgradedFromAgentParameters: 1
-  MaxStep: 0
-  rewardConfig: {fileID: 11400000, guid: 262fb219011f41b090ee980ee74cf86e, type: 2}
-  useBuiltInAiHeuristic: 0
---- !u!114 &1386015189924383108
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4916491091623669755}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3a5c9d521e5ef4759a8246a07d52221e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  DecisionPeriod: 5
-  DecisionStep: 0
-  TakeActionsBetweenDecisions: 0
---- !u!114 &3323406572321257620
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4916491091623669755}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f2902496c0120472b90269f94a0aec7e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Record: 0
-  NumStepsToRecord: 50000
-  DemonstrationName: GladiatorBuiltInAI_v5
-  DemonstrationDirectory: Assets/Demos/
 --- !u!1 &4927676676062553517
 GameObject:
   m_ObjectHideFlags: 0
@@ -1329,121 +644,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 8217307799661624868}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &5719578176278641982
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1517516215712314079}
-  - component: {fileID: 968921499666105253}
-  - component: {fileID: 383301773655515921}
-  - component: {fileID: 3677523303982598490}
-  - component: {fileID: 4519154273764980838}
-  m_Layer: 0
-  m_Name: AllyAgent_6
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1517516215712314079
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5719578176278641982}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 2625219460713601796}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &968921499666105253
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5719578176278641982}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5d1c4e0b1822b495aa52bc52839ecb30, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_BrainParameters:
-    VectorObservationSize: 148
-    NumStackedVectorObservations: 1
-    m_ActionSpec:
-      m_NumContinuousActions: 2
-      BranchSizes: 0200000003000000040000000c000000
-    VectorActionSize: 
-    VectorActionDescriptions: []
-    VectorActionSpaceType: 0
-    hasUpgradedBrainParametersWithActionSpec: 1
-  m_Model: {fileID: 0}
-  m_InferenceDevice: 0
-  m_BehaviorType: 0
-  m_BehaviorName: GladiatorBehavior
-  TeamId: 1
-  m_UseChildSensors: 0
-  m_UseChildActuators: 1
-  m_DeterministicInference: 0
-  m_ObservableAttributeHandling: 0
---- !u!114 &383301773655515921
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5719578176278641982}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2d4656c56d7142c40bcbce02e16d4d17, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  agentParameters:
-    maxStep: 0
-  hasUpgradedFromAgentParameters: 1
-  MaxStep: 0
-  rewardConfig: {fileID: 11400000, guid: 262fb219011f41b090ee980ee74cf86e, type: 2}
-  useBuiltInAiHeuristic: 0
---- !u!114 &3677523303982598490
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5719578176278641982}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3a5c9d521e5ef4759a8246a07d52221e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  DecisionPeriod: 5
-  DecisionStep: 0
-  TakeActionsBetweenDecisions: 0
---- !u!114 &4519154273764980838
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5719578176278641982}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f2902496c0120472b90269f94a0aec7e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Record: 0
-  NumStepsToRecord: 50000
-  DemonstrationName: GladiatorBuiltInAI_v5
-  DemonstrationDirectory: Assets/Demos/
 --- !u!1 &5789388154663900899
 GameObject:
   m_ObjectHideFlags: 0
@@ -1475,121 +675,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 8217307799661624868}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &5851640772513251511
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 971728349962280139}
-  - component: {fileID: 6179504067134569922}
-  - component: {fileID: 440912077407973630}
-  - component: {fileID: 144838131772813612}
-  - component: {fileID: 7349757730024245147}
-  m_Layer: 0
-  m_Name: EnemyAgent_5
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &971728349962280139
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5851640772513251511}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 2625219460713601796}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &6179504067134569922
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5851640772513251511}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5d1c4e0b1822b495aa52bc52839ecb30, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_BrainParameters:
-    VectorObservationSize: 148
-    NumStackedVectorObservations: 1
-    m_ActionSpec:
-      m_NumContinuousActions: 2
-      BranchSizes: 0200000003000000040000000c000000
-    VectorActionSize: 
-    VectorActionDescriptions: []
-    VectorActionSpaceType: 0
-    hasUpgradedBrainParametersWithActionSpec: 1
-  m_Model: {fileID: 0}
-  m_InferenceDevice: 0
-  m_BehaviorType: 0
-  m_BehaviorName: GladiatorBehavior
-  TeamId: 2
-  m_UseChildSensors: 0
-  m_UseChildActuators: 1
-  m_DeterministicInference: 0
-  m_ObservableAttributeHandling: 0
---- !u!114 &440912077407973630
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5851640772513251511}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2d4656c56d7142c40bcbce02e16d4d17, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  agentParameters:
-    maxStep: 0
-  hasUpgradedFromAgentParameters: 1
-  MaxStep: 0
-  rewardConfig: {fileID: 11400000, guid: 262fb219011f41b090ee980ee74cf86e, type: 2}
-  useBuiltInAiHeuristic: 0
---- !u!114 &144838131772813612
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5851640772513251511}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3a5c9d521e5ef4759a8246a07d52221e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  DecisionPeriod: 5
-  DecisionStep: 0
-  TakeActionsBetweenDecisions: 0
---- !u!114 &7349757730024245147
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5851640772513251511}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f2902496c0120472b90269f94a0aec7e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Record: 0
-  NumStepsToRecord: 50000
-  DemonstrationName: GladiatorBuiltInAI_v5
-  DemonstrationDirectory: Assets/Demos/
 --- !u!1 &6006521931640313327
 GameObject:
   m_ObjectHideFlags: 0
@@ -1621,121 +706,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 5541472281438090167}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &6585490546094732733
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 948308002774288698}
-  - component: {fileID: 5944279631191131067}
-  - component: {fileID: 6005745504054656703}
-  - component: {fileID: 8420515292782398000}
-  - component: {fileID: 7888501533537408089}
-  m_Layer: 0
-  m_Name: AllyAgent_2
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &948308002774288698
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6585490546094732733}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 2625219460713601796}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &5944279631191131067
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6585490546094732733}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5d1c4e0b1822b495aa52bc52839ecb30, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_BrainParameters:
-    VectorObservationSize: 148
-    NumStackedVectorObservations: 1
-    m_ActionSpec:
-      m_NumContinuousActions: 2
-      BranchSizes: 0200000003000000040000000c000000
-    VectorActionSize: 
-    VectorActionDescriptions: []
-    VectorActionSpaceType: 0
-    hasUpgradedBrainParametersWithActionSpec: 1
-  m_Model: {fileID: 0}
-  m_InferenceDevice: 0
-  m_BehaviorType: 0
-  m_BehaviorName: GladiatorBehavior
-  TeamId: 1
-  m_UseChildSensors: 0
-  m_UseChildActuators: 1
-  m_DeterministicInference: 0
-  m_ObservableAttributeHandling: 0
---- !u!114 &6005745504054656703
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6585490546094732733}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2d4656c56d7142c40bcbce02e16d4d17, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  agentParameters:
-    maxStep: 0
-  hasUpgradedFromAgentParameters: 1
-  MaxStep: 0
-  rewardConfig: {fileID: 11400000, guid: 262fb219011f41b090ee980ee74cf86e, type: 2}
-  useBuiltInAiHeuristic: 0
---- !u!114 &8420515292782398000
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6585490546094732733}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3a5c9d521e5ef4759a8246a07d52221e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  DecisionPeriod: 5
-  DecisionStep: 0
-  TakeActionsBetweenDecisions: 0
---- !u!114 &7888501533537408089
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6585490546094732733}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f2902496c0120472b90269f94a0aec7e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Record: 0
-  NumStepsToRecord: 50000
-  DemonstrationName: GladiatorBuiltInAI_v5
-  DemonstrationDirectory: Assets/Demos/
 --- !u!1 &6868675751469248894
 GameObject:
   m_ObjectHideFlags: 0
@@ -1868,236 +838,6 @@ SphereCollider:
   serializedVersion: 3
   m_Radius: 20
   m_Center: {x: 0, y: 0, z: 0}
---- !u!1 &6942123338890071125
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 3130343723835997029}
-  - component: {fileID: 5697376561447130904}
-  - component: {fileID: 5970356323823004508}
-  - component: {fileID: 8143492279578980282}
-  - component: {fileID: 5619256725925589065}
-  m_Layer: 0
-  m_Name: EnemyAgent_1
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &3130343723835997029
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6942123338890071125}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 2625219460713601796}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &5697376561447130904
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6942123338890071125}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5d1c4e0b1822b495aa52bc52839ecb30, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_BrainParameters:
-    VectorObservationSize: 148
-    NumStackedVectorObservations: 1
-    m_ActionSpec:
-      m_NumContinuousActions: 2
-      BranchSizes: 0200000003000000040000000c000000
-    VectorActionSize: 
-    VectorActionDescriptions: []
-    VectorActionSpaceType: 0
-    hasUpgradedBrainParametersWithActionSpec: 1
-  m_Model: {fileID: 0}
-  m_InferenceDevice: 0
-  m_BehaviorType: 0
-  m_BehaviorName: GladiatorBehavior
-  TeamId: 2
-  m_UseChildSensors: 0
-  m_UseChildActuators: 1
-  m_DeterministicInference: 0
-  m_ObservableAttributeHandling: 0
---- !u!114 &5970356323823004508
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6942123338890071125}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2d4656c56d7142c40bcbce02e16d4d17, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  agentParameters:
-    maxStep: 0
-  hasUpgradedFromAgentParameters: 1
-  MaxStep: 0
-  rewardConfig: {fileID: 11400000, guid: 262fb219011f41b090ee980ee74cf86e, type: 2}
-  useBuiltInAiHeuristic: 0
---- !u!114 &8143492279578980282
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6942123338890071125}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3a5c9d521e5ef4759a8246a07d52221e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  DecisionPeriod: 5
-  DecisionStep: 0
-  TakeActionsBetweenDecisions: 0
---- !u!114 &5619256725925589065
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6942123338890071125}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f2902496c0120472b90269f94a0aec7e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Record: 0
-  NumStepsToRecord: 50000
-  DemonstrationName: GladiatorBuiltInAI_v5
-  DemonstrationDirectory: Assets/Demos/
---- !u!1 &7216970115798326793
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 115642770756921284}
-  - component: {fileID: 7283177480096822633}
-  - component: {fileID: 6829081033480993247}
-  - component: {fileID: 7766750024271989010}
-  - component: {fileID: 5416220113320154563}
-  m_Layer: 0
-  m_Name: AllyAgent_5
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &115642770756921284
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7216970115798326793}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 2625219460713601796}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &7283177480096822633
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7216970115798326793}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5d1c4e0b1822b495aa52bc52839ecb30, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_BrainParameters:
-    VectorObservationSize: 148
-    NumStackedVectorObservations: 1
-    m_ActionSpec:
-      m_NumContinuousActions: 2
-      BranchSizes: 0200000003000000040000000c000000
-    VectorActionSize: 
-    VectorActionDescriptions: []
-    VectorActionSpaceType: 0
-    hasUpgradedBrainParametersWithActionSpec: 1
-  m_Model: {fileID: 0}
-  m_InferenceDevice: 0
-  m_BehaviorType: 0
-  m_BehaviorName: GladiatorBehavior
-  TeamId: 1
-  m_UseChildSensors: 0
-  m_UseChildActuators: 1
-  m_DeterministicInference: 0
-  m_ObservableAttributeHandling: 0
---- !u!114 &6829081033480993247
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7216970115798326793}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2d4656c56d7142c40bcbce02e16d4d17, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  agentParameters:
-    maxStep: 0
-  hasUpgradedFromAgentParameters: 1
-  MaxStep: 0
-  rewardConfig: {fileID: 11400000, guid: 262fb219011f41b090ee980ee74cf86e, type: 2}
-  useBuiltInAiHeuristic: 0
---- !u!114 &7766750024271989010
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7216970115798326793}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3a5c9d521e5ef4759a8246a07d52221e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  DecisionPeriod: 5
-  DecisionStep: 0
-  TakeActionsBetweenDecisions: 0
---- !u!114 &5416220113320154563
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7216970115798326793}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f2902496c0120472b90269f94a0aec7e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Record: 0
-  NumStepsToRecord: 50000
-  DemonstrationName: GladiatorBuiltInAI_v5
-  DemonstrationDirectory: Assets/Demos/
 --- !u!1 &7272724059980600470
 GameObject:
   m_ObjectHideFlags: 0
@@ -2238,121 +978,314 @@ Transform:
   m_Children: []
   m_Father: {fileID: 8217307799661624868}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &8486593944757989330
-GameObject:
+--- !u!1001 &1656220994831026335
+PrefabInstance:
   m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 9182020701068826321}
-  - component: {fileID: 1872488800646344502}
-  - component: {fileID: 2859665270561526611}
-  - component: {fileID: 7927639604402857310}
-  - component: {fileID: 842818949383170989}
-  m_Layer: 0
-  m_Name: AllyAgent_4
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &9182020701068826321
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8486593944757989330}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 2625219460713601796}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1872488800646344502
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 2625219460713601796}
+    m_Modifications:
+    - target: {fileID: 100000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_Name
+      value: EnemyAgent_3
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 11400001, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: TeamId
+      value: 2
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+--- !u!4 &1656220994831159839 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+  m_PrefabInstance: {fileID: 1656220994831026335}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8486593944757989330}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5d1c4e0b1822b495aa52bc52839ecb30, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_BrainParameters:
-    VectorObservationSize: 148
-    NumStackedVectorObservations: 1
-    m_ActionSpec:
-      m_NumContinuousActions: 2
-      BranchSizes: 0200000003000000040000000c000000
-    VectorActionSize: 
-    VectorActionDescriptions: []
-    VectorActionSpaceType: 0
-    hasUpgradedBrainParametersWithActionSpec: 1
-  m_Model: {fileID: 0}
-  m_InferenceDevice: 0
-  m_BehaviorType: 0
-  m_BehaviorName: GladiatorBehavior
-  TeamId: 1
-  m_UseChildSensors: 0
-  m_UseChildActuators: 1
-  m_DeterministicInference: 0
-  m_ObservableAttributeHandling: 0
---- !u!114 &2859665270561526611
+--- !u!114 &1656220994838166493 stripped
 MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
+  m_CorrespondingSourceObject: {fileID: 11400002, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+  m_PrefabInstance: {fileID: 1656220994831026335}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8486593944757989330}
+  m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2d4656c56d7142c40bcbce02e16d4d17, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  agentParameters:
-    maxStep: 0
-  hasUpgradedFromAgentParameters: 1
-  MaxStep: 0
-  rewardConfig: {fileID: 11400000, guid: 262fb219011f41b090ee980ee74cf86e, type: 2}
-  useBuiltInAiHeuristic: 0
---- !u!114 &7927639604402857310
-MonoBehaviour:
+--- !u!1001 &1819402020796765315
+PrefabInstance:
   m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 2625219460713601796}
+    m_Modifications:
+    - target: {fileID: 100000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_Name
+      value: AllyAgent_5
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 11400001, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: TeamId
+      value: 1
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+--- !u!4 &1819402020797156867 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+  m_PrefabInstance: {fileID: 1819402020796765315}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8486593944757989330}
+--- !u!114 &1819402020802914241 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 11400002, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+  m_PrefabInstance: {fileID: 1819402020796765315}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3a5c9d521e5ef4759a8246a07d52221e, type: 3}
+  m_Script: {fileID: 11500000, guid: 2d4656c56d7142c40bcbce02e16d4d17, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  DecisionPeriod: 5
-  DecisionStep: 0
-  TakeActionsBetweenDecisions: 0
---- !u!114 &842818949383170989
-MonoBehaviour:
+--- !u!1001 &2746957034864763489
+PrefabInstance:
   m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 2625219460713601796}
+    m_Modifications:
+    - target: {fileID: 100000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_Name
+      value: EnemyAgent_4
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 11400001, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: TeamId
+      value: 2
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+--- !u!4 &2746957034864376033 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+  m_PrefabInstance: {fileID: 2746957034864763489}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8486593944757989330}
+--- !u!114 &2746957034874343715 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 11400002, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+  m_PrefabInstance: {fileID: 2746957034864763489}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f2902496c0120472b90269f94a0aec7e, type: 3}
+  m_Script: {fileID: 11500000, guid: 2d4656c56d7142c40bcbce02e16d4d17, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Record: 0
-  NumStepsToRecord: 50000
-  DemonstrationName: GladiatorBuiltInAI_v5
-  DemonstrationDirectory: Assets/Demos/
+--- !u!1001 &2999560402932399172
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 2625219460713601796}
+    m_Modifications:
+    - target: {fileID: 100000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_Name
+      value: AllyAgent_3
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 11400001, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: TeamId
+      value: 1
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+--- !u!4 &2999560402932262596 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+  m_PrefabInstance: {fileID: 2999560402932399172}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &2999560402942103302 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 11400002, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+  m_PrefabInstance: {fileID: 2999560402932399172}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d4656c56d7142c40bcbce02e16d4d17, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &3773519622630849861
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2432,3 +1365,619 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 48831db3cfb35ce44899e8cf59c9cd77, type: 3}
   m_PrefabInstance: {fileID: 3773519622630849861}
   m_PrefabAsset: {fileID: 0}
+--- !u!1001 &4330149619662454073
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 2625219460713601796}
+    m_Modifications:
+    - target: {fileID: 100000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_Name
+      value: AllyAgent_4
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 11400001, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: TeamId
+      value: 1
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+--- !u!4 &4330149619662317497 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+  m_PrefabInstance: {fileID: 4330149619662454073}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &4330149619673075323 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 11400002, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+  m_PrefabInstance: {fileID: 4330149619662454073}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d4656c56d7142c40bcbce02e16d4d17, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!1001 &4674274704930878636
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 2625219460713601796}
+    m_Modifications:
+    - target: {fileID: 100000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_Name
+      value: EnemyAgent_1
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 11400001, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: TeamId
+      value: 2
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+--- !u!114 &4674274704919513070 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 11400002, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+  m_PrefabInstance: {fileID: 4674274704930878636}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d4656c56d7142c40bcbce02e16d4d17, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!4 &4674274704930483756 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+  m_PrefabInstance: {fileID: 4674274704930878636}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1001 &4716587812104753758
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 2625219460713601796}
+    m_Modifications:
+    - target: {fileID: 100000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_Name
+      value: EnemyAgent_2
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 11400001, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: TeamId
+      value: 2
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+--- !u!4 &4716587812105144542 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+  m_PrefabInstance: {fileID: 4716587812104753758}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &4716587812111851804 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 11400002, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+  m_PrefabInstance: {fileID: 4716587812104753758}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d4656c56d7142c40bcbce02e16d4d17, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!1001 &6612570765156086664
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 2625219460713601796}
+    m_Modifications:
+    - target: {fileID: 100000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_Name
+      value: AllyAgent_2
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 11400001, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: TeamId
+      value: 1
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+--- !u!4 &6612570765156215048 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+  m_PrefabInstance: {fileID: 6612570765156086664}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &6612570765167362250 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 11400002, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+  m_PrefabInstance: {fileID: 6612570765156086664}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d4656c56d7142c40bcbce02e16d4d17, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!1001 &6616126557319319699
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 2625219460713601796}
+    m_Modifications:
+    - target: {fileID: 100000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_Name
+      value: AllyAgent_6
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 11400001, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: TeamId
+      value: 1
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+--- !u!4 &6616126557319449107 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+  m_PrefabInstance: {fileID: 6616126557319319699}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &6616126557329433553 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 11400002, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+  m_PrefabInstance: {fileID: 6616126557319319699}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d4656c56d7142c40bcbce02e16d4d17, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!1001 &8247352083935929255
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 2625219460713601796}
+    m_Modifications:
+    - target: {fileID: 100000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_Name
+      value: EnemyAgent_5
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 11400001, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: TeamId
+      value: 2
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+--- !u!114 &8247352083930009829 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 11400002, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+  m_PrefabInstance: {fileID: 8247352083935929255}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d4656c56d7142c40bcbce02e16d4d17, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!4 &8247352083935803687 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+  m_PrefabInstance: {fileID: 8247352083935929255}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1001 &8618540416499794125
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 2625219460713601796}
+    m_Modifications:
+    - target: {fileID: 100000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_Name
+      value: AllyAgent_1
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 11400001, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: TeamId
+      value: 1
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+--- !u!114 &8618540416494252943 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 11400002, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+  m_PrefabInstance: {fileID: 8618540416499794125}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d4656c56d7142c40bcbce02e16d4d17, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!4 &8618540416500193869 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+  m_PrefabInstance: {fileID: 8618540416499794125}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1001 &8890906373040464346
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 2625219460713601796}
+    m_Modifications:
+    - target: {fileID: 100000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_Name
+      value: EnemyAgent_6
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 11400001, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+      propertyPath: TeamId
+      value: 2
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+--- !u!4 &8890906373040339802 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 400000, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+  m_PrefabInstance: {fileID: 8890906373040464346}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &8890906373051159192 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 11400002, guid: 2e0446eb19294f6fa47e695a1c92876a, type: 3}
+  m_PrefabInstance: {fileID: 8890906373040464346}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d4656c56d7142c40bcbce02e16d4d17, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2ff15f9c7ecb4554aa29c83d822a0a6c, type: 3}
+  m_Name: Assassin
+  m_EditorClassIdentifier: 
+  displayNamePrefix: Training
+  level: 1
+  gladiatorClass: {fileID: 11400000, guid: 6846407ed22928941b371aab2d355ecf, type: 2}
+  weapon: {fileID: 11400000, guid: 8f15a2a951e32fa44914883dd11d291f, type: 2}
+  overrideWeaponSettings: 1
+  isRanged: 0
+  useProjectile: 0
+  overrideAttackAnimationTiming: 1
+  defaultDur: 0
+  duration: 0.7
+  weaponSkillId: 0
+  maxHealth: 1750
+  attack: 280
+  attackSpeed: 1.5
+  moveSpeed: 5
+  attackRange: 1.1
+  personalityCollectivism: 0.3
+  personalityPassiveness: 0.3
+  customizeIndicates: 100000000000000014000000000000001600000000000000000000000f000000110000000f0000000f0000000f000000

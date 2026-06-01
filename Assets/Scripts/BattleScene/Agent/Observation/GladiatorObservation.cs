@@ -73,9 +73,8 @@ public readonly struct GladiatorSelfObservation
 {
     public readonly float ArenaCenterAnchorRelativeX;
     public readonly float ArenaCenterAnchorRelativeZ;
-    public readonly float HealthRatio;
-    public readonly float MaxHealthLogRatio;
-    public readonly float AttackLogRatio;
+    public readonly float CurrentHealthToRosterMaxHealthRatio;
+    public readonly float AttackToRosterMaxHealthRatio;
     public readonly float AttackRangeRatio;
     public readonly float MoveSpeedRatio;
     public readonly float AttackCooldownRatio;
@@ -88,27 +87,27 @@ public readonly struct GladiatorSelfObservation
     public readonly float EnemyClusterPressure;
     public readonly float BoundaryPressure;
     public readonly float BattleTimeoutRemainingRatio;
-    public readonly float AgentSmoothedMoveX;
-    public readonly float AgentSmoothedMoveZ;
-    public readonly float AgentPreviousRawMoveX;
+    public readonly float RawLocalMoveX;
+    public readonly float RawLocalMoveZ;
+    public readonly float PreviousRawLocalMoveX;
     public readonly float AgentPreviousRawMoveZ;
-    public readonly GladiatorAnchorKind AnchorKind;
     public readonly int AnchorSlot;
-    public readonly GladiatorFightMode FightMode;
-    public readonly GladiatorActionRole Role;
+    public readonly GladiatorCommand Command;
+    public readonly GladiatorStrategy Strategy;
     public readonly float AnchorCommitmentRatio;
-    public readonly float RoleCommitmentRatio;
+    public readonly float StrategyCommitmentRatio;
     public readonly float AnchorAllySupportPressure;
     public readonly float AnchorEnemyFocusPressure;
     public readonly float AnchorEnemyIsolation;
     public readonly float AnchorEnemyRetreatSignal;
+    public readonly float PersonalityCollectivism;
+    public readonly float PersonalityPassiveness;
 
     public GladiatorSelfObservation(
         float arenaCenterAnchorRelativeX,
         float arenaCenterAnchorRelativeZ,
-        float healthRatio,
-        float maxHealthLogRatio,
-        float attackLogRatio,
+        float currentHealthToRosterMaxHealthRatio,
+        float attackToRosterMaxHealthRatio,
         float attackRangeRatio,
         float moveSpeedRatio,
         float attackCooldownRatio,
@@ -121,27 +120,27 @@ public readonly struct GladiatorSelfObservation
         float enemyClusterPressure,
         float boundaryPressure,
         float battleTimeoutRemainingRatio,
-        float agentSmoothedMoveX,
-        float agentSmoothedMoveZ,
-        float agentPreviousRawMoveX,
-        float agentPreviousRawMoveZ,
-        GladiatorAnchorKind anchorKind,
+        float rawLocalMoveX,
+        float rawLocalMoveZ,
+        float previousRawLocalMoveX,
+        float previousRawLocalMoveZ,
         int anchorSlot,
-        GladiatorFightMode fightMode,
-        GladiatorActionRole role,
+        GladiatorCommand command,
+        GladiatorStrategy strategy,
         float anchorCommitmentRatio,
-        float roleCommitmentRatio,
+        float strategyCommitmentRatio,
         float anchorAllySupportPressure,
         float anchorEnemyFocusPressure,
         float anchorEnemyIsolation,
-        float anchorEnemyRetreatSignal
+        float anchorEnemyRetreatSignal,
+        float personalityCollectivism,
+        float personalityPassiveness
     )
     {
         ArenaCenterAnchorRelativeX = arenaCenterAnchorRelativeX;
         ArenaCenterAnchorRelativeZ = arenaCenterAnchorRelativeZ;
-        HealthRatio = healthRatio;
-        MaxHealthLogRatio = maxHealthLogRatio;
-        AttackLogRatio = attackLogRatio;
+        CurrentHealthToRosterMaxHealthRatio = currentHealthToRosterMaxHealthRatio;
+        AttackToRosterMaxHealthRatio = attackToRosterMaxHealthRatio;
         AttackRangeRatio = attackRangeRatio;
         MoveSpeedRatio = moveSpeedRatio;
         AttackCooldownRatio = attackCooldownRatio;
@@ -154,29 +153,29 @@ public readonly struct GladiatorSelfObservation
         EnemyClusterPressure = enemyClusterPressure;
         BoundaryPressure = boundaryPressure;
         BattleTimeoutRemainingRatio = battleTimeoutRemainingRatio;
-        AgentSmoothedMoveX = agentSmoothedMoveX;
-        AgentSmoothedMoveZ = agentSmoothedMoveZ;
-        AgentPreviousRawMoveX = agentPreviousRawMoveX;
-        AgentPreviousRawMoveZ = agentPreviousRawMoveZ;
-        AnchorKind = anchorKind;
+        RawLocalMoveX = rawLocalMoveX;
+        RawLocalMoveZ = rawLocalMoveZ;
+        PreviousRawLocalMoveX = previousRawLocalMoveX;
+        AgentPreviousRawMoveZ = previousRawLocalMoveZ;
         AnchorSlot = anchorSlot;
-        FightMode = fightMode;
-        Role = role;
+        Command = command;
+        Strategy = strategy;
         AnchorCommitmentRatio = anchorCommitmentRatio;
-        RoleCommitmentRatio = roleCommitmentRatio;
+        StrategyCommitmentRatio = strategyCommitmentRatio;
         AnchorAllySupportPressure = anchorAllySupportPressure;
         AnchorEnemyFocusPressure = anchorEnemyFocusPressure;
         AnchorEnemyIsolation = anchorEnemyIsolation;
         AnchorEnemyRetreatSignal = anchorEnemyRetreatSignal;
+        PersonalityCollectivism = personalityCollectivism;
+        PersonalityPassiveness = personalityPassiveness;
     }
 
     public void WriteTo(VectorSensor sensor)
     {
         sensor.AddObservation(ArenaCenterAnchorRelativeX);
         sensor.AddObservation(ArenaCenterAnchorRelativeZ);
-        sensor.AddObservation(HealthRatio);
-        sensor.AddObservation(MaxHealthLogRatio);
-        sensor.AddObservation(AttackLogRatio);
+        sensor.AddObservation(CurrentHealthToRosterMaxHealthRatio);
+        sensor.AddObservation(AttackToRosterMaxHealthRatio);
         sensor.AddObservation(AttackRangeRatio);
         sensor.AddObservation(MoveSpeedRatio);
         sensor.AddObservation(AttackCooldownRatio);
@@ -189,20 +188,21 @@ public readonly struct GladiatorSelfObservation
         sensor.AddObservation(EnemyClusterPressure);
         sensor.AddObservation(BoundaryPressure);
         sensor.AddObservation(BattleTimeoutRemainingRatio);
-        sensor.AddObservation(AgentSmoothedMoveX);
-        sensor.AddObservation(AgentSmoothedMoveZ);
-        sensor.AddObservation(AgentPreviousRawMoveX);
+        sensor.AddObservation(RawLocalMoveX);
+        sensor.AddObservation(RawLocalMoveZ);
+        sensor.AddObservation(PreviousRawLocalMoveX);
         sensor.AddObservation(AgentPreviousRawMoveZ);
-        AddOneHot(sensor, (int)AnchorKind, GladiatorActionSchema.AnchorKindCount);
-        AddOneHot(sensor, AnchorSlot, GladiatorActionSchema.AnchorSlotObservationSize);
-        AddOneHot(sensor, (int)FightMode, GladiatorActionSchema.FightModeBranchSize);
-        AddOneHot(sensor, (int)Role, GladiatorActionSchema.RoleBranchSize);
+        AddOneHot(sensor, (int)Command, GladiatorActionSchema.CommandBranchSize);
+        AddOneHot(sensor, AnchorSlot, GladiatorActionSchema.AnchorActionBranchSize);
+        AddOneHot(sensor, (int)Strategy, GladiatorActionSchema.StrategyBranchSize);
         sensor.AddObservation(AnchorCommitmentRatio);
-        sensor.AddObservation(RoleCommitmentRatio);
+        sensor.AddObservation(StrategyCommitmentRatio);
         sensor.AddObservation(AnchorAllySupportPressure);
         sensor.AddObservation(AnchorEnemyFocusPressure);
         sensor.AddObservation(AnchorEnemyIsolation);
         sensor.AddObservation(AnchorEnemyRetreatSignal);
+        sensor.AddObservation(PersonalityCollectivism);
+        sensor.AddObservation(PersonalityPassiveness);
     }
 
     private static void AddOneHot(VectorSensor sensor, int value, int size)
@@ -220,9 +220,8 @@ public readonly struct GladiatorUnitObservation
     public readonly float AnchorRelativePositionX;
     public readonly float AnchorRelativePositionZ;
     public readonly float DistanceToSelfRatio;
-    public readonly float HealthRatio;
-    public readonly float MaxHealthLogRatio;
-    public readonly float AttackLogRatio;
+    public readonly float CurrentHealthToRosterMaxHealthRatio;
+    public readonly float AttackToRosterMaxHealthRatio;
     public readonly float AttackRangeRatio;
     public readonly float MoveSpeedRatio;
     public readonly float AttackCooldownRatio;
@@ -232,9 +231,8 @@ public readonly struct GladiatorUnitObservation
         float anchorRelativePositionX,
         float anchorRelativePositionZ,
         float distanceToSelfRatio,
-        float healthRatio,
-        float maxHealthLogRatio,
-        float attackLogRatio,
+        float currentHealthToRosterMaxHealthRatio,
+        float attackToRosterMaxHealthRatio,
         float attackRangeRatio,
         float moveSpeedRatio,
         float attackCooldownRatio,
@@ -244,9 +242,8 @@ public readonly struct GladiatorUnitObservation
         AnchorRelativePositionX = anchorRelativePositionX;
         AnchorRelativePositionZ = anchorRelativePositionZ;
         DistanceToSelfRatio = distanceToSelfRatio;
-        HealthRatio = healthRatio;
-        MaxHealthLogRatio = maxHealthLogRatio;
-        AttackLogRatio = attackLogRatio;
+        CurrentHealthToRosterMaxHealthRatio = currentHealthToRosterMaxHealthRatio;
+        AttackToRosterMaxHealthRatio = attackToRosterMaxHealthRatio;
         AttackRangeRatio = attackRangeRatio;
         MoveSpeedRatio = moveSpeedRatio;
         AttackCooldownRatio = attackCooldownRatio;
@@ -269,9 +266,8 @@ public readonly struct GladiatorUnitObservation
         sensor.AddObservation(AnchorRelativePositionX);
         sensor.AddObservation(AnchorRelativePositionZ);
         sensor.AddObservation(DistanceToSelfRatio);
-        sensor.AddObservation(HealthRatio);
-        sensor.AddObservation(MaxHealthLogRatio);
-        sensor.AddObservation(AttackLogRatio);
+        sensor.AddObservation(CurrentHealthToRosterMaxHealthRatio);
+        sensor.AddObservation(AttackToRosterMaxHealthRatio);
         sensor.AddObservation(AttackRangeRatio);
         sensor.AddObservation(MoveSpeedRatio);
         sensor.AddObservation(AttackCooldownRatio);

@@ -1,4 +1,4 @@
-public sealed class GladiatorKeepRangeRewardRule : IGladiatorFightModeRewardRule
+public sealed class GladiatorKeepRangeRewardRule : IGladiatorStrategyRewardRule
 {
     private readonly GladiatorRewardConfig _config;
 

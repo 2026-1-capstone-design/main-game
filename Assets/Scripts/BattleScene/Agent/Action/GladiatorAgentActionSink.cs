@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnityEngine;
 
 public sealed class RuntimeUnitAgentActionSink
 {
@@ -15,21 +16,21 @@ public sealed class RuntimeUnitAgentActionSink
         _controlBuffer = controlBuffer;
     }
 
-    public void Apply(GladiatorAction action, BattleUnitCombatState target)
+    public void Apply(GladiatorAction rawAction, GladiatorAction resolvedAction, BattleUnitCombatState target)
     {
         if (_self == null)
         {
             return;
         }
 
-        _controlBuffer?.SetRawInput(
+        Vector2 resolvedMove = resolvedAction.IsResolved ? resolvedAction.RelativeMove : Vector2.zero;
+        _controlBuffer?.SetResolvedInput(
             _self,
-            action.RelativeMove,
-            action.Role,
-            action.FightMode,
-            action.AnchorKind,
-            action.AnchorSlot,
-            action.Command,
+            rawAction.RelativeMove,
+            resolvedMove,
+            resolvedAction.Strategy,
+            resolvedAction.AnchorSlot,
+            resolvedAction.Command,
             target
         );
     }

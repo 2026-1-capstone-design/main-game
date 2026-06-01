@@ -247,6 +247,7 @@ public sealed class BattleUnitSnapshot
 
     public bool SkillDefaultDur { get; }
     public float SkillDuration { get; }
+    public GladiatorPersonalityBias PersonalityBias { get; }
 
     public BattleUnitSnapshot(
         int sourceRuntimeId,
@@ -277,7 +278,8 @@ public sealed class BattleUnitSnapshot
         bool defaultDur = false,
         float duration = 1f,
         bool skillDefaultDur = true,
-        float skillDuration = 1f
+        float skillDuration = 1f,
+        GladiatorPersonalityBias personalityBias = default
     )
     {
         SourceRuntimeId = sourceRuntimeId;
@@ -318,6 +320,7 @@ public sealed class BattleUnitSnapshot
 
         SkillDefaultDur = skillDefaultDur;
         SkillDuration = skillDuration;
+        PersonalityBias = personalityBias.IsValid ? personalityBias : GladiatorPersonalityBias.Neutral;
     }
 
     // snapshot을 그대로 카피.
@@ -353,7 +356,8 @@ public sealed class BattleUnitSnapshot
             DefaultDur,
             Duration,
             SkillDefaultDur,
-            SkillDuration
+            SkillDuration,
+            PersonalityBias
         );
     }
 

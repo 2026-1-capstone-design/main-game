@@ -1,44 +1,52 @@
+using System;
 using UnityEngine;
 
 public readonly struct GladiatorRewardEvaluation
 {
     public readonly float Reward;
-    public readonly GladiatorAction EffectiveAction;
     public readonly float SmoothnessReward;
+    public readonly float StrategyReward;
 
-    public GladiatorRewardEvaluation(float reward, GladiatorAction effectiveAction, float smoothnessReward)
+    public GladiatorRewardEvaluation(float reward, float smoothnessReward, float strategyReward)
     {
         Reward = reward;
-        EffectiveAction = effectiveAction;
         SmoothnessReward = smoothnessReward;
+        StrategyReward = strategyReward;
     }
 }
 
 public sealed class GladiatorRewardEvaluator
 {
-    private const int MoveOscillationWindowSize = 4;
-    private const float MoveOscillationMinSqrMagnitude = 0.01f;
-    private const float MoveOscillationOppositeDot = -0.5f;
+    private const float PersonalityWeightEpsilon = 0.0001f;
 
     private readonly GladiatorRewardConfig _config;
+    private readonly Action<float> _rewardSink;
     private readonly GladiatorTacticalRewardShaper _tacticalRewardShaper;
-    private readonly Vector2[] _recentRawMoves = new Vector2[MoveOscillationWindowSize];
+    private readonly GladiatorPersonalityBias _bias;
     private Vector2 _previousRawMove;
     private bool _hasPreviousRawAction;
-    private int _recentRawMoveCursor;
-    private int _recentRawMoveCount;
+    private GladiatorAction _lastAction;
+    private GladiatorTacticalContext _lastTacticalContext;
+    private bool _hasLastActionContext;
 
-    public GladiatorRewardEvaluator(GladiatorRewardConfig config)
+    public GladiatorRewardEvaluator(
+        GladiatorRewardConfig config,
+        Action<float> rewardSink,
+        GladiatorPersonalityBias bias = default
+    )
     {
         _config = config;
+        // AddReward stays owned by GladiatorAgent, while reward application is coordinated here.
+        _rewardSink = rewardSink;
         _tacticalRewardShaper = new GladiatorTacticalRewardShaper(config);
+        _bias = bias.IsValid ? bias : GladiatorPersonalityBias.Neutral;
     }
 
     public void Reset()
     {
         _previousRawMove = Vector2.zero;
         _hasPreviousRawAction = false;
-        ResetRawMoveHistory();
+        _hasLastActionContext = false;
     }
 
     public GladiatorRewardEvaluation EvaluateActionStep(
@@ -47,24 +55,63 @@ public sealed class GladiatorRewardEvaluator
         GladiatorCombatSignalFeatures features
     )
     {
-        float reward = _config.step;
+        float reward = 0f;
         float smoothnessReward = EvaluateSmoothness(action, context);
         reward += smoothnessReward;
 
-        GladiatorAction effectiveAction = action;
-        if (action.Command != GladiatorCommand.Move && !context.HasValidTarget)
-        {
-            effectiveAction = effectiveAction.WithCommand(GladiatorCommand.Move);
-        }
-
         reward += EvaluateCommandSwitch(context);
-        reward += EvaluateRoleSwitch(context);
-        reward += EvaluateFightModeSwitch(context);
+        reward += EvaluateStrategySwitch(context);
         reward += EvaluateAnchorSwitch(context);
         reward += EvaluateCommitment(context);
-        reward += _tacticalRewardShaper.Evaluate(context, action, features);
+        float strategyReward = _tacticalRewardShaper.Evaluate(context, action, features);
+        float weightedStrategyReward = strategyReward * StrategyCategoryWeight(action.Strategy);
+        reward += weightedStrategyReward;
 
-        return new GladiatorRewardEvaluation(reward, effectiveAction, smoothnessReward);
+        RecordLastActionContext(action, context);
+        ApplyReward(reward);
+
+        return new GladiatorRewardEvaluation(reward, smoothnessReward, strategyReward);
+    }
+
+    public void RewardDamageTaken(float damage, BattleUnitCombatState selfState)
+    {
+        float ratio = selfState != null && selfState.MaxHealth > 0f ? Mathf.Max(0f, damage) / selfState.MaxHealth : 0f;
+
+        ApplyReward(
+            (ratio * _config.damageTakenRatio + ratio * EvaluateConditionalDamageTakenReward())
+                * SurvivalCategoryWeight(_bias)
+        );
+    }
+
+    public void RewardDeath()
+    {
+        ApplyReward(_config.death * SurvivalCategoryWeight(_bias));
+    }
+
+    public void RewardTerminalSurvival()
+    {
+        ApplyReward(_config.terminalSurvivalBonus * SurvivalCategoryWeight(_bias));
+    }
+
+    public void RewardAttackLanded(BattleRuntimeUnit target, float actualDamage, bool wasKill)
+    {
+        float ratio =
+            target != null && target.State != null && target.State.MaxHealth > 0f
+                ? Mathf.Max(0f, actualDamage) / target.State.MaxHealth
+                : 0f;
+
+        float reward = (_config.attackLanded + ratio * _config.damageDealtRatio) * DamageCategoryWeight(_bias);
+        if (wasKill)
+        {
+            reward += _config.kill * DamageCategoryWeight(_bias);
+        }
+
+        ApplyReward(reward);
+    }
+
+    private void ApplyReward(float reward)
+    {
+        _rewardSink?.Invoke(reward);
     }
 
     private float EvaluateSmoothness(GladiatorAction action, GladiatorTacticalContext context)
@@ -73,88 +120,20 @@ public sealed class GladiatorRewardEvaluator
         bool isMoveCommandContinuation = IsMoveCommandContinuation(context);
         if (_hasPreviousRawAction && isMoveCommandContinuation)
         {
-            float moveDelta = Vector2.Distance(_previousRawMove, action.RelativeMove);
-            reward += moveDelta * _config.actionDelta;
-
-            int repeatedReversals = CountRecentMoveReversals(action.RelativeMove);
-            if (repeatedReversals > 1)
-            {
-                reward += moveDelta * _config.actionDelta * (repeatedReversals - 1);
-            }
+            float dotted = Vector2.Dot(_previousRawMove, action.RelativeMove);
+            reward += -dotted * _config.actionDelta;
         }
 
         _previousRawMove = action.RelativeMove;
         _hasPreviousRawAction = true;
-        UpdateRawMoveHistory(action.RelativeMove, context, isMoveCommandContinuation);
         return reward;
     }
 
     private static bool IsMoveCommandContinuation(GladiatorTacticalContext context) =>
-        context.PreviousCommand == GladiatorCommand.Move && context.Command == GladiatorCommand.Move;
+        IsMovementCommand(context.PreviousCommand) && IsMovementCommand(context.Command);
 
-    private int CountRecentMoveReversals(Vector2 currentMove)
-    {
-        int reversalCount = 0;
-        Vector2 nextMove = currentMove;
-        int pairsToCheck = Mathf.Min(_recentRawMoveCount, MoveOscillationWindowSize - 1);
-
-        for (int index = 0; index < pairsToCheck; index++)
-        {
-            int previousIndex =
-                (_recentRawMoveCursor - 1 - index + MoveOscillationWindowSize) % MoveOscillationWindowSize;
-            Vector2 previousMove = _recentRawMoves[previousIndex];
-            if (IsOppositeMove(previousMove, nextMove))
-            {
-                reversalCount++;
-            }
-
-            nextMove = previousMove;
-        }
-
-        return reversalCount;
-    }
-
-    private void UpdateRawMoveHistory(Vector2 rawMove, GladiatorTacticalContext context, bool isMoveCommandContinuation)
-    {
-        if (context.Command != GladiatorCommand.Move)
-        {
-            ResetRawMoveHistory();
-            return;
-        }
-
-        if (!isMoveCommandContinuation)
-        {
-            ResetRawMoveHistory();
-        }
-
-        RecordRawMove(rawMove);
-    }
-
-    private void ResetRawMoveHistory()
-    {
-        _recentRawMoveCursor = 0;
-        _recentRawMoveCount = 0;
-    }
-
-    private static bool IsOppositeMove(Vector2 previousMove, Vector2 currentMove)
-    {
-        if (
-            previousMove.sqrMagnitude < MoveOscillationMinSqrMagnitude
-            || currentMove.sqrMagnitude < MoveOscillationMinSqrMagnitude
-        )
-        {
-            return false;
-        }
-
-        return Vector2.Dot(previousMove.normalized, currentMove.normalized) <= MoveOscillationOppositeDot;
-    }
-
-    private void RecordRawMove(Vector2 rawMove)
-    {
-        _recentRawMoves[_recentRawMoveCursor] = rawMove;
-        _recentRawMoveCursor = (_recentRawMoveCursor + 1) % MoveOscillationWindowSize;
-        _recentRawMoveCount = Mathf.Min(_recentRawMoveCount + 1, MoveOscillationWindowSize);
-    }
+    private static bool IsMovementCommand(GladiatorCommand? command) =>
+        command == GladiatorCommand.Move || command == GladiatorCommand.Withdraw;
 
     private float EvaluateCommandSwitch(GladiatorTacticalContext context)
     {
@@ -166,34 +145,24 @@ public sealed class GladiatorRewardEvaluator
         return _config.commandSwitchPenalty;
     }
 
-    private float EvaluateRoleSwitch(GladiatorTacticalContext context)
+    private float EvaluateStrategySwitch(GladiatorTacticalContext context)
     {
-        if (!context.PreviousRole.HasValue || context.Role == context.PreviousRole)
+        if (!context.PreviousStrategy.HasValue || context.Strategy == context.PreviousStrategy)
         {
             return 0f;
         }
 
-        return _config.roleSwitchPenalty;
-    }
-
-    private float EvaluateFightModeSwitch(GladiatorTacticalContext context)
-    {
-        if (!context.PreviousFightMode.HasValue || context.FightMode == context.PreviousFightMode)
-        {
-            return 0f;
-        }
-
-        return _config.fightModeSwitchPenalty;
+        return _config.strategySwitchPenalty;
     }
 
     private float EvaluateAnchorSwitch(GladiatorTacticalContext context)
     {
-        if (!context.PreviousAnchorKind.HasValue || context.AnchorFallbackApplied)
+        if (context.PreviousTargetSlot < 0 || context.AnchorFallbackApplied)
         {
             return 0f;
         }
 
-        if (context.PreviousAnchorKind == context.AnchorKind && context.PreviousTargetSlot == context.TargetSlot)
+        if (context.PreviousTargetSlot == context.TargetSlot)
         {
             return 0f;
         }
@@ -209,14 +178,9 @@ public sealed class GladiatorRewardEvaluator
             reward += _config.commandCommitmentReward;
         }
 
-        if (context.CompletedRoleWindow)
+        if (context.CompletedStrategyWindow)
         {
-            reward += _config.roleCommitmentReward;
-        }
-
-        if (context.CompletedFightModeWindow)
-        {
-            reward += _config.fightModeCommitmentReward;
+            reward += _config.strategyCommitmentReward;
         }
 
         if (context.CompletedAnchorWindow)
@@ -226,4 +190,92 @@ public sealed class GladiatorRewardEvaluator
 
         return reward;
     }
+
+    private void RecordLastActionContext(GladiatorAction action, GladiatorTacticalContext context)
+    {
+        _lastAction = action;
+        _lastTacticalContext = context;
+        _hasLastActionContext = true;
+    }
+
+    private float EvaluateConditionalDamageTakenReward()
+    {
+        if (!_hasLastActionContext || !_lastTacticalContext.HasValidTarget)
+        {
+            return 0f;
+        }
+
+        switch (_lastAction.Strategy)
+        {
+            case GladiatorStrategy.Pressure:
+                return IsUnsafePressureDamageState() ? _config.pressureUnsafeDamageTakenRatio : 0f;
+            case GladiatorStrategy.KeepRange:
+                return IsTooCloseKeepRangeDamageState() ? _config.keepRangeTooCloseDamageTakenRatio : 0f;
+            default:
+                return 0f;
+        }
+    }
+
+    private float CollectivismIndividualScale(GladiatorPersonalityBias bias)
+    {
+        float teamWeight = Mathf.Lerp(0.8f, 1.2f, bias.Collectivism);
+        float individualWeight = Mathf.Lerp(1.2f, 0.8f, bias.Collectivism);
+        float scale = individualWeight / Mathf.Max(PersonalityWeightEpsilon, teamWeight);
+        return Mathf.Clamp(scale, _config.personalityCategoryWeightMin, _config.personalityCategoryWeightMax);
+    }
+
+    private float DamageCategoryWeight(GladiatorPersonalityBias bias)
+    {
+        float damageWeight = Mathf.Lerp(1.2f, 0.8f, bias.Passiveness);
+        return CollectivismIndividualScale(bias) * damageWeight;
+    }
+
+    private float SurvivalCategoryWeight(GladiatorPersonalityBias bias)
+    {
+        float survivalWeight = Mathf.Lerp(0.8f, 1.2f, bias.Passiveness);
+        return CollectivismIndividualScale(bias) * survivalWeight;
+    }
+
+    private float StrategyCategoryWeight(GladiatorStrategy strategy)
+    {
+        switch (strategy)
+        {
+            case GladiatorStrategy.Pressure:
+                return DamageCategoryWeight(_bias);
+            case GladiatorStrategy.KeepRange:
+            case GladiatorStrategy.Retreat:
+                return SurvivalCategoryWeight(_bias);
+            default:
+                return 1f;
+        }
+    }
+
+    private bool IsUnsafePressureDamageState()
+    {
+        return !_lastTacticalContext.IsTargetOutOfAttackRange
+            && _lastTacticalContext.SelfThreatToTargetRatio < _lastTacticalContext.TargetThreatToSelfRatio;
+    }
+
+    private bool IsTooCloseKeepRangeDamageState()
+    {
+        float effectiveRange = Mathf.Max(_config.minimumEffectiveRange, _lastTacticalContext.TargetEffectiveRange);
+        float distanceRatio = _lastTacticalContext.TargetDistance / effectiveRange;
+        return distanceRatio < _config.keepRangeBandMin;
+    }
+}
+
+public readonly struct GladiatorPersonalityBias
+{
+    public readonly float Collectivism;
+    public readonly float Passiveness;
+    public readonly bool IsValid;
+
+    public GladiatorPersonalityBias(float collectivism, float passiveness)
+    {
+        Collectivism = Mathf.Clamp01(collectivism);
+        Passiveness = Mathf.Clamp01(passiveness);
+        IsValid = true;
+    }
+
+    public static GladiatorPersonalityBias Neutral => new GladiatorPersonalityBias(0.5f, 0.5f);
 }

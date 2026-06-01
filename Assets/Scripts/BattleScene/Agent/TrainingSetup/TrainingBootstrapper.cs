@@ -20,6 +20,24 @@ public class TrainingBootstrapper : MonoBehaviour, ITrainingEnvironment, IGladia
     [SerializeField]
     private TrainingGladiatorPreset[] randomPresetPool;
 
+    [Header("Unit Generation")]
+    [SerializeField]
+    private TrainingBattleUnitGenerationMode unitGenerationMode =
+        TrainingBattleUnitGenerationMode.InGameEnemyGeneration;
+
+    [SerializeField]
+    private BattleEncounterDifficulty inGameGenerationDifficulty = BattleEncounterDifficulty.Low;
+
+    private ContentDatabaseProvider contentDatabaseProvider;
+
+    private RandomManager randomManager;
+
+    private SessionManager sessionManager;
+
+    private EquipmentFactory equipmentFactory;
+
+    private RecruitFactory recruitFactory;
+
     [Header("Training Stat Advantage")]
     [SerializeField]
     private string allyStatMultiplierEnvironmentParameter = "ally_stat_multiplier";
@@ -33,12 +51,14 @@ public class TrainingBootstrapper : MonoBehaviour, ITrainingEnvironment, IGladia
     [SerializeField]
     private float defaultEnemyStatMultiplier = 1f;
 
-    [Header("Editor Playback")]
+    [Header("Training Playback")]
     [SerializeField]
     [FormerlySerializedAs("timeScale")]
+    [Tooltip("Training 전용 시간 배속. Battle tick 진행과 Animator 재생 속도를 같은 값으로 맞춘다.")]
     private float editorTimeScale = 1f;
 
     [SerializeField]
+    [Tooltip("빌드/CLI 학습에서 사용할 Training 전용 시간 배속.")]
     private float standaloneTimeScale = 1f;
 
     [SerializeField]
@@ -56,13 +76,7 @@ public class TrainingBootstrapper : MonoBehaviour, ITrainingEnvironment, IGladia
     private bool useCurriculumOpponentMode = true;
 
     [SerializeField]
-    private string opponentModeEnvironmentParameter = "opponent_mode";
-
-    [SerializeField]
-    private string anchorCurriculumEnvironmentParameter = TrainingCurriculumParameterNames.AnchorCurriculum;
-
-    [SerializeField]
-    private string roleCurriculumEnvironmentParameter = TrainingCurriculumParameterNames.RoleCurriculum;
+    private string opponentModeEnvironmentParameter = TrainingCurriculumParameterNames.OpponentMode;
 
     [SerializeField]
     private GladiatorAgent[] allyAgents;
@@ -89,10 +103,7 @@ public class TrainingBootstrapper : MonoBehaviour, ITrainingEnvironment, IGladia
     private TrainingAcademyStepCoordinator _academyStepCoordinator;
     private TrainingEpisodeController _episodeController;
     private TrainingAgentBinder _agentBinder;
-    private bool _timeScaleApplied;
-
-    private static int _activeTimeScaleUsers;
-    private static float _previousTimeScale = 1f;
+    private float _trainingStepAccumulator;
 
     public int BattleTimeoutTickLimit => BattleTimeoutTicks;
 
@@ -114,18 +125,6 @@ public class TrainingBootstrapper : MonoBehaviour, ITrainingEnvironment, IGladia
             );
         }
     }
-
-    public GladiatorAnchorCurriculum CurrentAnchorCurriculum =>
-        (GladiatorAnchorCurriculum)
-            Mathf.RoundToInt(
-                Academy.Instance.EnvironmentParameters.GetWithDefault(anchorCurriculumEnvironmentParameter, 0f)
-            );
-
-    public GladiatorRoleCurriculum CurrentRoleCurriculum =>
-        (GladiatorRoleCurriculum)
-            Mathf.RoundToInt(
-                Academy.Instance.EnvironmentParameters.GetWithDefault(roleCurriculumEnvironmentParameter, 0f)
-            );
 
     private void OnValidate()
     {
@@ -151,8 +150,6 @@ public class TrainingBootstrapper : MonoBehaviour, ITrainingEnvironment, IGladia
 
     private void OnDisable()
     {
-        ReleaseTimeScale();
-
         if (battleSimulationManager != null && _episodeController != null)
         {
             battleSimulationManager.OnBattleFinished -= _episodeController.HandleBattleFinished;
@@ -169,7 +166,6 @@ public class TrainingBootstrapper : MonoBehaviour, ITrainingEnvironment, IGladia
 
     private void Start()
     {
-        ApplyTimeScale();
         BuildServices();
 
         if (battleSimulationManager != null)
@@ -197,14 +193,26 @@ public class TrainingBootstrapper : MonoBehaviour, ITrainingEnvironment, IGladia
             return;
         }
 
-        if (manuallyStepAcademy)
+        int environmentSteps = ConsumeTrainingEnvironmentSteps();
+        if (environmentSteps <= 0)
         {
-            _academyStepCoordinator.TickIfDriver(this);
             return;
         }
 
-        StepTrainingEnvironment();
-        TryResetFinishedOrTimedOutEpisode();
+        if (manuallyStepAcademy)
+        {
+            for (int i = 0; i < environmentSteps; i++)
+            {
+                _academyStepCoordinator.TickIfDriver(this);
+            }
+            return;
+        }
+
+        for (int i = 0; i < environmentSteps; i++)
+        {
+            StepTrainingEnvironment();
+            TryResetFinishedOrTimedOutEpisode();
+        }
     }
 
     public void StepTrainingEnvironment()
@@ -225,7 +233,11 @@ public class TrainingBootstrapper : MonoBehaviour, ITrainingEnvironment, IGladia
 
     private void BuildServices()
     {
-        TrainingBattlePayloadFactory payloadFactory = new TrainingBattlePayloadFactory(this);
+        InitializeInGameGenerationServices();
+        TrainingBattlePayloadFactory payloadFactory = new TrainingBattlePayloadFactory(
+            this,
+            unitGenerationMode == TrainingBattleUnitGenerationMode.InGameEnemyGeneration ? recruitFactory : null
+        );
         TrainingSpawnPlacementSampler placementSampler = new TrainingSpawnPlacementSampler();
         _agentBinder = new TrainingAgentBinder(battleSceneFlowManager, this, this);
         _episodeController = new TrainingEpisodeController(
@@ -241,55 +253,111 @@ public class TrainingBootstrapper : MonoBehaviour, ITrainingEnvironment, IGladia
         );
     }
 
-    private void ApplyTimeScale()
+    private int ConsumeTrainingEnvironmentSteps()
     {
-        if (_timeScaleApplied)
+        if (battleSimulationManager == null)
         {
-            return;
+            return 0;
         }
 
-        if (_activeTimeScaleUsers == 0)
+        float tickInterval = battleSimulationManager.TickInterval;
+        if (tickInterval <= 0f)
         {
-            _previousTimeScale = Time.timeScale;
+            tickInterval = 1f / Mathf.Max(1f, battleSimulationManager.simulationTickRate);
         }
 
-        _activeTimeScaleUsers++;
-        Time.timeScale = GetConfiguredTimeScale();
-        _timeScaleApplied = true;
+        int ticksPerEnvironmentStep = Mathf.Max(1, battleTicksPerEnvironmentStep);
+        float environmentStepInterval = tickInterval * ticksPerEnvironmentStep;
+        if (environmentStepInterval <= 0f)
+        {
+            return 0;
+        }
+
+        _trainingStepAccumulator += Time.fixedDeltaTime * GetConfiguredTrainingTimeScale();
+        int stepCount = Mathf.FloorToInt(_trainingStepAccumulator / environmentStepInterval);
+        if (stepCount <= 0)
+        {
+            return 0;
+        }
+
+        _trainingStepAccumulator -= stepCount * environmentStepInterval;
+        return stepCount;
     }
 
-    private float GetConfiguredTimeScale()
-    {
-        return Application.isEditor ? editorTimeScale : standaloneTimeScale;
-    }
-
-    private void ReleaseTimeScale()
-    {
-        if (!_timeScaleApplied)
-        {
-            return;
-        }
-
-        _timeScaleApplied = false;
-        _activeTimeScaleUsers = Mathf.Max(0, _activeTimeScaleUsers - 1);
-        if (_activeTimeScaleUsers == 0)
-        {
-            Time.timeScale = _previousTimeScale;
-        }
-    }
+    private float GetConfiguredTrainingTimeScale() =>
+        Mathf.Max(0f, Application.isEditor ? editorTimeScale : standaloneTimeScale);
 
     private TrainingBattlePayloadSettings CreatePayloadSettings()
     {
         return new TrainingBattlePayloadSettings(
+            unitGenerationMode,
             useCurriculumTeamSize,
             teamSizeEnvironmentParameter,
             defaultTeamSize,
             randomPresetPool,
+            inGameGenerationDifficulty,
             allyStatMultiplierEnvironmentParameter,
             enemyStatMultiplierEnvironmentParameter,
             defaultAllyStatMultiplier,
             defaultEnemyStatMultiplier
         );
+    }
+
+    private void InitializeInGameGenerationServices()
+    {
+        if (unitGenerationMode != TrainingBattleUnitGenerationMode.InGameEnemyGeneration)
+        {
+            return;
+        }
+
+        contentDatabaseProvider =
+            contentDatabaseProvider != null ? contentDatabaseProvider
+            : ContentDatabaseProvider.Instance != null ? ContentDatabaseProvider.Instance
+            : FindFirstObjectByType<ContentDatabaseProvider>();
+        randomManager =
+            randomManager != null ? randomManager
+            : RandomManager.Instance != null ? RandomManager.Instance
+            : FindFirstObjectByType<RandomManager>();
+        sessionManager =
+            sessionManager != null ? sessionManager
+            : SessionManager.Instance != null ? SessionManager.Instance
+            : FindFirstObjectByType<SessionManager>();
+        equipmentFactory = ResolveOrCreateFactory(equipmentFactory);
+        recruitFactory = ResolveOrCreateFactory(recruitFactory);
+
+        if (
+            contentDatabaseProvider == null
+            || randomManager == null
+            || equipmentFactory == null
+            || recruitFactory == null
+        )
+        {
+            Debug.LogError(
+                "[TrainingBootstrapper] In-game unit generation is enabled, but required services could not be resolved.",
+                this
+            );
+            return;
+        }
+
+        equipmentFactory.Initialize(contentDatabaseProvider, randomManager);
+        recruitFactory.Initialize(contentDatabaseProvider, sessionManager, randomManager, equipmentFactory);
+    }
+
+    private T ResolveOrCreateFactory<T>(T configuredFactory)
+        where T : Component
+    {
+        if (configuredFactory != null)
+        {
+            return configuredFactory;
+        }
+
+        T existingFactory = FindFirstObjectByType<T>();
+        if (existingFactory != null)
+        {
+            return existingFactory;
+        }
+
+        return gameObject.AddComponent<T>();
     }
 
     private TrainingAgentBindingSettings CreateBindingSettings()
@@ -347,6 +415,8 @@ public class TrainingBootstrapper : MonoBehaviour, ITrainingEnvironment, IGladia
             {
                 animator.runtimeAnimatorController = controller;
             }
+
+            unit.SetAnimationSpeed(GetConfiguredTrainingTimeScale());
         }
     }
 
@@ -368,7 +438,7 @@ public class TrainingBootstrapper : MonoBehaviour, ITrainingEnvironment, IGladia
         }
 
         Debug.Log(
-            $"[TrainingBootstrapper] {label}: academyStep={academyStepCount}, battleTick={battleTickCount}, timeScale={Time.timeScale}, stepTicks={battleTicksPerEnvironmentStep}",
+            $"[TrainingBootstrapper] {label}: academyStep={academyStepCount}, battleTick={battleTickCount}, trainingTimeScale={GetConfiguredTrainingTimeScale()}, stepTicks={battleTicksPerEnvironmentStep}",
             this
         );
     }
