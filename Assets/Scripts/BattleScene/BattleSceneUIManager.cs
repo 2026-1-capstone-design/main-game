@@ -731,7 +731,7 @@ public sealed class BattleSceneUIManager : MonoBehaviour
         SessionManager sessionManager = SessionManager.Instance;
         return sessionManager != null && !string.IsNullOrWhiteSpace(sessionManager.TeamName)
             ? sessionManager.TeamName
-            : "검투사단";
+            : SessionManager.DefaultTeamName;
     }
 
     private void RefreshAliveCounts()

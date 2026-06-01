@@ -1097,7 +1097,7 @@ public sealed class MainUIManager : MonoBehaviour
     private string ResolveTeamName()
     {
         string teamName = _sessionManager != null ? _sessionManager.TeamName : string.Empty;
-        return string.IsNullOrWhiteSpace(teamName) ? "검투사단" : teamName.Trim();
+        return string.IsNullOrWhiteSpace(teamName) ? SessionManager.DefaultTeamName : teamName.Trim();
     }
 
     private int GetTotalUpkeep()

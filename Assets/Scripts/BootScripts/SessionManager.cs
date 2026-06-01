@@ -5,7 +5,7 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public sealed class SessionManager : SingletonBehaviour<SessionManager>
 {
-    private const string DefaultTeamName = "검투사단";
+    public const string DefaultTeamName = "검투사단";
 
     private readonly Dictionary<string, int> _classNameCounters = new(); // 클래스별 이름 번호를 누적 관리함.
 

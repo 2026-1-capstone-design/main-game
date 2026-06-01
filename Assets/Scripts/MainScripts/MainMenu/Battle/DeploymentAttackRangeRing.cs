@@ -56,38 +56,26 @@ public sealed class DeploymentAttackRangeRing : MaskableGraphic
         int segmentCount = Mathf.Clamp(segments, MinSegments, MaxSegments);
         Vector2 center = rect.center;
         Color32 vertexColor = color;
+        float angleStep = Mathf.PI * 2f / segmentCount;
+        Vector2 outerRadius = new Vector2(outerRadiusX, outerRadiusY);
+        Vector2 innerRadius = new Vector2(innerRadiusX, innerRadiusY);
+        Vector2 currentDirection = Vector2.right;
 
         for (int i = 0; i < segmentCount; i++)
         {
-            float currentAngle = Mathf.PI * 2f * i / segmentCount;
-            float nextAngle = Mathf.PI * 2f * (i + 1) / segmentCount;
-            Vector2 currentDirection = new Vector2(Mathf.Cos(currentAngle), Mathf.Sin(currentAngle));
+            float nextAngle = angleStep * (i + 1);
             Vector2 nextDirection = new Vector2(Mathf.Cos(nextAngle), Mathf.Sin(nextAngle));
 
             int vertexStart = vertexHelper.currentVertCount;
-            vertexHelper.AddVert(
-                center + Vector2.Scale(currentDirection, new Vector2(outerRadiusX, outerRadiusY)),
-                vertexColor,
-                Vector2.zero
-            );
-            vertexHelper.AddVert(
-                center + Vector2.Scale(nextDirection, new Vector2(outerRadiusX, outerRadiusY)),
-                vertexColor,
-                Vector2.zero
-            );
-            vertexHelper.AddVert(
-                center + Vector2.Scale(nextDirection, new Vector2(innerRadiusX, innerRadiusY)),
-                vertexColor,
-                Vector2.zero
-            );
-            vertexHelper.AddVert(
-                center + Vector2.Scale(currentDirection, new Vector2(innerRadiusX, innerRadiusY)),
-                vertexColor,
-                Vector2.zero
-            );
+            vertexHelper.AddVert(center + Vector2.Scale(currentDirection, outerRadius), vertexColor, Vector2.zero);
+            vertexHelper.AddVert(center + Vector2.Scale(nextDirection, outerRadius), vertexColor, Vector2.zero);
+            vertexHelper.AddVert(center + Vector2.Scale(nextDirection, innerRadius), vertexColor, Vector2.zero);
+            vertexHelper.AddVert(center + Vector2.Scale(currentDirection, innerRadius), vertexColor, Vector2.zero);
 
             vertexHelper.AddTriangle(vertexStart, vertexStart + 1, vertexStart + 2);
             vertexHelper.AddTriangle(vertexStart, vertexStart + 2, vertexStart + 3);
+
+            currentDirection = nextDirection;
         }
     }
 

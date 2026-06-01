@@ -1585,10 +1585,10 @@ public sealed class BattleUIManager : MonoBehaviour
         Rect boardRect = deploymentBoardArea.rect;
         float battlefieldRadius = Mathf.Max(0.01f, deploymentBattlefieldRadius);
         float displayedAttackRange = Mathf.Max(2f, unit.AttackRange);
-        float normalizedDiameter = displayedAttackRange * 2f / battlefieldRadius;
+        float normalizedRadius = displayedAttackRange / battlefieldRadius;
         RectTransform rangeRect = attackRangeRing.rectTransform;
-        rangeRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, boardRect.width * normalizedDiameter * 0.5f);
-        rangeRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, boardRect.height * normalizedDiameter * 0.5f);
+        rangeRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, boardRect.width * normalizedRadius);
+        rangeRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, boardRect.height * normalizedRadius);
     }
 
     private void SetDeploymentBoardViewPosition(int slotIndex, bool isPlayerTeam, Vector2 normalizedPosition)
