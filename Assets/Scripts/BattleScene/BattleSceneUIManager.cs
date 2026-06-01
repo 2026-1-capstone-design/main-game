@@ -654,12 +654,19 @@ public sealed class BattleSceneUIManager : MonoBehaviour
         }
 
         EnsureEnemySquadNameSelected();
-        SetText(enemySquadNameText, _selectedEnemySquadName);
+        SetText(enemySquadNameText, ResolveEnemyTeamName());
         SetText(allySquadNameText, ResolveAllyTeamName());
         SetText(
             dayDifficultyText,
             $"Day {_headerPayload.CurrentDay} {GetDifficultyHeaderText(_headerPayload.Difficulty)}"
         );
+    }
+
+    private string ResolveEnemyTeamName()
+    {
+        return _headerPayload != null && !string.IsNullOrWhiteSpace(_headerPayload.EnemyTeamName)
+            ? _headerPayload.EnemyTeamName
+            : _selectedEnemySquadName;
     }
 
     private void EnsureEnemySquadNameSelected()
@@ -690,8 +697,13 @@ public sealed class BattleSceneUIManager : MonoBehaviour
         _selectedEnemySquadName = "적 검투사단";
     }
 
-    private static string ResolveAllyTeamName()
+    private string ResolveAllyTeamName()
     {
+        if (_headerPayload != null && !string.IsNullOrWhiteSpace(_headerPayload.AllyTeamName))
+        {
+            return _headerPayload.AllyTeamName;
+        }
+
         SessionManager sessionManager = SessionManager.Instance;
         return sessionManager != null && !string.IsNullOrWhiteSpace(sessionManager.TeamName)
             ? sessionManager.TeamName

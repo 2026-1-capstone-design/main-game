@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: df9d8b62f4a040845a470ef2178797ef, type: 3}
   m_Name: FirePorearm
   m_EditorClassIdentifier: 
-  icon: {fileID: 21300000, guid: f3b93ac9bef2db64b9fbd380e831515c, type: 3}
+  icon: {fileID: 21300000, guid: 3095df7e8254c4c479999394cad8a08c, type: 3}
   weaponName: FirePorearm
   weaponType: 4
   lore: 

@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: df9d8b62f4a040845a470ef2178797ef, type: 3}
   m_Name: GiantKiller
   m_EditorClassIdentifier: 
-  icon: {fileID: 21300000, guid: 3a71241be14c1f9468f9cff42bb8a1a3, type: 3}
+  icon: {fileID: 21300000, guid: 0dccc5feb31010b439048c696ebd03cc, type: 3}
   weaponName: GiantKiller
   weaponType: 2
   lore: 

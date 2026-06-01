@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: df9d8b62f4a040845a470ef2178797ef, type: 3}
   m_Name: SimpleSword
   m_EditorClassIdentifier: 
-  icon: {fileID: 21300000, guid: ff0020ca4b7579546bd0653f071568a9, type: 3}
+  icon: {fileID: 21300000, guid: 5cc3ce89c3d56aa45b20271af8062e6b, type: 3}
   weaponName: OldSword
   weaponType: 1
   lore: 

@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -246,6 +246,25 @@ public sealed class BattleUIManager : MonoBehaviour
     [SerializeField]
     private Button backButton;
 
+    [Header("Pre Battle Panel")]
+    [SerializeField]
+    private GameObject preBattlePanelRoot;
+
+    [SerializeField]
+    private TMP_Text preBattleEnemyTeamNameText;
+
+    [SerializeField]
+    private TMP_Text preBattleAllyTeamNameText;
+
+    [SerializeField]
+    private TMP_Text preBattleMatchDayText;
+
+    [SerializeField]
+    private RawImage preBattleIconRawImage;
+
+    [SerializeField]
+    private string[] preBattleEnemyTeamNames = new string[0];
+
     [Header("Deployment Panel")]
     [SerializeField]
     private GameObject deploymentPanelRoot;
@@ -393,6 +412,7 @@ public sealed class BattleUIManager : MonoBehaviour
     public void OpenBattlePanel(IReadOnlyList<BattleEncounterPreview> encounters, int selectedIndex)
     {
         _currentEncounters = encounters;
+        HidePreBattlePanel();
         SetActive(battlePanelRoot, true);
         SetActive(deploymentPanelRoot, false);
         SetPreparationContentActive(true);
@@ -440,6 +460,7 @@ public sealed class BattleUIManager : MonoBehaviour
 
         SetActive(battlePanelRoot, false);
         SetActive(deploymentPanelRoot, false);
+        HidePreBattlePanel();
         HideEnemyTooltip();
         ClearEnemySlots();
         ClearAllySlots();
@@ -466,6 +487,45 @@ public sealed class BattleUIManager : MonoBehaviour
         {
             backButton.interactable = true;
         }
+    }
+
+    public string SelectEnemyTeamNameForBattle()
+    {
+        int nameCount = preBattleEnemyTeamNames != null ? preBattleEnemyTeamNames.Length : 0;
+        if (nameCount == 0)
+        {
+            return "적 검투사단";
+        }
+
+        int startIndex = Random.Range(0, nameCount);
+        for (int offset = 0; offset < nameCount; offset++)
+        {
+            string candidate = preBattleEnemyTeamNames[(startIndex + offset) % nameCount];
+            if (!string.IsNullOrWhiteSpace(candidate))
+            {
+                return candidate.Trim();
+            }
+        }
+
+        return "적 검투사단";
+    }
+
+    public void ShowPreBattlePanel(BattleStartPayload payload)
+    {
+        SetActive(preBattlePanelRoot, true);
+        if (preBattlePanelRoot != null)
+        {
+            preBattlePanelRoot.transform.SetAsLastSibling();
+        }
+
+        SetText(preBattleEnemyTeamNameText, payload != null ? payload.EnemyTeamName : string.Empty);
+        SetText(preBattleAllyTeamNameText, payload != null ? payload.AllyTeamName : string.Empty);
+        SetText(preBattleMatchDayText, payload != null ? $"DAY {payload.CurrentDay} MATCH" : string.Empty);
+    }
+
+    public void HidePreBattlePanel()
+    {
+        SetActive(preBattlePanelRoot, false);
     }
 
     private void SetCurrentEncounter(int encounterIndex, bool selectEncounter)

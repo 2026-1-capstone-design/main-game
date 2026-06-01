@@ -627,6 +627,8 @@ public sealed class BattleStartPayload
     public int CurrentDay { get; }
     public BattleEncounterDifficulty Difficulty { get; }
     public int PlayerSquadTeamIndex { get; }
+    public string AllyTeamName { get; }
+    public string EnemyTeamName { get; }
     public IReadOnlyList<int> PlayerDeploymentSlotIndices { get; }
     public IReadOnlyList<int> EnemyDeploymentSlotIndices { get; }
     public IReadOnlyList<Vector2> PlayerDeploymentNormalizedPositions { get; }
@@ -652,7 +654,9 @@ public sealed class BattleStartPayload
         IReadOnlyDictionary<BattleTeamId, IReadOnlyList<int>> teamSlotIndicesById = null,
         int currentDay = 1,
         BattleEncounterDifficulty difficulty = BattleEncounterDifficulty.Medium,
-        int playerSquadTeamIndex = 0
+        int playerSquadTeamIndex = 0,
+        string allyTeamName = null,
+        string enemyTeamName = null
     )
     {
         if (teams != null)
@@ -749,6 +753,8 @@ public sealed class BattleStartPayload
         CurrentDay = Mathf.Max(1, currentDay);
         Difficulty = difficulty;
         PlayerSquadTeamIndex = Mathf.Max(0, playerSquadTeamIndex);
+        AllyTeamName = string.IsNullOrWhiteSpace(allyTeamName) ? SessionManager.DefaultTeamName : allyTeamName.Trim();
+        EnemyTeamName = string.IsNullOrWhiteSpace(enemyTeamName) ? "적 검투사단" : enemyTeamName.Trim();
         BattleSeed = battleSeed;
         PlayerDeploymentSlotIndices = BuildDeploymentSlotIndices(playerDeploymentSlotIndices, _playerTeam.Units.Count);
         EnemyDeploymentSlotIndices = BuildDeploymentSlotIndices(enemyDeploymentSlotIndices, _hostileTeam.Units.Count);

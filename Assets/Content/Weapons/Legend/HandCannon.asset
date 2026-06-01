@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: df9d8b62f4a040845a470ef2178797ef, type: 3}
   m_Name: HandCannon
   m_EditorClassIdentifier: 
-  icon: {fileID: 21300000, guid: 08d299fb429d90046849f43fe9816776, type: 3}
+  icon: {fileID: 21300000, guid: 8cf166302baf183488958d8dd6fe2721, type: 3}
   weaponName: HandCannon
   weaponType: 7
   lore: 
