@@ -21,11 +21,7 @@ public sealed class OwnedGladiatorData
     public PersonalitySO Personality { get; }
 
     // 기존 단일 슬롯 코드를 위한 첫 슬롯 호환 프로퍼티다.
-    public OwnedArtifactData EquippedArtifact
-    {
-        get => _equippedArtifacts[0];
-        set => _equippedArtifacts[0] = value;
-    }
+    public OwnedArtifactData EquippedArtifact => _equippedArtifacts[0];
 
     public IReadOnlyList<OwnedArtifactData> EquippedArtifacts => _equippedArtifacts;
 
@@ -75,7 +71,7 @@ public sealed class OwnedGladiatorData
         Trait = trait;
         Personality = personality;
 
-        EquippedArtifact = equippedArtifact;
+        TryEquipArtifact(equippedArtifact);
         EquippedWeapon = equippedWeapon;
 
         CachedMaxHealth = 0f;

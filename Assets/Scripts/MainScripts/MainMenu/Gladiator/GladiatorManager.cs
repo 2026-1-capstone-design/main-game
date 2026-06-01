@@ -238,7 +238,7 @@ public sealed class GladiatorManager : SingletonBehaviour<GladiatorManager>
 
         if (!gladiator.HasAvailableArtifactSlot)
         {
-            failReason = "장신구 슬롯이 가득 찼습니다.";
+            failReason = "This gladiator's artifact slots are full.";
             return false;
         }
 

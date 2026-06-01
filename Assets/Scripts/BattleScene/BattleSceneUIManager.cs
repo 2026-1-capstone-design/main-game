@@ -1283,6 +1283,16 @@ public sealed class BattleSceneUIManager : MonoBehaviour
             ResolveBattleUnitTooltipUIManager()?.HideTemporarily(allyResponseVisibleSeconds);
         }
 
+        if (allyIndex < 0 || allyIndex >= _allyResponseHideCoroutines.Length)
+        {
+            Debug.LogWarning(
+                $"[BattleSceneUIManager] Ally response ignored. Coroutine index is out of range. AllyIndex={allyIndex}",
+                this
+            );
+            SetAllyResponseVisible(allyIndex, false);
+            return;
+        }
+
         if (_allyResponseHideCoroutines[allyIndex] != null)
         {
             StopCoroutine(_allyResponseHideCoroutines[allyIndex]);
