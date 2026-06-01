@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 91ecfa8d70b03484ca21f220db70b39b, type: 3}
+  m_Name: Personality_018
+  m_EditorClassIdentifier: Assembly-CSharp::PersonalitySO
+  icon: {fileID: 21300000, guid: d8982a06741d76d4b902159136436d81, type: 3}
+  personalityName: "옹고집"
+  description: "당신은 자기 자리에 대한 고집이 유달리 강한 검투사입니다. 단장의 명령은 좀처럼 받아들이지 않지만, 한 번 자리를 잡으면 그곳에서 움직이지 않습니다. 진격 명령에도, 후퇴 명령에도 별다른 반응 없이, 같은 자리에서 같은 동작으로 검을 휘두릅니다. 당신에게 전장은 명령이 결정짓는 무대가 아니라, 자신이 점찍은 한 뼘의 땅입니다."
+  baseLoyalty: 29
+  dialogPersonalityDescription: "옹고집인 성격이다. 한 번 자리 잡으면 명령 와도 그곳에서 움직이지 않는다."
+  speechStyle: 0
+  obedienceRates: 2d000000370000004b0000004b000000410000004b000000410000004b000000
+  fallbackWeights: 280000003c000000460000004600000046000000460000004600000046000000
+  obedienceRateSum: 530
+  altruism: 0.08
+  aggression: 0.13

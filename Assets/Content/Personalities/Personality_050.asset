@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 91ecfa8d70b03484ca21f220db70b39b, type: 3}
+  m_Name: Personality_050
+  m_EditorClassIdentifier: Assembly-CSharp::PersonalitySO
+  icon: {fileID: 21300000, guid: d8982a06741d76d4b902159136436d81, type: 3}
+  personalityName: "은둔한"
+  description: "당신은 세상의 한가운데보다 그 가장자리를 더 편하게 여기는 검투사입니다. 단장의 명을 좀처럼 받아들이지 않으며, 위험을 감지하는 순간 스스로의 판단으로 자리를 비웁니다. 정면에 서기보다 그늘 속에서 자신만의 호흡을 지키고, 누구의 시야에도 잡히지 않는 길을 택합니다. 당신에게 전장은 영광의 무대가 아니라, 조용히 떠나야 할 시끄러운 자리입니다."
+  baseLoyalty: 23
+  dialogPersonalityDescription: "세상의 가장자리에 머무는 성격이오. 위험을 느끼면 내 판단으로 자리를 비우겠소."
+  speechStyle: 2
+  obedienceRates: 190000004b0000004b00000041000000370000004b000000410000004b000000
+  fallbackWeights: 190000004b0000004b00000041000000370000004b000000410000004b000000
+  obedienceRateSum: 510
+  altruism: 0.16
+  aggression: 0.02

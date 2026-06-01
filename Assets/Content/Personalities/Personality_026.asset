@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 91ecfa8d70b03484ca21f220db70b39b, type: 3}
+  m_Name: Personality_026
+  m_EditorClassIdentifier: Assembly-CSharp::PersonalitySO
+  icon: {fileID: 21300000, guid: d8982a06741d76d4b902159136436d81, type: 3}
+  personalityName: "신중한"
+  description: "당신은 결정 하나하나를 무겁게 다루는 검투사입니다. 단장의 평이한 명령에는 보통의 무게로 응하지만, 위험을 관리하는 지시에는 특히 빠르게 따릅니다. 즉시 돌격하거나 무리하게 추격하는 명령에는 한 발 늦더라도 신중함을 우선시합니다. 당신에게 전장은 빠른 결단의 자리가 아니라, 매 순간 무게를 가늠해야 할 살얼음판입니다."
+  baseLoyalty: 53
+  dialogPersonalityDescription: "결정 하나를 신중히 다루는 성격입니다. 무리한 명령에는 한 번 더 헤아리겠습니다."
+  speechStyle: 1
+  obedienceRates: 2800000055000000550000005000000046000000550000005000000055000000
+  fallbackWeights: 2d000000500000005a00000055000000410000005a0000004b0000005a000000
+  obedienceRateSum: 610
+  altruism: 0.58
+  aggression: 0.08

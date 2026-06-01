@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 91ecfa8d70b03484ca21f220db70b39b, type: 3}
+  m_Name: Personality_025
+  m_EditorClassIdentifier: Assembly-CSharp::PersonalitySO
+  icon: {fileID: 21300000, guid: d8982a06741d76d4b902159136436d81, type: 3}
+  personalityName: "강건한"
+  description: "당신은 정면 승부에 자부심을 두는 검투사입니다. 단장의 명령은 보통 응하나, 마음 깊은 곳에 자리한 호전성이 강해 술수나 후퇴 같은 지시에는 한 번 헤아린 뒤 움직입니다. 곧게 뻗은 검 한 수를 가장 자신답다고 여기며, 변칙은 자신의 길이 아니라고 생각합니다. 당신에게 전장은 술수를 풀 곳이 아니라, 자신의 검 끝을 적의 한가운데에 박을 곳입니다."
+  baseLoyalty: 50
+  dialogPersonalityDescription: "정면 승부를 즐기는 성격입니다. 술수보다는 곧은 검 한 수로 가겠습니다."
+  speechStyle: 1
+  obedienceRates: 550000002d000000500000005000000055000000370000005500000055000000
+  fallbackWeights: 5a000000280000005500000055000000500000003c000000500000005a000000
+  obedienceRateSum: 600
+  altruism: 0.56
+  aggression: 0.51

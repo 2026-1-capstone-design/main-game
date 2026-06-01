@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 91ecfa8d70b03484ca21f220db70b39b, type: 3}
+  m_Name: Personality_028
+  m_EditorClassIdentifier: Assembly-CSharp::PersonalitySO
+  icon: {fileID: 21300000, guid: d8982a06741d76d4b902159136436d81, type: 3}
+  personalityName: "능란한"
+  description: "당신은 오랜 경험으로 다듬어진 노련한 검투사입니다. 단장의 명령에는 보통 응하지만, 자신의 기예를 풀어내는 시점만큼은 스스로 판단합니다. 술수를 쓸 자리와 쓰지 말아야 할 자리를 본능적으로 알며, 필요한 순간이 아니면 결정적인 한 수를 아껴 둡니다. 당신에게 전장은 즉흥의 자리가 아니라, 기다림 끝의 한 수가 빛나는 무대입니다."
+  baseLoyalty: 56
+  dialogPersonalityDescription: "노련하게 풀어내는 성격입니다. 기예를 쓸 자리는 제가 판단하겠습니다."
+  speechStyle: 1
+  obedienceRates: 3c0000004b000000550000004100000055000000500000005500000055000000
+  fallbackWeights: 41000000460000005a000000460000005000000055000000500000005a000000
+  obedienceRateSum: 620
+  altruism: 0.62
+  aggression: 0.40

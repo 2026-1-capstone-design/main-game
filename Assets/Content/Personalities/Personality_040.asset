@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 91ecfa8d70b03484ca21f220db70b39b, type: 3}
+  m_Name: Personality_040
+  m_EditorClassIdentifier: Assembly-CSharp::PersonalitySO
+  icon: {fileID: 21300000, guid: d8982a06741d76d4b902159136436d81, type: 3}
+  personalityName: "통달한"
+  description: "당신은 자신의 술수에 깊이 통달한 검투사입니다. 단장의 명을 충실히 받들면서도, 그 안에서 자신의 기예를 가장 적절한 순간에 풀어냅니다. 술수의 시작과 끝을 완전히 다스리며, 결정적인 한 수가 필요할 때 늘 정확한 자리에 그 수를 둡니다. 당신에게 전장은 즉흥의 자리가 아니라, 오랫동안 다듬어온 기예가 빛나는 정련된 무대입니다."
+  baseLoyalty: 86
+  dialogPersonalityDescription: "기예에 통달한 성격이오. 명에 맞춰 가장 적절한 자리에 한 수를 두겠소."
+  speechStyle: 2
+  obedienceRates: 4b0000005a0000005f000000500000005f0000005f0000005f0000005f000000
+  fallbackWeights: 4b0000005a0000005f000000500000005f0000005f0000005f0000005f000000
+  obedienceRateSum: 720
+  altruism: 0.78
+  aggression: 0.85

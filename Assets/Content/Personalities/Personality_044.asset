@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 91ecfa8d70b03484ca21f220db70b39b, type: 3}
+  m_Name: Personality_044
+  m_EditorClassIdentifier: Assembly-CSharp::PersonalitySO
+  icon: {fileID: 21300000, guid: d8982a06741d76d4b902159136436d81, type: 3}
+  personalityName: "통찰한"
+  description: "당신은 전장의 결을 깊이 읽어내는 검투사입니다. 단장의 명에 보통 응하면서도, 위험의 흐름을 살피는 일을 잊지 않습니다. 즉각적인 돌격보다는 한 박자 늦더라도 정세를 헤아린 뒤 움직이며, 자신의 통찰이 옳다 싶으면 흔들림 없이 그 길을 따릅니다. 당신에게 전장은 충동의 자리가 아니라, 깊이 읽어내야 할 흐름의 무대입니다."
+  baseLoyalty: 53
+  dialogPersonalityDescription: "전장의 결을 읽는 성격이오. 한 박자 늦더라도 정세를 살핀 뒤 움직이겠소."
+  speechStyle: 2
+  obedienceRates: 2800000055000000550000005000000046000000550000005000000055000000
+  fallbackWeights: 2800000055000000550000005000000046000000550000005000000055000000
+  obedienceRateSum: 610
+  altruism: 0.46
+  aggression: 0.11
