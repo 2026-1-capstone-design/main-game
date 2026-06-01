@@ -24,43 +24,8 @@ public sealed class BattleSceneUIManager : MonoBehaviour
     [SerializeField]
     private Button defeatConfirmButton;
 
-    [Header("Victory Panel")]
     [SerializeField]
-    private GameObject victoryPanelRoot;
-
-    [SerializeField]
-    private RawImage victoryBackgroundImage;
-
-    [SerializeField]
-    private RawImage victoryHeaderImage;
-
-    [SerializeField]
-    private TMP_Text victoryBattleResultTitleText;
-
-    [SerializeField]
-    private TMP_Text victoryRewardText;
-
-    [SerializeField]
-    private Button victoryBackToMainButton;
-
-    [Header("Defeat Panel")]
-    [SerializeField]
-    private GameObject defeatPanelRoot;
-
-    [SerializeField]
-    private RawImage defeatBackgroundImage;
-
-    [SerializeField]
-    private RawImage defeatHeaderImage;
-
-    [SerializeField]
-    private TMP_Text defeatBattleResultTitleText;
-
-    [SerializeField]
-    private TMP_Text defeatRewardText;
-
-    [SerializeField]
-    private Button defeatBackToMainButton;
+    private TMP_Text rewardText;
 
     [Header("Speed UI")]
     [SerializeField]
@@ -201,13 +166,9 @@ public sealed class BattleSceneUIManager : MonoBehaviour
     private BattleStartPayload _headerPayload;
     private IReadOnlyList<BattleRuntimeUnit> _headerRuntimeUnits;
     private readonly Coroutine[] _allyResponseHideCoroutines = new Coroutine[BattleTeamConstants.MaxUnitsPerTeam];
-    private BattleResolution _lastResolution;
-    private bool _hasLastResolution;
+    private BattleUnitTooltipUIManager _battleUnitTooltipUIManager;
 
-    public bool IsBattleEndPanelOpen =>
-        (battleEndPanelRoot != null && battleEndPanelRoot.activeSelf)
-        || (victoryPanelRoot != null && victoryPanelRoot.activeSelf)
-        || (defeatPanelRoot != null && defeatPanelRoot.activeSelf);
+    public bool IsBattleEndPanelOpen => battleEndPanelRoot != null && battleEndPanelRoot.activeSelf;
     public bool IsSurrenderPanelOpen => surrenderPanelRoot != null && surrenderPanelRoot.activeSelf;
     public bool IsOrdersPanelOpen => orderChatBackgroundRoot == null || orderChatBackgroundRoot.activeSelf;
 
@@ -234,10 +195,8 @@ public sealed class BattleSceneUIManager : MonoBehaviour
         _sceneLoader = SceneLoader.Instance;
         EnsureBattleSimulationManager();
 
-        BindButton(victoryConfirmButton, OnVictoryConfirmClicked);
-        BindButton(defeatConfirmButton, OnDefeatConfirmClicked);
-        BindButton(victoryBackToMainButton, ReturnToMainScene);
-        BindButton(defeatBackToMainButton, ReturnToMainScene);
+        BindButton(victoryConfirmButton, ReturnToMainScene);
+        BindButton(defeatConfirmButton, ReturnToMainScene);
         BindSpeedPresetButtons();
 
         BindButton(surrenderButton, OnSurrenderClicked);
@@ -292,18 +251,11 @@ public sealed class BattleSceneUIManager : MonoBehaviour
 
         CloseTransientUi(restoreOrderSpeed: true, clearOrderInput: false);
 
-        _lastResolution = resolution;
-        _hasLastResolution = true;
-
         SetActive(battleEndPanelRoot, true);
-        SetActive(victoryPanelRoot, false);
-        SetActive(defeatPanelRoot, false);
         SetComponentActive(victoryConfirmButton, resolution.WasWin);
         SetComponentActive(defeatConfirmButton, !resolution.WasWin);
         SetButtonInteractable(victoryConfirmButton, resolution.WasWin);
         SetButtonInteractable(defeatConfirmButton, !resolution.WasWin);
-        SetButtonInteractable(victoryBackToMainButton, true);
-        SetButtonInteractable(defeatBackToMainButton, true);
         RefreshResultDetailTexts(resolution);
 
         RefreshSpeedText();
@@ -321,16 +273,11 @@ public sealed class BattleSceneUIManager : MonoBehaviour
     public void HideAll()
     {
         CloseTransientUi(restoreOrderSpeed: true, clearOrderInput: true);
-        _hasLastResolution = false;
         SetActive(battleEndPanelRoot, false);
-        SetActive(victoryPanelRoot, false);
-        SetActive(defeatPanelRoot, false);
         EnsureOrderInputVisible();
         SetGlobalOrderTarget();
         SetButtonInteractable(victoryConfirmButton, true);
         SetButtonInteractable(defeatConfirmButton, true);
-        SetButtonInteractable(victoryBackToMainButton, true);
-        SetButtonInteractable(defeatBackToMainButton, true);
 
         RefreshSpeedText();
         RefreshButtonStates();
@@ -647,40 +594,9 @@ public sealed class BattleSceneUIManager : MonoBehaviour
         }
     }
 
-    private void OnVictoryConfirmClicked()
-    {
-        if (!_hasLastResolution)
-        {
-            return;
-        }
-
-        SetActive(battleEndPanelRoot, false);
-        SetActive(victoryPanelRoot, true);
-        SetActive(defeatPanelRoot, false);
-        RefreshResultDetailTexts(_lastResolution);
-        RefreshButtonStates();
-    }
-
-    private void OnDefeatConfirmClicked()
-    {
-        if (!_hasLastResolution)
-        {
-            return;
-        }
-
-        SetActive(battleEndPanelRoot, false);
-        SetActive(victoryPanelRoot, false);
-        SetActive(defeatPanelRoot, true);
-        RefreshResultDetailTexts(_lastResolution);
-        RefreshButtonStates();
-    }
-
     private void RefreshResultDetailTexts(BattleResolution resolution)
     {
-        SetText(victoryRewardText, $"보상 : {resolution.PendingReward} 골드");
-        SetText(defeatRewardText, "보상 : 0 골드");
-        SetText(victoryBattleResultTitleText, "전투 승리");
-        SetText(defeatBattleResultTitleText, "전투 패배");
+        SetText(rewardText, $"전투 보상 : {resolution.PendingReward} G");
     }
 
     private void ReturnToMainScene()
@@ -711,8 +627,6 @@ public sealed class BattleSceneUIManager : MonoBehaviour
 
         SetButtonInteractable(victoryConfirmButton, false);
         SetButtonInteractable(defeatConfirmButton, false);
-        SetButtonInteractable(victoryBackToMainButton, false);
-        SetButtonInteractable(defeatBackToMainButton, false);
 
         RefreshButtonStates();
 
@@ -723,8 +637,6 @@ public sealed class BattleSceneUIManager : MonoBehaviour
             _isNavigating = false;
             SetButtonInteractable(victoryConfirmButton, true);
             SetButtonInteractable(defeatConfirmButton, true);
-            SetButtonInteractable(victoryBackToMainButton, true);
-            SetButtonInteractable(defeatBackToMainButton, true);
 
             RefreshButtonStates();
             Debug.LogWarning("[BattleSceneUIManager] Failed to start MainScene load.", this);
@@ -1354,6 +1266,11 @@ public sealed class BattleSceneUIManager : MonoBehaviour
         targetText.text = responseText ?? string.Empty;
         SetAllyResponseVisible(allyIndex, true);
 
+        if (allyIndex >= 4)
+        {
+            ResolveBattleUnitTooltipUIManager()?.HideTemporarily(allyResponseVisibleSeconds);
+        }
+
         if (_allyResponseHideCoroutines[allyIndex] != null)
         {
             StopCoroutine(_allyResponseHideCoroutines[allyIndex]);
@@ -1452,6 +1369,18 @@ public sealed class BattleSceneUIManager : MonoBehaviour
         }
 
         allyOrderResponsePanelRoots[allyIndex].SetActive(isVisible);
+    }
+
+    private BattleUnitTooltipUIManager ResolveBattleUnitTooltipUIManager()
+    {
+        if (_battleUnitTooltipUIManager == null)
+        {
+            _battleUnitTooltipUIManager = FindFirstObjectByType<BattleUnitTooltipUIManager>(
+                FindObjectsInactive.Include
+            );
+        }
+
+        return _battleUnitTooltipUIManager;
     }
 
     private static string SanitizeOrderInput(string rawInput)
