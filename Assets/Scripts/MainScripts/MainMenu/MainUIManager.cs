@@ -86,6 +86,28 @@ public sealed class MainUIManager : MonoBehaviour
     private Button accountBackButton;
 
     [SerializeField]
+    private Button accountModifyButton;
+
+    [Header("Account Modify Panel")]
+    [SerializeField]
+    private GameObject accountModifyPanelRoot;
+
+    [SerializeField]
+    private RawImage accountModifyPanelBackground;
+
+    [SerializeField]
+    private RawImage accountNameCardImage;
+
+    [SerializeField]
+    private TMP_InputField accountTeamNameInputField;
+
+    [SerializeField]
+    private Button accountTeamNameConfirmButton;
+
+    [SerializeField]
+    private Button accountTeamNameCancelButton;
+
+    [SerializeField]
     private int projectedExpenseDays = 3;
 
     [Header("EOD Panel")]
@@ -222,6 +244,10 @@ public sealed class MainUIManager : MonoBehaviour
         BindButton(escapeSaveButton, OnSaveClicked);
         BindButton(escapeTitleButton, OnTitleClicked);
         BindButton(accountBackButton, OnAccountBackClicked);
+        BindButton(accountModifyButton, OnAccountModifyClicked);
+        BindButton(accountTeamNameConfirmButton, OnAccountTeamNameConfirmClicked);
+        BindButton(accountTeamNameCancelButton, OnAccountTeamNameCancelClicked);
+        BindAccountTeamNameInputField();
         BindButton(eodBackgroundButton, OnEodPanelClicked);
         BindButton(gameOverPanel1Button, OnGameOverPanel1Clicked);
         BindButton(gameOverPanel2BackgroundButton, OnGameOverPanel2BackgroundClicked);
@@ -250,6 +276,7 @@ public sealed class MainUIManager : MonoBehaviour
             settingsPanelRoot.SetActive(false);
         }
 
+        SetAccountModifyPanelActive(false);
         if (accountPanelRoot != null)
         {
             accountPanelRoot.SetActive(false);
@@ -558,6 +585,7 @@ public sealed class MainUIManager : MonoBehaviour
             return;
         }
 
+        SetAccountModifyPanelActive(false);
         RefreshAccountPanel();
         accountPanelRoot.SetActive(true);
     }
@@ -569,7 +597,63 @@ public sealed class MainUIManager : MonoBehaviour
             return;
         }
 
+        SetAccountModifyPanelActive(false);
         accountPanelRoot.SetActive(false);
+    }
+
+    private void OnAccountModifyClicked()
+    {
+        if (accountTeamNameInputField == null)
+        {
+            return;
+        }
+
+        accountTeamNameInputField.text = ResolveTeamName();
+        SetAccountModifyPanelActive(true);
+        accountTeamNameInputField.Select();
+        accountTeamNameInputField.ActivateInputField();
+    }
+
+    private void OnAccountTeamNameConfirmClicked()
+    {
+        SubmitAccountTeamName(accountTeamNameInputField != null ? accountTeamNameInputField.text : string.Empty);
+    }
+
+    private void OnAccountTeamNameCancelClicked()
+    {
+        SetAccountModifyPanelActive(false);
+    }
+
+    private void BindAccountTeamNameInputField()
+    {
+        if (accountTeamNameInputField == null)
+        {
+            return;
+        }
+
+        accountTeamNameInputField.onSubmit.RemoveAllListeners();
+        accountTeamNameInputField.onSubmit.AddListener(SubmitAccountTeamName);
+    }
+
+    private void SubmitAccountTeamName(string teamName)
+    {
+        _sessionManager?.TrySetTeamName(teamName);
+        SetAccountModifyPanelActive(false);
+        RefreshAccountPanel();
+    }
+
+    private void SetAccountModifyPanelActive(bool value)
+    {
+        if (accountModifyPanelRoot == null)
+        {
+            return;
+        }
+
+        accountModifyPanelRoot.SetActive(value);
+        if (value)
+        {
+            accountModifyPanelRoot.transform.SetAsLastSibling();
+        }
     }
 
     private void OnSaveClicked()
@@ -963,7 +1047,11 @@ public sealed class MainUIManager : MonoBehaviour
 
     private void RefreshAccountPanel()
     {
-        // 팀 이름은 에디터에서 고정 텍스트로 관리하므로 여기서는 통계 텍스트만 갱신한다.
+        if (teamNameText != null)
+        {
+            teamNameText.text = ResolveTeamName();
+        }
+
         if (gladiatorStatisticsText != null)
         {
             gladiatorStatisticsText.text =
@@ -1003,8 +1091,13 @@ public sealed class MainUIManager : MonoBehaviour
 
     private string GetTeamNameForStory()
     {
-        string teamName = teamNameText != null ? teamNameText.text : string.Empty;
-        return string.IsNullOrWhiteSpace(teamName) ? "검투사단" : teamName.Trim();
+        return ResolveTeamName();
+    }
+
+    private string ResolveTeamName()
+    {
+        string teamName = _sessionManager != null ? _sessionManager.TeamName : string.Empty;
+        return string.IsNullOrWhiteSpace(teamName) ? SessionManager.DefaultTeamName : teamName.Trim();
     }
 
     private int GetTotalUpkeep()

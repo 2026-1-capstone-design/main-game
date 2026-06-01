@@ -253,6 +253,9 @@ public sealed class BattleUIManager : MonoBehaviour
     [SerializeField]
     private RectTransform deploymentBoardArea;
 
+    [SerializeField, Min(0.01f)]
+    private float deploymentBattlefieldRadius = 28f;
+
     [SerializeField]
     private Button deploymentStartButton;
 
@@ -299,6 +302,11 @@ public sealed class BattleUIManager : MonoBehaviour
     ];
 
     [SerializeField]
+    private DeploymentAttackRangeRing[] deploymentBoardEnemyAttackRangeRings = new DeploymentAttackRangeRing[
+        BattleTeamConstants.MaxUnitsPerTeam
+    ];
+
+    [SerializeField]
     private RectTransform[] deploymentBoardAllyViews = new RectTransform[BattleTeamConstants.MaxUnitsPerTeam];
 
     [SerializeField]
@@ -306,6 +314,11 @@ public sealed class BattleUIManager : MonoBehaviour
 
     [SerializeField]
     private GladiatorModelPreviewView[] deploymentBoardAllyModelPreviewViews = new GladiatorModelPreviewView[
+        BattleTeamConstants.MaxUnitsPerTeam
+    ];
+
+    [SerializeField]
+    private DeploymentAttackRangeRing[] deploymentBoardAllyAttackRangeRings = new DeploymentAttackRangeRing[
         BattleTeamConstants.MaxUnitsPerTeam
     ];
 
@@ -561,7 +574,8 @@ public sealed class BattleUIManager : MonoBehaviour
     {
         if (selectedSquadNameText != null)
         {
-            selectedSquadNameText.text = $"Squad {_selectedAllyInfoTeamIndex + 1}";
+            selectedSquadNameText.text =
+                _squadManager != null ? _squadManager.GetTeamName(_selectedAllyInfoTeamIndex) : string.Empty;
         }
 
         IReadOnlyList<OwnedGladiatorData> allies =
@@ -1427,6 +1441,7 @@ public sealed class BattleUIManager : MonoBehaviour
                 allySnapshot != null ? allySnapshot.PortraitSprite : null
             );
             SetDeploymentBoardViewActive(i, true, ally != null);
+            RefreshDeploymentBoardAttackRange(i, true, allySnapshot);
             SetDeploymentBoardViewPosition(i, true, _allyNormalizedPositionsByDeploymentSlot[i]);
         }
     }
@@ -1456,6 +1471,7 @@ public sealed class BattleUIManager : MonoBehaviour
                 enemy != null ? enemy.PortraitSprite : null
             );
             SetDeploymentBoardViewActive(i, false, enemy != null);
+            RefreshDeploymentBoardAttackRange(i, false, enemy);
             SetDeploymentBoardViewPosition(i, false, _enemyNormalizedPositionsByDeploymentSlot[i]);
         }
     }
@@ -1545,6 +1561,34 @@ public sealed class BattleUIManager : MonoBehaviour
         {
             view.gameObject.SetActive(value);
         }
+    }
+
+    private void RefreshDeploymentBoardAttackRange(int slotIndex, bool isPlayerTeam, BattleUnitSnapshot unit)
+    {
+        DeploymentAttackRangeRing attackRangeRing = GetArrayValue(
+            isPlayerTeam ? deploymentBoardAllyAttackRangeRings : deploymentBoardEnemyAttackRangeRings,
+            slotIndex
+        );
+        if (attackRangeRing == null)
+        {
+            return;
+        }
+
+        bool visible = unit != null && deploymentBoardArea != null && unit.AttackRange > 0f;
+        attackRangeRing.gameObject.SetActive(visible);
+        if (!visible)
+        {
+            return;
+        }
+
+        attackRangeRing.raycastTarget = false;
+        Rect boardRect = deploymentBoardArea.rect;
+        float battlefieldRadius = Mathf.Max(0.01f, deploymentBattlefieldRadius);
+        float displayedAttackRange = Mathf.Max(2f, unit.AttackRange);
+        float normalizedRadius = displayedAttackRange / battlefieldRadius;
+        RectTransform rangeRect = attackRangeRing.rectTransform;
+        rangeRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, boardRect.width * normalizedRadius);
+        rangeRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, boardRect.height * normalizedRadius);
     }
 
     private void SetDeploymentBoardViewPosition(int slotIndex, bool isPlayerTeam, Vector2 normalizedPosition)
@@ -1749,6 +1793,7 @@ public sealed class BattleUIManager : MonoBehaviour
                 null
             );
             SetDeploymentBoardViewActive(i, true, false);
+            RefreshDeploymentBoardAttackRange(i, true, null);
             _isAllyBoardIconPlacedBySlot[i] = false;
         }
 
@@ -1767,6 +1812,7 @@ public sealed class BattleUIManager : MonoBehaviour
                 null
             );
             SetDeploymentBoardViewActive(i, false, false);
+            RefreshDeploymentBoardAttackRange(i, false, null);
         }
 
         _draggingAllySlotIndex = -1;

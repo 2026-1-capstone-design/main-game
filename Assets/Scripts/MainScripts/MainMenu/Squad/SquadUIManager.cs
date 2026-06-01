@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Text;
 using TMPro;
 using UnityEngine;
@@ -24,6 +24,9 @@ public sealed class SquadUIManager : MonoBehaviour
     [SerializeField]
     private Button backButton;
 
+    [SerializeField]
+    private Button modifyButton;
+
     [Header("Squad Team Tabs")]
     [SerializeField]
     private Button[] teamTabButtons = new Button[SquadManager.SquadTeamCount];
@@ -33,6 +36,25 @@ public sealed class SquadUIManager : MonoBehaviour
 
     [SerializeField]
     private TMP_Text squadTitleText;
+
+    [Header("Modify Panel")]
+    [SerializeField]
+    private GameObject modifyPanelRoot;
+
+    [SerializeField]
+    private RawImage equippedPanelBackground;
+
+    [SerializeField]
+    private RawImage nameCardImage;
+
+    [SerializeField]
+    private TMP_InputField squadNameInputField;
+
+    [SerializeField]
+    private Button modifyCancelButton;
+
+    [SerializeField]
+    private Button modifyConfirmButton;
 
     [Header("Squad Slots")]
     [SerializeField]
@@ -103,7 +125,9 @@ public sealed class SquadUIManager : MonoBehaviour
     private Transform[] _sortButtonOriginalParents;
     private int[] _sortButtonOriginalSiblingIndices;
     private PickerSortMode _currentPickerSortMode = PickerSortMode.RecentAcquired;
+    private bool _modifyPanelInteractionsLocked;
 
+    private readonly Dictionary<Button, bool> _buttonInteractableStates = new Dictionary<Button, bool>();
     private readonly List<OwnedItemViewData> _pickerBuffer = new List<OwnedItemViewData>();
     private readonly List<OwnedGladiatorData> _sortedPickerBuffer = new List<OwnedGladiatorData>();
     private readonly StringBuilder _detailBuilder = new StringBuilder(256);
@@ -124,6 +148,10 @@ public sealed class SquadUIManager : MonoBehaviour
         CapturePickerSortButtonLayout();
 
         BindButton(backButton, OnBackClicked);
+        BindButton(modifyButton, OnModifyClicked);
+        BindButton(modifyCancelButton, OnModifyCancelClicked);
+        BindButton(modifyConfirmButton, OnModifyConfirmClicked);
+        BindSquadNameInputField();
         BindButton(pickerCloseButton, OnPickerCloseClicked);
         BindButton(pickerClearButton, OnPickerClearClicked);
         BindButton(recentAcquiredSortButton, OnRecentAcquiredSortClicked);
@@ -143,6 +171,7 @@ public sealed class SquadUIManager : MonoBehaviour
             }
         }
 
+        SetModifyPanelActive(false);
         SetPickerPanelActive(false);
         SetPanelActive(false);
 
@@ -151,6 +180,7 @@ public sealed class SquadUIManager : MonoBehaviour
 
     public void OpenPanel()
     {
+        SetModifyPanelActive(false);
         SetPickerPanelActive(false);
         SetPanelActive(true);
         RefreshTeamTabs();
@@ -159,6 +189,7 @@ public sealed class SquadUIManager : MonoBehaviour
 
     public void ClosePanel()
     {
+        SetModifyPanelActive(false);
         SetPickerPanelActive(false);
         SetPanelActive(false);
     }
@@ -166,6 +197,113 @@ public sealed class SquadUIManager : MonoBehaviour
     private void OnBackClicked()
     {
         _flow?.HandleSquadBackRequested();
+    }
+
+    private void OnModifyClicked()
+    {
+        if (_squadManager == null || squadNameInputField == null)
+        {
+            return;
+        }
+
+        squadNameInputField.text = _squadManager.GetTeamName(_squadManager.ActiveTeamIndex);
+        SetModifyPanelActive(true);
+        squadNameInputField.Select();
+        squadNameInputField.ActivateInputField();
+    }
+
+    private void OnModifyCancelClicked()
+    {
+        SetModifyPanelActive(false);
+    }
+
+    private void OnModifyConfirmClicked()
+    {
+        OnSquadNameSubmitted(squadNameInputField != null ? squadNameInputField.text : string.Empty);
+    }
+
+    private void OnSquadNameSubmitted(string squadName)
+    {
+        if (_squadManager != null)
+        {
+            _squadManager.TrySetTeamName(_squadManager.ActiveTeamIndex, squadName);
+        }
+
+        SetModifyPanelActive(false);
+        RefreshTeamTabs();
+    }
+
+    private void BindSquadNameInputField()
+    {
+        if (squadNameInputField == null)
+        {
+            return;
+        }
+
+        squadNameInputField.onSubmit.RemoveAllListeners();
+        squadNameInputField.onSubmit.AddListener(OnSquadNameSubmitted);
+    }
+
+    private void SetModifyPanelActive(bool value)
+    {
+        if (modifyPanelRoot == null)
+        {
+            return;
+        }
+
+        if (!value)
+        {
+            RestoreButtonsAfterModifyPanel();
+            modifyPanelRoot.SetActive(false);
+            return;
+        }
+
+        modifyPanelRoot.SetActive(true);
+        modifyPanelRoot.transform.SetAsLastSibling();
+        LockButtonsBehindModifyPanel();
+    }
+
+    private void LockButtonsBehindModifyPanel()
+    {
+        if (_modifyPanelInteractionsLocked || panelRoot == null || modifyPanelRoot == null)
+        {
+            return;
+        }
+
+        _buttonInteractableStates.Clear();
+        Button[] buttons = panelRoot.GetComponentsInChildren<Button>(true);
+        for (int i = 0; i < buttons.Length; i++)
+        {
+            Button button = buttons[i];
+            if (button == null || button.transform.IsChildOf(modifyPanelRoot.transform))
+            {
+                continue;
+            }
+
+            _buttonInteractableStates[button] = button.interactable;
+            button.interactable = false;
+        }
+
+        _modifyPanelInteractionsLocked = true;
+    }
+
+    private void RestoreButtonsAfterModifyPanel()
+    {
+        if (!_modifyPanelInteractionsLocked)
+        {
+            return;
+        }
+
+        foreach (KeyValuePair<Button, bool> entry in _buttonInteractableStates)
+        {
+            if (entry.Key != null)
+            {
+                entry.Key.interactable = entry.Value;
+            }
+        }
+
+        _buttonInteractableStates.Clear();
+        _modifyPanelInteractionsLocked = false;
     }
 
     private void OnSlotClicked(int slotIndex)
@@ -189,6 +327,7 @@ public sealed class SquadUIManager : MonoBehaviour
 
         _pendingSlotIndex = -1;
         _pendingGladiator = null;
+        SetModifyPanelActive(false);
         SetPickerPanelActive(false);
         SetDetailPanelActive(false);
         RefreshTeamTabs();
@@ -429,7 +568,7 @@ public sealed class SquadUIManager : MonoBehaviour
 
         if (squadTitleText != null)
         {
-            squadTitleText.text = activeTeamIndex == 0 ? "메인 스쿼드" : $"스쿼드 {activeTeamIndex + 1}";
+            squadTitleText.text = _squadManager.GetTeamName(activeTeamIndex);
         }
 
         if (teamTabButtons == null)

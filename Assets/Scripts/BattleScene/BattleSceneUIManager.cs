@@ -104,6 +104,9 @@ public sealed class BattleSceneUIManager : MonoBehaviour
     [SerializeField]
     private TMP_Text dayDifficultyText;
 
+    [SerializeField]
+    private string[] enemySquadNames = new string[0];
+
     [Header("Surrender UI")]
     [SerializeField]
     private Button surrenderButton;
@@ -178,6 +181,7 @@ public sealed class BattleSceneUIManager : MonoBehaviour
     private BattleOrdersManager _subscribedBattleOrdersManager;
     private bool _initialized;
     private bool _isNavigating;
+    private string _selectedEnemySquadName;
 
     private ModalState _activeModalState = ModalState.None;
     private OrderTargetMode _currentOrderTargetMode = OrderTargetMode.Global;
@@ -308,6 +312,8 @@ public sealed class BattleSceneUIManager : MonoBehaviour
     {
         _headerPayload = payload;
         _headerRuntimeUnits = runtimeUnits;
+        _selectedEnemySquadName = string.Empty;
+        EnsureEnemySquadNameSelected();
         RefreshHeaderStaticTexts();
         RefreshHeader();
     }
@@ -683,12 +689,49 @@ public sealed class BattleSceneUIManager : MonoBehaviour
             return;
         }
 
-        SetText(enemySquadNameText, "Enemy Squad");
-        SetText(allySquadNameText, $"Squad {_headerPayload.PlayerSquadTeamIndex + 1}");
+        EnsureEnemySquadNameSelected();
+        SetText(enemySquadNameText, _selectedEnemySquadName);
+        SetText(allySquadNameText, ResolveAllyTeamName());
         SetText(
             dayDifficultyText,
             $"Day {_headerPayload.CurrentDay} {GetDifficultyHeaderText(_headerPayload.Difficulty)}"
         );
+    }
+
+    private void EnsureEnemySquadNameSelected()
+    {
+        if (!string.IsNullOrWhiteSpace(_selectedEnemySquadName))
+        {
+            return;
+        }
+
+        int nameCount = enemySquadNames != null ? enemySquadNames.Length : 0;
+        if (nameCount == 0)
+        {
+            _selectedEnemySquadName = "적 검투사단";
+            return;
+        }
+
+        int startIndex = Random.Range(0, nameCount);
+        for (int offset = 0; offset < nameCount; offset++)
+        {
+            string candidate = enemySquadNames[(startIndex + offset) % nameCount];
+            if (!string.IsNullOrWhiteSpace(candidate))
+            {
+                _selectedEnemySquadName = candidate.Trim();
+                return;
+            }
+        }
+
+        _selectedEnemySquadName = "적 검투사단";
+    }
+
+    private static string ResolveAllyTeamName()
+    {
+        SessionManager sessionManager = SessionManager.Instance;
+        return sessionManager != null && !string.IsNullOrWhiteSpace(sessionManager.TeamName)
+            ? sessionManager.TeamName
+            : SessionManager.DefaultTeamName;
     }
 
     private void RefreshAliveCounts()
