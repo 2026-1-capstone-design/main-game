@@ -1546,7 +1546,7 @@ public sealed class MarketUIManager : MonoBehaviour
         if (_pendingSellArtifact != null)
         {
             OwnedGladiatorData owner = _gladiatorManager.FindOwnerOfEquippedArtifact(_pendingSellArtifact);
-            return owner == null || _gladiatorManager.TryUnequipArtifact(owner, out failReason);
+            return owner == null || _gladiatorManager.TryUnequipArtifact(owner, _pendingSellArtifact, out failReason);
         }
 
         return false;

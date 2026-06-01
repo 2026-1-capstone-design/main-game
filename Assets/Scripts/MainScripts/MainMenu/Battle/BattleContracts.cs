@@ -223,6 +223,7 @@ public sealed class BattleUnitSnapshot
     public TraitSO Trait { get; }
     public PersonalitySO Personality { get; }
     public ArtifactSO EquippedArtifact { get; }
+    public IReadOnlyList<ArtifactSO> EquippedArtifacts { get; }
     public IReadOnlyList<ArtifactId> ArtifactIds { get; }
     public WeaponType WeaponType { get; }
     public string WeaponName { get; }
@@ -279,7 +280,8 @@ public sealed class BattleUnitSnapshot
         float duration = 1f,
         bool skillDefaultDur = true,
         float skillDuration = 1f,
-        GladiatorPersonalityBias personalityBias = default
+        GladiatorPersonalityBias personalityBias = default,
+        IReadOnlyList<ArtifactSO> equippedArtifacts = null
     )
     {
         SourceRuntimeId = sourceRuntimeId;
@@ -297,8 +299,9 @@ public sealed class BattleUnitSnapshot
         GladiatorClass = gladiatorClass;
         Trait = trait;
         Personality = personality;
-        EquippedArtifact = equippedArtifact;
-        ArtifactIds = BuildArtifactIds(equippedArtifact);
+        EquippedArtifacts = BuildEquippedArtifacts(equippedArtifact, equippedArtifacts);
+        EquippedArtifact = EquippedArtifacts.Count > 0 ? EquippedArtifacts[0] : null;
+        ArtifactIds = BuildArtifactIds(EquippedArtifacts);
         WeaponType = weaponType;
         WeaponName = string.IsNullOrWhiteSpace(weaponName) ? string.Empty : weaponName;
         WeaponIconSprite = weaponIconSprite;
@@ -357,7 +360,8 @@ public sealed class BattleUnitSnapshot
             Duration,
             SkillDefaultDur,
             SkillDuration,
-            PersonalityBias
+            PersonalityBias,
+            EquippedArtifacts
         );
     }
 
@@ -455,16 +459,79 @@ public sealed class BattleUnitSnapshot
             defaultDur,
             duration,
             skillDefaultDur,
-            skillDuration
+            skillDuration,
+            equippedArtifacts: BuildArtifactSOs(source.EquippedArtifacts)
         );
     }
 
-    private static IReadOnlyList<ArtifactId> BuildArtifactIds(ArtifactSO equippedArtifact)
+    private static IReadOnlyList<ArtifactSO> BuildEquippedArtifacts(
+        ArtifactSO legacyEquippedArtifact,
+        IReadOnlyList<ArtifactSO> equippedArtifacts
+    )
     {
-        if (equippedArtifact == null || equippedArtifact.ArtifactPerkId == ArtifactId.None)
-            return Array.Empty<ArtifactId>();
+        List<ArtifactSO> result = new List<ArtifactSO>(OwnedGladiatorData.MaxEquippedArtifactCount);
+        if (equippedArtifacts != null)
+        {
+            for (
+                int i = 0;
+                i < equippedArtifacts.Count && result.Count < OwnedGladiatorData.MaxEquippedArtifactCount;
+                i++
+            )
+            {
+                ArtifactSO artifact = equippedArtifacts[i];
+                if (artifact != null)
+                {
+                    result.Add(artifact);
+                }
+            }
+        }
 
-        return new[] { equippedArtifact.ArtifactPerkId };
+        if (result.Count == 0 && legacyEquippedArtifact != null)
+        {
+            result.Add(legacyEquippedArtifact);
+        }
+
+        return result;
+    }
+
+    private static IReadOnlyList<ArtifactSO> BuildArtifactSOs(IReadOnlyList<OwnedArtifactData> equippedArtifacts)
+    {
+        List<ArtifactSO> result = new List<ArtifactSO>(OwnedGladiatorData.MaxEquippedArtifactCount);
+        if (equippedArtifacts == null)
+        {
+            return result;
+        }
+
+        for (int i = 0; i < equippedArtifacts.Count && result.Count < OwnedGladiatorData.MaxEquippedArtifactCount; i++)
+        {
+            ArtifactSO artifact = equippedArtifacts[i]?.Artifact;
+            if (artifact != null)
+            {
+                result.Add(artifact);
+            }
+        }
+
+        return result;
+    }
+
+    private static IReadOnlyList<ArtifactId> BuildArtifactIds(IReadOnlyList<ArtifactSO> equippedArtifacts)
+    {
+        List<ArtifactId> result = new List<ArtifactId>();
+        if (equippedArtifacts == null)
+        {
+            return result;
+        }
+
+        for (int i = 0; i < equippedArtifacts.Count; i++)
+        {
+            ArtifactSO artifact = equippedArtifacts[i];
+            if (artifact != null && artifact.ArtifactPerkId != ArtifactId.None)
+            {
+                result.Add(artifact.ArtifactPerkId);
+            }
+        }
+
+        return result;
     }
 }
 

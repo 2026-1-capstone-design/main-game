@@ -88,6 +88,8 @@ public sealed class SaveOwnedGladiatorData
     public string equippedArtifactName;
     public string equippedPerkName;
     public int equippedArtifactRuntimeId;
+    public string[] equippedArtifactNames;
+    public int[] equippedArtifactRuntimeIds;
     public int equippedWeaponRuntimeId;
 
     public float cachedMaxHealth;
@@ -150,6 +152,7 @@ public sealed class SaveBattleEncounterUnitData
     public string personalityName;
     public string equippedArtifactName;
     public string equippedPerkName;
+    public string[] equippedArtifactNames;
 
     public string weaponName;
     public int weaponType;

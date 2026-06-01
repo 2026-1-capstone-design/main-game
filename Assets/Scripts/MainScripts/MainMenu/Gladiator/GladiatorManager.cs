@@ -122,7 +122,7 @@ public sealed class GladiatorManager : SingletonBehaviour<GladiatorManager>
         }
 
         UnequipWeaponIfAny(gladiator);
-        gladiator.EquippedArtifact = null;
+        gladiator.ClearEquippedArtifacts();
 
         bool removed = _ownedGladiators.Remove(gladiator);
 
@@ -196,7 +196,7 @@ public sealed class GladiatorManager : SingletonBehaviour<GladiatorManager>
                 continue;
             }
 
-            if (gladiator.EquippedArtifact == artifact)
+            if (gladiator.ContainsEquippedArtifact(artifact))
             {
                 return gladiator;
             }
@@ -230,19 +230,30 @@ public sealed class GladiatorManager : SingletonBehaviour<GladiatorManager>
             return false;
         }
 
-        OwnedGladiatorData currentOwner = FindOwnerOfEquippedArtifact(artifact);
-        if (currentOwner != null && currentOwner != gladiator)
-        {
-            currentOwner.EquippedArtifact = null;
-        }
-
-        if (gladiator.EquippedArtifact == artifact)
+        if (gladiator.ContainsEquippedArtifact(artifact))
         {
             failReason = "This gladiator already has this artifact equipped.";
             return false;
         }
 
-        gladiator.EquippedArtifact = artifact;
+        if (!gladiator.HasAvailableArtifactSlot)
+        {
+            failReason = "장신구 슬롯이 가득 찼습니다.";
+            return false;
+        }
+
+        OwnedGladiatorData currentOwner = FindOwnerOfEquippedArtifact(artifact);
+        if (currentOwner != null && currentOwner != gladiator)
+        {
+            currentOwner.UnequipArtifact(artifact);
+        }
+
+        if (!gladiator.TryEquipArtifact(artifact))
+        {
+            failReason =
+                $"This gladiator already has {OwnedGladiatorData.MaxEquippedArtifactCount} artifacts equipped.";
+            return false;
+        }
 
         if (verboseLog)
         {
@@ -280,12 +291,46 @@ public sealed class GladiatorManager : SingletonBehaviour<GladiatorManager>
         }
 
         OwnedArtifactData removedArtifact = gladiator.EquippedArtifact;
-        gladiator.EquippedArtifact = null;
+        gladiator.UnequipArtifact(removedArtifact);
 
         if (verboseLog)
         {
             Debug.Log(
                 $"[GladiatorManager] Artifact unequipped. Gladiator={gladiator.DisplayName}, Artifact={removedArtifact.DisplayName}",
+                this
+            );
+        }
+
+        return true;
+    }
+
+    public bool TryUnequipArtifact(OwnedGladiatorData gladiator, OwnedArtifactData artifact, out string failReason)
+    {
+        failReason = string.Empty;
+
+        if (!_initialized)
+        {
+            failReason = "GladiatorManager is not initialized.";
+            Debug.LogError("[GladiatorManager] " + failReason, this);
+            return false;
+        }
+
+        if (gladiator == null || artifact == null)
+        {
+            failReason = "Target gladiator or artifact is null.";
+            return false;
+        }
+
+        if (!gladiator.UnequipArtifact(artifact))
+        {
+            failReason = "This gladiator does not have the artifact equipped.";
+            return false;
+        }
+
+        if (verboseLog)
+        {
+            Debug.Log(
+                $"[GladiatorManager] Artifact unequipped. Gladiator={gladiator.DisplayName}, Artifact={artifact.DisplayName}",
                 this
             );
         }
@@ -409,7 +454,6 @@ public sealed class GladiatorManager : SingletonBehaviour<GladiatorManager>
         }
 
         gladiator.EquippedWeapon = null;
-        gladiator.EquippedArtifact = null;
         RefreshDerivedStats(gladiator, false);
 
         if (verboseLog)
@@ -460,6 +504,7 @@ public sealed class GladiatorManager : SingletonBehaviour<GladiatorManager>
             marketPreview.CustomizeIndicates
         );
 
+        purchased.SetEquippedArtifacts(marketPreview.EquippedArtifacts);
         purchased.FinalHealthVariancePercent = marketPreview.FinalHealthVariancePercent;
         purchased.FinalAttackVariancePercent = marketPreview.FinalAttackVariancePercent;
 

@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -626,10 +626,7 @@ public sealed class BattleUIManager : MonoBehaviour
         for (int slotIndex = 0; slotIndex < 3; slotIndex++)
         {
             int imageIndex = (allyIndex * 3) + slotIndex;
-            Sprite icon =
-                slotIndex == 0 && ally != null && ally.EquippedArtifact != null
-                    ? ally.EquippedArtifact.Artifact?.icon
-                    : null;
+            Sprite icon = ally?.GetEquippedArtifact(slotIndex)?.Artifact?.icon;
             SetImage(GetArrayValue(allyArtifactImages, imageIndex), icon);
         }
     }

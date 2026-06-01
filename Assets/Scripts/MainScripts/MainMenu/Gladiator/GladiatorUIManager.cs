@@ -140,6 +140,7 @@ public sealed class GladiatorUIManager : MonoBehaviour
     private OwnedGladiatorData _currentDetailGladiator;
     private OwnedWeaponData _currentSelectedWeapon;
     private OwnedArtifactData _currentSelectedArtifact;
+    private int _currentArtifactSlotIndex;
     private DetailInventoryMode _inventoryMode = DetailInventoryMode.Weapon;
     private bool _showWeaponLore;
     private GladiatorListSortMode _currentSortMode = GladiatorListSortMode.RecentAcquired;
@@ -181,7 +182,7 @@ public sealed class GladiatorUIManager : MonoBehaviour
         CacheDetailPresetControls();
         BindButton(detailBackButton, OnDetailBackClicked);
         BindButton(weaponSlotButton, OnWeaponSlotClicked);
-        BindButtons(artifactSlotButtons, OnArtifactSlotClicked);
+        BindArtifactSlotButtons();
 
         BindButton(weaponDetailEquipButton, OnWeaponDetailEquipClicked);
         BindButton(weaponDetailUnequipButton, OnWeaponDetailUnequipClicked);
@@ -915,7 +916,11 @@ public sealed class GladiatorUIManager : MonoBehaviour
         string failReason;
         bool succeeded =
             _inventoryMode == DetailInventoryMode.Artifact
-                ? _gladiatorManager.TryUnequipArtifact(_currentDetailGladiator, out failReason)
+                ? _gladiatorManager.TryUnequipArtifact(
+                    _currentDetailGladiator,
+                    _currentSelectedArtifact,
+                    out failReason
+                )
                 : _gladiatorManager.TryUnequipWeapon(_currentDetailGladiator, out failReason);
 
         if (!succeeded)
@@ -1070,13 +1075,14 @@ public sealed class GladiatorUIManager : MonoBehaviour
         OpenInventoryPanel(DetailInventoryMode.Weapon);
     }
 
-    private void OnArtifactSlotClicked()
+    private void OnArtifactSlotClicked(int slotIndex)
     {
         if (_currentDetailGladiator == null)
         {
             return;
         }
 
+        _currentArtifactSlotIndex = slotIndex;
         OpenInventoryPanel(DetailInventoryMode.Artifact);
     }
 
@@ -1116,7 +1122,7 @@ public sealed class GladiatorUIManager : MonoBehaviour
 
         if (_inventoryMode == DetailInventoryMode.Artifact)
         {
-            OwnedArtifactData equippedArtifact = _currentDetailGladiator.EquippedArtifact;
+            OwnedArtifactData equippedArtifact = _currentDetailGladiator.GetEquippedArtifact(_currentArtifactSlotIndex);
             if (equippedArtifact != null && equippedArtifact.Artifact != null)
             {
                 OpenArtifactDetail(equippedArtifact);
@@ -1420,6 +1426,20 @@ public sealed class GladiatorUIManager : MonoBehaviour
         }
     }
 
+    private void BindArtifactSlotButtons()
+    {
+        if (artifactSlotButtons == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < artifactSlotButtons.Length; i++)
+        {
+            int slotIndex = i;
+            BindButton(artifactSlotButtons[i], () => OnArtifactSlotClicked(slotIndex));
+        }
+    }
+
     private void CacheDetailPresetControls()
     {
         if (detailPanelRoot == null)
@@ -1447,15 +1467,11 @@ public sealed class GladiatorUIManager : MonoBehaviour
 
     private void RefreshArtifactSlots(OwnedGladiatorData gladiator)
     {
-        Sprite equippedArtifactIcon =
-            gladiator.EquippedArtifact != null && gladiator.EquippedArtifact.Artifact != null
-                ? gladiator.EquippedArtifact.Artifact.icon
-                : null;
         int slotCount = Mathf.Max(GetArrayLength(artifactSlotButtons), GetArrayLength(artifactOverlayImages));
 
         for (int i = 0; i < slotCount; i++)
         {
-            Sprite slotIcon = i == 0 ? equippedArtifactIcon : null;
+            Sprite slotIcon = gladiator.GetEquippedArtifact(i)?.Artifact?.icon;
             Button slotButton =
                 artifactSlotButtons != null && i < artifactSlotButtons.Length ? artifactSlotButtons[i] : null;
             Image overlayImage =
