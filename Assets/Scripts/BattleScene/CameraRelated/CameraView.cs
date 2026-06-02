@@ -304,16 +304,10 @@ public sealed class CameraView : MonoBehaviour
             return false;
         }
 
-        Quaternion baseRotation = Quaternion.LookRotation(baseForward.normalized, Vector3.up);
-        Quaternion desiredRotation = Quaternion.LookRotation(desiredForward.normalized, Vector3.up);
-        Quaternion localRotation = Quaternion.Inverse(baseRotation) * desiredRotation;
-        Vector3 localEuler = localRotation.eulerAngles;
-
-        float localPitch = NormalizeSignedAngle(localEuler.x);
-        float localYaw = NormalizeSignedAngle(localEuler.y);
-
-        float lookYawOffset = localYaw;
-        float lookPitchOffset = -localPitch;
+        if (!TryComputeNoRollLookOffsets(baseForward, desiredForward, out float lookYawOffset, out float lookPitchOffset))
+        {
+            return false;
+        }
 
         if (lookYawOffset < -lookLeftLimit || lookYawOffset > lookRightLimit)
         {
@@ -479,17 +473,72 @@ public sealed class CameraView : MonoBehaviour
 
         Vector3 cameraPosition = ComputeCameraPosition(_orbitAngle);
         transform.position = cameraPosition;
+        transform.rotation = BuildNoRollCameraRotation(cameraPosition, _lookYawOffset, _lookPitchOffset);
+    }
 
+    // yaw는 월드 Y축, pitch는 yaw 적용 후의 수평 right axis 기준으로 적용한다.
+    private Quaternion BuildNoRollCameraRotation(Vector3 cameraPosition, float lookYawOffset, float lookPitchOffset)
+    {
         Vector3 baseForward = centerTarget.position - cameraPosition;
         if (baseForward.sqrMagnitude <= 0.0001f)
         {
-            return;
+            return transform.rotation;
         }
 
-        Quaternion baseRotation = Quaternion.LookRotation(baseForward.normalized, Vector3.up);
-        Quaternion lookOffsetRotation = Quaternion.Euler(-_lookPitchOffset, _lookYawOffset, 0f);
+        Vector3 yawedForward = Quaternion.AngleAxis(lookYawOffset, Vector3.up) * baseForward.normalized;
+        Vector3 rightAxis = Vector3.Cross(Vector3.up, yawedForward);
 
-        transform.rotation = baseRotation * lookOffsetRotation;
+        if (rightAxis.sqrMagnitude <= 0.0001f)
+        {
+            rightAxis = transform.right;
+        }
+
+        rightAxis.Normalize();
+
+        Vector3 finalForward = Quaternion.AngleAxis(-lookPitchOffset, rightAxis) * yawedForward;
+        if (finalForward.sqrMagnitude <= 0.0001f)
+        {
+            return transform.rotation;
+        }
+
+        return Quaternion.LookRotation(finalForward.normalized, Vector3.up);
+    }
+
+    // 자동 포커싱 후보 계산도 no-roll 회전 모델과 같은 yaw/pitch 기준을 사용한다.
+    private static bool TryComputeNoRollLookOffsets(
+        Vector3 baseForward,
+        Vector3 desiredForward,
+        out float lookYawOffset,
+        out float lookPitchOffset
+    )
+    {
+        lookYawOffset = 0f;
+        lookPitchOffset = 0f;
+
+        Vector3 baseFlat = Vector3.ProjectOnPlane(baseForward, Vector3.up);
+        Vector3 desiredFlat = Vector3.ProjectOnPlane(desiredForward, Vector3.up);
+
+        if (baseFlat.sqrMagnitude <= 0.0001f || desiredFlat.sqrMagnitude <= 0.0001f)
+        {
+            return false;
+        }
+
+        lookYawOffset = Vector3.SignedAngle(baseFlat.normalized, desiredFlat.normalized, Vector3.up);
+
+        Vector3 yawedForward = Quaternion.AngleAxis(lookYawOffset, Vector3.up) * baseForward.normalized;
+        Vector3 rightAxis = Vector3.Cross(Vector3.up, yawedForward);
+
+        if (rightAxis.sqrMagnitude <= 0.0001f)
+        {
+            return false;
+        }
+
+        rightAxis.Normalize();
+
+        float pitchAngle = Vector3.SignedAngle(yawedForward, desiredForward.normalized, rightAxis);
+        lookPitchOffset = -pitchAngle;
+
+        return true;
     }
 
     private Vector3 ComputeCameraPosition(float orbitAngle)

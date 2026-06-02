@@ -80,6 +80,10 @@ public sealed class BattleAutoCameraDirector : MonoBehaviour
     private bool _autoCameraEnabled;
     private float _cooldownRemainingSeconds;
 
+    private bool _hasStartedBattleReadyCooldown;
+    private bool _initialBattleCooldownActive;
+    private bool _manualCooldownActive;
+
     private bool _hasCachedCommandInputCameraState;
     private CameraViewState _cachedCommandInputCameraState;
 
@@ -104,7 +108,7 @@ public sealed class BattleAutoCameraDirector : MonoBehaviour
         _autoCameraEnabled = initialAutoCameraEnabled;
         EnsureReferences();
 
-        _cooldownRemainingSeconds = Mathf.Max(0.01f, defaultFocusCooldownSeconds);
+        StartBattleReadyCooldownGate();
     }
 
     private void OnEnable()
@@ -139,6 +143,22 @@ public sealed class BattleAutoCameraDirector : MonoBehaviour
             return;
         }
 
+        if (!IsBattleReadyForAutoFocus())
+        {
+            StartBattleReadyCooldownGate();
+            return;
+        }
+
+        if (!_hasStartedBattleReadyCooldown)
+        {
+            // 전투 유닛이 실제로 준비된 순간부터 첫 자동 포커싱 휴지 시간을 계산한다.
+            _hasStartedBattleReadyCooldown = true;
+            _initialBattleCooldownActive = true;
+            _manualCooldownActive = false;
+            StartDefaultFocusCooldown();
+            return;
+        }
+
         float deltaTime = Time.unscaledDeltaTime;
 
         if (_focusedUnit != null && !IsUsableFocusedUnit(_focusedUnit))
@@ -153,7 +173,11 @@ public sealed class BattleAutoCameraDirector : MonoBehaviour
             return;
         }
 
-        TickFocusedOrbit(deltaTime);
+        if (_focusedUnit != null)
+        {
+            TickFocusedOrbit(deltaTime);
+        }
+
         TickAutoFocusCooldown(deltaTime);
     }
 
@@ -168,8 +192,8 @@ public sealed class BattleAutoCameraDirector : MonoBehaviour
             return;
         }
 
-        // 자동 카메라가 켜진 직후에는 전투 시작/토글 시점과 무관하게 첫 자동 포커싱을 지연함. 그냥 보기 이쁘라고
-        _cooldownRemainingSeconds = Mathf.Max(0.01f, defaultFocusCooldownSeconds);
+        // 자동 카메라가 켜진 뒤에는 전투 유닛 준비 시점부터 첫 자동 포커싱 휴지 시간을 다시 계산한다.
+        StartBattleReadyCooldownGate();
     }
 
     private void TickTransition(float deltaTime)
@@ -189,6 +213,11 @@ public sealed class BattleAutoCameraDirector : MonoBehaviour
 
     private void TickFocusedOrbit(float deltaTime)
     {
+        if (_focusedUnit == null)
+        {
+            return;
+        }
+
         if (!IsUsableFocusedUnit(_focusedUnit))
         {
             HandleFocusedUnitLost();
@@ -234,6 +263,9 @@ public sealed class BattleAutoCameraDirector : MonoBehaviour
         {
             return;
         }
+
+        _initialBattleCooldownActive = false;
+        _manualCooldownActive = false;
 
         BattleRuntimeUnit target = FindClusterCenterPlayerAlly();
         if (target != null)
@@ -291,7 +323,11 @@ public sealed class BattleAutoCameraDirector : MonoBehaviour
         }
 
         CancelAutomaticMotion();
-        ResetCooldownForCurrentState();
+
+        // 수동 카메라 입력 이후에는 명령 상태와 무관하게 Default 기준 휴지 시간을 적용한다.
+        _initialBattleCooldownActive = false;
+        _manualCooldownActive = true;
+        StartDefaultFocusCooldown();
     }
 
     private void HandleCommandStateChanged(BattleOrderCommandState previousState, BattleOrderCommandState nextState)
@@ -341,6 +377,8 @@ public sealed class BattleAutoCameraDirector : MonoBehaviour
         }
 
         _hasCachedCommandInputCameraState = false;
+        _initialBattleCooldownActive = false;
+        _manualCooldownActive = false;
         ResetCooldownForCurrentState();
     }
 
@@ -528,8 +566,53 @@ public sealed class BattleAutoCameraDirector : MonoBehaviour
         ResetCooldownForCurrentState();
     }
 
+    private void StartBattleReadyCooldownGate()
+    {
+        _isTransitioning = false;
+        _focusedUnit = null;
+        _hasStartedBattleReadyCooldown = false;
+        _initialBattleCooldownActive = false;
+        _manualCooldownActive = false;
+        StartDefaultFocusCooldown();
+        ResetFocusTargetSmoothing();
+    }
+
+    private void StartDefaultFocusCooldown()
+    {
+        _cooldownRemainingSeconds = Mathf.Max(0.01f, defaultFocusCooldownSeconds);
+    }
+
+    private bool IsBattleReadyForAutoFocus()
+    {
+        if (battleSimulationManager == null || battleSimulationManager.IsBattleFinished)
+        {
+            return false;
+        }
+
+        if (battleSimulationManager.RuntimeUnits == null || battleSimulationManager.RuntimeUnits.Count == 0)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < battleSimulationManager.RuntimeUnits.Count; i++)
+        {
+            BattleRuntimeUnit unit = battleSimulationManager.RuntimeUnits[i];
+            if (unit != null && !unit.IsCombatDisabled)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private void ResetCooldownForCurrentState()
     {
+        if (_initialBattleCooldownActive || _manualCooldownActive)
+        {
+            return;
+        }
+
         _cooldownRemainingSeconds = GetCurrentCooldownSeconds();
     }
 
