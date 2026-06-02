@@ -56,7 +56,7 @@ public sealed class DeathWhirlpoolSkill : IBattleSkill
                             {
                                 Source = casterState,
                                 Target = randomTarget,
-                                Amount = casterState.Attack * 0.4f,
+                                Amount = casterState.Attack * 0.2f,
                                 SourceKind = BattleEffectSourceKind.Skill,
                                 DamageKind = BattleDamageKind.Direct,
                                 SkillId = SkillId,

@@ -75,7 +75,7 @@ public sealed class ScatteredStarlightSkill : IBattleSkill
                         {
                             Source = casterState,
                             Target = target.State,
-                            Amount = casterState.Attack * 1.8f,
+                            Amount = casterState.Attack * 0.8f,
                             SourceKind = BattleEffectSourceKind.Skill,
                             DamageKind = BattleDamageKind.Direct,
                         }

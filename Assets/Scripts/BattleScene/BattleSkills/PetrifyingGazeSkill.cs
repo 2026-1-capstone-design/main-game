@@ -40,7 +40,7 @@ public sealed class PetrifyingGazeSkill : IBattleSkill
                         {
                             Source = casterState,
                             Target = enemyState,
-                            Amount = casterState.Attack * 1.5f,
+                            Amount = casterState.Attack * 0.8f,
                             SourceKind = BattleEffectSourceKind.Skill,
                             DamageKind = BattleDamageKind.Area,
                         }

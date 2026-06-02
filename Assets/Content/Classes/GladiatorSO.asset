@@ -15,10 +15,10 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: a1c78e07ea3745242a35d59c770df4ec, type: 3}
   previewModelPrefab: {fileID: 354350443408783854, guid: 39cb3314a97ca2d4094abc2e7175b6e8, type: 3}
   className: Gladiator
-  baseHealth: 1000
+  baseHealth: 5000
   healthGrowthPerLevel: 100
   baseAttack: 50
   attackGrowthPerLevel: 2
   attackSpeed: 1
-  moveSpeed: 1.5
+  moveSpeed: 2
   attackRange: 1

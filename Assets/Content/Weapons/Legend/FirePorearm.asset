@@ -22,8 +22,8 @@ MonoBehaviour:
   useProjectile: 0
   defaultDur: 0
   duration: 0.5
-  baseAttackBonus: 20
-  baseHealthBonus: 1600
+  baseAttackBonus: 10
+  baseHealthBonus: 1100
   baseAttackSpeedBonus: 1
   baseMoveSpeedBonus: 1
   baseAttackRangeBonus: 4

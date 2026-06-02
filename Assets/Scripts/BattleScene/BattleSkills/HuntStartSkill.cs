@@ -28,7 +28,7 @@ public sealed class HuntStartSkill : IBattleSkill
                 Source = caster,
                 Target = target,
                 Type = BattleStatusType.DamageTakenPercent,
-                Level = 25,
+                Level = 10,
                 Duration = 8f,
                 IsDebuff = true,
                 IsDispelAllowed = true,

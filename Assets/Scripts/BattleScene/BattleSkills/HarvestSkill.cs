@@ -41,7 +41,7 @@ public sealed class HarvestSkill : IBattleSkill
 
                     if (Vector3.Distance(casterState.Position, targetState.Position) <= AreaRadius)
                     {
-                        float damageAmount = casterState.Attack * 1.5f;
+                        float damageAmount = casterState.Attack * 0.5f;
                         totalTheoreticalDamage += damageAmount;
 
                         sink.DealDamage(

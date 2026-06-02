@@ -9,8 +9,8 @@ public sealed class EquipmentFactory : MonoBehaviour
 
     private const float PricePerAtk = 50f;
     private const float PricePerHP = 1f;
-    private const float PricePerRange = 700f;
-    private const float PricePerMoveSpd = 700f;
+    private const float PricePerRange = 1000f;
+    private const float PricePerMoveSpd = 1000f;
 
     private ContentDatabaseProvider _contentDatabaseProvider;
     private RandomManager _randomManager;
@@ -225,9 +225,9 @@ public sealed class EquipmentFactory : MonoBehaviour
         }
 
         float otherValue =
-            (weapon.CachedHealthBonus * 1f)
-            + (weapon.CachedMoveSpeedBonus * 700f)
-            + (weapon.CachedAttackRangeBonus * 700f);
+            (weapon.CachedHealthBonus * PricePerHP)
+            + (weapon.CachedMoveSpeedBonus * PricePerMoveSpd)
+            + (weapon.CachedAttackRangeBonus * PricePerRange);
 
         return Mathf.RoundToInt(offensiveValue + otherValue);
     }

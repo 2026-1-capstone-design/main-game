@@ -53,7 +53,7 @@ public sealed class MoonlightDanceSkill : IBattleSkill
                             {
                                 Source = caster.State,
                                 Target = tgt.State,
-                                Amount = caster.State.Attack * 1.5f,
+                                Amount = caster.State.Attack,
                                 IsSkill = true,
                             }
                         );

@@ -48,7 +48,7 @@ public sealed class RevolverFanningSkill : IBattleSkill
                         {
                             Source = caster,
                             Target = target,
-                            Amount = caster.Attack * 0.5f,
+                            Amount = caster.Attack * 0.4f,
                             SourceKind = BattleEffectSourceKind.Skill,
                             DamageKind = BattleDamageKind.Direct,
                             SkillId = SkillId,
