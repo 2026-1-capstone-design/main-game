@@ -1163,6 +1163,12 @@ public sealed class GladiatorUIManager : MonoBehaviour
 
     private void OnDetailBackClicked()
     {
+        if (inventoryPanelRoot != null && inventoryPanelRoot.activeSelf)
+        {
+            CloseInventoryPanel();
+            return;
+        }
+
         CloseDetail();
     }
 
@@ -1486,23 +1492,27 @@ public sealed class GladiatorUIManager : MonoBehaviour
         return values != null ? values.Length : 0;
     }
 
-    private static string BuildGladiatorDetailDescription(OwnedGladiatorData gladiator)
+    private string BuildGladiatorDetailDescription(OwnedGladiatorData gladiator)
     {
         string personalityName =
             gladiator.Personality != null && !string.IsNullOrWhiteSpace(gladiator.Personality.personalityName)
                 ? gladiator.Personality.personalityName
                 : "성격 없음";
+        int requiredXp =
+            _gladiatorManager != null
+                ? _gladiatorManager.GetRequiredXpForCurrentLevel(gladiator.Level)
+                : Mathf.Max(1, gladiator.Level) * 100;
 
         return $"<size=64><color=#FFFFFF>{personalityName}</color> <color=#000000>{gladiator.DisplayName}</color></size>\r\n"
-            + $"레벨: {gladiator.Level}\r\n"
-            + $"경험치: {gladiator.Exp}\r\n"
-            + $"충성도: {gladiator.Loyalty}\r\n"
-            + $"유지비: {gladiator.Upkeep}\r\n"
-            + $"최대체력: {gladiator.CachedMaxHealth:0.##}\r\n"
-            + $"공격력: {gladiator.CachedAttack:0.##}\r\n"
-            + $"공격속도: {gladiator.CachedAttackSpeed:0.##}\r\n"
-            + $"이동속도: {gladiator.CachedMoveSpeed:0.##}\r\n"
-            + $"사거리: {gladiator.CachedAttackRange:0.##}";
+            + $"레벨 : {gladiator.Level}\r\n"
+            + $"유지비 : {gladiator.Upkeep}\r\n"
+            + $"경험치 : {gladiator.Exp} / {requiredXp}\r\n"
+            + $"충성도 : {gladiator.Loyalty}\r\n"
+            + $"체력 {gladiator.CurrentHealth:0.##} / {gladiator.CachedMaxHealth:0.##}\r\n"
+            + $"공격력 {gladiator.CachedAttack:0.##}\r\n"
+            + $"공격속도 : {gladiator.CachedAttackSpeed:0.0#}\r\n"
+            + $"이동속도 : {gladiator.CachedMoveSpeed:0.0#}\r\n"
+            + $"공격 사거리 : {gladiator.CachedAttackRange:0.##}";
     }
 
     private static Transform FindChildTransform(Transform parent, string childName)

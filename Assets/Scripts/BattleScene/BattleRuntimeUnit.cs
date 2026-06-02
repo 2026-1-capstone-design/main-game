@@ -38,9 +38,15 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     [SerializeField]
     private TextMeshProUGUI nameText;
 
+    [Header("Command Feedback")]
+    [SerializeField]
+    private Material commandOutlineMaterial;
+
     private const float CommandNameFlashDurationSeconds = 6f;
     private const float CommandNameFlashIntervalSeconds = 0.25f;
     private static readonly Color CommandNameFlashColor = new Color32(70, 220, 100, 255);
+    private readonly Dictionary<Renderer, Material[]> _commandOutlineOriginalMaterials =
+        new Dictionary<Renderer, Material[]>();
     private Coroutine _commandNameFlashCoroutine;
     private Color _defaultNameTextColor;
     private bool _hasDefaultNameTextColor;
@@ -825,6 +831,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
             StopCoroutine(_commandNameFlashCoroutine);
         }
 
+        EnableCommandReceivedOutline();
         _commandNameFlashCoroutine = StartCoroutine(FlashCommandReceivedNameRoutine());
     }
 
@@ -842,6 +849,51 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
 
         _commandNameFlashCoroutine = null;
         RestoreDefaultNameTextColor();
+        RestoreCommandReceivedOutline();
+    }
+
+    private void EnableCommandReceivedOutline()
+    {
+        if (commandOutlineMaterial == null || _commandOutlineOriginalMaterials.Count > 0)
+        {
+            return;
+        }
+
+        Renderer[] renderers = GetComponentsInChildren<Renderer>(true);
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            Renderer renderer = renderers[i];
+            if (renderer == null || renderer is not MeshRenderer && renderer is not SkinnedMeshRenderer)
+            {
+                continue;
+            }
+
+            Material[] originalMaterials = renderer.sharedMaterials;
+            if (Array.IndexOf(originalMaterials, commandOutlineMaterial) >= 0)
+            {
+                continue;
+            }
+
+            _commandOutlineOriginalMaterials.Add(renderer, originalMaterials);
+
+            Material[] outlinedMaterials = new Material[originalMaterials.Length + 1];
+            Array.Copy(originalMaterials, outlinedMaterials, originalMaterials.Length);
+            outlinedMaterials[outlinedMaterials.Length - 1] = commandOutlineMaterial;
+            renderer.sharedMaterials = outlinedMaterials;
+        }
+    }
+
+    private void RestoreCommandReceivedOutline()
+    {
+        foreach (KeyValuePair<Renderer, Material[]> entry in _commandOutlineOriginalMaterials)
+        {
+            if (entry.Key != null)
+            {
+                entry.Key.sharedMaterials = entry.Value;
+            }
+        }
+
+        _commandOutlineOriginalMaterials.Clear();
     }
 
     private void StopCommandReceivedNameFlash(bool restoreDefaultColor)
@@ -856,6 +908,8 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         {
             RestoreDefaultNameTextColor();
         }
+
+        RestoreCommandReceivedOutline();
     }
 
     private void RestoreDefaultNameTextColor()

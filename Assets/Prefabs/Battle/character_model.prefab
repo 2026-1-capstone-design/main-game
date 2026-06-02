@@ -1195,6 +1195,7 @@ MonoBehaviour:
   dotDead: {fileID: 0}
   statusText: {fileID: 9042552729283573160}
   nameText: {fileID: 323802615050633179}
+  commandOutlineMaterial: {fileID: 2100000, guid: b4fbfba71e0412b49af9895f424b298a, type: 2}
   healthBarRoot: {fileID: 2571531071030928836}
   blueHealthBarFillImage: {fileID: 3008865341673224125}
   redHealthBarFillImage: {fileID: 2388215090301822227}
@@ -10238,11 +10239,11 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1094030504802076652}
-  - {fileID: 6012588896821737590}
   - {fileID: 2933853421204473072}
   - {fileID: 2495791310487592396}
   - {fileID: 7411127492794265158}
   - {fileID: 4155326573421485584}
+  - {fileID: 6012588896821737590}
   - {fileID: 9173558839748524258}
   m_Father: {fileID: 1126242358742066004}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}

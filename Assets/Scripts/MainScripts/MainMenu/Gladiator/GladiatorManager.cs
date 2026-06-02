@@ -782,7 +782,7 @@ public sealed class GladiatorManager : SingletonBehaviour<GladiatorManager>
         return Mathf.Max(0, baseUpkeep + (Mathf.Max(1, level) * upkeepPerLevel));
     }
 
-    private int GetRequiredXpForCurrentLevel(int currentLevel)
+    public int GetRequiredXpForCurrentLevel(int currentLevel)
     {
         int xpPerLevelMultiplier = _balance != null ? _balance.xpPerLevelMultiplier : 100;
         return Mathf.Max(1, currentLevel) * Mathf.Max(1, xpPerLevelMultiplier);
