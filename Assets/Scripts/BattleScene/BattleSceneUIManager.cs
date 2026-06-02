@@ -143,6 +143,13 @@ public sealed class BattleSceneUIManager : MonoBehaviour
     [SerializeField]
     private BattleOrdersManager battleOrdersManager;
 
+    [Header("Auto Camera UI")]
+    [SerializeField]
+    private Toggle autoCameraToggle;
+
+    [SerializeField]
+    private BattleAutoCameraDirector autoCameraDirector;
+
     [Header("Command Mode")]
     [SerializeField]
     [Min(0.01f)]
@@ -224,6 +231,7 @@ public sealed class BattleSceneUIManager : MonoBehaviour
         BindCurrentOrderInputField();
         EnsureBattleOrdersManager();
         RebindBattleOrdersManagerEvents();
+        BindAutoCameraToggle();
 
         HideAll();
         ClearAllyOrderResponses();
@@ -245,6 +253,11 @@ public sealed class BattleSceneUIManager : MonoBehaviour
             currentOrderInputField.onSubmit.RemoveListener(OnOrderInputSubmitted);
             currentOrderInputField.onSelect.RemoveListener(HandleOrderInputSelected);
             currentOrderInputField.onDeselect.RemoveListener(HandleOrderInputDeselected);
+        }
+
+        if (autoCameraToggle != null)
+        {
+            autoCameraToggle.onValueChanged.RemoveListener(HandleAutoCameraToggleChanged);
         }
 
         UnbindBattleOrdersManagerEvents();
@@ -968,6 +981,11 @@ public sealed class BattleSceneUIManager : MonoBehaviour
             currentOrderInputField.interactable = !blockOrderInput;
         }
 
+        if (autoCameraToggle != null)
+        {
+            autoCameraToggle.interactable = !IsBattleEndPanelOpen && !_isNavigating;
+        }
+
         if (surrenderYesButton != null)
             surrenderYesButton.interactable = _activeModalState == ModalState.Surrender;
 
@@ -1013,6 +1031,39 @@ public sealed class BattleSceneUIManager : MonoBehaviour
     private void HandleBattleFinished(BattleOutcome outcome)
     {
         ShowBattleEndPanel(outcome.Resolution);
+    }
+
+    private void BindAutoCameraToggle()
+    {
+        EnsureAutoCameraDirector();
+
+        if (autoCameraToggle == null)
+        {
+            return;
+        }
+
+        autoCameraToggle.onValueChanged.RemoveListener(HandleAutoCameraToggleChanged);
+        autoCameraToggle.onValueChanged.AddListener(HandleAutoCameraToggleChanged);
+
+        if (autoCameraDirector != null)
+        {
+            autoCameraToggle.SetIsOnWithoutNotify(autoCameraDirector.IsAutoCameraEnabled);
+        }
+    }
+
+    private void HandleAutoCameraToggleChanged(bool isOn)
+    {
+        EnsureAutoCameraDirector();
+        autoCameraDirector?.SetAutoCameraEnabled(isOn);
+        RefreshButtonStates();
+    }
+
+    private void EnsureAutoCameraDirector()
+    {
+        if (autoCameraDirector == null)
+        {
+            autoCameraDirector = FindFirstObjectByType<BattleAutoCameraDirector>();
+        }
     }
 
     private void EnsureBattleOrdersManager()

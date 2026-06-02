@@ -18,6 +18,41 @@ public enum BattleOrderCommandState
     Processing,
 }
 
+public sealed class BattleOrderProcessingResult
+{
+    public bool Succeeded { get; }
+    public BattleRuntimeUnit[] IssuedActors { get; }
+
+    public BattleRuntimeUnit FirstIssuedActor
+    {
+        get
+        {
+            return IssuedActors != null && IssuedActors.Length > 0 ? IssuedActors[0] : null;
+        }
+    }
+
+    private BattleOrderProcessingResult(bool succeeded, BattleRuntimeUnit[] issuedActors)
+    {
+        IssuedActors = issuedActors ?? Array.Empty<BattleRuntimeUnit>();
+        Succeeded = succeeded && IssuedActors.Length > 0;
+    }
+
+    public static BattleOrderProcessingResult Failed()
+    {
+        return new BattleOrderProcessingResult(false, Array.Empty<BattleRuntimeUnit>());
+    }
+
+    public static BattleOrderProcessingResult FromIssuedActors(List<BattleRuntimeUnit> issuedActors)
+    {
+        return new BattleOrderProcessingResult(issuedActors != null && issuedActors.Count > 0, issuedActors?.ToArray());
+    }
+
+    public static BattleOrderProcessingResult FromIssuedActors(BattleRuntimeUnit[] issuedActors)
+    {
+        return new BattleOrderProcessingResult(issuedActors != null && issuedActors.Length > 0, issuedActors);
+    }
+}
+
 [DisallowMultipleComponent]
 public sealed class BattleOrdersManager : MonoBehaviour
 {
@@ -135,6 +170,7 @@ public sealed class BattleOrdersManager : MonoBehaviour
 
     public event Action<BattleRuntimeUnit, string> OnAllyOrderResponseReceived;
     public event Action<BattleOrderCommandState, BattleOrderCommandState> OnCommandStateChanged;
+    public event Action<BattleOrderProcessingResult> OnCommandProcessingFinished;
 
     public void Initialize(IReadOnlyList<BattleRuntimeUnit> runtimeUnits)
     {
@@ -428,7 +464,7 @@ public sealed class BattleOrdersManager : MonoBehaviour
                 "[BattleOrdersManager] Server SOT pipeline skipped. BattleSimulationManager.Instance is null.",
                 this
             );
-            FinishServerSotPipeline();
+            FinishServerSotPipeline(BattleOrderProcessingResult.Failed());
             yield break;
         }
 
@@ -483,7 +519,7 @@ public sealed class BattleOrdersManager : MonoBehaviour
         if (!string.IsNullOrWhiteSpace(parserRequestError))
         {
             LogSotServerFailure("PARSER REQUEST FAILED", parserPrompt, parserRequestError, parserRawResponse);
-            FinishServerSotPipeline();
+            FinishServerSotPipeline(BattleOrderProcessingResult.Failed());
             yield break;
         }
 
@@ -497,7 +533,7 @@ public sealed class BattleOrdersManager : MonoBehaviour
         )
         {
             LogSotServerFailure("PARSER OUTPUT INVALID", parserPrompt, parserParseError, parserRawResponse);
-            FinishServerSotPipeline();
+            FinishServerSotPipeline(BattleOrderProcessingResult.Failed());
             yield break;
         }
 
@@ -512,7 +548,7 @@ public sealed class BattleOrdersManager : MonoBehaviour
         )
         {
             LogSotServerFailure("POSTPROCESS FAILED", parserPrompt, postprocessError, parserRawResponse);
-            FinishServerSotPipeline();
+            FinishServerSotPipeline(BattleOrderProcessingResult.Failed());
             yield break;
         }
 
@@ -529,7 +565,7 @@ public sealed class BattleOrdersManager : MonoBehaviour
                 );
             }
 
-            FinishServerSotPipeline();
+            FinishServerSotPipeline(BattleOrderProcessingResult.Failed());
             yield break;
         }
 
@@ -542,7 +578,7 @@ public sealed class BattleOrdersManager : MonoBehaviour
                 Debug.Log("[BattleOrdersManager] Server SOT pipeline ended. Dialog request has no actors.", this);
             }
 
-            FinishServerSotPipeline();
+            FinishServerSotPipeline(BattleOrderProcessingResult.Failed());
             yield break;
         }
 
@@ -586,7 +622,7 @@ public sealed class BattleOrdersManager : MonoBehaviour
         if (!string.IsNullOrWhiteSpace(dialogRequestError))
         {
             LogSotServerFailure("DIALOG REQUEST FAILED", dialogPrompt, dialogRequestError, dialogRawResponse);
-            FinishServerSotPipeline();
+            FinishServerSotPipeline(BattleOrderProcessingResult.Failed());
             yield break;
         }
 
@@ -600,7 +636,7 @@ public sealed class BattleOrdersManager : MonoBehaviour
         )
         {
             LogSotServerFailure("DIALOG OUTPUT INVALID", dialogPrompt, dialogParseError, dialogRawResponse);
-            FinishServerSotPipeline();
+            FinishServerSotPipeline(BattleOrderProcessingResult.Failed());
             yield break;
         }
 
@@ -627,9 +663,9 @@ public sealed class BattleOrdersManager : MonoBehaviour
             EmitDialogLayerResponses(dialogResponse);
         }
 
-        TryIssuePostprocessedSlmCommands(postprocessResult);
+        BattleRuntimeUnit[] issuedActors = TryIssuePostprocessedSlmCommands(postprocessResult);
 
-        FinishServerSotPipeline();
+        FinishServerSotPipeline(BattleOrderProcessingResult.FromIssuedActors(issuedActors));
     }
 
     private IEnumerator PostSotLayerRequest(
@@ -1033,15 +1069,15 @@ public sealed class BattleOrdersManager : MonoBehaviour
         }
     }
 
-    private void TryIssuePostprocessedSlmCommands(BattleCommandPostprocessResult postprocessResult)
+    private BattleRuntimeUnit[] TryIssuePostprocessedSlmCommands(BattleCommandPostprocessResult postprocessResult)
     {
         if (!issuePostprocessedSotCommands)
-            return;
+            return Array.Empty<BattleRuntimeUnit>();
 
         if (postprocessResult == null)
         {
             Debug.LogWarning("[BattleOrdersManager] SOT command execution skipped. PostprocessResult is null.", this);
-            return;
+            return Array.Empty<BattleRuntimeUnit>();
         }
 
         if (postprocessResult.fallbackToDefaultMlAi)
@@ -1055,7 +1091,7 @@ public sealed class BattleOrdersManager : MonoBehaviour
                 );
             }
 
-            return;
+            return Array.Empty<BattleRuntimeUnit>();
         }
 
         BattleCommandFinalActorDto[] finalActors =
@@ -1068,7 +1104,7 @@ public sealed class BattleOrdersManager : MonoBehaviour
                 Debug.Log("[BattleOrdersManager] SOT command execution skipped. No final actors.", this);
             }
 
-            return;
+            return Array.Empty<BattleRuntimeUnit>();
         }
 
         BattleSimulationManager simulationManager = BattleSimulationManager.Instance;
@@ -1078,11 +1114,12 @@ public sealed class BattleOrdersManager : MonoBehaviour
                 "[BattleOrdersManager] SOT command execution skipped. BattleSimulationManager.Instance is null.",
                 this
             );
-            return;
+            return Array.Empty<BattleRuntimeUnit>();
         }
 
         int issuedCount = 0;
         int failedCount = 0;
+        List<BattleRuntimeUnit> issuedActors = new List<BattleRuntimeUnit>(finalActors.Length);
 
         for (int i = 0; i < finalActors.Length; i++)
         {
@@ -1143,6 +1180,7 @@ public sealed class BattleOrdersManager : MonoBehaviour
             }
 
             simulationManager.IssueSlmCommands(actorUnit.State, slmCommands);
+            issuedActors.Add(actorUnit);
             issuedCount++;
         }
 
@@ -1153,12 +1191,15 @@ public sealed class BattleOrdersManager : MonoBehaviour
                 this
             );
         }
+
+        return issuedActors.ToArray();
     }
 
-    private void FinishServerSotPipeline()
+    private void FinishServerSotPipeline(BattleOrderProcessingResult result)
     {
         _serverSotPipelineRunning = false;
         SetCommandState(BattleOrderCommandState.Default);
+        OnCommandProcessingFinished?.Invoke(result ?? BattleOrderProcessingResult.Failed());
     }
 
     private void SetCommandState(BattleOrderCommandState nextState)
