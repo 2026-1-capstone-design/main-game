@@ -34,7 +34,7 @@ public sealed class ThroatSlitSkill : IBattleSkill
             {
                 Source = caster,
                 Target = target,
-                Amount = caster.Attack * 2.0f,
+                Amount = caster.Attack * 1.6f,
                 SourceKind = BattleEffectSourceKind.Skill,
                 DamageKind = BattleDamageKind.Direct,
                 SkillId = SkillId,

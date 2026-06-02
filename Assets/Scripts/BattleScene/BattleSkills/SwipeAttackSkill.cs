@@ -51,7 +51,7 @@ public sealed class SwipeAttackSkill : IBattleSkill
                                 {
                                     Source = caster.State,
                                     Target = unit.State,
-                                    Amount = caster.State.Attack * 1.2f,
+                                    Amount = caster.State.Attack * 0.9f,
                                     SourceKind = BattleEffectSourceKind.Skill,
                                     DamageKind = BattleDamageKind.Area,
                                     IsSkill = true,

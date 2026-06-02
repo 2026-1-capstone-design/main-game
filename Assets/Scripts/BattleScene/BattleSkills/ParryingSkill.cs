@@ -87,7 +87,7 @@ public sealed class ParryingSkill : IBattleSkill
                             {
                                 Source = casterState,
                                 Target = target,
-                                Amount = casterState.Attack * 2.0f,
+                                Amount = casterState.Attack * 0.8f,
                                 SourceKind = BattleEffectSourceKind.Skill,
                                 DamageKind = BattleDamageKind.Area,
                                 SkillId = SkillId,

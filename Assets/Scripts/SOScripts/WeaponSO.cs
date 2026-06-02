@@ -32,8 +32,8 @@ public sealed class WeaponSO : ScriptableObject
     private const float DefaultAttackSpeed = 1f;
     private const float HealthPrice = 1f;
     private const float AttackPrice = 50f;
-    private const float MoveSpeedPrice = 700f;
-    private const float AttackRangePrice = 700f;
+    private const float MoveSpeedPrice = 1000f;
+    private const float AttackRangePrice = 1000f;
 
     public Sprite icon;
     public string weaponName = "Sword";

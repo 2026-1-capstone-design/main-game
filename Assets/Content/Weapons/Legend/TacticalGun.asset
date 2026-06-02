@@ -24,8 +24,8 @@ MonoBehaviour:
   duration: 0.5
   baseAttackBonus: 0
   baseHealthBonus: 0
-  baseAttackSpeedBonus: 3.2
-  baseMoveSpeedBonus: 3
+  baseAttackSpeedBonus: 2.1
+  baseMoveSpeedBonus: 2
   baseAttackRangeBonus: 4
   calculatedPrice: 9100
   weaponGrade: 4

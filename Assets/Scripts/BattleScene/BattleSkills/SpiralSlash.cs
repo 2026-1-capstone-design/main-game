@@ -39,7 +39,7 @@ public sealed class SpiralSlashSkill : IBattleSkill
                                 {
                                     Source = caster,
                                     Target = unit,
-                                    Amount = caster.Attack * 1.2f,
+                                    Amount = caster.Attack * 0.9f,
                                     SourceKind = BattleEffectSourceKind.Skill,
                                     DamageKind = BattleDamageKind.Area,
                                     SkillId = SkillId,

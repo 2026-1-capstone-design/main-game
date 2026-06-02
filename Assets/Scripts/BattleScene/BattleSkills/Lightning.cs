@@ -47,7 +47,7 @@ public sealed class LightningSkill : IBattleSkill
                             {
                                 Source = casterState,
                                 Target = unitState,
-                                Amount = casterState.Attack * 1.5f,
+                                Amount = casterState.Attack * 0.8f,
                                 SourceKind = BattleEffectSourceKind.Skill,
                                 DamageKind = BattleDamageKind.Area,
                                 SkillId = SkillId,

@@ -53,7 +53,7 @@ public sealed class UnstoppableForceSkill : IBattleSkill
                             {
                                 Source = casterState,
                                 Target = unitState,
-                                Amount = casterState.Attack * 2.5f,
+                                Amount = casterState.Attack * 0.9f,
                                 SourceKind = BattleEffectSourceKind.Skill,
                                 DamageKind = BattleDamageKind.Area,
                                 SkillId = SkillId,

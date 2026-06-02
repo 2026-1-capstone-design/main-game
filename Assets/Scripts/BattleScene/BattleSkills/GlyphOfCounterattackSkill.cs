@@ -69,7 +69,7 @@ public sealed class GlyphOfCounterattackSkill : IBattleSkill
                     {
                         Source = _originalCaster,
                         Target = result.Source,
-                        Amount = _originalCaster.Attack * 0.8f,
+                        Amount = _originalCaster.Attack * 0.3f,
                         IsSkill = true,
                     }
                 );

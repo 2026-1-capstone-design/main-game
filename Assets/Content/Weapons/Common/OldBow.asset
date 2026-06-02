@@ -22,10 +22,10 @@ MonoBehaviour:
   useProjectile: 1
   defaultDur: 0
   duration: 0.5
-  baseAttackBonus: 8
+  baseAttackBonus: 0
   baseHealthBonus: 0
   baseAttackSpeedBonus: 0
   baseMoveSpeedBonus: 0
-  baseAttackRangeBonus: 5
+  baseAttackRangeBonus: 3.9
   calculatedPrice: 4900
   weaponGrade: 0

@@ -76,7 +76,7 @@ public sealed class DimensionalRiftSkill : IBattleSkill
                     {
                         Source = casterState,
                         Target = enemyState,
-                        Amount = casterState.Attack * 3.0f,
+                        Amount = casterState.Attack * 2.0f,
                         SourceKind = BattleEffectSourceKind.Skill,
                         DamageKind = BattleDamageKind.Area,
                     }

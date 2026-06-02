@@ -55,7 +55,7 @@ public sealed class ContinuousSlashSkill : IBattleSkill
                         {
                             Source = casterState,
                             Target = targetState,
-                            Amount = casterState.Attack * 1.5f,
+                            Amount = casterState.Attack * 0.5f,
                             SourceKind = BattleEffectSourceKind.Skill,
                             DamageKind = BattleDamageKind.Direct,
                             SkillId = SkillId,

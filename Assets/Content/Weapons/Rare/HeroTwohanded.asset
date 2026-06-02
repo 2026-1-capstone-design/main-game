@@ -23,7 +23,7 @@ MonoBehaviour:
   defaultDur: 0
   duration: 0.5
   baseAttackBonus: 40
-  baseHealthBonus: 2150
+  baseHealthBonus: 1400
   baseAttackSpeedBonus: 0
   baseMoveSpeedBonus: 0
   baseAttackRangeBonus: 2.5
