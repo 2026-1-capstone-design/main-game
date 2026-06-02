@@ -339,6 +339,185 @@ public sealed class BattleFieldSnapshot
         return best;
     }
 
+    // 적/아군을 모두 포함해 가장 큰 군집을 찾고, 그 군집 중심에 가장 가까운 player-owned 아군을 반환한다.
+    public bool TryFindPlayerAllyNearestLargestClusterCenter(BattleRuntimeUnit excludedAlly, out BattleRuntimeUnit ally)
+    {
+        ally = null;
+
+        BattleUnitCombatState excludedState = excludedAlly != null ? excludedAlly.State : null;
+        float safeRadius = EstimateClusterRadiusFromLivingUnitPositions();
+        float safeSqrRadius = safeRadius * safeRadius;
+
+        BattleUnitCombatState bestSeed = null;
+        Vector3 bestClusterCenter = Vector3.zero;
+        int bestClusterCount = -1;
+        float bestClusterDensity = float.MinValue;
+
+        for (int seedIndex = 0; seedIndex < _allLivingStates.Count; seedIndex++)
+        {
+            BattleUnitCombatState seed = _allLivingStates[seedIndex];
+            if (seed == null)
+            {
+                continue;
+            }
+
+            Vector3 positionSum = Vector3.zero;
+            int clusterCount = 0;
+            float clusterDensity = 0f;
+            bool hasEligiblePlayerAlly = false;
+
+            for (int memberIndex = 0; memberIndex < _allLivingStates.Count; memberIndex++)
+            {
+                BattleUnitCombatState member = _allLivingStates[memberIndex];
+                if (member == null)
+                {
+                    continue;
+                }
+
+                Vector3 delta = member.Position - seed.Position;
+                delta.y = 0f;
+                float sqrDistance = delta.sqrMagnitude;
+                if (sqrDistance > safeSqrRadius)
+                {
+                    continue;
+                }
+
+                clusterCount++;
+                positionSum += member.Position;
+
+                float distance = Mathf.Sqrt(sqrDistance);
+                clusterDensity += 1f - Mathf.Clamp01(distance / safeRadius);
+
+                BattleRuntimeUnit runtime = ResolveRuntime(member);
+                if (runtime != null && runtime.IsPlayerOwned && !runtime.IsCombatDisabled && member != excludedState)
+                {
+                    hasEligiblePlayerAlly = true;
+                }
+            }
+
+            if (!hasEligiblePlayerAlly || clusterCount <= 0)
+            {
+                continue;
+            }
+
+            if (
+                clusterCount > bestClusterCount
+                || (clusterCount == bestClusterCount && clusterDensity > bestClusterDensity)
+            )
+            {
+                bestSeed = seed;
+                bestClusterCenter = positionSum / clusterCount;
+                bestClusterCount = clusterCount;
+                bestClusterDensity = clusterDensity;
+            }
+        }
+
+        if (bestSeed == null || bestClusterCount <= 0)
+        {
+            return false;
+        }
+
+        BattleUnitCombatState bestAllyState = null;
+        float bestSqrDistanceToCenter = float.MaxValue;
+
+        for (int i = 0; i < _allLivingStates.Count; i++)
+        {
+            BattleUnitCombatState candidate = _allLivingStates[i];
+            if (candidate == null || candidate == excludedState)
+            {
+                continue;
+            }
+
+            BattleRuntimeUnit runtime = ResolveRuntime(candidate);
+            if (runtime == null || !runtime.IsPlayerOwned || runtime.IsCombatDisabled)
+            {
+                continue;
+            }
+
+            Vector3 deltaFromSeed = candidate.Position - bestSeed.Position;
+            deltaFromSeed.y = 0f;
+            if (deltaFromSeed.sqrMagnitude > safeSqrRadius)
+            {
+                continue;
+            }
+
+            Vector3 deltaFromCenter = candidate.Position - bestClusterCenter;
+            deltaFromCenter.y = 0f;
+            float sqrDistanceToCenter = deltaFromCenter.sqrMagnitude;
+            if (sqrDistanceToCenter >= bestSqrDistanceToCenter)
+            {
+                continue;
+            }
+
+            bestSqrDistanceToCenter = sqrDistanceToCenter;
+            bestAllyState = candidate;
+        }
+
+        ally = ResolveRuntime(bestAllyState);
+        return ally != null;
+    }
+
+    // 살아있는 유닛 좌표만 보고 군집 판정 반경을 대충 추정한다.
+    private float EstimateClusterRadiusFromLivingUnitPositions()
+    {
+        int unitCount = _allLivingStates.Count;
+        if (unitCount <= 1)
+        {
+            return 1f;
+        }
+
+        float nearestDistanceSum = 0f;
+        int nearestDistanceCount = 0;
+
+        for (int i = 0; i < unitCount; i++)
+        {
+            BattleUnitCombatState unit = _allLivingStates[i];
+            if (unit == null)
+            {
+                continue;
+            }
+
+            float nearestSqrDistance = float.MaxValue;
+
+            for (int j = 0; j < unitCount; j++)
+            {
+                if (i == j)
+                {
+                    continue;
+                }
+
+                BattleUnitCombatState other = _allLivingStates[j];
+                if (other == null)
+                {
+                    continue;
+                }
+
+                Vector3 delta = other.Position - unit.Position;
+                delta.y = 0f;
+                float sqrDistance = delta.sqrMagnitude;
+
+                if (sqrDistance < nearestSqrDistance)
+                {
+                    nearestSqrDistance = sqrDistance;
+                }
+            }
+
+            if (nearestSqrDistance < float.MaxValue)
+            {
+                nearestDistanceSum += Mathf.Sqrt(nearestSqrDistance);
+                nearestDistanceCount++;
+            }
+        }
+
+        if (nearestDistanceCount == 0)
+        {
+            return 1f;
+        }
+
+        float averageNearestDistance = nearestDistanceSum / nearestDistanceCount;
+        return Mathf.Max(1f, averageNearestDistance * 2.5f);
+    }
+
     public BattleUnitCombatState FindBestPeelEnemy(BattleUnitCombatState self, BattleUnitCombatState protectedAlly)
     {
         if (self == null || self.IsCombatDisabled)

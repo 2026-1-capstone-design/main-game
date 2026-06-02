@@ -1,7 +1,29 @@
+// 경기장 중심 orbit 카메라를 갱신한다.
+// 수동 입력과 자동 카메라 요청을 같은 상태값으로 처리한다.
+// 자동 포커싱 목표는 기존 orbit/look/FOV 제약 안으로 투영한다.
+// 외부 시스템은 CameraViewState만 캡처, 보간, 복원한다.
+
+using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
+
+public struct CameraViewState
+{
+    public float OrbitAngle;
+    public float LookYawOffset;
+    public float LookPitchOffset;
+    public float FieldOfView;
+
+    public CameraViewState(float orbitAngle, float lookYawOffset, float lookPitchOffset, float fieldOfView)
+    {
+        OrbitAngle = orbitAngle;
+        LookYawOffset = lookYawOffset;
+        LookPitchOffset = lookPitchOffset;
+        FieldOfView = fieldOfView;
+    }
+}
 
 [DisallowMultipleComponent]
 public sealed class CameraView : MonoBehaviour
@@ -45,6 +67,11 @@ public sealed class CameraView : MonoBehaviour
     private GameObject _cachedSelectedGameObject;
     private TMP_InputField _cachedInputField;
 
+    public bool IsInitialized => _isInitialized;
+    public bool WasManualCameraInputThisFrame { get; private set; }
+
+    public event Action OnManualCameraInput;
+
     private void Awake()
     {
         if (targetCamera == null)
@@ -82,6 +109,8 @@ public sealed class CameraView : MonoBehaviour
 
     private void Update()
     {
+        WasManualCameraInputThisFrame = false;
+
         if (!_isInitialized)
         {
             return;
@@ -125,6 +154,21 @@ public sealed class CameraView : MonoBehaviour
             scrollInput = Mouse.current.scroll.ReadValue().y * 0.01f;
         }
 
+        WasManualCameraInputThisFrame =
+            !isTextInputFocused
+            && (
+                Mathf.Abs(orbitInput) > 0.001f
+                || Mathf.Abs(lookYawInput) > 0.001f
+                || Mathf.Abs(lookPitchInput) > 0.001f
+                || Mathf.Abs(zoomKeyInput) > 0.001f
+                || Mathf.Abs(scrollInput) > 0.001f
+            );
+
+        if (WasManualCameraInputThisFrame)
+        {
+            OnManualCameraInput?.Invoke();
+        }
+
         if (!isTextInputFocused)
         {
             UpdateOrbit(orbitInput);
@@ -133,6 +177,162 @@ public sealed class CameraView : MonoBehaviour
         }
 
         ApplyCameraTransform();
+    }
+
+    public CameraViewState CaptureState()
+    {
+        return new CameraViewState(_orbitAngle, _lookYawOffset, _lookPitchOffset, _currentFov);
+    }
+
+    public void ApplyStateImmediate(CameraViewState state)
+    {
+        _orbitAngle = state.OrbitAngle;
+        _lookYawOffset = Mathf.Clamp(state.LookYawOffset, -lookLeftLimit, lookRightLimit);
+        _lookPitchOffset = Mathf.Clamp(state.LookPitchOffset, -lookDownLimit, lookUpLimit);
+        _currentFov = Mathf.Clamp(state.FieldOfView, minFov, maxFov);
+
+        if (targetCamera != null)
+        {
+            targetCamera.fieldOfView = _currentFov;
+        }
+
+        if (_isInitialized)
+        {
+            ApplyCameraTransform();
+        }
+    }
+
+    public void ApplyStateInterpolated(CameraViewState from, CameraViewState to, float t)
+    {
+        float clampedT = Mathf.Clamp01(t);
+        CameraViewState state = new CameraViewState(
+            Mathf.LerpAngle(from.OrbitAngle, to.OrbitAngle, clampedT),
+            Mathf.Lerp(from.LookYawOffset, to.LookYawOffset, clampedT),
+            Mathf.Lerp(from.LookPitchOffset, to.LookPitchOffset, clampedT),
+            Mathf.Lerp(from.FieldOfView, to.FieldOfView, clampedT)
+        );
+        ApplyStateImmediate(state);
+    }
+
+    public Vector3 EvaluateCameraPosition(CameraViewState state)
+    {
+        return ComputeCameraPosition(state.OrbitAngle);
+    }
+
+    // 유닛 기준 선호 원의 한 지점을 현재 경기장 중심 orbit 제약 안으로 투영한다.
+    // preferredDistance는 100을 기본 거리로 보고, 그보다 작으면 FOV 줌인을 적용한다.
+    public bool TryBuildFocusStateForTargetCircleAngle(
+        Vector3 targetPosition,
+        float targetCircleAngleDegrees,
+        float preferredDistance,
+        float preferredElevationDegrees,
+        out CameraViewState state
+    )
+    {
+        state = default;
+
+        if (!_isInitialized)
+        {
+            return false;
+        }
+
+        float safeDistance = Mathf.Clamp(preferredDistance, 0.01f, 100f);
+        float elevationRadians = Mathf.Clamp(preferredElevationDegrees, -89f, 89f) * Mathf.Deg2Rad;
+        float horizontalDistance = Mathf.Cos(elevationRadians) * safeDistance;
+        float heightOffset = Mathf.Sin(elevationRadians) * safeDistance;
+        float circleRadians = targetCircleAngleDegrees * Mathf.Deg2Rad;
+        Vector3 horizontalDirection = new Vector3(Mathf.Sin(circleRadians), 0f, Mathf.Cos(circleRadians));
+        Vector3 preferredPosition =
+            targetPosition + horizontalDirection * horizontalDistance + Vector3.up * heightOffset;
+
+        if (!TryBuildFocusStateForPreferredPosition(targetPosition, preferredPosition, out state))
+        {
+            return false;
+        }
+
+        state.FieldOfView = BuildAutomaticFocusFov(safeDistance);
+        return true;
+    }
+
+    public bool TryBuildFocusStateForPreferredPosition(
+        Vector3 targetPosition,
+        Vector3 preferredWorldPosition,
+        out CameraViewState state
+    )
+    {
+        state = default;
+
+        if (!_isInitialized || centerTarget == null)
+        {
+            return false;
+        }
+
+        Vector3 centerPosition = centerTarget.position;
+        Vector3 flatOffset = Vector3.ProjectOnPlane(preferredWorldPosition - centerPosition, Vector3.up);
+        if (flatOffset.sqrMagnitude <= 0.0001f)
+        {
+            flatOffset = Vector3.ProjectOnPlane(transform.position - centerPosition, Vector3.up);
+        }
+
+        if (flatOffset.sqrMagnitude <= 0.0001f)
+        {
+            return false;
+        }
+
+        float orbitAngle = Mathf.Atan2(flatOffset.x, flatOffset.z) * Mathf.Rad2Deg;
+        return TryBuildFocusStateAtOrbitAngle(targetPosition, orbitAngle, out state);
+    }
+
+    public bool TryBuildFocusStateAtOrbitAngle(Vector3 targetPosition, float orbitAngle, out CameraViewState state)
+    {
+        state = default;
+
+        if (!_isInitialized || centerTarget == null)
+        {
+            return false;
+        }
+
+        Vector3 cameraPosition = ComputeCameraPosition(orbitAngle);
+        Vector3 baseForward = centerTarget.position - cameraPosition;
+        Vector3 desiredForward = targetPosition - cameraPosition;
+
+        if (baseForward.sqrMagnitude <= 0.0001f || desiredForward.sqrMagnitude <= 0.0001f)
+        {
+            return false;
+        }
+
+        if (
+            !TryComputeNoRollLookOffsets(
+                baseForward,
+                desiredForward,
+                out float lookYawOffset,
+                out float lookPitchOffset
+            )
+        )
+        {
+            return false;
+        }
+
+        if (lookYawOffset < -lookLeftLimit || lookYawOffset > lookRightLimit)
+        {
+            return false;
+        }
+
+        if (lookPitchOffset < -lookDownLimit || lookPitchOffset > lookUpLimit)
+        {
+            return false;
+        }
+
+        state = new CameraViewState(orbitAngle, lookYawOffset, lookPitchOffset, _currentFov);
+        return true;
+    }
+
+    // 자동 포커싱 거리 100을 defaultFov로 보고, 더 가까운 선호 거리는 FOV 줌인으로 처리한다.
+    private float BuildAutomaticFocusFov(float preferredDistance)
+    {
+        float clampedDistance = Mathf.Clamp(preferredDistance, 0.01f, 100f);
+        float distanceRatio = clampedDistance / 100f;
+        return Mathf.Clamp(defaultFov * distanceRatio, minFov, maxFov);
     }
 
     private bool IsTextInputFocused()
@@ -270,27 +470,106 @@ public sealed class CameraView : MonoBehaviour
 
     private void ApplyCameraTransform()
     {
-        Vector3 centerPosition = centerTarget.position;
+        if (centerTarget == null)
+        {
+            return;
+        }
 
-        float orbitRadians = _orbitAngle * Mathf.Deg2Rad;
+        Vector3 cameraPosition = ComputeCameraPosition(_orbitAngle);
+        transform.position = cameraPosition;
+        transform.rotation = BuildNoRollCameraRotation(cameraPosition, _lookYawOffset, _lookPitchOffset);
+    }
+
+    // yaw는 월드 Y축, pitch는 yaw 적용 후의 수평 right axis 기준으로 적용한다.
+    private Quaternion BuildNoRollCameraRotation(Vector3 cameraPosition, float lookYawOffset, float lookPitchOffset)
+    {
+        Vector3 baseForward = centerTarget.position - cameraPosition;
+        if (baseForward.sqrMagnitude <= 0.0001f)
+        {
+            return transform.rotation;
+        }
+
+        Vector3 yawedForward = Quaternion.AngleAxis(lookYawOffset, Vector3.up) * baseForward.normalized;
+        Vector3 rightAxis = Vector3.Cross(Vector3.up, yawedForward);
+
+        if (rightAxis.sqrMagnitude <= 0.0001f)
+        {
+            rightAxis = transform.right;
+        }
+
+        rightAxis.Normalize();
+
+        Vector3 finalForward = Quaternion.AngleAxis(-lookPitchOffset, rightAxis) * yawedForward;
+        if (finalForward.sqrMagnitude <= 0.0001f)
+        {
+            return transform.rotation;
+        }
+
+        return Quaternion.LookRotation(finalForward.normalized, Vector3.up);
+    }
+
+    // 자동 포커싱 후보 계산도 no-roll 회전 모델과 같은 yaw/pitch 기준을 사용한다.
+    private static bool TryComputeNoRollLookOffsets(
+        Vector3 baseForward,
+        Vector3 desiredForward,
+        out float lookYawOffset,
+        out float lookPitchOffset
+    )
+    {
+        lookYawOffset = 0f;
+        lookPitchOffset = 0f;
+
+        Vector3 baseFlat = Vector3.ProjectOnPlane(baseForward, Vector3.up);
+        Vector3 desiredFlat = Vector3.ProjectOnPlane(desiredForward, Vector3.up);
+
+        if (baseFlat.sqrMagnitude <= 0.0001f || desiredFlat.sqrMagnitude <= 0.0001f)
+        {
+            return false;
+        }
+
+        lookYawOffset = Vector3.SignedAngle(baseFlat.normalized, desiredFlat.normalized, Vector3.up);
+
+        Vector3 yawedForward = Quaternion.AngleAxis(lookYawOffset, Vector3.up) * baseForward.normalized;
+        Vector3 rightAxis = Vector3.Cross(Vector3.up, yawedForward);
+
+        if (rightAxis.sqrMagnitude <= 0.0001f)
+        {
+            return false;
+        }
+
+        rightAxis.Normalize();
+
+        float pitchAngle = Vector3.SignedAngle(yawedForward, desiredForward.normalized, rightAxis);
+        lookPitchOffset = -pitchAngle;
+
+        return true;
+    }
+
+    private Vector3 ComputeCameraPosition(float orbitAngle)
+    {
+        Vector3 centerPosition = centerTarget != null ? centerTarget.position : Vector3.zero;
+        float orbitRadians = orbitAngle * Mathf.Deg2Rad;
         Vector3 flatOffset = new Vector3(
             Mathf.Sin(orbitRadians) * _orbitRadius,
             0f,
             Mathf.Cos(orbitRadians) * _orbitRadius
         );
 
-        Vector3 cameraPosition = centerPosition + flatOffset + Vector3.up * _heightOffset;
-        transform.position = cameraPosition;
+        return centerPosition + flatOffset + Vector3.up * _heightOffset;
+    }
 
-        Vector3 baseForward = centerPosition - cameraPosition;
-        if (baseForward.sqrMagnitude <= 0.0001f)
+    private static float NormalizeSignedAngle(float angle)
+    {
+        angle %= 360f;
+        if (angle > 180f)
         {
-            return;
+            angle -= 360f;
+        }
+        else if (angle < -180f)
+        {
+            angle += 360f;
         }
 
-        Quaternion baseRotation = Quaternion.LookRotation(baseForward.normalized, Vector3.up);
-        Quaternion lookOffsetRotation = Quaternion.Euler(-_lookPitchOffset, _lookYawOffset, 0f);
-
-        transform.rotation = baseRotation * lookOffsetRotation;
+        return angle;
     }
 }
