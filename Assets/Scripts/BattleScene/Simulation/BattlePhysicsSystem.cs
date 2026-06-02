@@ -38,7 +38,7 @@ public sealed class BattlePhysicsSystem
         for (int i = 0; i < units.Count; i++)
         {
             BattleRuntimeUnit unit = units[i];
-            if (unit == null || unit.IsCombatDisabled)
+            if (unit == null)
                 continue;
 
             unit.TickKnockback(tickDeltaTime);
