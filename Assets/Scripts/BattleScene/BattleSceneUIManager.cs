@@ -1,3 +1,7 @@
+// BattleScene 전담 UI manager. 전투 종료 패널, 배속 UI, 명령 입력 상태를 처리한다.
+// 명령 입력 중과 서버 명령 처리 중에는 전투 속도를 고정 배속으로 유지한다.
+// 서버 명령 처리 중에는 새 명령 입력을 막고, 처리 종료 이벤트에서 기존 배속을 복구한다.
+
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
@@ -5,13 +9,6 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-// BattleScene 전담 UI manager. 전투 종료 패널, 배속 UI 처리.
-// 책임:
-// - 전투 종료 풀스크린 패널 표시 (승리/패배 텍스트, 보상 gold)
-// - confirm 버튼 처리 → MainScene 복귀 시작
-// - preset speed 버튼 처리 → BattleSimulationManager.SetSimulationSpeedMultiplier(...)로 조절
-// - 현재 선택된 speed 버튼 텍스트 색상 갱신
-// ※ 속도는 minSimulationSpeed ~ maxSimulationSpeed 범위로 clamp
 [DisallowMultipleComponent]
 public sealed class BattleSceneUIManager : MonoBehaviour
 {
@@ -371,9 +368,9 @@ public sealed class BattleSceneUIManager : MonoBehaviour
             return;
         }
 
-        if (_activeModalState != ModalState.None || battleSimulationManager.IsTemporarilyPaused)
+        if (_activeModalState != ModalState.None || battleSimulationManager.IsTemporarilyPaused || IsBattleOrderCommandActive())
         {
-            Debug.LogWarning("[BattleSceneUIManager] Speed preset blocked. Modal UI is active.", this);
+            Debug.LogWarning("[BattleSceneUIManager] Speed preset blocked. Command or modal UI is active.", this);
             return;
         }
 
@@ -476,6 +473,13 @@ public sealed class BattleSceneUIManager : MonoBehaviour
 
         EnsureOrderInputVisible();
         SetGlobalOrderTarget();
+        EnsureBattleOrdersManager();
+
+        if (battleOrdersManager != null && !battleOrdersManager.TryBeginUserOrderInput())
+        {
+            return false;
+        }
+
         ApplyOrderInputSpeedIfNeeded();
         RefreshButtonStates();
         return true;
@@ -483,6 +487,7 @@ public sealed class BattleSceneUIManager : MonoBehaviour
 
     public void CancelVoiceOrderInput()
     {
+        battleOrdersManager?.CancelUserOrderInput();
         RestoreOrderInputSpeedIfNeeded();
         RefreshButtonStates();
     }
@@ -491,6 +496,7 @@ public sealed class BattleSceneUIManager : MonoBehaviour
     {
         if (!CanUseBattleUiAction("Voice Orders"))
         {
+            battleOrdersManager?.CancelUserOrderInput();
             RestoreOrderInputSpeedIfNeeded();
             RefreshButtonStates();
             return;
@@ -518,6 +524,7 @@ public sealed class BattleSceneUIManager : MonoBehaviour
         if (string.IsNullOrWhiteSpace(sanitizedInput))
         {
             ClearCurrentOrderInput();
+            battleOrdersManager.CancelUserOrderInput();
             RestoreOrderInputSpeedIfNeeded();
             RefreshButtonStates();
             return;
@@ -533,7 +540,12 @@ public sealed class BattleSceneUIManager : MonoBehaviour
 
         battleOrdersManager.SubmitGlobalOrder(sanitizedInput);
         ClearCurrentOrderInput();
-        RestoreOrderInputSpeedIfNeeded();
+
+        if (!IsBattleOrderCommandProcessing())
+        {
+            RestoreOrderInputSpeedIfNeeded();
+        }
+
         RefreshButtonStates();
     }
 
@@ -593,6 +605,10 @@ public sealed class BattleSceneUIManager : MonoBehaviour
         battleOrdersManager.SubmitGlobalOrder(sanitizedInput);
 
         ClearAndReleaseCurrentOrderInput();
+        if (!IsBattleOrderCommandProcessing())
+        {
+            RestoreOrderInputSpeedIfNeeded();
+        }
     }
 
     private void OnVictoryConfirmClicked()
@@ -880,6 +896,12 @@ public sealed class BattleSceneUIManager : MonoBehaviour
             return false;
         }
 
+        if (IsBattleOrderCommandProcessing())
+        {
+            Debug.LogWarning($"[BattleSceneUIManager] {actionName} blocked. Battle order command is processing.", this);
+            return false;
+        }
+
         return true;
     }
 
@@ -912,12 +934,15 @@ public sealed class BattleSceneUIManager : MonoBehaviour
     private void RefreshButtonStates()
     {
         EnsureBattleSimulationManager();
+        EnsureBattleOrdersManager();
 
         bool modalOpen = _activeModalState != ModalState.None;
         bool paused = battleSimulationManager != null && battleSimulationManager.IsTemporarilyPaused;
-        bool blockSpeedButtons = modalOpen || paused || IsBattleEndPanelOpen || _isNavigating;
-        bool blockCommandButtons = modalOpen || IsBattleEndPanelOpen || _isNavigating;
-        bool blockOrderInput = modalOpen || IsBattleEndPanelOpen || _isNavigating;
+        bool commandActive = IsBattleOrderCommandActive();
+        bool commandProcessing = IsBattleOrderCommandProcessing();
+        bool blockSpeedButtons = modalOpen || paused || IsBattleEndPanelOpen || _isNavigating || commandActive;
+        bool blockCommandButtons = modalOpen || IsBattleEndPanelOpen || _isNavigating || commandProcessing;
+        bool blockOrderInput = modalOpen || IsBattleEndPanelOpen || _isNavigating || commandProcessing;
 
         Button[] speedButtons = GetSpeedPresetButtons();
         for (int i = 0; i < speedButtons.Length; i++)
@@ -1019,12 +1044,27 @@ public sealed class BattleSceneUIManager : MonoBehaviour
 
     private void HandleOrderInputSelected(string _)
     {
+        EnsureBattleOrdersManager();
+        if (battleOrdersManager != null && !battleOrdersManager.TryBeginUserOrderInput())
+        {
+            return;
+        }
+
         ApplyOrderInputSpeedIfNeeded();
+        RefreshButtonStates();
     }
 
     private void HandleOrderInputDeselected(string _)
     {
+        if (IsBattleOrderCommandProcessing())
+        {
+            RefreshButtonStates();
+            return;
+        }
+
+        battleOrdersManager?.CancelUserOrderInput();
         RestoreOrderInputSpeedIfNeeded();
+        RefreshButtonStates();
     }
 
     private void ApplyOrderInputSpeedIfNeeded()
@@ -1051,6 +1091,11 @@ public sealed class BattleSceneUIManager : MonoBehaviour
     private void RestoreOrderInputSpeedIfNeeded()
     {
         if (!_isOrderInputSpeedApplied)
+        {
+            return;
+        }
+
+        if (IsBattleOrderCommandProcessing())
         {
             return;
         }
@@ -1116,6 +1161,7 @@ public sealed class BattleSceneUIManager : MonoBehaviour
         }
 
         _subscribedBattleOrdersManager.OnAllyOrderResponseReceived += HandleAllyOrderResponseReceived;
+        _subscribedBattleOrdersManager.OnCommandStateChanged += HandleBattleOrderCommandStateChanged;
     }
 
     private void UnbindBattleOrdersManagerEvents()
@@ -1126,7 +1172,39 @@ public sealed class BattleSceneUIManager : MonoBehaviour
         }
 
         _subscribedBattleOrdersManager.OnAllyOrderResponseReceived -= HandleAllyOrderResponseReceived;
+        _subscribedBattleOrdersManager.OnCommandStateChanged -= HandleBattleOrderCommandStateChanged;
         _subscribedBattleOrdersManager = null;
+    }
+
+    private void HandleBattleOrderCommandStateChanged(
+        BattleOrderCommandState previousState,
+        BattleOrderCommandState nextState
+    )
+    {
+        if (nextState == BattleOrderCommandState.UserInput || nextState == BattleOrderCommandState.Processing)
+        {
+            ApplyOrderInputSpeedIfNeeded();
+        }
+        else
+        {
+            RestoreOrderInputSpeedIfNeeded();
+        }
+
+        RefreshButtonStates();
+    }
+
+    private bool IsBattleOrderCommandActive()
+    {
+        EnsureBattleOrdersManager();
+        return battleOrdersManager != null
+            && battleOrdersManager.CurrentCommandState != BattleOrderCommandState.Default;
+    }
+
+    private bool IsBattleOrderCommandProcessing()
+    {
+        EnsureBattleOrdersManager();
+        return battleOrdersManager != null
+            && battleOrdersManager.CurrentCommandState == BattleOrderCommandState.Processing;
     }
 
     private void HandleAllyOrderResponseReceived(BattleRuntimeUnit allyUnit, string responseText)

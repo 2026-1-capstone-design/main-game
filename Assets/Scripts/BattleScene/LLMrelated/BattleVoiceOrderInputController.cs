@@ -1,5 +1,6 @@
 // Records a microphone clip and transcribes it with whisper.unity.
 // Applies battle order slow-motion while recording is active.
+// Disables recording controls while a server command is processing.
 // Submits the recognized text through BattleSceneUIManager as a global order.
 // Builds a Korean battle-command initial prompt from current battle unit names.
 
@@ -72,6 +73,7 @@ public sealed class BattleVoiceOrderInputController : MonoBehaviour
     private bool _isRecording;
     private bool _isTranscribing;
     private bool _isWhisperReady;
+    private BattleOrdersManager _subscribedBattleOrdersManager;
 
     private void Awake()
     {
@@ -146,11 +148,13 @@ public sealed class BattleVoiceOrderInputController : MonoBehaviour
         {
             microphoneRecord.OnRecordStop -= HandleRecordStop;
         }
+
+        UnbindBattleOrdersManagerEvents();
     }
 
     public void BeginRecordingFromButton()
     {
-        if (_isRecording || _isTranscribing)
+        if (_isRecording || _isTranscribing || IsBattleOrderCommandProcessing())
             return;
 
         StartCoroutine(BeginRecordingRoutine());
@@ -158,7 +162,7 @@ public sealed class BattleVoiceOrderInputController : MonoBehaviour
 
     public void EndRecordingFromButton()
     {
-        if (!_isRecording || _isTranscribing)
+        if (!_isRecording || _isTranscribing || IsBattleOrderCommandProcessing())
             return;
 
         _isRecording = false;
@@ -185,6 +189,12 @@ public sealed class BattleVoiceOrderInputController : MonoBehaviour
     private IEnumerator BeginRecordingRoutine()
     {
         EnsureReferences();
+
+        if (IsBattleOrderCommandProcessing())
+        {
+            RefreshButtonStates();
+            yield break;
+        }
 
         if (!ConfiguredModelFileExists())
         {
@@ -436,6 +446,8 @@ public sealed class BattleVoiceOrderInputController : MonoBehaviour
         {
             microphoneRecord = FindFirstObjectByType<MicrophoneRecord>();
         }
+
+        RebindBattleOrdersManagerEvents();
     }
 
     private void ConfigureMicrophoneRecord()
@@ -470,8 +482,9 @@ public sealed class BattleVoiceOrderInputController : MonoBehaviour
 
     private void RefreshButtonStates()
     {
-        bool canStart = _isWhisperReady && !_isRecording && !_isTranscribing;
-        bool canStop = _isRecording && !_isTranscribing;
+        bool commandProcessing = IsBattleOrderCommandProcessing();
+        bool canStart = _isWhisperReady && !_isRecording && !_isTranscribing && !commandProcessing;
+        bool canStop = _isRecording && !_isTranscribing && !commandProcessing;
 
         if (startRecordingButton != null)
         {
@@ -482,6 +495,59 @@ public sealed class BattleVoiceOrderInputController : MonoBehaviour
         {
             stopRecordingButton.interactable = canStop;
         }
+    }
+
+    private bool IsBattleOrderCommandProcessing()
+    {
+        EnsureBattleOrdersManagerReferenceOnly();
+        return battleOrdersManager != null && battleOrdersManager.CurrentCommandState == BattleOrderCommandState.Processing;
+    }
+
+    private void EnsureBattleOrdersManagerReferenceOnly()
+    {
+        if (battleOrdersManager == null)
+        {
+            battleOrdersManager = FindFirstObjectByType<BattleOrdersManager>();
+        }
+
+        RebindBattleOrdersManagerEvents();
+    }
+
+    private void RebindBattleOrdersManagerEvents()
+    {
+        if (_subscribedBattleOrdersManager == battleOrdersManager)
+        {
+            return;
+        }
+
+        UnbindBattleOrdersManagerEvents();
+        _subscribedBattleOrdersManager = battleOrdersManager;
+
+        if (_subscribedBattleOrdersManager == null)
+        {
+            return;
+        }
+
+        _subscribedBattleOrdersManager.OnCommandStateChanged += HandleBattleOrderCommandStateChanged;
+    }
+
+    private void UnbindBattleOrdersManagerEvents()
+    {
+        if (_subscribedBattleOrdersManager == null)
+        {
+            return;
+        }
+
+        _subscribedBattleOrdersManager.OnCommandStateChanged -= HandleBattleOrderCommandStateChanged;
+        _subscribedBattleOrdersManager = null;
+    }
+
+    private void HandleBattleOrderCommandStateChanged(
+        BattleOrderCommandState previousState,
+        BattleOrderCommandState nextState
+    )
+    {
+        RefreshButtonStates();
     }
 
     private IEnumerator RequestMicrophonePermissionIfNeeded()

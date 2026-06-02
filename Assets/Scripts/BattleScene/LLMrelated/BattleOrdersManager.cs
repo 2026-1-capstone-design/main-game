@@ -1,5 +1,5 @@
 // SOT mock/Gemini LLM/remote SLM 결과를 로그로 확인하고 실행 진입점에 연결한다.
-// 서버 경로는 Unity가 빌드한 prompt와 생성 설정을 proxy에 보내고, proxy 응답 text만 파싱한다.
+// 서버 SOT 처리 중에는 명령 상태를 Processing으로 고정한다.
 // 후처리 완료 action만 SlmUnitCommand로 변환해 BattleSimulationManager에 넘긴다.
 // 실제 행동 생성은 SlmCommandUnitPlanner와 실행계층이 처리한다.
 
@@ -10,6 +10,13 @@ using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.Serialization;
+
+public enum BattleOrderCommandState
+{
+    Default,
+    UserInput,
+    Processing,
+}
 
 [DisallowMultipleComponent]
 public sealed class BattleOrdersManager : MonoBehaviour
@@ -118,9 +125,16 @@ public sealed class BattleOrdersManager : MonoBehaviour
     // 구형 BattleLlmResponseDto 기반 요청 sequence라 주석처리함. 나중에 실제 SOT LLM 호출 재연결 시 다시 써야 함.
     // private int _requestSequence;
     private BattleOrderLayerPipeline _layerPipeline;
+
+    // 서버 코루틴 중복 방지용 내부 플래그다. UI/배속/STT 제어는 CurrentCommandState를 기준으로 한다.
     private bool _serverSotPipelineRunning;
+    private BattleOrderCommandState _commandState = BattleOrderCommandState.Default;
+
+    public BattleOrderCommandState CurrentCommandState => _commandState;
+    public bool IsCommandProcessing => _commandState == BattleOrderCommandState.Processing;
 
     public event Action<BattleRuntimeUnit, string> OnAllyOrderResponseReceived;
+    public event Action<BattleOrderCommandState, BattleOrderCommandState> OnCommandStateChanged;
 
     public void Initialize(IReadOnlyList<BattleRuntimeUnit> runtimeUnits)
     {
@@ -178,6 +192,8 @@ public sealed class BattleOrdersManager : MonoBehaviour
         }
         _unitNameResolver.Rebuild(_allyUnits, _enemyUnits, _rosterProjection);
 
+        _serverSotPipelineRunning = false;
+        SetCommandState(BattleOrderCommandState.Default);
         _initialized = true;
 
         if (verboseLog)
@@ -186,6 +202,27 @@ public sealed class BattleOrdersManager : MonoBehaviour
                 $"[BattleOrdersManager] Initialized. AllyCount={CountUnits(_allyUnits)}, EnemyCount={CountUnits(_enemyUnits)}, HasBattlefieldCollider={_battlefieldCollider != null}",
                 this
             );
+        }
+    }
+
+    // 명령 입력 시작 상태를 외부 UI가 요청한다. 서버 처리 중이면 새 입력을 받지 않는다.
+    public bool TryBeginUserOrderInput()
+    {
+        if (_commandState == BattleOrderCommandState.Processing)
+        {
+            return false;
+        }
+
+        SetCommandState(BattleOrderCommandState.UserInput);
+        return true;
+    }
+
+    // 입력이 취소되거나 실제 처리로 넘어가지 않은 경우에만 기본 상태로 되돌린다.
+    public void CancelUserOrderInput()
+    {
+        if (_commandState == BattleOrderCommandState.UserInput)
+        {
+            SetCommandState(BattleOrderCommandState.Default);
         }
     }
 
@@ -201,6 +238,7 @@ public sealed class BattleOrdersManager : MonoBehaviour
         if (string.IsNullOrWhiteSpace(sanitizedRawText))
         {
             Debug.LogWarning("[BattleOrdersManager] Global order ignored. Raw order text is empty.", this);
+            CancelUserOrderInput();
             return;
         }
 
@@ -235,6 +273,7 @@ public sealed class BattleOrdersManager : MonoBehaviour
         if (useMockInput)
         {
             RunSotLayerPipeline(sotOrderText);
+            CancelUserOrderInput();
             return;
         }
 
@@ -252,9 +291,11 @@ public sealed class BattleOrdersManager : MonoBehaviour
         if (!TryValidateSotServerRouteSettings(routeKind, out string routeSettingsError))
         {
             Debug.LogError("[BattleOrdersManager] Server SOT pipeline skipped. " + routeSettingsError, this);
+            CancelUserOrderInput();
             return;
         }
 
+        SetCommandState(BattleOrderCommandState.Processing);
         StartCoroutine(RunServerSotLayerPipeline(sotOrderText, routeKind));
     }
 
@@ -387,7 +428,7 @@ public sealed class BattleOrdersManager : MonoBehaviour
                 "[BattleOrdersManager] Server SOT pipeline skipped. BattleSimulationManager.Instance is null.",
                 this
             );
-            _serverSotPipelineRunning = false;
+            FinishServerSotPipeline();
             yield break;
         }
 
@@ -442,7 +483,7 @@ public sealed class BattleOrdersManager : MonoBehaviour
         if (!string.IsNullOrWhiteSpace(parserRequestError))
         {
             LogSotServerFailure("PARSER REQUEST FAILED", parserPrompt, parserRequestError, parserRawResponse);
-            _serverSotPipelineRunning = false;
+            FinishServerSotPipeline();
             yield break;
         }
 
@@ -456,7 +497,7 @@ public sealed class BattleOrdersManager : MonoBehaviour
         )
         {
             LogSotServerFailure("PARSER OUTPUT INVALID", parserPrompt, parserParseError, parserRawResponse);
-            _serverSotPipelineRunning = false;
+            FinishServerSotPipeline();
             yield break;
         }
 
@@ -471,7 +512,7 @@ public sealed class BattleOrdersManager : MonoBehaviour
         )
         {
             LogSotServerFailure("POSTPROCESS FAILED", parserPrompt, postprocessError, parserRawResponse);
-            _serverSotPipelineRunning = false;
+            FinishServerSotPipeline();
             yield break;
         }
 
@@ -488,7 +529,7 @@ public sealed class BattleOrdersManager : MonoBehaviour
                 );
             }
 
-            _serverSotPipelineRunning = false;
+            FinishServerSotPipeline();
             yield break;
         }
 
@@ -501,7 +542,7 @@ public sealed class BattleOrdersManager : MonoBehaviour
                 Debug.Log("[BattleOrdersManager] Server SOT pipeline ended. Dialog request has no actors.", this);
             }
 
-            _serverSotPipelineRunning = false;
+            FinishServerSotPipeline();
             yield break;
         }
 
@@ -545,7 +586,7 @@ public sealed class BattleOrdersManager : MonoBehaviour
         if (!string.IsNullOrWhiteSpace(dialogRequestError))
         {
             LogSotServerFailure("DIALOG REQUEST FAILED", dialogPrompt, dialogRequestError, dialogRawResponse);
-            _serverSotPipelineRunning = false;
+            FinishServerSotPipeline();
             yield break;
         }
 
@@ -559,7 +600,7 @@ public sealed class BattleOrdersManager : MonoBehaviour
         )
         {
             LogSotServerFailure("DIALOG OUTPUT INVALID", dialogPrompt, dialogParseError, dialogRawResponse);
-            _serverSotPipelineRunning = false;
+            FinishServerSotPipeline();
             yield break;
         }
 
@@ -588,7 +629,7 @@ public sealed class BattleOrdersManager : MonoBehaviour
 
         TryIssuePostprocessedSlmCommands(postprocessResult);
 
-        _serverSotPipelineRunning = false;
+        FinishServerSotPipeline();
     }
 
     private IEnumerator PostSotLayerRequest(
@@ -1112,6 +1153,24 @@ public sealed class BattleOrdersManager : MonoBehaviour
                 this
             );
         }
+    }
+
+    private void FinishServerSotPipeline()
+    {
+        _serverSotPipelineRunning = false;
+        SetCommandState(BattleOrderCommandState.Default);
+    }
+
+    private void SetCommandState(BattleOrderCommandState nextState)
+    {
+        if (_commandState == nextState)
+        {
+            return;
+        }
+
+        BattleOrderCommandState previousState = _commandState;
+        _commandState = nextState;
+        OnCommandStateChanged?.Invoke(previousState, nextState);
     }
 
     private string BuildUnitId(BattleRuntimeUnit unit)
