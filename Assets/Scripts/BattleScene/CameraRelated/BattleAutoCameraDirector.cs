@@ -136,8 +136,6 @@ public sealed class BattleAutoCameraDirector : MonoBehaviour
             return;
         }
 
-        EnsureReferences();
-
         if (cameraView == null || !cameraView.IsInitialized)
         {
             return;
@@ -552,10 +550,11 @@ public sealed class BattleAutoCameraDirector : MonoBehaviour
         _isTransitioning = false;
 
         BattleRuntimeUnit lostUnit = _focusedUnit;
+        BattleRuntimeUnit nextTarget = FindClusterCenterPlayerAlly();
+
         _focusedUnit = null;
         ResetFocusTargetSmoothing();
 
-        BattleRuntimeUnit nextTarget = FindClusterCenterPlayerAlly();
         if (nextTarget != null && !ReferenceEquals(nextTarget, lostUnit))
         {
             StartFocusTransition(nextTarget, commandResultTransitionSeconds);
