@@ -101,6 +101,9 @@ public sealed class BattleSceneUIManager : MonoBehaviour
     private TMP_InputField currentOrderInputField;
 
     [SerializeField]
+    private TMP_Text pastOrderText;
+
+    [SerializeField]
     private GameObject[] allyOrderResponsePanelRoots = new GameObject[BattleTeamConstants.MaxUnitsPerTeam];
 
     [SerializeField]
@@ -166,7 +169,9 @@ public sealed class BattleSceneUIManager : MonoBehaviour
     private BattleStartPayload _headerPayload;
     private IReadOnlyList<BattleRuntimeUnit> _headerRuntimeUnits;
     private readonly Coroutine[] _allyResponseHideCoroutines = new Coroutine[BattleTeamConstants.MaxUnitsPerTeam];
+    private readonly Queue<string> _pastOrders = new Queue<string>();
     private BattleUnitTooltipUIManager _battleUnitTooltipUIManager;
+    private int _lastOrderSubmissionFrame = -1;
 
     public bool IsBattleEndPanelOpen => battleEndPanelRoot != null && battleEndPanelRoot.activeSelf;
     public bool IsSurrenderPanelOpen => surrenderPanelRoot != null && surrenderPanelRoot.activeSelf;
@@ -214,6 +219,7 @@ public sealed class BattleSceneUIManager : MonoBehaviour
         ClearAllyOrderResponses();
         RefreshSpeedText();
         RefreshButtonStates();
+        RefreshPastOrderText();
 
         _initialized = true;
     }
@@ -222,6 +228,7 @@ public sealed class BattleSceneUIManager : MonoBehaviour
     {
         RefreshHeader();
         HandlePauseHotkey();
+        HandleOrderInputShortcut();
     }
 
     private void OnDestroy()
@@ -521,6 +528,7 @@ public sealed class BattleSceneUIManager : MonoBehaviour
             );
         }
 
+        RecordPastOrder(sanitizedInput);
         battleOrdersManager.SubmitGlobalOrder(sanitizedInput);
         ClearCurrentOrderInput();
 
@@ -585,6 +593,8 @@ public sealed class BattleSceneUIManager : MonoBehaviour
             );
         }
 
+        RecordPastOrder(sanitizedInput);
+        _lastOrderSubmissionFrame = Time.frameCount;
         battleOrdersManager.SubmitGlobalOrder(sanitizedInput);
 
         ClearAndReleaseCurrentOrderInput();
@@ -592,6 +602,53 @@ public sealed class BattleSceneUIManager : MonoBehaviour
         {
             RestoreOrderInputSpeedIfNeeded();
         }
+    }
+
+    private void HandleOrderInputShortcut()
+    {
+        Keyboard keyboard = Keyboard.current;
+        bool enterPressed =
+            keyboard != null && (keyboard.enterKey.wasPressedThisFrame || keyboard.numpadEnterKey.wasPressedThisFrame);
+        if (
+            !enterPressed
+            || Time.frameCount == _lastOrderSubmissionFrame
+            || currentOrderInputField == null
+            || currentOrderInputField.isFocused
+        )
+        {
+            return;
+        }
+
+        if (!CanUseBattleUiAction("Orders"))
+        {
+            return;
+        }
+
+        EnsureOrderInputVisible();
+        SetGlobalOrderTarget();
+        FocusCurrentOrderInput();
+    }
+
+    private void RecordPastOrder(string orderText)
+    {
+        string sanitizedOrder = SanitizeOrderInput(orderText);
+        if (string.IsNullOrWhiteSpace(sanitizedOrder))
+        {
+            return;
+        }
+
+        _pastOrders.Enqueue(sanitizedOrder);
+        while (_pastOrders.Count > 5)
+        {
+            _pastOrders.Dequeue();
+        }
+
+        RefreshPastOrderText();
+    }
+
+    private void RefreshPastOrderText()
+    {
+        SetText(pastOrderText, string.Join("\n", _pastOrders));
     }
 
     private void RefreshResultDetailTexts(BattleResolution resolution)
@@ -1263,6 +1320,22 @@ public sealed class BattleSceneUIManager : MonoBehaviour
                 $"[BattleSceneUIManager] Ally response ignored. Could not resolve ally panel. Ally={allyUnit?.DisplayName ?? "(null)"}",
                 this
             );
+            return;
+        }
+
+        if (allyUnit.IsCombatDisabled || allyUnit.CurrentHealth <= 0f)
+        {
+            if (allyIndex >= 0 && allyIndex < _allyResponseHideCoroutines.Length)
+            {
+                if (_allyResponseHideCoroutines[allyIndex] != null)
+                {
+                    StopCoroutine(_allyResponseHideCoroutines[allyIndex]);
+                    _allyResponseHideCoroutines[allyIndex] = null;
+                }
+
+                SetAllyResponseVisible(allyIndex, false);
+            }
+
             return;
         }
 

@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -36,6 +37,13 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
 
     [SerializeField]
     private TextMeshProUGUI nameText;
+
+    private const float CommandNameFlashDurationSeconds = 6f;
+    private const float CommandNameFlashIntervalSeconds = 0.25f;
+    private static readonly Color CommandNameFlashColor = new Color32(70, 220, 100, 255);
+    private Coroutine _commandNameFlashCoroutine;
+    private Color _defaultNameTextColor;
+    private bool _hasDefaultNameTextColor;
 
     private bool _isStatusTextVisible = true;
 
@@ -512,6 +520,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     // ── 사망 처리 (OnDied 이벤트 핸들러) ─────────────────────────
     private void HandleUnitDied()
     {
+        StopCommandReceivedNameFlash(true);
         State.ClearTargets();
 
         if (_myAnimation != null)
@@ -797,6 +806,69 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         string displayName = string.IsNullOrWhiteSpace(DisplayName) ? string.Empty : DisplayName;
         nameText.text = displayName;
         SetActive(nameText.gameObject, displayName.Length > 0 && !IsCombatDisabled && CurrentHealth > 0f);
+    }
+
+    public void FlashCommandReceivedName()
+    {
+        if (nameText == null || IsCombatDisabled || CurrentHealth <= 0f)
+        {
+            return;
+        }
+
+        if (_commandNameFlashCoroutine == null)
+        {
+            _defaultNameTextColor = nameText.color;
+            _hasDefaultNameTextColor = true;
+        }
+        else
+        {
+            StopCoroutine(_commandNameFlashCoroutine);
+        }
+
+        _commandNameFlashCoroutine = StartCoroutine(FlashCommandReceivedNameRoutine());
+    }
+
+    private IEnumerator FlashCommandReceivedNameRoutine()
+    {
+        float endTime = Time.realtimeSinceStartup + CommandNameFlashDurationSeconds;
+        bool showHighlight = true;
+
+        while (nameText != null && Time.realtimeSinceStartup < endTime)
+        {
+            nameText.color = showHighlight ? CommandNameFlashColor : Color.white;
+            showHighlight = !showHighlight;
+            yield return new WaitForSecondsRealtime(CommandNameFlashIntervalSeconds);
+        }
+
+        _commandNameFlashCoroutine = null;
+        RestoreDefaultNameTextColor();
+    }
+
+    private void StopCommandReceivedNameFlash(bool restoreDefaultColor)
+    {
+        if (_commandNameFlashCoroutine != null)
+        {
+            StopCoroutine(_commandNameFlashCoroutine);
+            _commandNameFlashCoroutine = null;
+        }
+
+        if (restoreDefaultColor)
+        {
+            RestoreDefaultNameTextColor();
+        }
+    }
+
+    private void RestoreDefaultNameTextColor()
+    {
+        if (nameText != null && _hasDefaultNameTextColor)
+        {
+            nameText.color = _defaultNameTextColor;
+        }
+    }
+
+    private void OnDisable()
+    {
+        StopCommandReceivedNameFlash(true);
     }
 
     private void RefreshStatusText()

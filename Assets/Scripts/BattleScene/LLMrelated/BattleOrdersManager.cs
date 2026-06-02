@@ -1178,6 +1178,7 @@ public sealed class BattleOrdersManager : MonoBehaviour
 
             simulationManager.IssueSlmCommands(actorUnit.State, slmCommands);
             issuedActors.Add(actorUnit);
+            actorUnit.FlashCommandReceivedName();
             issuedCount++;
         }
 

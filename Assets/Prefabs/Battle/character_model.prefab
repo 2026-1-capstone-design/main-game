@@ -10346,11 +10346,29 @@ MonoBehaviour:
   maxStatusIcons: 10
   statusIconDatabase:
   - type: 5
-    iconSprite: {fileID: 21300000, guid: f9573f8d5c1323c45aa178aeaaf67b9b, type: 3}
+    iconSprite: {fileID: 21300000, guid: a806aa9c62d2e0c4cbbe4c957b316bd1, type: 3}
   - type: 0
-    iconSprite: {fileID: 21300000, guid: 3450ddb6f9188984cbcf6dc4c66a5c3d, type: 3}
+    iconSprite: {fileID: 21300000, guid: 6b769bff2aa67b4488c902943c0085cd, type: 3}
   - type: 1
-    iconSprite: {fileID: 21300000, guid: 0883fe8f11f38b84ea992a6b0d1a40be, type: 3}
+    iconSprite: {fileID: 21300000, guid: e42a4a35033b67542a402b1c61184902, type: 3}
+  - type: 2
+    iconSprite: {fileID: 21300000, guid: 23b9e756ca5fa244cb523b15f79eaf3f, type: 3}
+  - type: 3
+    iconSprite: {fileID: 21300000, guid: fadca8086859c684db051a24401255d9, type: 3}
+  - type: 4
+    iconSprite: {fileID: 21300000, guid: fbf6a3ae1dc7c484490e37c32907f28f, type: 3}
+  - type: 6
+    iconSprite: {fileID: 21300000, guid: ed22d7c97fea567489436b1f0bdaf7a2, type: 3}
+  - type: 7
+    iconSprite: {fileID: 21300000, guid: cb968a321967f474690f3f0543ef1176, type: 3}
+  - type: 8
+    iconSprite: {fileID: 21300000, guid: 295a276b3318d104890fbe9e3372455a, type: 3}
+  - type: 9
+    iconSprite: {fileID: 21300000, guid: 8f0b5dbc8ab31d9458ec854931ac2d65, type: 3}
+  - type: 10
+    iconSprite: {fileID: 21300000, guid: 9784f3ef772f524448649d783f629da1, type: 3}
+  - type: 11
+    iconSprite: {fileID: 21300000, guid: 3b2c842e781e3d242932630c561ca96c, type: 3}
 --- !u!1 &3182389425745519545
 GameObject:
   m_ObjectHideFlags: 0
