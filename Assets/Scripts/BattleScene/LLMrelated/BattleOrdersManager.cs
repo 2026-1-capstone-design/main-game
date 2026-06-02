@@ -25,10 +25,7 @@ public sealed class BattleOrderProcessingResult
 
     public BattleRuntimeUnit FirstIssuedActor
     {
-        get
-        {
-            return IssuedActors != null && IssuedActors.Length > 0 ? IssuedActors[0] : null;
-        }
+        get { return IssuedActors != null && IssuedActors.Length > 0 ? IssuedActors[0] : null; }
     }
 
     private BattleOrderProcessingResult(bool succeeded, BattleRuntimeUnit[] issuedActors)

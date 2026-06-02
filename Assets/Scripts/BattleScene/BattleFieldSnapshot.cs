@@ -340,10 +340,7 @@ public sealed class BattleFieldSnapshot
     }
 
     // 적/아군을 모두 포함해 가장 큰 군집을 찾고, 그 군집 중심에 가장 가까운 player-owned 아군을 반환한다.
-    public bool TryFindPlayerAllyNearestLargestClusterCenter(
-        BattleRuntimeUnit excludedAlly,
-        out BattleRuntimeUnit ally
-    )
+    public bool TryFindPlayerAllyNearestLargestClusterCenter(BattleRuntimeUnit excludedAlly, out BattleRuntimeUnit ally)
     {
         ally = null;
 
@@ -392,12 +389,7 @@ public sealed class BattleFieldSnapshot
                 clusterDensity += 1f - Mathf.Clamp01(distance / safeRadius);
 
                 BattleRuntimeUnit runtime = ResolveRuntime(member);
-                if (
-                    runtime != null
-                    && runtime.IsPlayerOwned
-                    && !runtime.IsCombatDisabled
-                    && member != excludedState
-                )
+                if (runtime != null && runtime.IsPlayerOwned && !runtime.IsCombatDisabled && member != excludedState)
                 {
                     hasEligiblePlayerAlly = true;
                 }

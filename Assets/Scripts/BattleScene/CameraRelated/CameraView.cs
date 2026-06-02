@@ -242,7 +242,8 @@ public sealed class CameraView : MonoBehaviour
         float heightOffset = Mathf.Sin(elevationRadians) * safeDistance;
         float circleRadians = targetCircleAngleDegrees * Mathf.Deg2Rad;
         Vector3 horizontalDirection = new Vector3(Mathf.Sin(circleRadians), 0f, Mathf.Cos(circleRadians));
-        Vector3 preferredPosition = targetPosition + horizontalDirection * horizontalDistance + Vector3.up * heightOffset;
+        Vector3 preferredPosition =
+            targetPosition + horizontalDirection * horizontalDistance + Vector3.up * heightOffset;
 
         if (!TryBuildFocusStateForPreferredPosition(targetPosition, preferredPosition, out state))
         {
@@ -282,11 +283,7 @@ public sealed class CameraView : MonoBehaviour
         return TryBuildFocusStateAtOrbitAngle(targetPosition, orbitAngle, out state);
     }
 
-    public bool TryBuildFocusStateAtOrbitAngle(
-        Vector3 targetPosition,
-        float orbitAngle,
-        out CameraViewState state
-    )
+    public bool TryBuildFocusStateAtOrbitAngle(Vector3 targetPosition, float orbitAngle, out CameraViewState state)
     {
         state = default;
 
@@ -304,7 +301,14 @@ public sealed class CameraView : MonoBehaviour
             return false;
         }
 
-        if (!TryComputeNoRollLookOffsets(baseForward, desiredForward, out float lookYawOffset, out float lookPitchOffset))
+        if (
+            !TryComputeNoRollLookOffsets(
+                baseForward,
+                desiredForward,
+                out float lookYawOffset,
+                out float lookPitchOffset
+            )
+        )
         {
             return false;
         }

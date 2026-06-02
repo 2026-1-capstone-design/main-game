@@ -390,10 +390,7 @@ public sealed class BattleAutoCameraDirector : MonoBehaviour
         BattleFieldSnapshot snapshot = battleSimulationManager.CurrentSnapshot;
         if (
             snapshot != null
-            && snapshot.TryFindPlayerAllyNearestLargestClusterCenter(
-                _focusedUnit,
-                out BattleRuntimeUnit ally
-            )
+            && snapshot.TryFindPlayerAllyNearestLargestClusterCenter(_focusedUnit, out BattleRuntimeUnit ally)
         )
         {
             return ally;

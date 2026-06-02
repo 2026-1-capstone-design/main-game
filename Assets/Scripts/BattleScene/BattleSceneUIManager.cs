@@ -381,7 +381,11 @@ public sealed class BattleSceneUIManager : MonoBehaviour
             return;
         }
 
-        if (_activeModalState != ModalState.None || battleSimulationManager.IsTemporarilyPaused || IsBattleOrderCommandActive())
+        if (
+            _activeModalState != ModalState.None
+            || battleSimulationManager.IsTemporarilyPaused
+            || IsBattleOrderCommandActive()
+        )
         {
             Debug.LogWarning("[BattleSceneUIManager] Speed preset blocked. Command or modal UI is active.", this);
             return;

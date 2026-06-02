@@ -500,7 +500,8 @@ public sealed class BattleVoiceOrderInputController : MonoBehaviour
     private bool IsBattleOrderCommandProcessing()
     {
         EnsureBattleOrdersManagerReferenceOnly();
-        return battleOrdersManager != null && battleOrdersManager.CurrentCommandState == BattleOrderCommandState.Processing;
+        return battleOrdersManager != null
+            && battleOrdersManager.CurrentCommandState == BattleOrderCommandState.Processing;
     }
 
     private void EnsureBattleOrdersManagerReferenceOnly()
