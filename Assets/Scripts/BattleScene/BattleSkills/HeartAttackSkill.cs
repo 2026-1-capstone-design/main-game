@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-// HeartAttack: "heartAttackArrow" 투사체를 발사하여 적중 시 데미지 + 50 넉백 + 크리티컬 이펙트를 발생시킵니다.
+// HeartAttack: "heartAttackArrow" 투사체를 발사하여 적중 시 공격력의 120% 데미지 + 50 넉백 + 크리티컬 이펙트를 발생시킵니다.
 public sealed class HeartAttackSkill : IBattleSkill
 {
     public WeaponSkillId SkillId => WeaponSkillId.HeartAttack;

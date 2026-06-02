@@ -18,6 +18,8 @@ MonoBehaviour:
   weaponBuyPricePerLevel: 50
   gladiatorSellPricePerLevel: 40
   weaponSellPricePerLevel: 40
+  artifactBuyPrice: 100
+  artifactSellPrice: 80
   veryLowRewardBase: 5000
   veryLowRewardPerLevel: 100
   lowRewardBase: 6000
@@ -29,8 +31,8 @@ MonoBehaviour:
   gladiatorBaseMarketPrice: 2000
   gladiatorMarketPricePerLevelMin: 40
   gladiatorMarketPricePerLevelMax: 60
-  gladiatorBaseUpkeep: 2000
-  gladiatorUpkeepPerLevel: 100
+  gladiatorBaseUpkeep: 1000
+  gladiatorUpkeepPerLevel: 50
   commonWeaponBasePrice: 4000
   commonWeaponPricePerLevel: 100
   uncommonWeaponBasePrice: 5000
@@ -61,3 +63,4 @@ MonoBehaviour:
   equipmentMoveSpeedBonusPerLevel: 0.1
   marketGladiatorSlots: 4
   marketWeaponSlots: 4
+  marketArtifactSlots: 4

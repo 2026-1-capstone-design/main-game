@@ -526,6 +526,13 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     private void HandleUnitRevived()
     {
         RefreshHPbar();
+
+        if (_myAnimation != null)
+        {
+            _myAnimation.SetBool("isMoving", false);
+            _myAnimation.SetBool("die", false);
+        }
+
         RefreshVisualState();
     }
 
