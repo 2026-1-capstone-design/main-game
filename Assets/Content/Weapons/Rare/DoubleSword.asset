@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: df9d8b62f4a040845a470ef2178797ef, type: 3}
   m_Name: DoubleSword
   m_EditorClassIdentifier: 
-  icon: {fileID: 21300000, guid: 7e16267b005830c4489fd5426bd9e974, type: 3}
+  icon: {fileID: 21300000, guid: 6d81c35340a0f474cbd307203c680aa9, type: 3}
   weaponName: DoubleSword
   weaponType: 3
   lore: 

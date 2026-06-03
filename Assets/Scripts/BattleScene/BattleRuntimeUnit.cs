@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -36,6 +37,19 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
 
     [SerializeField]
     private TextMeshProUGUI nameText;
+
+    [Header("Command Feedback")]
+    [SerializeField]
+    private Material commandOutlineMaterial;
+
+    private const float CommandNameFlashDurationSeconds = 6f;
+    private const float CommandNameFlashIntervalSeconds = 0.25f;
+    private static readonly Color CommandNameFlashColor = new Color32(70, 220, 100, 255);
+    private readonly Dictionary<Renderer, Material[]> _commandOutlineOriginalMaterials =
+        new Dictionary<Renderer, Material[]>();
+    private Coroutine _commandNameFlashCoroutine;
+    private Color _defaultNameTextColor;
+    private bool _hasDefaultNameTextColor;
 
     private bool _isStatusTextVisible = true;
 
@@ -512,6 +526,7 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
     // ── 사망 처리 (OnDied 이벤트 핸들러) ─────────────────────────
     private void HandleUnitDied()
     {
+        StopCommandReceivedNameFlash(true);
         State.ClearTargets();
 
         if (_myAnimation != null)
@@ -797,6 +812,117 @@ public sealed class BattleRuntimeUnit : MonoBehaviour
         string displayName = string.IsNullOrWhiteSpace(DisplayName) ? string.Empty : DisplayName;
         nameText.text = displayName;
         SetActive(nameText.gameObject, displayName.Length > 0 && !IsCombatDisabled && CurrentHealth > 0f);
+    }
+
+    public void FlashCommandReceivedName()
+    {
+        if (nameText == null || IsCombatDisabled || CurrentHealth <= 0f)
+        {
+            return;
+        }
+
+        if (_commandNameFlashCoroutine == null)
+        {
+            _defaultNameTextColor = nameText.color;
+            _hasDefaultNameTextColor = true;
+        }
+        else
+        {
+            StopCoroutine(_commandNameFlashCoroutine);
+        }
+
+        EnableCommandReceivedOutline();
+        _commandNameFlashCoroutine = StartCoroutine(FlashCommandReceivedNameRoutine());
+    }
+
+    private IEnumerator FlashCommandReceivedNameRoutine()
+    {
+        float endTime = Time.realtimeSinceStartup + CommandNameFlashDurationSeconds;
+        bool showHighlight = true;
+
+        while (nameText != null && Time.realtimeSinceStartup < endTime)
+        {
+            nameText.color = showHighlight ? CommandNameFlashColor : Color.white;
+            showHighlight = !showHighlight;
+            yield return new WaitForSecondsRealtime(CommandNameFlashIntervalSeconds);
+        }
+
+        _commandNameFlashCoroutine = null;
+        RestoreDefaultNameTextColor();
+        RestoreCommandReceivedOutline();
+    }
+
+    private void EnableCommandReceivedOutline()
+    {
+        if (commandOutlineMaterial == null || _commandOutlineOriginalMaterials.Count > 0)
+        {
+            return;
+        }
+
+        Renderer[] renderers = GetComponentsInChildren<Renderer>(true);
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            Renderer renderer = renderers[i];
+            if (renderer == null || renderer is not MeshRenderer && renderer is not SkinnedMeshRenderer)
+            {
+                continue;
+            }
+
+            Material[] originalMaterials = renderer.sharedMaterials;
+            if (Array.IndexOf(originalMaterials, commandOutlineMaterial) >= 0)
+            {
+                continue;
+            }
+
+            _commandOutlineOriginalMaterials.Add(renderer, originalMaterials);
+
+            Material[] outlinedMaterials = new Material[originalMaterials.Length + 1];
+            Array.Copy(originalMaterials, outlinedMaterials, originalMaterials.Length);
+            outlinedMaterials[outlinedMaterials.Length - 1] = commandOutlineMaterial;
+            renderer.sharedMaterials = outlinedMaterials;
+        }
+    }
+
+    private void RestoreCommandReceivedOutline()
+    {
+        foreach (KeyValuePair<Renderer, Material[]> entry in _commandOutlineOriginalMaterials)
+        {
+            if (entry.Key != null)
+            {
+                entry.Key.sharedMaterials = entry.Value;
+            }
+        }
+
+        _commandOutlineOriginalMaterials.Clear();
+    }
+
+    private void StopCommandReceivedNameFlash(bool restoreDefaultColor)
+    {
+        if (_commandNameFlashCoroutine != null)
+        {
+            StopCoroutine(_commandNameFlashCoroutine);
+            _commandNameFlashCoroutine = null;
+        }
+
+        if (restoreDefaultColor)
+        {
+            RestoreDefaultNameTextColor();
+        }
+
+        RestoreCommandReceivedOutline();
+    }
+
+    private void RestoreDefaultNameTextColor()
+    {
+        if (nameText != null && _hasDefaultNameTextColor)
+        {
+            nameText.color = _defaultNameTextColor;
+        }
+    }
+
+    private void OnDisable()
+    {
+        StopCommandReceivedNameFlash(true);
     }
 
     private void RefreshStatusText()

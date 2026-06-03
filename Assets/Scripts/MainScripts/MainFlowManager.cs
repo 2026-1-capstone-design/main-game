@@ -609,7 +609,9 @@ public sealed class MainFlowManager : MonoBehaviour
             enemyDeploymentPositions,
             currentDay: _sessionManager != null ? _sessionManager.CurrentDay : 1,
             difficulty: encounter.Difficulty,
-            playerSquadTeamIndex: deploymentPlan != null ? deploymentPlan.SquadTeamIndex : 0
+            playerSquadTeamIndex: deploymentPlan != null ? deploymentPlan.SquadTeamIndex : 0,
+            allyTeamName: ResolveAllyTeamName(),
+            enemyTeamName: battleUIManager != null ? battleUIManager.SelectEnemyTeamNameForBattle() : "적 검투사단"
         );
 
         return true;
@@ -905,12 +907,17 @@ public sealed class MainFlowManager : MonoBehaviour
         }
 
         _battleSessionManager.StorePayload(payload);
+        battleUIManager.ShowPreBattlePanel(payload);
+
+        // PreBattlePanel을 실제 화면에 한 번 그린 뒤 비동기 로드를 시작한다.
+        yield return new WaitForEndOfFrame();
 
         bool started = _sceneLoader.TryLoadScene(battleSceneName);
 
         if (!started)
         {
             _battleSessionManager.ClearPayload();
+            battleUIManager.HidePreBattlePanel();
             Debug.LogError($"[MainFlowManager] Failed to start BattleScene load. SceneName={battleSceneName}", this);
             yield break;
         }
@@ -921,7 +928,6 @@ public sealed class MainFlowManager : MonoBehaviour
         }
 
         battleManager.ClosePreparation();
-        battleUIManager.CloseAll();
         _uiOwner = UiOwner.Main;
         ApplyUiState();
 
@@ -936,6 +942,13 @@ public sealed class MainFlowManager : MonoBehaviour
         }
 
         yield break;
+    }
+
+    private string ResolveAllyTeamName()
+    {
+        return _sessionManager != null && !string.IsNullOrWhiteSpace(_sessionManager.TeamName)
+            ? _sessionManager.TeamName.Trim()
+            : SessionManager.DefaultTeamName;
     }
 
     public void HandleInventoryMenuRequested()

@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -7,7 +8,7 @@ using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 // BattleScene의 3D 전투 유닛 정보 팝업을 관리한다.
-// MainScene BattlePanel의 툴팁 구성을 재사용하되, hover가 아니라 월드 모델 좌클릭으로 팝업을 연다.
+// MainScene BattlePanel의 툴팁 구성을 재사용하되, 월드 모델 우클릭으로 고정 위치 팝업을 연다.
 [DisallowMultipleComponent]
 public sealed class BattleUnitTooltipUIManager : MonoBehaviour
 {
@@ -43,9 +44,6 @@ public sealed class BattleUnitTooltipUIManager : MonoBehaviour
     [Header("Tooltip")]
     [SerializeField]
     private RectTransform tooltipRoot;
-
-    [SerializeField]
-    private Vector2 popupOffset = new Vector2(16f, -8f);
 
     [SerializeField]
     private RawImage tooltipIcon;
@@ -128,6 +126,8 @@ public sealed class BattleUnitTooltipUIManager : MonoBehaviour
     private Vector3 _healthBarRedFillBaseScale = Vector3.one;
     private bool _hasHealthBarRedFillBaseScale;
     private ContentDatabaseProvider _contentDatabaseProvider;
+    private Coroutine _temporaryHideCoroutine;
+    private bool _isTemporarilyHidden;
 
     private void Awake()
     {
@@ -154,20 +154,9 @@ public sealed class BattleUnitTooltipUIManager : MonoBehaviour
             return;
         }
 
-        if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
+        if (Mouse.current != null && Mouse.current.rightButton.wasPressedThisFrame)
         {
-            if (IsPointerInsideTooltip())
-            {
-                return;
-            }
-
-            if (IsPointerOverUi())
-            {
-                HideTooltip();
-                return;
-            }
-
-            BattleRuntimeUnit clickedUnit = ResolvePointedUnit();
+            BattleRuntimeUnit clickedUnit = IsPointerOverUi() ? null : ResolvePointedUnit();
             if (clickedUnit != null)
             {
                 ShowTooltip(clickedUnit);
@@ -186,6 +175,7 @@ public sealed class BattleUnitTooltipUIManager : MonoBehaviour
 
     public void Initialize(IReadOnlyList<BattleRuntimeUnit> runtimeUnits)
     {
+        CancelTemporaryHide();
         _runtimeUnits.Clear();
 
         if (runtimeUnits != null)
@@ -216,6 +206,7 @@ public sealed class BattleUnitTooltipUIManager : MonoBehaviour
 
     public void Clear()
     {
+        CancelTemporaryHide();
         _runtimeUnits.Clear();
         _initialized = false;
         HideTooltip();
@@ -291,6 +282,11 @@ public sealed class BattleUnitTooltipUIManager : MonoBehaviour
             return;
         }
 
+        if (_isTemporarilyHidden)
+        {
+            return;
+        }
+
         SetUnitPreview(unit);
         RefreshTooltipStats(unit);
         RefreshDetailIcons(unit);
@@ -298,13 +294,51 @@ public sealed class BattleUnitTooltipUIManager : MonoBehaviour
         SetTooltipStatIconsActive(true);
         tooltipRoot.gameObject.SetActive(true);
         tooltipRoot.SetAsLastSibling();
-        PositionTooltipAtPointer();
+    }
+
+    public void HideTemporarily(float seconds)
+    {
+        if (_temporaryHideCoroutine != null)
+        {
+            StopCoroutine(_temporaryHideCoroutine);
+        }
+
+        _isTemporarilyHidden = true;
+        HideTooltipVisuals();
+        _temporaryHideCoroutine = StartCoroutine(RestoreTooltipAfterDelay(Mathf.Max(0f, seconds)));
+    }
+
+    private void CancelTemporaryHide()
+    {
+        if (_temporaryHideCoroutine != null)
+        {
+            StopCoroutine(_temporaryHideCoroutine);
+            _temporaryHideCoroutine = null;
+        }
+
+        _isTemporarilyHidden = false;
+    }
+
+    private IEnumerator RestoreTooltipAfterDelay(float seconds)
+    {
+        yield return new WaitForSeconds(seconds);
+        _temporaryHideCoroutine = null;
+        _isTemporarilyHidden = false;
+
+        if (_selectedUnit != null && !IsBattleEndUiOpen())
+        {
+            ShowTooltip(_selectedUnit);
+        }
     }
 
     private void HideTooltip()
     {
         _selectedUnit = null;
+        HideTooltipVisuals();
+    }
 
+    private void HideTooltipVisuals()
+    {
         if (tooltipRoot != null)
         {
             tooltipRoot.gameObject.SetActive(false);
@@ -404,76 +438,9 @@ public sealed class BattleUnitTooltipUIManager : MonoBehaviour
         SetText(rangeText, FormatStat(unit.AttackRange));
     }
 
-    private bool IsPointerInsideTooltip()
-    {
-        if (tooltipRoot == null || Mouse.current == null)
-        {
-            return false;
-        }
-
-        Canvas canvas = tooltipRoot.GetComponentInParent<Canvas>();
-        Camera eventCamera =
-            canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
-        return tooltipRoot.gameObject.activeInHierarchy
-            && RectTransformUtility.RectangleContainsScreenPoint(
-                tooltipRoot,
-                Mouse.current.position.ReadValue(),
-                eventCamera
-            );
-    }
-
     private static bool IsPointerOverUi()
     {
         return EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
-    }
-
-    private void PositionTooltipAtPointer()
-    {
-        if (tooltipRoot == null || Mouse.current == null)
-        {
-            return;
-        }
-
-        RectTransform parentRect = tooltipRoot.parent as RectTransform;
-        if (parentRect == null)
-        {
-            return;
-        }
-
-        Canvas canvas = tooltipRoot.GetComponentInParent<Canvas>();
-        Camera eventCamera =
-            canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
-
-        if (
-            !RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                parentRect,
-                Mouse.current.position.ReadValue(),
-                eventCamera,
-                out Vector2 localPosition
-            )
-        )
-        {
-            return;
-        }
-
-        Rect parentBounds = parentRect.rect;
-        Vector2 tooltipSize = tooltipRoot.rect.size;
-
-        tooltipRoot.anchorMin = new Vector2(0f, 1f);
-        tooltipRoot.anchorMax = new Vector2(0f, 1f);
-        tooltipRoot.pivot = new Vector2(0f, 1f);
-
-        Vector2 anchoredPosition =
-            new Vector2(localPosition.x - parentBounds.xMin, localPosition.y - parentBounds.yMax) + popupOffset;
-
-        float minX = 0f;
-        float maxX = Mathf.Max(0f, parentBounds.width - tooltipSize.x);
-        float minY = -Mathf.Max(0f, parentBounds.height - tooltipSize.y);
-        float maxY = 0f;
-
-        anchoredPosition.x = Mathf.Clamp(anchoredPosition.x, minX, maxX);
-        anchoredPosition.y = Mathf.Clamp(anchoredPosition.y, minY, maxY);
-        tooltipRoot.anchoredPosition = anchoredPosition;
     }
 
     private void SetTooltipStatIconsActive(bool value)

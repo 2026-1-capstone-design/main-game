@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: df9d8b62f4a040845a470ef2178797ef, type: 3}
   m_Name: WaterGOD
   m_EditorClassIdentifier: 
-  icon: {fileID: 21300000, guid: 3a5fd9e17328306459833bab2312fb8f, type: 3}
+  icon: {fileID: 21300000, guid: caa990e8c0f728c4886a390491ca26c0, type: 3}
   weaponName: WaterGOD
   weaponType: 4
   lore: 

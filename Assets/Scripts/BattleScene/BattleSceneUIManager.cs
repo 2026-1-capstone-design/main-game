@@ -24,43 +24,8 @@ public sealed class BattleSceneUIManager : MonoBehaviour
     [SerializeField]
     private Button defeatConfirmButton;
 
-    [Header("Victory Panel")]
     [SerializeField]
-    private GameObject victoryPanelRoot;
-
-    [SerializeField]
-    private RawImage victoryBackgroundImage;
-
-    [SerializeField]
-    private RawImage victoryHeaderImage;
-
-    [SerializeField]
-    private TMP_Text victoryBattleResultTitleText;
-
-    [SerializeField]
-    private TMP_Text victoryRewardText;
-
-    [SerializeField]
-    private Button victoryBackToMainButton;
-
-    [Header("Defeat Panel")]
-    [SerializeField]
-    private GameObject defeatPanelRoot;
-
-    [SerializeField]
-    private RawImage defeatBackgroundImage;
-
-    [SerializeField]
-    private RawImage defeatHeaderImage;
-
-    [SerializeField]
-    private TMP_Text defeatBattleResultTitleText;
-
-    [SerializeField]
-    private TMP_Text defeatRewardText;
-
-    [SerializeField]
-    private Button defeatBackToMainButton;
+    private TMP_Text rewardText;
 
     [Header("Speed UI")]
     [SerializeField]
@@ -136,6 +101,9 @@ public sealed class BattleSceneUIManager : MonoBehaviour
     private TMP_InputField currentOrderInputField;
 
     [SerializeField]
+    private TMP_Text pastOrderText;
+
+    [SerializeField]
     private GameObject[] allyOrderResponsePanelRoots = new GameObject[BattleTeamConstants.MaxUnitsPerTeam];
 
     [SerializeField]
@@ -201,13 +169,11 @@ public sealed class BattleSceneUIManager : MonoBehaviour
     private BattleStartPayload _headerPayload;
     private IReadOnlyList<BattleRuntimeUnit> _headerRuntimeUnits;
     private readonly Coroutine[] _allyResponseHideCoroutines = new Coroutine[BattleTeamConstants.MaxUnitsPerTeam];
-    private BattleResolution _lastResolution;
-    private bool _hasLastResolution;
+    private readonly Queue<string> _pastOrders = new Queue<string>();
+    private BattleUnitTooltipUIManager _battleUnitTooltipUIManager;
+    private int _lastOrderSubmissionFrame = -1;
 
-    public bool IsBattleEndPanelOpen =>
-        (battleEndPanelRoot != null && battleEndPanelRoot.activeSelf)
-        || (victoryPanelRoot != null && victoryPanelRoot.activeSelf)
-        || (defeatPanelRoot != null && defeatPanelRoot.activeSelf);
+    public bool IsBattleEndPanelOpen => battleEndPanelRoot != null && battleEndPanelRoot.activeSelf;
     public bool IsSurrenderPanelOpen => surrenderPanelRoot != null && surrenderPanelRoot.activeSelf;
     public bool IsOrdersPanelOpen => orderChatBackgroundRoot == null || orderChatBackgroundRoot.activeSelf;
 
@@ -234,10 +200,8 @@ public sealed class BattleSceneUIManager : MonoBehaviour
         _sceneLoader = SceneLoader.Instance;
         EnsureBattleSimulationManager();
 
-        BindButton(victoryConfirmButton, OnVictoryConfirmClicked);
-        BindButton(defeatConfirmButton, OnDefeatConfirmClicked);
-        BindButton(victoryBackToMainButton, ReturnToMainScene);
-        BindButton(defeatBackToMainButton, ReturnToMainScene);
+        BindButton(victoryConfirmButton, ReturnToMainScene);
+        BindButton(defeatConfirmButton, ReturnToMainScene);
         BindSpeedPresetButtons();
 
         BindButton(surrenderButton, OnSurrenderClicked);
@@ -255,6 +219,7 @@ public sealed class BattleSceneUIManager : MonoBehaviour
         ClearAllyOrderResponses();
         RefreshSpeedText();
         RefreshButtonStates();
+        RefreshPastOrderText();
 
         _initialized = true;
     }
@@ -263,6 +228,7 @@ public sealed class BattleSceneUIManager : MonoBehaviour
     {
         RefreshHeader();
         HandlePauseHotkey();
+        HandleOrderInputShortcut();
     }
 
     private void OnDestroy()
@@ -292,18 +258,11 @@ public sealed class BattleSceneUIManager : MonoBehaviour
 
         CloseTransientUi(restoreOrderSpeed: true, clearOrderInput: false);
 
-        _lastResolution = resolution;
-        _hasLastResolution = true;
-
         SetActive(battleEndPanelRoot, true);
-        SetActive(victoryPanelRoot, false);
-        SetActive(defeatPanelRoot, false);
         SetComponentActive(victoryConfirmButton, resolution.WasWin);
         SetComponentActive(defeatConfirmButton, !resolution.WasWin);
         SetButtonInteractable(victoryConfirmButton, resolution.WasWin);
         SetButtonInteractable(defeatConfirmButton, !resolution.WasWin);
-        SetButtonInteractable(victoryBackToMainButton, true);
-        SetButtonInteractable(defeatBackToMainButton, true);
         RefreshResultDetailTexts(resolution);
 
         RefreshSpeedText();
@@ -321,16 +280,11 @@ public sealed class BattleSceneUIManager : MonoBehaviour
     public void HideAll()
     {
         CloseTransientUi(restoreOrderSpeed: true, clearOrderInput: true);
-        _hasLastResolution = false;
         SetActive(battleEndPanelRoot, false);
-        SetActive(victoryPanelRoot, false);
-        SetActive(defeatPanelRoot, false);
         EnsureOrderInputVisible();
         SetGlobalOrderTarget();
         SetButtonInteractable(victoryConfirmButton, true);
         SetButtonInteractable(defeatConfirmButton, true);
-        SetButtonInteractable(victoryBackToMainButton, true);
-        SetButtonInteractable(defeatBackToMainButton, true);
 
         RefreshSpeedText();
         RefreshButtonStates();
@@ -574,6 +528,7 @@ public sealed class BattleSceneUIManager : MonoBehaviour
             );
         }
 
+        RecordPastOrder(sanitizedInput);
         battleOrdersManager.SubmitGlobalOrder(sanitizedInput);
         ClearCurrentOrderInput();
 
@@ -638,6 +593,8 @@ public sealed class BattleSceneUIManager : MonoBehaviour
             );
         }
 
+        RecordPastOrder(sanitizedInput);
+        _lastOrderSubmissionFrame = Time.frameCount;
         battleOrdersManager.SubmitGlobalOrder(sanitizedInput);
 
         ClearAndReleaseCurrentOrderInput();
@@ -647,40 +604,56 @@ public sealed class BattleSceneUIManager : MonoBehaviour
         }
     }
 
-    private void OnVictoryConfirmClicked()
+    private void HandleOrderInputShortcut()
     {
-        if (!_hasLastResolution)
+        Keyboard keyboard = Keyboard.current;
+        bool enterPressed =
+            keyboard != null && (keyboard.enterKey.wasPressedThisFrame || keyboard.numpadEnterKey.wasPressedThisFrame);
+        if (
+            !enterPressed
+            || Time.frameCount == _lastOrderSubmissionFrame
+            || currentOrderInputField == null
+            || currentOrderInputField.isFocused
+        )
         {
             return;
         }
 
-        SetActive(battleEndPanelRoot, false);
-        SetActive(victoryPanelRoot, true);
-        SetActive(defeatPanelRoot, false);
-        RefreshResultDetailTexts(_lastResolution);
-        RefreshButtonStates();
+        if (!CanUseBattleUiAction("Orders"))
+        {
+            return;
+        }
+
+        EnsureOrderInputVisible();
+        SetGlobalOrderTarget();
+        FocusCurrentOrderInput();
     }
 
-    private void OnDefeatConfirmClicked()
+    private void RecordPastOrder(string orderText)
     {
-        if (!_hasLastResolution)
+        string sanitizedOrder = SanitizeOrderInput(orderText);
+        if (string.IsNullOrWhiteSpace(sanitizedOrder))
         {
             return;
         }
 
-        SetActive(battleEndPanelRoot, false);
-        SetActive(victoryPanelRoot, false);
-        SetActive(defeatPanelRoot, true);
-        RefreshResultDetailTexts(_lastResolution);
-        RefreshButtonStates();
+        _pastOrders.Enqueue(sanitizedOrder);
+        while (_pastOrders.Count > 5)
+        {
+            _pastOrders.Dequeue();
+        }
+
+        RefreshPastOrderText();
+    }
+
+    private void RefreshPastOrderText()
+    {
+        SetText(pastOrderText, string.Join("\n", _pastOrders));
     }
 
     private void RefreshResultDetailTexts(BattleResolution resolution)
     {
-        SetText(victoryRewardText, $"보상 : {resolution.PendingReward} 골드");
-        SetText(defeatRewardText, "보상 : 0 골드");
-        SetText(victoryBattleResultTitleText, "전투 승리");
-        SetText(defeatBattleResultTitleText, "전투 패배");
+        SetText(rewardText, $"전투 보상 : {resolution.PendingReward} G");
     }
 
     private void ReturnToMainScene()
@@ -711,8 +684,6 @@ public sealed class BattleSceneUIManager : MonoBehaviour
 
         SetButtonInteractable(victoryConfirmButton, false);
         SetButtonInteractable(defeatConfirmButton, false);
-        SetButtonInteractable(victoryBackToMainButton, false);
-        SetButtonInteractable(defeatBackToMainButton, false);
 
         RefreshButtonStates();
 
@@ -723,8 +694,6 @@ public sealed class BattleSceneUIManager : MonoBehaviour
             _isNavigating = false;
             SetButtonInteractable(victoryConfirmButton, true);
             SetButtonInteractable(defeatConfirmButton, true);
-            SetButtonInteractable(victoryBackToMainButton, true);
-            SetButtonInteractable(defeatBackToMainButton, true);
 
             RefreshButtonStates();
             Debug.LogWarning("[BattleSceneUIManager] Failed to start MainScene load.", this);
@@ -742,12 +711,19 @@ public sealed class BattleSceneUIManager : MonoBehaviour
         }
 
         EnsureEnemySquadNameSelected();
-        SetText(enemySquadNameText, _selectedEnemySquadName);
+        SetText(enemySquadNameText, ResolveEnemyTeamName());
         SetText(allySquadNameText, ResolveAllyTeamName());
         SetText(
             dayDifficultyText,
             $"Day {_headerPayload.CurrentDay} {GetDifficultyHeaderText(_headerPayload.Difficulty)}"
         );
+    }
+
+    private string ResolveEnemyTeamName()
+    {
+        return _headerPayload != null && !string.IsNullOrWhiteSpace(_headerPayload.EnemyTeamName)
+            ? _headerPayload.EnemyTeamName
+            : _selectedEnemySquadName;
     }
 
     private void EnsureEnemySquadNameSelected()
@@ -778,8 +754,13 @@ public sealed class BattleSceneUIManager : MonoBehaviour
         _selectedEnemySquadName = "적 검투사단";
     }
 
-    private static string ResolveAllyTeamName()
+    private string ResolveAllyTeamName()
     {
+        if (_headerPayload != null && !string.IsNullOrWhiteSpace(_headerPayload.AllyTeamName))
+        {
+            return _headerPayload.AllyTeamName;
+        }
+
         SessionManager sessionManager = SessionManager.Instance;
         return sessionManager != null && !string.IsNullOrWhiteSpace(sessionManager.TeamName)
             ? sessionManager.TeamName
@@ -1342,6 +1323,22 @@ public sealed class BattleSceneUIManager : MonoBehaviour
             return;
         }
 
+        if (allyUnit.IsCombatDisabled || allyUnit.CurrentHealth <= 0f)
+        {
+            if (allyIndex >= 0 && allyIndex < _allyResponseHideCoroutines.Length)
+            {
+                if (_allyResponseHideCoroutines[allyIndex] != null)
+                {
+                    StopCoroutine(_allyResponseHideCoroutines[allyIndex]);
+                    _allyResponseHideCoroutines[allyIndex] = null;
+                }
+
+                SetAllyResponseVisible(allyIndex, false);
+            }
+
+            return;
+        }
+
         if (!TryGetAllyResponseText(allyIndex, out TMP_Text targetText))
         {
             Debug.LogWarning(
@@ -1353,6 +1350,21 @@ public sealed class BattleSceneUIManager : MonoBehaviour
 
         targetText.text = responseText ?? string.Empty;
         SetAllyResponseVisible(allyIndex, true);
+
+        if (allyIndex >= 4)
+        {
+            ResolveBattleUnitTooltipUIManager()?.HideTemporarily(allyResponseVisibleSeconds);
+        }
+
+        if (allyIndex < 0 || allyIndex >= _allyResponseHideCoroutines.Length)
+        {
+            Debug.LogWarning(
+                $"[BattleSceneUIManager] Ally response ignored. Coroutine index is out of range. AllyIndex={allyIndex}",
+                this
+            );
+            SetAllyResponseVisible(allyIndex, false);
+            return;
+        }
 
         if (_allyResponseHideCoroutines[allyIndex] != null)
         {
@@ -1452,6 +1464,18 @@ public sealed class BattleSceneUIManager : MonoBehaviour
         }
 
         allyOrderResponsePanelRoots[allyIndex].SetActive(isVisible);
+    }
+
+    private BattleUnitTooltipUIManager ResolveBattleUnitTooltipUIManager()
+    {
+        if (_battleUnitTooltipUIManager == null)
+        {
+            _battleUnitTooltipUIManager = FindFirstObjectByType<BattleUnitTooltipUIManager>(
+                FindObjectsInactive.Include
+            );
+        }
+
+        return _battleUnitTooltipUIManager;
     }
 
     private static string SanitizeOrderInput(string rawInput)

@@ -1,7 +1,13 @@
+﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 public sealed class OwnedGladiatorData
 {
+    public const int MaxEquippedArtifactCount = 3;
+
+    private readonly OwnedArtifactData[] _equippedArtifacts = new OwnedArtifactData[MaxEquippedArtifactCount];
+
     public int RuntimeId { get; } // 실제 보유 중인 검투사를 식별하는 런타임 ID
 
     public string DisplayName { get; set; }
@@ -14,7 +20,12 @@ public sealed class OwnedGladiatorData
     public TraitSO Trait { get; }
     public PersonalitySO Personality { get; }
 
-    public OwnedArtifactData EquippedArtifact { get; set; }
+    // 기존 단일 슬롯 코드를 위한 첫 슬롯 호환 프로퍼티다.
+    public OwnedArtifactData EquippedArtifact => _equippedArtifacts[0];
+
+    public IReadOnlyList<OwnedArtifactData> EquippedArtifacts => _equippedArtifacts;
+
+    public bool HasAvailableArtifactSlot => Array.Exists(_equippedArtifacts, artifact => artifact == null);
     public OwnedWeaponData EquippedWeapon { get; set; } // 현재 이 검투사가 장착 중인 실제 owned 무기 !!참조!!.
 
     // 클래스, 레벨, 개체 분산, 장비 보너스를 반영한 실제 전투용 캐시 스탯들.
@@ -60,7 +71,7 @@ public sealed class OwnedGladiatorData
         Trait = trait;
         Personality = personality;
 
-        EquippedArtifact = equippedArtifact;
+        TryEquipArtifact(equippedArtifact);
         EquippedWeapon = equippedWeapon;
 
         CachedMaxHealth = 0f;
@@ -74,5 +85,109 @@ public sealed class OwnedGladiatorData
         FinalAttackVariancePercent = 0f;
 
         CustomizeIndicates = customizeIndicates;
+    }
+
+    public OwnedArtifactData GetEquippedArtifact(int slotIndex)
+    {
+        return slotIndex >= 0 && slotIndex < _equippedArtifacts.Length ? _equippedArtifacts[slotIndex] : null;
+    }
+
+    public bool ContainsEquippedArtifact(OwnedArtifactData artifact)
+    {
+        return IndexOfEquippedArtifact(artifact) >= 0;
+    }
+
+    public int IndexOfEquippedArtifact(OwnedArtifactData artifact)
+    {
+        if (artifact == null)
+        {
+            return -1;
+        }
+
+        for (int i = 0; i < _equippedArtifacts.Length; i++)
+        {
+            if (_equippedArtifacts[i] == artifact)
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    public bool TryEquipArtifact(OwnedArtifactData artifact)
+    {
+        if (artifact == null || ContainsEquippedArtifact(artifact))
+        {
+            return false;
+        }
+
+        for (int i = 0; i < _equippedArtifacts.Length; i++)
+        {
+            if (_equippedArtifacts[i] == null)
+            {
+                _equippedArtifacts[i] = artifact;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public bool UnequipArtifact(OwnedArtifactData artifact)
+    {
+        int slotIndex = IndexOfEquippedArtifact(artifact);
+        if (slotIndex < 0)
+        {
+            return false;
+        }
+
+        _equippedArtifacts[slotIndex] = null;
+        CompactEquippedArtifacts();
+        return true;
+    }
+
+    public void SetEquippedArtifacts(IReadOnlyList<OwnedArtifactData> artifacts)
+    {
+        ClearEquippedArtifacts();
+        if (artifacts == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < artifacts.Count && i < _equippedArtifacts.Length; i++)
+        {
+            _equippedArtifacts[i] = artifacts[i];
+        }
+
+        CompactEquippedArtifacts();
+    }
+
+    public void ClearEquippedArtifacts()
+    {
+        for (int i = 0; i < _equippedArtifacts.Length; i++)
+        {
+            _equippedArtifacts[i] = null;
+        }
+    }
+
+    private void CompactEquippedArtifacts()
+    {
+        int writeIndex = 0;
+        for (int readIndex = 0; readIndex < _equippedArtifacts.Length; readIndex++)
+        {
+            OwnedArtifactData artifact = _equippedArtifacts[readIndex];
+            if (artifact == null)
+            {
+                continue;
+            }
+
+            _equippedArtifacts[writeIndex++] = artifact;
+        }
+
+        while (writeIndex < _equippedArtifacts.Length)
+        {
+            _equippedArtifacts[writeIndex++] = null;
+        }
     }
 }

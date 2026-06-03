@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: df9d8b62f4a040845a470ef2178797ef, type: 3}
   m_Name: StoneBigSword
   m_EditorClassIdentifier: 
-  icon: {fileID: 21300000, guid: 03dadcce45da5434b9b9746f8a3a0ebd, type: 3}
+  icon: {fileID: 21300000, guid: 280ad89c5b2d6844192ebe7ef077ee0d, type: 3}
   weaponName: StoneBigSword
   weaponType: 2
   lore: 

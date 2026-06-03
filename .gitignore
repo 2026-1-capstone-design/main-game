@@ -105,3 +105,6 @@ Assets/Demos.meta
 /[Aa]ssets/[Ss]treaming[Aa]ssets/[Ww]hisper/*.bin.meta
 
 AGENTS.override.md
+
+# Local runtime logs
+debug.log

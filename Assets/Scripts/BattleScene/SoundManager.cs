@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI; // UI 컴포넌트를 제어하기 위해 반드시 추가해야 합니다.
 
 [RequireComponent(typeof(AudioSource))]
@@ -33,6 +34,15 @@ public class SoundManager : MonoBehaviour
         {
             _audioSource.mute = !_audioSource.mute;
             UpdateButtonColor();
+            ClearSelectedUiObject();
+        }
+    }
+
+    private static void ClearSelectedUiObject()
+    {
+        if (EventSystem.current != null)
+        {
+            EventSystem.current.SetSelectedGameObject(null);
         }
     }
 

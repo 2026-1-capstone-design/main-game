@@ -691,6 +691,7 @@ public static class SaveGameService
                             unit.EquippedArtifact != null ? unit.EquippedArtifact.artifactName : string.Empty,
                         equippedPerkName =
                             unit.EquippedArtifact != null ? unit.EquippedArtifact.artifactName : string.Empty,
+                        equippedArtifactNames = ToArtifactNames(unit.EquippedArtifacts),
                         weaponName = unit.WeaponName,
                         weaponType = (int)unit.WeaponType,
                         weaponSkillId = (int)unit.WeaponSkillId,
@@ -784,6 +785,8 @@ public static class SaveGameService
             equippedPerkName =
                 gladiator.EquippedArtifact != null ? gladiator.EquippedArtifact.DisplayName : string.Empty,
             equippedArtifactRuntimeId = gladiator.EquippedArtifact != null ? gladiator.EquippedArtifact.RuntimeId : 0,
+            equippedArtifactNames = ToArtifactNames(gladiator.EquippedArtifacts),
+            equippedArtifactRuntimeIds = ToArtifactRuntimeIds(gladiator.EquippedArtifacts),
             equippedWeaponRuntimeId = gladiator.EquippedWeapon != null ? gladiator.EquippedWeapon.RuntimeId : 0,
             cachedMaxHealth = gladiator.CachedMaxHealth,
             currentHealth = gladiator.CurrentHealth,
@@ -1012,8 +1015,12 @@ public static class SaveGameService
 
         TraitSO trait = FindTraitByName(contentDatabaseProvider, savedGladiator.traitName);
         PersonalitySO personality = FindPersonalityByName(contentDatabaseProvider, savedGladiator.personalityName);
-        OwnedArtifactData equippedArtifact = null;
-        if (savedGladiator.equippedArtifactRuntimeId > 0 && artifactByRuntimeId != null)
+        List<OwnedArtifactData> equippedArtifacts = ResolveOwnedEquippedArtifacts(
+            savedGladiator.equippedArtifactRuntimeIds,
+            artifactByRuntimeId
+        );
+        OwnedArtifactData equippedArtifact = equippedArtifacts.Count > 0 ? equippedArtifacts[0] : null;
+        if (equippedArtifact == null && savedGladiator.equippedArtifactRuntimeId > 0 && artifactByRuntimeId != null)
         {
             artifactByRuntimeId.TryGetValue(savedGladiator.equippedArtifactRuntimeId, out equippedArtifact);
         }
@@ -1023,20 +1030,12 @@ public static class SaveGameService
             string legacyArtifactName = !string.IsNullOrWhiteSpace(savedGladiator.equippedArtifactName)
                 ? savedGladiator.equippedArtifactName
                 : savedGladiator.equippedPerkName;
-            if (!string.IsNullOrWhiteSpace(legacyArtifactName) && artifactByRuntimeId != null)
-            {
-                foreach (OwnedArtifactData candidate in artifactByRuntimeId.Values)
-                {
-                    if (
-                        candidate != null
-                        && string.Equals(candidate.DisplayName, legacyArtifactName, StringComparison.Ordinal)
-                    )
-                    {
-                        equippedArtifact = candidate;
-                        break;
-                    }
-                }
-            }
+            equippedArtifact = FindOwnedArtifactByName(artifactByRuntimeId, legacyArtifactName);
+        }
+
+        if (equippedArtifacts.Count == 0 && equippedArtifact != null)
+        {
+            equippedArtifacts.Add(equippedArtifact);
         }
 
         OwnedWeaponData equippedWeapon = null;
@@ -1060,6 +1059,7 @@ public static class SaveGameService
             CloneIntArray(savedGladiator.customizeIndicates)
         );
 
+        gladiator.SetEquippedArtifacts(equippedArtifacts);
         gladiator.CachedMaxHealth = Mathf.Max(0f, savedGladiator.cachedMaxHealth);
         gladiator.CurrentHealth = Mathf.Clamp(savedGladiator.currentHealth, 0f, gladiator.CachedMaxHealth);
         gladiator.CachedAttack = Mathf.Max(0f, savedGladiator.cachedAttack);
@@ -1265,6 +1265,10 @@ public static class SaveGameService
             ? savedUnit.equippedArtifactName
             : savedUnit.equippedPerkName;
         ArtifactSO equippedArtifact = FindArtifactByName(contentDatabaseProvider, artifactName);
+        IReadOnlyList<ArtifactSO> equippedArtifacts = FindArtifactsByNames(
+            contentDatabaseProvider,
+            savedUnit.equippedArtifactNames
+        );
 
         WeaponType weaponType = Enum.IsDefined(typeof(WeaponType), savedUnit.weaponType)
             ? (WeaponType)savedUnit.weaponType
@@ -1310,8 +1314,135 @@ public static class SaveGameService
             savedUnit.weaponDefaultDur,
             savedUnit.weaponDuration > 0f ? savedUnit.weaponDuration : 1f,
             skillDefaultDur,
-            savedUnit.skillDuration > 0f ? savedUnit.skillDuration : 1f
+            savedUnit.skillDuration > 0f ? savedUnit.skillDuration : 1f,
+            equippedArtifacts: equippedArtifacts
         );
+    }
+
+    private static string[] ToArtifactNames(IReadOnlyList<OwnedArtifactData> artifacts)
+    {
+        if (artifacts == null)
+        {
+            return Array.Empty<string>();
+        }
+
+        List<string> result = new List<string>();
+        for (int i = 0; i < artifacts.Count; i++)
+        {
+            string artifactName = artifacts[i]?.DisplayName;
+            if (!string.IsNullOrWhiteSpace(artifactName))
+            {
+                result.Add(artifactName);
+            }
+        }
+
+        return result.ToArray();
+    }
+
+    private static string[] ToArtifactNames(IReadOnlyList<ArtifactSO> artifacts)
+    {
+        if (artifacts == null)
+        {
+            return Array.Empty<string>();
+        }
+
+        List<string> result = new List<string>();
+        for (int i = 0; i < artifacts.Count; i++)
+        {
+            string artifactName = artifacts[i]?.artifactName;
+            if (!string.IsNullOrWhiteSpace(artifactName))
+            {
+                result.Add(artifactName);
+            }
+        }
+
+        return result.ToArray();
+    }
+
+    private static int[] ToArtifactRuntimeIds(IReadOnlyList<OwnedArtifactData> artifacts)
+    {
+        if (artifacts == null)
+        {
+            return Array.Empty<int>();
+        }
+
+        List<int> result = new List<int>();
+        for (int i = 0; i < artifacts.Count; i++)
+        {
+            OwnedArtifactData artifact = artifacts[i];
+            if (artifact != null)
+            {
+                result.Add(artifact.RuntimeId);
+            }
+        }
+
+        return result.ToArray();
+    }
+
+    private static List<OwnedArtifactData> ResolveOwnedEquippedArtifacts(
+        int[] runtimeIds,
+        Dictionary<int, OwnedArtifactData> artifactByRuntimeId
+    )
+    {
+        List<OwnedArtifactData> result = new List<OwnedArtifactData>();
+        if (runtimeIds == null || artifactByRuntimeId == null)
+        {
+            return result;
+        }
+
+        for (int i = 0; i < runtimeIds.Length && result.Count < OwnedGladiatorData.MaxEquippedArtifactCount; i++)
+        {
+            if (artifactByRuntimeId.TryGetValue(runtimeIds[i], out OwnedArtifactData artifact) && artifact != null)
+            {
+                result.Add(artifact);
+            }
+        }
+
+        return result;
+    }
+
+    private static OwnedArtifactData FindOwnedArtifactByName(
+        Dictionary<int, OwnedArtifactData> artifactByRuntimeId,
+        string artifactName
+    )
+    {
+        if (string.IsNullOrWhiteSpace(artifactName) || artifactByRuntimeId == null)
+        {
+            return null;
+        }
+
+        foreach (OwnedArtifactData candidate in artifactByRuntimeId.Values)
+        {
+            if (candidate != null && string.Equals(candidate.DisplayName, artifactName, StringComparison.Ordinal))
+            {
+                return candidate;
+            }
+        }
+
+        return null;
+    }
+
+    private static IReadOnlyList<ArtifactSO> FindArtifactsByNames(
+        ContentDatabaseProvider contentDatabaseProvider,
+        string[] artifactNames
+    )
+    {
+        List<ArtifactSO> result = new List<ArtifactSO>();
+        if (artifactNames == null)
+        {
+            return result;
+        }
+
+        for (int i = 0; i < artifactNames.Length && result.Count < OwnedGladiatorData.MaxEquippedArtifactCount; i++)
+        {
+            ArtifactSO artifact = FindArtifactByName(contentDatabaseProvider, artifactNames[i]);
+            if (artifact != null)
+            {
+                result.Add(artifact);
+            }
+        }
+
+        return result;
     }
 
     private static GladiatorClassSO FindGladiatorClassByName(

@@ -215,6 +215,10 @@ public sealed class InventoryUIManager : MonoBehaviour
 
         Canvas.ForceUpdateCanvases();
         viewer.SetItems(_weaponViewBuffer, OnWeaponCellClicked);
+        if (_weaponViewBuffer.Count > 0)
+        {
+            OnWeaponCellClicked(_weaponViewBuffer[0]);
+        }
     }
 
     private void RefreshArtifactViewer()
@@ -244,6 +248,10 @@ public sealed class InventoryUIManager : MonoBehaviour
 
         Canvas.ForceUpdateCanvases();
         viewer.SetItems(_artifactViewBuffer, OnArtifactCellClicked);
+        if (_artifactViewBuffer.Count > 0)
+        {
+            OnArtifactCellClicked(_artifactViewBuffer[0]);
+        }
     }
 
     private void OnWeaponCellClicked(OwnedItemViewData data)

@@ -1195,6 +1195,7 @@ MonoBehaviour:
   dotDead: {fileID: 0}
   statusText: {fileID: 9042552729283573160}
   nameText: {fileID: 323802615050633179}
+  commandOutlineMaterial: {fileID: 2100000, guid: b4fbfba71e0412b49af9895f424b298a, type: 2}
   healthBarRoot: {fileID: 2571531071030928836}
   blueHealthBarFillImage: {fileID: 3008865341673224125}
   redHealthBarFillImage: {fileID: 2388215090301822227}
@@ -10238,11 +10239,11 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1094030504802076652}
-  - {fileID: 6012588896821737590}
   - {fileID: 2933853421204473072}
   - {fileID: 2495791310487592396}
   - {fileID: 7411127492794265158}
   - {fileID: 4155326573421485584}
+  - {fileID: 6012588896821737590}
   - {fileID: 9173558839748524258}
   m_Father: {fileID: 1126242358742066004}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -10346,11 +10347,29 @@ MonoBehaviour:
   maxStatusIcons: 10
   statusIconDatabase:
   - type: 5
-    iconSprite: {fileID: 21300000, guid: f9573f8d5c1323c45aa178aeaaf67b9b, type: 3}
+    iconSprite: {fileID: 21300000, guid: a806aa9c62d2e0c4cbbe4c957b316bd1, type: 3}
   - type: 0
-    iconSprite: {fileID: 21300000, guid: 3450ddb6f9188984cbcf6dc4c66a5c3d, type: 3}
+    iconSprite: {fileID: 21300000, guid: 6b769bff2aa67b4488c902943c0085cd, type: 3}
   - type: 1
-    iconSprite: {fileID: 21300000, guid: 0883fe8f11f38b84ea992a6b0d1a40be, type: 3}
+    iconSprite: {fileID: 21300000, guid: e42a4a35033b67542a402b1c61184902, type: 3}
+  - type: 2
+    iconSprite: {fileID: 21300000, guid: 23b9e756ca5fa244cb523b15f79eaf3f, type: 3}
+  - type: 3
+    iconSprite: {fileID: 21300000, guid: fadca8086859c684db051a24401255d9, type: 3}
+  - type: 4
+    iconSprite: {fileID: 21300000, guid: fbf6a3ae1dc7c484490e37c32907f28f, type: 3}
+  - type: 6
+    iconSprite: {fileID: 21300000, guid: ed22d7c97fea567489436b1f0bdaf7a2, type: 3}
+  - type: 7
+    iconSprite: {fileID: 21300000, guid: cb968a321967f474690f3f0543ef1176, type: 3}
+  - type: 8
+    iconSprite: {fileID: 21300000, guid: 295a276b3318d104890fbe9e3372455a, type: 3}
+  - type: 9
+    iconSprite: {fileID: 21300000, guid: 8f0b5dbc8ab31d9458ec854931ac2d65, type: 3}
+  - type: 10
+    iconSprite: {fileID: 21300000, guid: 9784f3ef772f524448649d783f629da1, type: 3}
+  - type: 11
+    iconSprite: {fileID: 21300000, guid: 3b2c842e781e3d242932630c561ca96c, type: 3}
 --- !u!1 &3182389425745519545
 GameObject:
   m_ObjectHideFlags: 0
@@ -17830,7 +17849,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 0.732}
+  m_AnchoredPosition: {x: 0, y: 0.71}
   m_SizeDelta: {x: 2, y: 0.5}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1319576602791156165
@@ -24099,7 +24118,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 0.694}
+  m_AnchoredPosition: {x: 0, y: 0.191}
   m_SizeDelta: {x: 2, y: 0.2}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1080983083123471909

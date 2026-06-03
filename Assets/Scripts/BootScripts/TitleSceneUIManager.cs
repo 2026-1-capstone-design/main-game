@@ -29,19 +29,22 @@ public sealed class TitleSceneUIManager : MonoBehaviour
     private GameObject settingsModalRoot;
 
     [SerializeField]
-    private Button settingsCloseButton;
+    private RawImage settingsDimBackground;
 
     [SerializeField]
-    private Dropdown languageDropdown;
+    private TMP_Text settingsGameTitleText;
 
     [SerializeField]
-    private Slider bgmVolumeSlider;
+    private Button gameSettingButton;
 
     [SerializeField]
-    private Slider sfxVolumeSlider;
+    private Button audioSettingButton;
 
     [SerializeField]
-    private Slider brightnessSlider;
+    private Button videoSettingButton;
+
+    [SerializeField]
+    private Button keySettingButton;
 
     [Header("Load Game Modal")]
     [SerializeField]
@@ -83,13 +86,11 @@ public sealed class TitleSceneUIManager : MonoBehaviour
         BindButton(newGameButton, OnNewGameClicked);
         BindButton(loadGameButton, OnLoadGameClicked);
         BindButton(settingsButton, OnSettingsClicked);
-        BindButton(settingsCloseButton, OnCloseSettingsClicked);
         BindButton(quitButton, OnQuitClicked);
         BindButton(loadGameCloseButton, OnCloseLoadGameClicked);
 
         CacheSettingsControls();
         BindSettingsControls();
-        SyncSettingsControlsFromGlobalValues();
 
         CacheLoadGameControls();
 
@@ -210,7 +211,6 @@ public sealed class TitleSceneUIManager : MonoBehaviour
         }
 
         settingsModalRoot.SetActive(true);
-        SyncSettingsControlsFromGlobalValues();
 
         if (verboseLog)
         {
@@ -249,33 +249,6 @@ public sealed class TitleSceneUIManager : MonoBehaviour
         {
             Debug.Log("[TitleSceneUIManager] Load game modal closed.", this);
         }
-    }
-
-    // 언어 변경값을 전역 설정에 저장
-    private void OnLanguageChanged(int selectedIndex)
-    {
-        GameSettings.SetLanguage((GameLanguage)selectedIndex);
-    }
-
-    // BGM 슬라이더 변화값을 전역 설정과 오디오에 반영
-    private void OnBgmVolumeChanged(float value)
-    {
-        GameSettings.SetBgmVolume(value);
-        ApplyAudioSettings();
-    }
-
-    // SFX 슬라이더 변화값을 전역 설정과 오디오에 반영
-    private void OnSfxVolumeChanged(float value)
-    {
-        GameSettings.SetSfxVolume(value);
-        ApplyAudioSettings();
-    }
-
-    // 밝기 슬라이더 변화값을 전역 설정과 현재 씬 조명에 반영
-    private void OnBrightnessChanged(float value)
-    {
-        GameSettings.SetBrightness(value);
-        GameSettings.ApplyBrightnessToCurrentScene();
     }
 
     // 종료 버튼: 에디터에서는 플레이 모드 종료, 빌드에서는 앱 종료
@@ -317,40 +290,49 @@ public sealed class TitleSceneUIManager : MonoBehaviour
 
         Transform modalRootTransform = settingsModalRoot.transform;
 
-        if (languageDropdown == null)
+        if (settingsDimBackground == null)
         {
-            languageDropdown = FindChildComponent<Dropdown>(modalRootTransform, "LanguageDropdown");
+            settingsDimBackground = FindChildComponent<RawImage>(modalRootTransform, "DimBackground");
         }
 
-        if (bgmVolumeSlider == null)
+        if (settingsGameTitleText == null)
         {
-            bgmVolumeSlider = FindChildComponent<Slider>(modalRootTransform, "BgmSlider");
+            settingsGameTitleText = FindChildComponent<TMP_Text>(modalRootTransform, "GameTitleText");
         }
 
-        if (sfxVolumeSlider == null)
+        if (gameSettingButton == null)
         {
-            sfxVolumeSlider = FindChildComponent<Slider>(modalRootTransform, "SfxSlider");
+            gameSettingButton = FindChildComponent<Button>(modalRootTransform, "GameSettingButton");
         }
 
-        if (brightnessSlider == null)
+        if (audioSettingButton == null)
         {
-            brightnessSlider = FindChildComponent<Slider>(modalRootTransform, "BrightnessSlider");
+            audioSettingButton = FindChildComponent<Button>(modalRootTransform, "AudioSettingButton");
         }
 
-        Transform backdropTransform = FindChildTransform(modalRootTransform, "DimBackground");
-        if (backdropTransform != null)
+        if (videoSettingButton == null)
         {
-            Image backdropImage = backdropTransform.GetComponent<Image>();
-            _settingsBackdropButton = backdropTransform.GetComponent<Button>();
-
-            if (_settingsBackdropButton == null)
-            {
-                _settingsBackdropButton = backdropTransform.gameObject.AddComponent<Button>();
-            }
-
-            _settingsBackdropButton.transition = Selectable.Transition.None;
-            _settingsBackdropButton.targetGraphic = backdropImage;
+            videoSettingButton = FindChildComponent<Button>(modalRootTransform, "VideoSettingButton");
         }
+
+        if (keySettingButton == null)
+        {
+            keySettingButton = FindChildComponent<Button>(modalRootTransform, "KeySettingButton");
+        }
+
+        if (settingsDimBackground == null)
+        {
+            return;
+        }
+
+        _settingsBackdropButton = settingsDimBackground.GetComponent<Button>();
+        if (_settingsBackdropButton == null)
+        {
+            _settingsBackdropButton = settingsDimBackground.gameObject.AddComponent<Button>();
+        }
+
+        _settingsBackdropButton.transition = Selectable.Transition.None;
+        _settingsBackdropButton.targetGraphic = settingsDimBackground;
     }
 
     // 씬에 이미 배치된 로드 모달 참조를 캐싱하고, 배경 클릭 닫기 버튼을 준비
@@ -388,62 +370,16 @@ public sealed class TitleSceneUIManager : MonoBehaviour
         CacheLoadGameSlotTextReferences(modalRootTransform);
     }
 
-    // 모달 안의 실제 UI 컴포넌트를 씬 계층 이름으로 찾아 둔다.
+    // 모달 배경을 누르면 설정 선택 화면을 닫는다.
     private void BindSettingsControls()
     {
-        if (languageDropdown != null)
+        if (_settingsBackdropButton == null)
         {
-            languageDropdown.onValueChanged.RemoveListener(OnLanguageChanged);
-            languageDropdown.onValueChanged.AddListener(OnLanguageChanged);
+            return;
         }
 
-        if (bgmVolumeSlider != null)
-        {
-            bgmVolumeSlider.onValueChanged.RemoveListener(OnBgmVolumeChanged);
-            bgmVolumeSlider.onValueChanged.AddListener(OnBgmVolumeChanged);
-        }
-
-        if (sfxVolumeSlider != null)
-        {
-            sfxVolumeSlider.onValueChanged.RemoveListener(OnSfxVolumeChanged);
-            sfxVolumeSlider.onValueChanged.AddListener(OnSfxVolumeChanged);
-        }
-
-        if (brightnessSlider != null)
-        {
-            brightnessSlider.onValueChanged.RemoveListener(OnBrightnessChanged);
-            brightnessSlider.onValueChanged.AddListener(OnBrightnessChanged);
-        }
-
-        if (_settingsBackdropButton != null)
-        {
-            _settingsBackdropButton.onClick.RemoveListener(OnCloseSettingsClicked);
-            _settingsBackdropButton.onClick.AddListener(OnCloseSettingsClicked);
-        }
-    }
-
-    // 저장된 전역 설정값을 현재 UI 상태로 되돌린다.
-    private void SyncSettingsControlsFromGlobalValues()
-    {
-        if (languageDropdown != null)
-        {
-            languageDropdown.SetValueWithoutNotify((int)GameSettings.Language);
-        }
-
-        if (bgmVolumeSlider != null)
-        {
-            bgmVolumeSlider.SetValueWithoutNotify(GameSettings.BgmVolume);
-        }
-
-        if (sfxVolumeSlider != null)
-        {
-            sfxVolumeSlider.SetValueWithoutNotify(GameSettings.SfxVolume);
-        }
-
-        if (brightnessSlider != null)
-        {
-            brightnessSlider.SetValueWithoutNotify(GameSettings.Brightness);
-        }
+        _settingsBackdropButton.onClick.RemoveListener(OnCloseSettingsClicked);
+        _settingsBackdropButton.onClick.AddListener(OnCloseSettingsClicked);
     }
 
     // 슬롯 텍스트들을 캐싱해 두면 이후 실제 세이브 데이터 연결 시 갱신만 하면 된다.
@@ -634,17 +570,5 @@ public sealed class TitleSceneUIManager : MonoBehaviour
         }
 
         return child.GetComponent<T>();
-    }
-
-    // 오디오 매니저가 있으면 전역 볼륨값을 다시 적용한다.
-    private void ApplyAudioSettings()
-    {
-        AudioManager audioManager = AudioManager.Instance;
-        if (audioManager == null)
-        {
-            return;
-        }
-
-        audioManager.ApplyFromGlobalSettings();
     }
 }

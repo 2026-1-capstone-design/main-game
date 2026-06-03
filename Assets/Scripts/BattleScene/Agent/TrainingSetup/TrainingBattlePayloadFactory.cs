@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Unity.MLAgents;
 using UnityEngine;
 
@@ -467,7 +467,8 @@ public sealed class TrainingBattlePayloadFactory
             0.5f,
             source.SkillDefaultDur,
             source.SkillDuration,
-            RollTrainingPersonalityBias()
+            RollTrainingPersonalityBias(),
+            equippedArtifacts: source.EquippedArtifacts
         );
     }
 

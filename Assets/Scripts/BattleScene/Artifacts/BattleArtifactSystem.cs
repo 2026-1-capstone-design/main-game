@@ -73,7 +73,8 @@ public sealed class BattleArtifactSystem : IBattleTargetingPolicy, IBattleMoveme
                 if (artifact == null)
                     continue;
 
-                artifact.Initialize(ownerState, owner.Snapshot.EquippedArtifact.artifactLevel, context);
+                ArtifactSO equippedArtifact = ResolveEquippedArtifact(owner.Snapshot, artifactIds[idIndex]);
+                artifact.Initialize(ownerState, equippedArtifact != null ? equippedArtifact.artifactLevel : 1, context);
 
                 if (artifact is IDamageModifierArtifact damageModifier)
                     _damageModifiers.Add(
@@ -317,6 +318,26 @@ public sealed class BattleArtifactSystem : IBattleTargetingPolicy, IBattleMoveme
 
             binding.Artifact.TickWithPositionHistory(binding.OwnerView, history, context, effects);
         }
+    }
+
+    // 효과 ID에 대응하는 장착 장신구 SO를 찾습니다.
+    private static ArtifactSO ResolveEquippedArtifact(BattleUnitSnapshot snapshot, ArtifactId artifactId)
+    {
+        if (snapshot?.EquippedArtifacts == null)
+        {
+            return null;
+        }
+
+        for (int i = 0; i < snapshot.EquippedArtifacts.Count; i++)
+        {
+            ArtifactSO artifact = snapshot.EquippedArtifacts[i];
+            if (artifact != null && artifact.ArtifactPerkId == artifactId)
+            {
+                return artifact;
+            }
+        }
+
+        return null;
     }
 
     // 전투 중 동적으로 장신구를 추가합니다.

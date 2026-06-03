@@ -828,7 +828,6 @@ public sealed class SquadUIManager : MonoBehaviour
             return;
         }
 
-        Sprite equippedArtifactIcon = gladiator.EquippedArtifact?.Artifact?.icon;
         for (int i = 0; i < detailArtifactIcons.Length; i++)
         {
             Image icon = detailArtifactIcons[i];
@@ -837,9 +836,7 @@ public sealed class SquadUIManager : MonoBehaviour
                 continue;
             }
 
-            // 현재 데이터 모델은 검투사당 장신구 1개만 지원한다.
-            // UI는 3칸을 먼저 준비해두고, 실제 다중 장신구 데이터가 생기면 여기서 순서대로 채우면 된다.
-            Sprite artifactIcon = i == 0 ? equippedArtifactIcon : null;
+            Sprite artifactIcon = gladiator.GetEquippedArtifact(i)?.Artifact?.icon;
             icon.sprite = artifactIcon;
             icon.enabled = artifactIcon != null;
             icon.preserveAspect = true;

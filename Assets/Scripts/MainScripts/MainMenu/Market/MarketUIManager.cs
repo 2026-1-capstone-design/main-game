@@ -402,8 +402,8 @@ public sealed class MarketUIManager : MonoBehaviour
         RefreshCategoryTabLayering();
         SetSelectedTabText(buySelectedTabText, category);
         RefreshGoldText(_resourceManager.CurrentGold);
-        RefreshCurrentCategoryViewer();
         ClearBuyDetail();
+        RefreshCurrentCategoryViewer();
     }
 
     private void OpenSellModePanel(MarketCategory category)
@@ -420,8 +420,8 @@ public sealed class MarketUIManager : MonoBehaviour
         RefreshCategoryTabLayering();
         SetSelectedTabText(sellSelectedTabText, category);
         RefreshGoldText(_resourceManager.CurrentGold);
-        RefreshCurrentCategoryViewer();
         ClearSellDetail();
+        RefreshCurrentCategoryViewer();
     }
 
     private void ApplyViewerVisibility()
@@ -507,6 +507,7 @@ public sealed class MarketUIManager : MonoBehaviour
         if (buyEquipmentViewer != null)
         {
             buyEquipmentViewer.SetItems(_buyEquipmentViewBuffer, OnBuyEquipmentItemClicked);
+            SelectFirstItem(_buyEquipmentViewBuffer, OnBuyEquipmentItemClicked);
         }
     }
 
@@ -541,6 +542,7 @@ public sealed class MarketUIManager : MonoBehaviour
         if (buyArtifactViewer != null)
         {
             buyArtifactViewer.SetItems(_buyArtifactViewBuffer, OnBuyArtifactItemClicked);
+            SelectFirstItem(_buyArtifactViewBuffer, OnBuyArtifactItemClicked);
         }
     }
 
@@ -568,6 +570,7 @@ public sealed class MarketUIManager : MonoBehaviour
         if (buyGladiatorViewer != null)
         {
             buyGladiatorViewer.SetItems(_buyGladiatorViewBuffer, OnBuyGladiatorItemClicked);
+            SelectFirstItem(_buyGladiatorViewBuffer, OnBuyGladiatorItemClicked);
         }
     }
 
@@ -600,6 +603,7 @@ public sealed class MarketUIManager : MonoBehaviour
         if (sellEquipmentViewer != null)
         {
             sellEquipmentViewer.SetItems(_sellEquipmentViewBuffer, OnSellEquipmentItemClicked);
+            SelectFirstItem(_sellEquipmentViewBuffer, OnSellEquipmentItemClicked);
         }
     }
 
@@ -639,6 +643,7 @@ public sealed class MarketUIManager : MonoBehaviour
         if (sellArtifactViewer != null)
         {
             sellArtifactViewer.SetItems(_sellArtifactViewBuffer, OnSellArtifactItemClicked);
+            SelectFirstItem(_sellArtifactViewBuffer, OnSellArtifactItemClicked);
         }
     }
 
@@ -665,6 +670,7 @@ public sealed class MarketUIManager : MonoBehaviour
         if (sellGladiatorViewer != null)
         {
             sellGladiatorViewer.SetItems(_sellGladiatorViewBuffer, OnSellGladiatorItemClicked);
+            SelectFirstItem(_sellGladiatorViewBuffer, OnSellGladiatorItemClicked);
         }
     }
 
@@ -709,6 +715,17 @@ public sealed class MarketUIManager : MonoBehaviour
             priceText,
             source
         );
+    }
+
+    private static void SelectFirstItem(
+        IReadOnlyList<OwnedItemViewData> items,
+        System.Action<OwnedItemViewData> onItemSelected
+    )
+    {
+        if (items != null && items.Count > 0)
+        {
+            onItemSelected?.Invoke(items[0]);
+        }
     }
 
     private void OnBuyEquipmentItemClicked(OwnedItemViewData data)
@@ -1546,7 +1563,7 @@ public sealed class MarketUIManager : MonoBehaviour
         if (_pendingSellArtifact != null)
         {
             OwnedGladiatorData owner = _gladiatorManager.FindOwnerOfEquippedArtifact(_pendingSellArtifact);
-            return owner == null || _gladiatorManager.TryUnequipArtifact(owner, out failReason);
+            return owner == null || _gladiatorManager.TryUnequipArtifact(owner, _pendingSellArtifact, out failReason);
         }
 
         return false;
