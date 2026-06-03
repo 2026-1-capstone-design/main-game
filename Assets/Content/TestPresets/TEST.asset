@@ -16,90 +16,10 @@ MonoBehaviour:
   allyTeam:
   - classSO: {fileID: 11400000, guid: 6846407ed22928941b371aab2d355ecf, type: 2}
     level: 0
-    weaponData: {fileID: 11400000, guid: 7089321e6c1d54a49be1a79d42cd4f89, type: 2}
+    weaponData: {fileID: 11400000, guid: 8f15a2a951e32fa44914883dd11d291f, type: 2}
     weaponSkillId: 0
     equippedArtifact: {fileID: 11400000, guid: b88684fbb1305e04786007b6b51fa87a, type: 2}
-    healthOverride: 0
-    attackOverride: 0
-    attackSpeedOverride: 0
-    moveSpeedOverride: 0
-    attackRangeOverride: 0
-    ignoreWeaponStat: 0
-    overrideWeaponSettings: 0
-    attackDuration: 0
-    isRanged: 0
-    useProjectile: 0
-    statMultiplier: 0
-  - classSO: {fileID: 11400000, guid: 6846407ed22928941b371aab2d355ecf, type: 2}
-    level: 0
-    weaponData: {fileID: 11400000, guid: 7089321e6c1d54a49be1a79d42cd4f89, type: 2}
-    weaponSkillId: 0
-    equippedArtifact: {fileID: 11400000, guid: b88684fbb1305e04786007b6b51fa87a, type: 2}
-    healthOverride: 900000
-    attackOverride: 0
-    attackSpeedOverride: 0
-    moveSpeedOverride: 0
-    attackRangeOverride: 0
-    ignoreWeaponStat: 0
-    overrideWeaponSettings: 0
-    attackDuration: 0
-    isRanged: 0
-    useProjectile: 0
-    statMultiplier: 0
-  - classSO: {fileID: 11400000, guid: 6846407ed22928941b371aab2d355ecf, type: 2}
-    level: 0
-    weaponData: {fileID: 11400000, guid: 7089321e6c1d54a49be1a79d42cd4f89, type: 2}
-    weaponSkillId: 0
-    equippedArtifact: {fileID: 11400000, guid: b88684fbb1305e04786007b6b51fa87a, type: 2}
-    healthOverride: 0
-    attackOverride: 0
-    attackSpeedOverride: 0
-    moveSpeedOverride: 0
-    attackRangeOverride: 0
-    ignoreWeaponStat: 0
-    overrideWeaponSettings: 0
-    attackDuration: 0
-    isRanged: 0
-    useProjectile: 0
-    statMultiplier: 0
-  - classSO: {fileID: 11400000, guid: 6846407ed22928941b371aab2d355ecf, type: 2}
-    level: 0
-    weaponData: {fileID: 11400000, guid: 7089321e6c1d54a49be1a79d42cd4f89, type: 2}
-    weaponSkillId: 0
-    equippedArtifact: {fileID: 11400000, guid: b88684fbb1305e04786007b6b51fa87a, type: 2}
-    healthOverride: 0
-    attackOverride: 0
-    attackSpeedOverride: 0
-    moveSpeedOverride: 0
-    attackRangeOverride: 0
-    ignoreWeaponStat: 0
-    overrideWeaponSettings: 0
-    attackDuration: 0
-    isRanged: 0
-    useProjectile: 0
-    statMultiplier: 0
-  - classSO: {fileID: 11400000, guid: 6846407ed22928941b371aab2d355ecf, type: 2}
-    level: 0
-    weaponData: {fileID: 11400000, guid: 7089321e6c1d54a49be1a79d42cd4f89, type: 2}
-    weaponSkillId: 0
-    equippedArtifact: {fileID: 11400000, guid: b88684fbb1305e04786007b6b51fa87a, type: 2}
-    healthOverride: 0
-    attackOverride: 0
-    attackSpeedOverride: 0
-    moveSpeedOverride: 0
-    attackRangeOverride: 0
-    ignoreWeaponStat: 0
-    overrideWeaponSettings: 0
-    attackDuration: 0
-    isRanged: 0
-    useProjectile: 0
-    statMultiplier: 0
-  - classSO: {fileID: 11400000, guid: 6846407ed22928941b371aab2d355ecf, type: 2}
-    level: 0
-    weaponData: {fileID: 11400000, guid: 7089321e6c1d54a49be1a79d42cd4f89, type: 2}
-    weaponSkillId: 0
-    equippedArtifact: {fileID: 11400000, guid: b88684fbb1305e04786007b6b51fa87a, type: 2}
-    healthOverride: 0
+    healthOverride: 100000
     attackOverride: 0
     attackSpeedOverride: 0
     moveSpeedOverride: 0
@@ -113,27 +33,11 @@ MonoBehaviour:
   enemyTeam:
   - classSO: {fileID: 11400000, guid: 6846407ed22928941b371aab2d355ecf, type: 2}
     level: 0
-    weaponData: {fileID: 11400000, guid: 8f15a2a951e32fa44914883dd11d291f, type: 2}
+    weaponData: {fileID: 0}
     weaponSkillId: 32
     equippedArtifact: {fileID: 0}
     healthOverride: 100000
-    attackOverride: 1200
-    attackSpeedOverride: 0
-    moveSpeedOverride: 0
-    attackRangeOverride: 0
-    ignoreWeaponStat: 0
-    overrideWeaponSettings: 0
-    attackDuration: 0
-    isRanged: 0
-    useProjectile: 0
-    statMultiplier: 0
-  - classSO: {fileID: 11400000, guid: 6846407ed22928941b371aab2d355ecf, type: 2}
-    level: 0
-    weaponData: {fileID: 11400000, guid: 8f15a2a951e32fa44914883dd11d291f, type: 2}
-    weaponSkillId: 32
-    equippedArtifact: {fileID: 0}
-    healthOverride: 100000
-    attackOverride: 1200
+    attackOverride: 0
     attackSpeedOverride: 0
     moveSpeedOverride: 0
     attackRangeOverride: 0
