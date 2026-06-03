@@ -14,13 +14,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WeaponSkillSO
   icon: {fileID: 21300000, guid: f5a9645daad46f54f8964a2cc09e5dd9, type: 3}
   skillName: "\uC11D\uD654\uC758 \uC751\uC2DC"
-  description: "\uCE74\uC2DC \uAD81. \uC8FC\uBCC0 \uBC94\uC704 \uB0B4 \uC790\uC2E0\uC744
-    \uBC14\uB77C\uBCF4\uB294 \uC801 3\uCD08 \uC2A4\uD134"
+  description: "\uC8FC\uBCC0 \uBC18\uACBD n \uC774\uB0B4\uC5D0\uC11C \uC790\uC2E0\uC744
+    \uBC14\uB77C\uBCF4\uB294 \uC801\uC744 3\uCD08\uAC04 \uAE30\uC808\uC2DC\uD0A8\uB2E4."
   weaponType: 5
   skillId: 52
-  isSkillOnSelf: 0
+  isSkillOnSelf: 1
   isSkillOnOtherAlly: 0
-  isSkillAoe: 0
+  isSkillAoe: 1
   canSkillTargetDead: 0
   defaultDur: 1
   duration: 1

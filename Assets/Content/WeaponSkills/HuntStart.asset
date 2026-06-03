@@ -14,9 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WeaponSkillSO
   icon: {fileID: 21300000, guid: 1133d59300fe12f47809c52d85b005fa, type: 3}
   skillName: "\uC0AC\uB0E5 \uAC1C\uC2DC"
-  description: "8\uCD08\uAC04 \uC0C1\uB300\uB294 \uC544\uAD70 \uBAA8\uB450\uB85C\uBD80\uD130
-    \uACF5\uACA9 \uBC1B\uC744 \uC2DC \uCD5C\uB300 \uCCB4\uB825\uC758 5%\uC758 \uD53C\uD574\uB97C
-    \uCD94\uAC00\uB85C \uBC1B\uB294\uB2E4."
+  description: "8\uCD08\uAC04 \uC9C0\uC815\uD55C \uB300\uC0C1\uC774 \uC544\uAD70\uC73C\uB85C\uBD80\uD130
+    \uACF5\uACA9\uBC1B\uC744 \uB54C\uB9C8\uB2E4 \uCD5C\uB300 \uCCB4\uB825\uC758 5%\uC5D0
+    \uD574\uB2F9\uD558\uB294 \uD53C\uD574\uB97C \uCD94\uAC00\uB85C \uBC1B\uB294\uB2E4."
   weaponType: 11
   skillId: 24
   isSkillOnSelf: 0

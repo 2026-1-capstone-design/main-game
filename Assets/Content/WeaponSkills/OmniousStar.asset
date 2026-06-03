@@ -14,11 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   icon: {fileID: 21300000, guid: da1869b1409fbc44a92b4e40aed56c58, type: 3}
   skillName: "\uD749\uC131"
-  description: "\uBC1B\uB294 \uD53C\uD574 \uC99D\uAC00, \uC774\uB3D9 \uC18D\uB3C4
-    \uC99D\uAC00, \uACF5\uACA9\uB825 \uC99D\uAC00"
+  description: "\uC790\uC2E0\uC5D0\uAC8C \uBC1B\uB294 \uD53C\uD574 \uC99D\uAC00,
+    \uC774\uB3D9\uC18D\uB3C4 \uC99D\uAC00, \uACF5\uACA9\uB825 \uC99D\uAC00 \uBC84\uD504\uB97C
+    \uC801\uC6A9\uD55C\uB2E4."
   weaponType: 6
   skillId: 21
-  isSkillOnSelf: 0
+  isSkillOnSelf: 1
   isSkillOnOtherAlly: 0
   isSkillAoe: 0
   canSkillTargetDead: 0

@@ -73,6 +73,8 @@ public sealed class BattleVoiceOrderInputController : MonoBehaviour
     private bool _isRecording;
     private bool _isTranscribing;
     private bool _isWhisperReady;
+    private bool _triedToFindUIManager;
+    private BattleSceneUIManager _subscribedBattleSceneUIManager;
     private BattleOrdersManager _subscribedBattleOrdersManager;
 
     private void Awake()
@@ -149,12 +151,13 @@ public sealed class BattleVoiceOrderInputController : MonoBehaviour
             microphoneRecord.OnRecordStop -= HandleRecordStop;
         }
 
+        UnbindBattleSceneUIManagerEvents();
         UnbindBattleOrdersManagerEvents();
     }
 
     public void BeginRecordingFromButton()
     {
-        if (_isRecording || _isTranscribing || IsBattleOrderCommandProcessing())
+        if (_isRecording || _isTranscribing || IsBattleOrderCommandProcessing() || IsBattlePaused())
             return;
 
         StartCoroutine(BeginRecordingRoutine());
@@ -162,7 +165,7 @@ public sealed class BattleVoiceOrderInputController : MonoBehaviour
 
     public void EndRecordingFromButton()
     {
-        if (!_isRecording || _isTranscribing || IsBattleOrderCommandProcessing())
+        if (!_isRecording || _isTranscribing || IsBattleOrderCommandProcessing() || IsBattlePaused())
             return;
 
         _isRecording = false;
@@ -190,7 +193,7 @@ public sealed class BattleVoiceOrderInputController : MonoBehaviour
     {
         EnsureReferences();
 
-        if (IsBattleOrderCommandProcessing())
+        if (IsBattleOrderCommandProcessing() || IsBattlePaused())
         {
             RefreshButtonStates();
             yield break;
@@ -447,6 +450,7 @@ public sealed class BattleVoiceOrderInputController : MonoBehaviour
             microphoneRecord = FindFirstObjectByType<MicrophoneRecord>();
         }
 
+        RebindBattleSceneUIManagerEvents();
         RebindBattleOrdersManagerEvents();
     }
 
@@ -483,8 +487,9 @@ public sealed class BattleVoiceOrderInputController : MonoBehaviour
     private void RefreshButtonStates()
     {
         bool commandProcessing = IsBattleOrderCommandProcessing();
-        bool canStart = _isWhisperReady && !_isRecording && !_isTranscribing && !commandProcessing;
-        bool canStop = _isRecording && !_isTranscribing && !commandProcessing;
+        bool battlePaused = IsBattlePaused();
+        bool canStart = _isWhisperReady && !_isRecording && !_isTranscribing && !commandProcessing && !battlePaused;
+        bool canStop = _isRecording && !_isTranscribing && !commandProcessing && !battlePaused;
 
         if (startRecordingButton != null)
         {
@@ -504,6 +509,23 @@ public sealed class BattleVoiceOrderInputController : MonoBehaviour
             && battleOrdersManager.CurrentCommandState == BattleOrderCommandState.Processing;
     }
 
+    private bool IsBattlePaused()
+    {
+        EnsureBattleSceneUIManagerReferenceOnly();
+        return battleSceneUIManager != null && battleSceneUIManager.IsBattlePaused;
+    }
+
+    private void EnsureBattleSceneUIManagerReferenceOnly()
+    {
+        if (battleSceneUIManager == null && !_triedToFindUIManager)
+        {
+            battleSceneUIManager = FindFirstObjectByType<BattleSceneUIManager>();
+            _triedToFindUIManager = true;
+        }
+
+        RebindBattleSceneUIManagerEvents();
+    }
+
     private void EnsureBattleOrdersManagerReferenceOnly()
     {
         if (battleOrdersManager == null)
@@ -512,6 +534,40 @@ public sealed class BattleVoiceOrderInputController : MonoBehaviour
         }
 
         RebindBattleOrdersManagerEvents();
+    }
+
+    private void RebindBattleSceneUIManagerEvents()
+    {
+        if (_subscribedBattleSceneUIManager == battleSceneUIManager)
+        {
+            return;
+        }
+
+        UnbindBattleSceneUIManagerEvents();
+        _subscribedBattleSceneUIManager = battleSceneUIManager;
+
+        if (_subscribedBattleSceneUIManager == null)
+        {
+            return;
+        }
+
+        _subscribedBattleSceneUIManager.OnPauseStateChanged += HandleBattlePauseStateChanged;
+    }
+
+    private void UnbindBattleSceneUIManagerEvents()
+    {
+        if (_subscribedBattleSceneUIManager == null)
+        {
+            return;
+        }
+
+        _subscribedBattleSceneUIManager.OnPauseStateChanged -= HandleBattlePauseStateChanged;
+        _subscribedBattleSceneUIManager = null;
+    }
+
+    private void HandleBattlePauseStateChanged(bool isPaused)
+    {
+        RefreshButtonStates();
     }
 
     private void RebindBattleOrdersManagerEvents()

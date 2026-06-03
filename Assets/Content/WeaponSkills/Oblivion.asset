@@ -14,14 +14,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WeaponSkillSO
   icon: {fileID: 21300000, guid: b5673d8d787d51f4bbdaac8919a1bd22, type: 3}
   skillName: "\uB9DD\uAC01"
-  description: "\uC8FC\uBCC0 \uBC18\uACBD \uC774\uB0B4 \uC801\uB4E4\uC5D0\uAC8C \uB514\uBC84\uD504.
-    3\uD68C\uC758 \uB300\uBBF8\uC9C0\uB97C \uC8FC\uB294 \uD589\uB3D9)\uC758 \uB300\uBBF8\uC9C0\uB97C
-    0\uC73C\uB85C\n"
+  description: "\uC8FC\uBCC0 \uBC18\uACBD n \uC774\uB0B4\uC758 \uC801\uC5D0\uAC8C
+    \uB514\uBC84\uD504\uB97C \uBD80\uC5EC\uD55C\uB2E4. \uC774\uD6C4 \uD574\uB2F9
+    \uC801\uC774 3\uD68C\uC758 \uD53C\uD574\uB97C \uC8FC\uB294 \uD589\uB3D9\uC744
+    \uD560 \uB54C \uB370\uBBF8\uC9C0\uAC00 0\uC774 \uB41C\uB2E4."
   weaponType: 6
   skillId: 46
-  isSkillOnSelf: 0
+  isSkillOnSelf: 1
   isSkillOnOtherAlly: 0
-  isSkillAoe: 0
+  isSkillAoe: 1
   canSkillTargetDead: 0
   defaultDur: 1
   duration: 1

@@ -14,14 +14,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WeaponSkillSO
   icon: {fileID: 21300000, guid: 4594fc64da829d142811f09da2ef056f, type: 3}
   skillName: "\uBD80\uC815\uD55C \uCD95\uBCF5"
-  description: "\uC804\uD22C \uBD88\uB2A5\uC774 \uB41C \uC544\uAD70\uB9CC \uB300\uC0C1
-    \uC9C0\uC815 \uAC00\uB2A5.\n\uBAA8\uB4E0 \uB2A5\uB825\uCE58\uC758 30%\uB9CC \uAC00\uC9C4
-    \uC0C1\uD0DC\uB85C \uB2E4\uC2DC \uC804\uD22C\uC5D0 \uCC38\uC5EC\uC2DC\uD0B4"
+  description: "\uC804\uD22C \uBD88\uB2A5 \uC0C1\uD0DC\uC758 \uC544\uAD70\uC744 \uC9C0\uC815\uD558\uC5EC
+    \uBAA8\uB4E0 \uB2A5\uB825\uCE58\uC758 30%\uB9CC \uAC00\uC9C4 \uC0C1\uD0DC\uB85C
+    \uC804\uD22C\uC5D0 \uBCF5\uADC0\uC2DC\uD0A8\uB2E4. \uBCF5\uADC0\uD55C \uC544\uAD70\uC740
+    \uC2A4\uD0AC \uC0AC\uC6A9 \uBC0F \uBA85\uB839 \uC218\uD589\uC774 \uBD88\uAC00\uD558\uB2E4."
   weaponType: 10
   skillId: 57
   isSkillOnSelf: 0
-  isSkillOnOtherAlly: 0
+  isSkillOnOtherAlly: 1
   isSkillAoe: 0
-  canSkillTargetDead: 0
+  canSkillTargetDead: 1
   defaultDur: 1
   duration: 1
