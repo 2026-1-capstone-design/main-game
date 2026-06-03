@@ -3,8 +3,11 @@ using UnityEngine;
 public class CheatWeapon : MonoBehaviour
 {
     [Header("Dependencies")]
-    [SerializeField] private EquipmentFactory equipmentFactory;
-    [SerializeField] private InventoryManager inventoryManager;
+    [SerializeField]
+    private EquipmentFactory equipmentFactory;
+
+    [SerializeField]
+    private InventoryManager inventoryManager;
 
     [Header("Cheat Settings")]
     public WeaponType targetWeaponType = WeaponType.oneHand;
@@ -31,11 +34,18 @@ public class CheatWeapon : MonoBehaviour
         }
 
         // 1. EquipmentFactory를 통해 정확한 스펙의 무기 데이터 강제 생성
-        OwnedWeaponData cheatWeapon = equipmentFactory.CreateWeaponPreviewFromSpec(targetWeaponType, targetSkillId, dayOrLevel);
+        OwnedWeaponData cheatWeapon = equipmentFactory.CreateWeaponPreviewFromSpec(
+            targetWeaponType,
+            targetSkillId,
+            dayOrLevel
+        );
 
         if (cheatWeapon == null)
         {
-            Debug.LogError("[CheatWeapon] 무기 생성 실패. (지정한 WeaponType과 WeaponSkillId가 호환되지 않을 수 있습니다)", this);
+            Debug.LogError(
+                "[CheatWeapon] 무기 생성 실패. (지정한 WeaponType과 WeaponSkillId가 호환되지 않을 수 있습니다)",
+                this
+            );
             return;
         }
 
@@ -44,7 +54,10 @@ public class CheatWeapon : MonoBehaviour
 
         if (isAdded)
         {
-            Debug.Log($"[CheatWeapon] '{cheatWeapon.DisplayName}' (Lv.{cheatWeapon.Level}) 무기를 인벤토리에 성공적으로 추가했습니다!", this);
+            Debug.Log(
+                $"[CheatWeapon] '{cheatWeapon.DisplayName}' (Lv.{cheatWeapon.Level}) 무기를 인벤토리에 성공적으로 추가했습니다!",
+                this
+            );
         }
         else
         {

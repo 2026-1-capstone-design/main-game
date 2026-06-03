@@ -3,7 +3,8 @@ using UnityEngine;
 public class CheatGladiator : MonoBehaviour
 {
     [Header("Dependencies")]
-    [SerializeField] private GladiatorManager gladiatorManager;
+    [SerializeField]
+    private GladiatorManager gladiatorManager;
 
     [Header("Cheat Settings")]
     [Tooltip("지정하지 않으면(비워두면) 데이터베이스에서 무작위 직업을 뽑아옵니다.")]
@@ -29,7 +30,10 @@ public class CheatGladiator : MonoBehaviour
         ContentDatabaseProvider db = ContentDatabaseProvider.Instance;
         if (db == null)
         {
-            Debug.LogError("[CheatGladiator] ContentDatabaseProvider를 찾을 수 없습니다. (Main 씬에서 실행 중인지 확인하세요)", this);
+            Debug.LogError(
+                "[CheatGladiator] ContentDatabaseProvider를 찾을 수 없습니다. (Main 씬에서 실행 중인지 확인하세요)",
+                this
+            );
             return;
         }
 
@@ -57,7 +61,10 @@ public class CheatGladiator : MonoBehaviour
         TraitSO trait = (db.Traits != null && db.Traits.Count > 0) ? db.Traits[Random.Range(0, db.Traits.Count)] : null;
 
         // 4. 외형 무작위 생성
-        int[] skinIndices = GladiatorSkinManager.Instance != null ? GladiatorSkinManager.Instance.GenerateRandomSkinIndicates() : new int[12];
+        int[] skinIndices =
+            GladiatorSkinManager.Instance != null
+                ? GladiatorSkinManager.Instance.GenerateRandomSkinIndicates()
+                : new int[12];
 
         // 5. 임시 데이터 설정
         string gladiatorName = $"치트 검투사 {Random.Range(100, 999)}";
@@ -66,8 +73,18 @@ public class CheatGladiator : MonoBehaviour
 
         // 시장(Market) 프리뷰 형태의 더미(Dummy) 데이터 생성
         OwnedGladiatorData dummyData = new OwnedGladiatorData(
-            0, gladiatorName, level, 0, loyalty, upkeep,
-            gladiatorClass, trait, personality, null, null, skinIndices
+            0,
+            gladiatorName,
+            level,
+            0,
+            loyalty,
+            upkeep,
+            gladiatorClass,
+            trait,
+            personality,
+            null,
+            null,
+            skinIndices
         );
 
         // 6. 스탯 수동 계산 (장비 미착용 기준, GladiatorManager의 계산식을 그대로 따름)
@@ -95,7 +112,10 @@ public class CheatGladiator : MonoBehaviour
         if (isAdded)
         {
             string personalityName = personality != null ? personality.personalityName : "알 수 없음";
-            Debug.Log($"[CheatGladiator] '{gladiatorName}' (직업: {gladiatorClass.name}, 성격: {personalityName}, Lv.{level}) 검투사를 영입했습니다!", this);
+            Debug.Log(
+                $"[CheatGladiator] '{gladiatorName}' (직업: {gladiatorClass.name}, 성격: {personalityName}, Lv.{level}) 검투사를 영입했습니다!",
+                this
+            );
         }
         else
         {

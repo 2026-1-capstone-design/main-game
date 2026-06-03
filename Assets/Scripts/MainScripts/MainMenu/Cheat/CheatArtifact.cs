@@ -3,7 +3,8 @@ using UnityEngine;
 public class CheatArtifact : MonoBehaviour
 {
     [Header("Dependencies")]
-    [SerializeField] private InventoryManager inventoryManager;
+    [SerializeField]
+    private InventoryManager inventoryManager;
 
     [Header("Cheat Settings")]
     [Tooltip("인벤토리에 강제로 추가할 장신구 데이터 (ArtifactSO)를 연결하세요.")]

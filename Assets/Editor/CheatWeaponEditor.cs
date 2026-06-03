@@ -16,7 +16,9 @@ public class CheatWeaponEditor : Editor
         // 2. 버튼 위에 살짝 여백을 줍니다.
         GUILayout.Space(10);
 
+
         // 3. 인스펙터에 버튼을 그립니다. (세로 높이 30짜리 큼직한 버튼)
+        EditorGUI.BeginDisabledGroup(!Application.isPlaying);
         if (GUILayout.Button("무기 인벤토리에 추가", GUILayout.Height(30)))
         {
             // 버튼을 클릭하면 CheatWeapon 스크립트의 함수가 실행됩니다!

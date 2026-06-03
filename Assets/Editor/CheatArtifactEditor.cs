@@ -16,6 +16,7 @@ public class CheatArtifactEditor : Editor
         GUILayout.Space(10);
 
         // 3. 큼직한 실행 버튼 추가
+        EditorGUI.BeginDisabledGroup(!Application.isPlaying);
         if (GUILayout.Button("장신구 인벤토리에 추가", GUILayout.Height(30)))
         {
             // 버튼 클릭 시 치트 함수 실행
