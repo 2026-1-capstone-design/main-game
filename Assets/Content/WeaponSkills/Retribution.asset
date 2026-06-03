@@ -14,14 +14,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WeaponSkillSO
   icon: {fileID: 21300000, guid: 80e08d7bb9cf9b44f8bffa678e745441, type: 3}
   skillName: "\uC751\uC9D5"
-  description: "5\uCD08\uAC04 \uBC29\uC5B4 \uD0DC\uC138. \uBC1B\uC740 \uD53C\uD574
-    \uCE90\uC2F1\uD588\uB2E4\uAC00, \uC885\uB8CC\uC640 \uB3D9\uC2DC\uC5D0 \uC8FC\uBCC0
-    \uC801\uC5D0\uAC8C \uBAA8\uC740 \uD53C\uD574 %\uB85C \uAC00\uD568"
+  description: "5\uCD08\uAC04 \uBC29\uC5B4 \uD0DC\uC138\uB97C \uCDE8\uD558\uBA70
+    \uBC1B\uC740 \uD53C\uD574\uB97C \uB204\uC801\uD55C\uB2E4. \uC9C0\uC18D\uC2DC\uAC04
+    \uC885\uB8CC \uC2DC \uC8FC\uBCC0 \uC801\uC5D0\uAC8C \uB204\uC801\uB41C \uD53C\uD574\uC758
+    \uC77C\uC815 \uBE44\uC728\uB85C \uACF5\uACA9\uD55C\uB2E4."
   weaponType: 5
   skillId: 37
-  isSkillOnSelf: 0
+  isSkillOnSelf: 1
   isSkillOnOtherAlly: 0
-  isSkillAoe: 0
+  isSkillAoe: 1
   canSkillTargetDead: 0
   defaultDur: 1
   duration: 1

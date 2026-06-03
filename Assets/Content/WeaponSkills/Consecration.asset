@@ -15,12 +15,11 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: cbf03eb805630224ea504f1571e58a90, type: 3}
   skillName: "\uCD95\uC131"
   description: "\uC790\uC2E0\uC5D0\uAC8C \uAC78\uB9B0 \uBAA8\uB4E0 \uB514\uBC84\uD504\uB97C
-    \uC989\uC2DC \uD574\uC81C\uD558\uACE0, \uC18C\uB7C9\uC758 \uD790, \uBAA8\uB4E0
-    \uBC84\uD504\uC758 \uC9C0\uC18D\uC2DC\uAC04\uC744 \uCD08\uAE30\uD654\uD55C\uB2E4(\uB610\uB294
-    \uB2E8\uC21C \uBC84\uD504)"
+    \uC989\uC2DC \uD574\uC81C\uD558\uACE0 \uC18C\uB7C9\uC758 \uCCB4\uB825\uC744 \uD68C\uBCF5\uD558\uBA70
+    \uBAA8\uB4E0 \uBC84\uD504\uC758 \uC9C0\uC18D\uC2DC\uAC04\uC744 \uCD08\uAE30\uD654\uD55C\uB2E4."
   weaponType: 1
   skillId: 23
-  isSkillOnSelf: 0
+  isSkillOnSelf: 1
   isSkillOnOtherAlly: 0
   isSkillAoe: 0
   canSkillTargetDead: 0

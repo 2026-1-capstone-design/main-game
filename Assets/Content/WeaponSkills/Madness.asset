@@ -1,4 +1,4 @@
-﻿%YAML 1.1
+%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
 --- !u!114 &11400000
 MonoBehaviour:
@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WeaponSkillSO
   icon: {fileID: 21300000, guid: 3b6a75ec119c3e1478473c4a1f500520, type: 3}
   skillName: Madness
-  description: Madness
+  description: "\uC790\uC2E0\uC5D0\uAC8C \uACF5\uACA9\uC18D\uB3C4 \uBC0F \uB370\uBBF8\uC9C0
+    \uBC84\uD504\uB97C \uC801\uC6A9\uD55C\uB2E4."
   weaponType: 3
   skillId: 2
   isSkillOnSelf: 1
