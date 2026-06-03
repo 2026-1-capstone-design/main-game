@@ -16,7 +16,7 @@ MonoBehaviour:
   allyTeam:
   - classSO: {fileID: 11400000, guid: 6846407ed22928941b371aab2d355ecf, type: 2}
     level: 0
-    weaponData: {fileID: 11400000, guid: 8f15a2a951e32fa44914883dd11d291f, type: 2}
+    weaponData: {fileID: 11400000, guid: 05dba1feafaac2a4c8e5d3ff63643e25, type: 2}
     weaponSkillId: 0
     equippedArtifact: {fileID: 11400000, guid: b88684fbb1305e04786007b6b51fa87a, type: 2}
     healthOverride: 100000
@@ -33,8 +33,8 @@ MonoBehaviour:
   enemyTeam:
   - classSO: {fileID: 11400000, guid: 6846407ed22928941b371aab2d355ecf, type: 2}
     level: 0
-    weaponData: {fileID: 0}
-    weaponSkillId: 32
+    weaponData: {fileID: 11400000, guid: 1125cefdf7e96c04cb5c836ceef728b5, type: 2}
+    weaponSkillId: 0
     equippedArtifact: {fileID: 0}
     healthOverride: 100000
     attackOverride: 0
