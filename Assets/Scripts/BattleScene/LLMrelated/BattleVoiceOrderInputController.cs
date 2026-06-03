@@ -508,7 +508,7 @@ public sealed class BattleVoiceOrderInputController : MonoBehaviour
             && battleOrdersManager.CurrentCommandState == BattleOrderCommandState.Processing;
     }
 
-        private bool IsBattlePaused()
+    private bool IsBattlePaused()
     {
         EnsureBattleSceneUIManagerReferenceOnly();
         return battleSceneUIManager != null && battleSceneUIManager.IsBattlePaused;

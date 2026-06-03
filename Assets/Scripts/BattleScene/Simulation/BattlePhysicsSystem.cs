@@ -183,14 +183,54 @@ public sealed class BattlePhysicsSystem
                     unit.FaceTarget(desiredPosition);
                 break;
             case BattleFacingIntent.MoveDirection:
-                Vector3 moveDirection =
-                    plan.Move.Intent == BattleMoveIntent.MoveToRelativeDirection
-                        ? BuildRelativeMoveDirection(plan.Move.Target, plan.Move.Direction, unit)
-                        : plan.Move.Direction;
+                Vector3 moveDirection = ResolveMoveDirection(unit, plan.Move);
                 if (moveDirection.sqrMagnitude > 0.0001f)
                     unit.FaceTarget(unit.Position + moveDirection);
                 break;
         }
+    }
+
+    private static Vector3 ResolveMoveDirection(BattleRuntimeUnit unit, BattleMove move)
+    {
+        if (unit == null)
+            return Vector3.zero;
+
+        Vector3 direction;
+
+        switch (move.Intent)
+        {
+            case BattleMoveIntent.MoveToAbsolutePosition:
+                direction = move.Position - unit.Position;
+                break;
+
+            case BattleMoveIntent.MoveToRelativePosition:
+                if (!TryResolveRelativePosition(unit, move.Target, move.Direction, out Vector3 relativePosition))
+                    return Vector3.zero;
+
+                direction = relativePosition - unit.Position;
+                break;
+
+            case BattleMoveIntent.MoveToTarget:
+                if (move.Target == null)
+                    return Vector3.zero;
+
+                direction = move.Target.Position - unit.Position;
+                break;
+
+            case BattleMoveIntent.MoveToRelativeDirection:
+                direction = BuildRelativeMoveDirection(move.Target, move.Direction, unit);
+                break;
+
+            case BattleMoveIntent.MoveToAbsoluteDirection:
+                direction = move.Direction;
+                break;
+
+            default:
+                return Vector3.zero;
+        }
+
+        direction.y = 0f;
+        return direction;
     }
 
     private static Vector3 BuildRelativeMoveDirection(
