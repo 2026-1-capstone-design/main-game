@@ -204,8 +204,13 @@ public sealed class BattlePhysicsSystem
                 break;
 
             case BattleMoveIntent.MoveToRelativePosition:
-                if (!TryResolveRelativePosition(unit, move.Target, move.Direction, out Vector3 relativePosition))
+                if (
+                    move.Target == null
+                    || !TryResolveRelativePosition(unit, move.Target, move.Direction, out Vector3 relativePosition)
+                )
+                {
                     return Vector3.zero;
+                }
 
                 direction = relativePosition - unit.Position;
                 break;
@@ -218,6 +223,11 @@ public sealed class BattlePhysicsSystem
                 break;
 
             case BattleMoveIntent.MoveToRelativeDirection:
+                if (move.Target == null)
+                {
+                    return Vector3.zero;
+                }
+
                 direction = BuildRelativeMoveDirection(move.Target, move.Direction, unit);
                 break;
 

@@ -73,6 +73,7 @@ public sealed class BattleVoiceOrderInputController : MonoBehaviour
     private bool _isRecording;
     private bool _isTranscribing;
     private bool _isWhisperReady;
+    private bool _triedToFindUIManager;
     private BattleSceneUIManager _subscribedBattleSceneUIManager;
     private BattleOrdersManager _subscribedBattleOrdersManager;
 
@@ -516,9 +517,10 @@ public sealed class BattleVoiceOrderInputController : MonoBehaviour
 
     private void EnsureBattleSceneUIManagerReferenceOnly()
     {
-        if (battleSceneUIManager == null)
+        if (battleSceneUIManager == null && !_triedToFindUIManager)
         {
             battleSceneUIManager = FindFirstObjectByType<BattleSceneUIManager>();
+            _triedToFindUIManager = true;
         }
 
         RebindBattleSceneUIManagerEvents();
