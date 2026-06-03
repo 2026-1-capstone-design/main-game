@@ -2,11 +2,13 @@
 // 명령 입력 중과 서버 명령 처리 중에는 전투 속도를 고정 배속으로 유지한다.
 // 서버 명령 처리 중에는 새 명령 입력을 막고, 처리 종료 이벤트에서 기존 배속을 복구한다.
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 [DisallowMultipleComponent]
@@ -150,6 +152,10 @@ public sealed class BattleSceneUIManager : MonoBehaviour
     [SerializeField]
     private BattleAutoCameraDirector autoCameraDirector;
 
+    [Header("Pause UI")]
+    [SerializeField]
+    private GameObject pauseText;
+
     [Header("Command Mode")]
     [SerializeField]
     [Min(0.01f)]
@@ -205,6 +211,17 @@ public sealed class BattleSceneUIManager : MonoBehaviour
     public bool IsSurrenderPanelOpen => surrenderPanelRoot != null && surrenderPanelRoot.activeSelf;
     public bool IsOrdersPanelOpen => orderChatBackgroundRoot == null || orderChatBackgroundRoot.activeSelf;
 
+    public bool IsBattlePaused
+    {
+        get
+        {
+            EnsureBattleSimulationManager();
+            return battleSimulationManager != null && battleSimulationManager.IsTemporarilyPaused;
+        }
+    }
+
+    public event Action<bool> OnPauseStateChanged;
+
     public void Initialize()
     {
         if (_initialized)
@@ -234,6 +251,7 @@ public sealed class BattleSceneUIManager : MonoBehaviour
         BindAutoCameraToggle();
 
         HideAll();
+        SetActive(pauseText, false);
         ClearAllyOrderResponses();
         RefreshSpeedText();
         RefreshButtonStates();
@@ -244,6 +262,7 @@ public sealed class BattleSceneUIManager : MonoBehaviour
     private void Update()
     {
         RefreshHeader();
+        HandlePauseHotkey();
     }
 
     private void OnDestroy()
@@ -745,7 +764,7 @@ public sealed class BattleSceneUIManager : MonoBehaviour
             return;
         }
 
-        int startIndex = Random.Range(0, nameCount);
+        int startIndex = UnityEngine.Random.Range(0, nameCount);
         for (int offset = 0; offset < nameCount; offset++)
         {
             string candidate = enemySquadNames[(startIndex + offset) % nameCount];
@@ -958,8 +977,8 @@ public sealed class BattleSceneUIManager : MonoBehaviour
         bool commandActive = IsBattleOrderCommandActive();
         bool commandProcessing = IsBattleOrderCommandProcessing();
         bool blockSpeedButtons = modalOpen || paused || IsBattleEndPanelOpen || _isNavigating || commandActive;
-        bool blockCommandButtons = modalOpen || IsBattleEndPanelOpen || _isNavigating || commandProcessing;
-        bool blockOrderInput = modalOpen || IsBattleEndPanelOpen || _isNavigating || commandProcessing;
+        bool blockCommandButtons = modalOpen || paused || IsBattleEndPanelOpen || _isNavigating || commandProcessing;
+        bool blockOrderInput = modalOpen || paused || IsBattleEndPanelOpen || _isNavigating || commandProcessing;
 
         Button[] speedButtons = GetSpeedPresetButtons();
         for (int i = 0; i < speedButtons.Length; i++)
@@ -1007,6 +1026,56 @@ public sealed class BattleSceneUIManager : MonoBehaviour
         }
 
         RebindSimulationEvents();
+    }
+
+    private void HandlePauseHotkey()
+    {
+        Keyboard keyboard = Keyboard.current;
+        if (keyboard == null || !keyboard.pKey.wasPressedThisFrame)
+        {
+            return;
+        }
+
+        if (IsTextInputFocusedForPause())
+        {
+            return;
+        }
+
+        EnsureBattleSimulationManager();
+
+        if (
+            battleSimulationManager == null
+            || battleSimulationManager.IsBattleFinished
+            || IsBattleEndPanelOpen
+            || _isNavigating
+        )
+        {
+            return;
+        }
+
+        bool nextPaused = !battleSimulationManager.IsTemporarilyPaused;
+        battleSimulationManager.SetTemporaryPause(nextPaused);
+        SetActive(pauseText, nextPaused);
+        OnPauseStateChanged?.Invoke(nextPaused);
+        RefreshButtonStates();
+    }
+
+    private bool IsTextInputFocusedForPause()
+    {
+        if (currentOrderInputField != null && currentOrderInputField.isFocused)
+        {
+            return true;
+        }
+
+        if (EventSystem.current == null || EventSystem.current.currentSelectedGameObject == null)
+        {
+            return false;
+        }
+
+        TMP_InputField selectedInputField =
+            EventSystem.current.currentSelectedGameObject.GetComponentInParent<TMP_InputField>();
+
+        return selectedInputField != null && selectedInputField.isFocused;
     }
 
     private void RebindSimulationEvents()
