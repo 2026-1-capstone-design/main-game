@@ -140,17 +140,50 @@ public sealed class BattleUnitCombatState
     // ── 스킬 쿨다운 ────────────────────────────────────────────────
     public void TickSkillCooldown(float deltaTime)
     {
-        SkillCooldownRemaining = Mathf.Max(0f, SkillCooldownRemaining - Mathf.Max(0f, deltaTime));
+        float clampedDeltaTime = Mathf.Max(0f, deltaTime);
+
+        if (AutoSkillUseDelayRemaining > 0f)
+        {
+            AutoSkillUseDelayRemaining = Mathf.Max(0f, AutoSkillUseDelayRemaining - clampedDeltaTime);
+        }
+
+        if (SkillCooldownRemaining <= 0f)
+        {
+            return;
+        }
+
+        float previousCooldown = SkillCooldownRemaining;
+        SkillCooldownRemaining = Mathf.Max(0f, SkillCooldownRemaining - clampedDeltaTime);
+
+        if (previousCooldown > 0f && SkillCooldownRemaining <= 0f)
+        {
+            StartAutoSkillUseDelay();
+        }
     }
 
     public void ClearSkillCooldown()
     {
         SkillCooldownRemaining = 0f;
+        AutoSkillUseDelayRemaining = 0f;
     }
 
     public void ResetSkillCooldown()
     {
         SkillCooldownRemaining = Mathf.Max(0f, SkillCooltime);
+        AutoSkillUseDelayRemaining = 0f;
+    }
+
+    // 스킬 쿨다운이 끝난 뒤 자동 AI만 스킬 사용을 미루기 위한 내부 타이머를 시작한다.
+    // UI 쿨다운은 SkillCooldownRemaining만 사용하므로 이 값은 화면에 표시되지 않는다.
+    private void StartAutoSkillUseDelay()
+    {
+        if (HaveSkill == WeaponSkillId.None || SkillCooltime <= 0f)
+        {
+            AutoSkillUseDelayRemaining = 0f;
+            return;
+        }
+
+        AutoSkillUseDelayRemaining = Mathf.Max(0f, SkillCooltime);
     }
 
     public WeaponSkillId GetSkill() => HaveSkill;
@@ -185,6 +218,7 @@ public sealed class BattleUnitCombatState
             CurrentHealth = 0f;
             AttackCooldownRemaining = 0f;
             SkillCooldownRemaining = 0f;
+            AutoSkillUseDelayRemaining = 0f;
             CurrentAction = "Disabled";
             CurrentActionType = BattleActionType.None;
             ClearTargets();
@@ -338,6 +372,8 @@ public sealed class BattleUnitCombatState
     [SerializeField]
     public skillType SkillType { get; private set; }
     public float SkillCooldownRemaining { get; private set; }
+    public float AutoSkillUseDelayRemaining { get; private set; }
+    public bool IsAutoSkillUseDelayed => AutoSkillUseDelayRemaining > 0f;
 
     // ── 실행 플랜 위치 / 이동-공격 플래그 ─────────────────────────
     public Vector3 PlannedDesiredPosition { get; private set; }
@@ -393,6 +429,7 @@ public sealed class BattleUnitCombatState
         SkillCooltime = 0f;
         SkillType = skillType.None;
         SkillCooldownRemaining = 0f;
+        AutoSkillUseDelayRemaining = 0f;
 
         PlannedDesiredPosition = Vector3.zero;
         HasPlannedDesiredPosition = false;
