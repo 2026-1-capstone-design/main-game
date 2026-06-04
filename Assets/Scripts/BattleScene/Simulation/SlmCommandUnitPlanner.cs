@@ -363,19 +363,19 @@ public sealed class SlmCommandUnitPlanner
         if (cmd.Target == null)
             return BuildHoldPlan();
 
-        int attackerCount = SlmMoveSubtypeResolver.CountAttackersOf(
-            cmd.Target,
-            context.Units,
-            out BattleRuntimeUnit closestAttacker
-        );
-
-        if (attackerCount < HelpThreatThreshold || closestAttacker == null)
+        if (
+            !SlmMoveSubtypeResolver.TryFindClosestEnemyNearAlly(
+                cmd.Target,
+                context.Units,
+                out BattleRuntimeUnit closestEnemyNearAlly
+            )
+        )
         {
-            // 위협이 부족하면 Hold 상태로 두고, ShouldAdvance가 곧 종료시킨다.
+            // 지정 아군 주변에 살아있는 적이 없으면 Hold 상태로 두고, ShouldAdvance가 곧 종료시킨다.
             return BuildHoldPlan();
         }
 
-        BattleUnitCombatState threatState = closestAttacker.State;
+        BattleUnitCombatState threatState = closestEnemyNearAlly.State;
         // 모든 액션과 동일하게 BattleFieldSnapshot.GetEffectiveAttackDistance로 사거리를 판정한다.
         bool inRange = false;
         if (BattleFieldSnapshot.IsValidEnemyTarget(self, threatState))
@@ -496,8 +496,11 @@ public sealed class SlmCommandUnitPlanner
                         return IsApproachOpponentInRange(actor, current.Target);
 
                     case SlmMoveSubtype.Help:
-                        int count = SlmMoveSubtypeResolver.CountAttackersOf(current.Target, context.Units, out _);
-                        return count < HelpThreatThreshold;
+                        return !SlmMoveSubtypeResolver.TryFindClosestEnemyNearAlly(
+                            current.Target,
+                            context.Units,
+                            out _
+                        );
 
                     case SlmMoveSubtype.HoldFront:
                         // approachOpponent와 동일 기준. GetEffectiveAttackDistance가 team 검증을 안 하므로 아군 타겟에도 그대로 적용된다.
