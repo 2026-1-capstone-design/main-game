@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -678,12 +678,12 @@ public sealed class GladiatorUIManager : MonoBehaviour
 
         if (weaponDetailEquipButton != null)
         {
-            weaponDetailEquipButton.gameObject.SetActive(!equippedByCurrent);
+            weaponDetailEquipButton.gameObject.SetActive(true);
         }
 
         if (weaponDetailUnequipButton != null)
         {
-            weaponDetailUnequipButton.gameObject.SetActive(equippedByCurrent);
+            weaponDetailUnequipButton.gameObject.SetActive(false);
         }
     }
 
@@ -881,6 +881,18 @@ public sealed class GladiatorUIManager : MonoBehaviour
     {
         if (_inventoryMode == DetailInventoryMode.Artifact)
         {
+            if (_currentDetailGladiator == null || _currentSelectedArtifact == null || _gladiatorManager == null)
+            {
+                return;
+            }
+
+            OwnedGladiatorData artifactOwner = _gladiatorManager.FindOwnerOfEquippedArtifact(_currentSelectedArtifact);
+            if (artifactOwner != null && artifactOwner == _currentDetailGladiator)
+            {
+                TryUnequipSelectedArtifact();
+                return;
+            }
+
             TryEquipSelectedArtifactAndCloseInventory();
             return;
         }
@@ -961,6 +973,35 @@ public sealed class GladiatorUIManager : MonoBehaviour
         CloseInventoryPanel();
     }
 
+    private void TryUnequipSelectedArtifact()
+    {
+        if (_currentDetailGladiator == null || _currentSelectedArtifact == null || _gladiatorManager == null)
+        {
+            return;
+        }
+
+        string failReason;
+        bool succeeded = _gladiatorManager.TryUnequipArtifact(
+            _currentDetailGladiator,
+            _currentSelectedArtifact,
+            out failReason
+        );
+
+        if (!succeeded)
+        {
+            if (!string.IsNullOrEmpty(failReason))
+            {
+                Debug.LogWarning("[GladiatorUIManager] " + failReason, this);
+            }
+            return;
+        }
+
+        _currentSelectedArtifact = null;
+        SetWeaponDetailActive(false);
+        RefreshDetail(_currentDetailGladiator);
+        RefreshInventoryArtifactViewer();
+    }
+
     private void TryUnequipSelectedWeapon()
     {
         if (_currentDetailGladiator == null || _gladiatorManager == null)
@@ -983,6 +1024,7 @@ public sealed class GladiatorUIManager : MonoBehaviour
         _currentSelectedWeapon = null;
         SetWeaponDetailActive(false);
         RefreshDetail(_currentDetailGladiator);
+        RefreshInventoryWeaponViewer();
     }
 
     private void OpenAlreadyEquippedPopup()

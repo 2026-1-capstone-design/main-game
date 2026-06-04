@@ -59,8 +59,6 @@ public sealed class AudioManager : SingletonBehaviour<AudioManager>
 
     public void PlayBgm(AudioClip clip, bool loop = true)
     {
-        if (muteAll || muteBgm)
-            return;
         if (clip == null)
             return;
 
@@ -68,12 +66,13 @@ public sealed class AudioManager : SingletonBehaviour<AudioManager>
 
         if (bgmSource.clip == clip && bgmSource.isPlaying)
         {
+            ApplyVolume();
             return;
         }
 
         bgmSource.clip = clip;
         bgmSource.loop = loop;
-        bgmSource.volume = masterVolume * bgmVolume;
+        ApplyVolume();
         bgmSource.Play();
     }
 
@@ -111,6 +110,19 @@ public sealed class AudioManager : SingletonBehaviour<AudioManager>
     public void SetSfxVolume(float value)
     {
         sfxVolume = Mathf.Clamp01(value);
+        ApplyVolume();
+    }
+
+    public bool IsBgmMuted => muteAll || muteBgm;
+
+    public void ToggleBgmMute()
+    {
+        SetBgmMuted(!muteBgm);
+    }
+
+    public void SetBgmMuted(bool value)
+    {
+        muteBgm = value;
         ApplyVolume();
     }
 
