@@ -117,7 +117,7 @@ public sealed class LegacyBuiltInAiPlanner : IBattleControlPlanner
         if (!inAttackRange || self.GetSkill() == WeaponSkillId.None)
             return false;
 
-        return self.SkillCooldownRemaining <= 0f;
+        return self.SkillCooldownRemaining <= 0f && !self.IsAutoSkillUseDelayed;
     }
 
     private static BattleRuntimeUnit FindRuntimeUnit(

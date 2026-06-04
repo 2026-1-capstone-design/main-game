@@ -45,6 +45,9 @@ public sealed class MlAgentControlPlanner : IBattleControlPlanner
         if (self.IsCastingSkill)
             return BattleCombatIntent.Skill;
 
+        if (combatIntent == BattleCombatIntent.Skill && self.IsAutoSkillUseDelayed)
+            return BattleCombatIntent.Attack;
+
         if (command != BattleCombatCommand.BasicAttack)
             return combatIntent;
 
@@ -54,7 +57,9 @@ public sealed class MlAgentControlPlanner : IBattleControlPlanner
         if (!BattleFieldSnapshot.IsWithinEffectiveAttackDistance(self, target))
             return combatIntent;
 
-        return self.SkillCooldownRemaining <= 0f ? BattleCombatIntent.Skill : combatIntent;
+        return self.SkillCooldownRemaining <= 0f && !self.IsAutoSkillUseDelayed
+            ? BattleCombatIntent.Skill
+            : combatIntent;
     }
 
     private static BattleMove ResolveMove(
