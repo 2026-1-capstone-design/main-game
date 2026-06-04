@@ -2,41 +2,11 @@ using System;
 using System.Globalization;
 using TMPro;
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 [DisallowMultipleComponent]
 public sealed class TitleSceneUIManager : MonoBehaviour
 {
-    private sealed class OutsidePanelClickCloser : MonoBehaviour, IPointerClickHandler
-    {
-        private RectTransform _protectedPanel;
-        private Action _onOutsideClick;
-
-        public void Initialize(RectTransform protectedPanel, Action onOutsideClick)
-        {
-            _protectedPanel = protectedPanel;
-            _onOutsideClick = onOutsideClick;
-        }
-
-        public void OnPointerClick(PointerEventData eventData)
-        {
-            if (
-                _protectedPanel != null
-                && RectTransformUtility.RectangleContainsScreenPoint(
-                    _protectedPanel,
-                    eventData.position,
-                    eventData.pressEventCamera
-                )
-            )
-            {
-                return;
-            }
-
-            _onOutsideClick?.Invoke();
-        }
-    }
-
     [Header("Title Scene")]
     [SerializeField]
     private string mainSceneName = "MainScene";
