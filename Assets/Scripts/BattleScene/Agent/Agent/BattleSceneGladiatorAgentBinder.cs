@@ -24,6 +24,7 @@ public sealed class BattleSceneGladiatorAgentBinder : MonoBehaviour
 
     private readonly List<GladiatorAgent> _agentPool = new List<GladiatorAgent>();
     private readonly List<BattleRuntimeUnit> _boundUnits = new List<BattleRuntimeUnit>();
+    private readonly List<TrainingUnitCombatOverlay> _rangeOverlays = new List<TrainingUnitCombatOverlay>();
 
     private void OnValidate()
     {
@@ -107,6 +108,7 @@ public sealed class BattleSceneGladiatorAgentBinder : MonoBehaviour
             agent.gameObject.SetActive(true);
             agent.Initialize(unit, flowManager, null);
             _boundUnits.Add(unit);
+            AttachRangeOverlay(unit);
         }
 
         DeactivateSurplusAgents(bindCount);
@@ -211,6 +213,8 @@ public sealed class BattleSceneGladiatorAgentBinder : MonoBehaviour
 
     private void UnbindUnits()
     {
+        HideRangeOverlays();
+
         for (int i = 0; i < _boundUnits.Count; i++)
         {
             BattleRuntimeUnit unit = _boundUnits[i];
@@ -221,6 +225,37 @@ public sealed class BattleSceneGladiatorAgentBinder : MonoBehaviour
         }
 
         _boundUnits.Clear();
+    }
+
+    private void AttachRangeOverlay(BattleRuntimeUnit unit)
+    {
+        if (unit == null)
+        {
+            return;
+        }
+
+        TrainingUnitCombatOverlay overlay = unit.GetComponent<TrainingUnitCombatOverlay>();
+        if (overlay == null)
+        {
+            overlay = unit.gameObject.AddComponent<TrainingUnitCombatOverlay>();
+        }
+
+        overlay.SetRangeOnlyVisible(true);
+        _rangeOverlays.Add(overlay);
+    }
+
+    private void HideRangeOverlays()
+    {
+        for (int i = 0; i < _rangeOverlays.Count; i++)
+        {
+            TrainingUnitCombatOverlay overlay = _rangeOverlays[i];
+            if (overlay != null)
+            {
+                overlay.SetRangeOnlyVisible(false);
+            }
+        }
+
+        _rangeOverlays.Clear();
     }
 
     private bool HasRuntimeUnits()

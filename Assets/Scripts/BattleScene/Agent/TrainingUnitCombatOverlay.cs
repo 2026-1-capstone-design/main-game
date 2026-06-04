@@ -66,6 +66,21 @@ public sealed class TrainingUnitCombatOverlay : MonoBehaviour
     private LineRenderer _attackRange;
     private Material _lineMaterial;
     private GUIStyle _modeLabelStyle;
+    private bool _rangeOnlyMode;
+    private bool _isRangeVisible = true;
+
+    // BattleScene에서는 기존 UI와 겹치지 않도록 공격 사거리 원만 표시한다.
+    public void SetRangeOnlyVisible(bool visible)
+    {
+        _rangeOnlyMode = true;
+        _isRangeVisible = visible;
+        SetArrowVisible(false);
+
+        if (!visible)
+        {
+            SetRangeVisible(false);
+        }
+    }
 
     private void Awake()
     {
@@ -92,7 +107,17 @@ public sealed class TrainingUnitCombatOverlay : MonoBehaviour
             return;
         }
 
-        RefreshAttackRange();
+        if (_isRangeVisible)
+        {
+            RefreshAttackRange();
+        }
+
+        if (_rangeOnlyMode)
+        {
+            SetArrowVisible(false);
+            return;
+        }
+
         RefreshAnchorArrow();
     }
 
@@ -106,7 +131,7 @@ public sealed class TrainingUnitCombatOverlay : MonoBehaviour
 
     private void OnGUI()
     {
-        if (_unit == null || _unit.State == null || _unit.IsCombatDisabled)
+        if (_rangeOnlyMode || _unit == null || _unit.State == null || _unit.IsCombatDisabled)
         {
             return;
         }
