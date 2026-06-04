@@ -465,7 +465,7 @@ public sealed class BattleSceneUIManager : MonoBehaviour
         SetGlobalOrderTarget();
         EnsureBattleOrdersManager();
 
-        if (battleOrdersManager != null && !battleOrdersManager.TryBeginUserOrderInput())
+        if (battleOrdersManager == null || !battleOrdersManager.TryBeginUserOrderInput())
         {
             return false;
         }
@@ -633,7 +633,7 @@ public sealed class BattleSceneUIManager : MonoBehaviour
         SetGlobalOrderTarget();
         EnsureBattleOrdersManager();
 
-        if (battleOrdersManager != null && !battleOrdersManager.TryBeginUserOrderInput())
+        if (battleOrdersManager == null || !battleOrdersManager.TryBeginUserOrderInput())
         {
             return false;
         }
@@ -1169,10 +1169,17 @@ public sealed class BattleSceneUIManager : MonoBehaviour
 
     private void HandleOrderInputSelected(string _)
     {
-        if (BeginOrderInputMode(focusInput: false) && currentOrderInputField != null)
+        if (BeginOrderInputMode(focusInput: false))
         {
-            currentOrderInputField.ActivateInputField();
+            if (currentOrderInputField != null)
+            {
+                currentOrderInputField.ActivateInputField();
+            }
+
+            return;
         }
+
+        ClearAndReleaseCurrentOrderInput();
     }
 
     private void HandleOrderInputDeselected(string _)
