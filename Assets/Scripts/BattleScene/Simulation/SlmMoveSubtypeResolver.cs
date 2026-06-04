@@ -362,6 +362,46 @@ public static class SlmMoveSubtypeResolver
         return count;
     }
 
+    // help 전용: 지정 아군 주변의 가장 가까운 살아있는 적을 반환한다.
+    public static bool TryFindClosestEnemyNearAlly(
+        BattleRuntimeUnit ally,
+        IReadOnlyList<BattleRuntimeUnit> units,
+        out BattleRuntimeUnit closestEnemy
+    )
+    {
+        closestEnemy = null;
+        if (ally == null || ally.State == null || units == null)
+            return false;
+
+        BattleTeamId allyTeam = ally.State.TeamId;
+        Vector3 allyPos = ally.Position;
+        float maxDistSqr = ThreatNearRadius * ThreatNearRadius;
+        float minDistSqr = float.MaxValue;
+
+        for (int i = 0; i < units.Count; i++)
+        {
+            BattleRuntimeUnit u = units[i];
+            if (u == null || u.State == null || u.IsCombatDisabled)
+                continue;
+            if (u.State.TeamId.Equals(allyTeam))
+                continue;
+
+            Vector3 diff = u.Position - allyPos;
+            diff.y = 0f;
+            float distSqr = diff.sqrMagnitude;
+            if (distSqr > maxDistSqr)
+                continue;
+
+            if (distSqr < minDistSqr)
+            {
+                minDistSqr = distSqr;
+                closestEnemy = u;
+            }
+        }
+
+        return closestEnemy != null;
+    }
+
     // 적 군집 전체 중심 (살아있는 적 평균 위치).
     public static bool TryComputeEnemyCentroid(
         BattleRuntimeUnit actor,
