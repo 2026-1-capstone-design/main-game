@@ -2,11 +2,41 @@ using System;
 using System.Globalization;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 [DisallowMultipleComponent]
 public sealed class TitleSceneUIManager : MonoBehaviour
 {
+    private sealed class OutsidePanelClickCloser : MonoBehaviour, IPointerClickHandler
+    {
+        private RectTransform _protectedPanel;
+        private Action _onOutsideClick;
+
+        public void Initialize(RectTransform protectedPanel, Action onOutsideClick)
+        {
+            _protectedPanel = protectedPanel;
+            _onOutsideClick = onOutsideClick;
+        }
+
+        public void OnPointerClick(PointerEventData eventData)
+        {
+            if (
+                _protectedPanel != null
+                && RectTransformUtility.RectangleContainsScreenPoint(
+                    _protectedPanel,
+                    eventData.position,
+                    eventData.pressEventCamera
+                )
+            )
+            {
+                return;
+            }
+
+            _onOutsideClick?.Invoke();
+        }
+    }
+
     [Header("Title Scene")]
     [SerializeField]
     private string mainSceneName = "MainScene";
@@ -34,21 +64,31 @@ public sealed class TitleSceneUIManager : MonoBehaviour
     [SerializeField]
     private TMP_Text settingsGameTitleText;
 
+    [Header("Settings Rows")]
     [SerializeField]
-    private Button gameSettingButton;
+    private TMP_Text bgmLabel;
 
     [SerializeField]
-    private Button audioSettingButton;
+    private Slider bgmSlider;
 
     [SerializeField]
-    private Button videoSettingButton;
+    private TMP_Text sfxLabel;
 
     [SerializeField]
-    private Button keySettingButton;
+    private Slider sfxSlider;
+
+    [SerializeField]
+    private TMP_Text brightnessLabel;
+
+    [SerializeField]
+    private Slider brightnessSlider;
 
     [Header("Load Game Modal")]
     [SerializeField]
     private GameObject loadGameModalRoot;
+
+    [SerializeField]
+    private Graphic loadGamePanelGraphic;
 
     [SerializeField]
     private Button loadGameCloseButton;
@@ -68,6 +108,7 @@ public sealed class TitleSceneUIManager : MonoBehaviour
     private bool _isNavigating; // 씬 이동 중 중복 클릭 방지
     private Button _settingsBackdropButton;
     private Button _loadGameBackdropButton;
+    private OutsidePanelClickCloser _loadGameOutsideClickCloser;
 
     private void Start()
     {
@@ -91,6 +132,7 @@ public sealed class TitleSceneUIManager : MonoBehaviour
 
         CacheSettingsControls();
         BindSettingsControls();
+        SyncSettingsControlsFromGlobalValues();
 
         CacheLoadGameControls();
 
@@ -210,6 +252,7 @@ public sealed class TitleSceneUIManager : MonoBehaviour
             return;
         }
 
+        SyncSettingsControlsFromGlobalValues();
         settingsModalRoot.SetActive(true);
 
         if (verboseLog)
@@ -300,26 +343,35 @@ public sealed class TitleSceneUIManager : MonoBehaviour
             settingsGameTitleText = FindChildComponent<TMP_Text>(modalRootTransform, "GameTitleText");
         }
 
-        if (gameSettingButton == null)
+        if (bgmLabel == null)
         {
-            gameSettingButton = FindChildComponent<Button>(modalRootTransform, "GameSettingButton");
+            bgmLabel = FindRowLabel(modalRootTransform, "BgmRow");
         }
 
-        if (audioSettingButton == null)
+        if (bgmSlider == null)
         {
-            audioSettingButton = FindChildComponent<Button>(modalRootTransform, "AudioSettingButton");
+            bgmSlider = FindChildComponent<Slider>(modalRootTransform, "BgmSlider");
         }
 
-        if (videoSettingButton == null)
+        if (sfxLabel == null)
         {
-            videoSettingButton = FindChildComponent<Button>(modalRootTransform, "VideoSettingButton");
+            sfxLabel = FindRowLabel(modalRootTransform, "SfxRow");
         }
 
-        if (keySettingButton == null)
+        if (sfxSlider == null)
         {
-            keySettingButton = FindChildComponent<Button>(modalRootTransform, "KeySettingButton");
+            sfxSlider = FindChildComponent<Slider>(modalRootTransform, "SfxSlider");
         }
 
+        if (brightnessLabel == null)
+        {
+            brightnessLabel = FindRowLabel(modalRootTransform, "BrightnessRow");
+        }
+
+        if (brightnessSlider == null)
+        {
+            brightnessSlider = FindChildComponent<Slider>(modalRootTransform, "BrightnessSlider");
+        }
         if (settingsDimBackground == null)
         {
             return;
@@ -345,6 +397,11 @@ public sealed class TitleSceneUIManager : MonoBehaviour
 
         Transform modalRootTransform = loadGameModalRoot.transform;
 
+        if (loadGamePanelGraphic == null)
+        {
+            loadGamePanelGraphic = FindChildComponent<Graphic>(modalRootTransform, "LoadGamePanel");
+        }
+
         if (loadGameCloseButton == null)
         {
             loadGameCloseButton = FindChildComponent<Button>(modalRootTransform, "CloseButton");
@@ -353,7 +410,7 @@ public sealed class TitleSceneUIManager : MonoBehaviour
         Transform backdropTransform = FindChildTransform(modalRootTransform, "DimBackground");
         if (backdropTransform != null)
         {
-            Image backdropImage = backdropTransform.GetComponent<Image>();
+            Graphic backdropGraphic = backdropTransform.GetComponent<Graphic>();
             _loadGameBackdropButton = backdropTransform.GetComponent<Button>();
 
             if (_loadGameBackdropButton == null)
@@ -362,24 +419,113 @@ public sealed class TitleSceneUIManager : MonoBehaviour
             }
 
             _loadGameBackdropButton.transition = Selectable.Transition.None;
-            _loadGameBackdropButton.targetGraphic = backdropImage;
+            _loadGameBackdropButton.targetGraphic = backdropGraphic;
             _loadGameBackdropButton.onClick.RemoveListener(OnCloseLoadGameClicked);
             _loadGameBackdropButton.onClick.AddListener(OnCloseLoadGameClicked);
         }
 
+        CacheLoadGameOutsideClickCloser();
         CacheLoadGameSlotTextReferences(modalRootTransform);
+    }
+
+    private void CacheLoadGameOutsideClickCloser()
+    {
+        if (loadGameModalRoot == null || loadGamePanelGraphic == null)
+        {
+            return;
+        }
+
+        Image rootRaycastImage = loadGameModalRoot.GetComponent<Image>();
+        if (rootRaycastImage == null)
+        {
+            rootRaycastImage = loadGameModalRoot.AddComponent<Image>();
+            rootRaycastImage.color = Color.clear;
+        }
+
+        rootRaycastImage.raycastTarget = true;
+
+        _loadGameOutsideClickCloser = loadGameModalRoot.GetComponent<OutsidePanelClickCloser>();
+        if (_loadGameOutsideClickCloser == null)
+        {
+            _loadGameOutsideClickCloser = loadGameModalRoot.AddComponent<OutsidePanelClickCloser>();
+        }
+
+        _loadGameOutsideClickCloser.Initialize(loadGamePanelGraphic.rectTransform, OnCloseLoadGameClicked);
     }
 
     // 모달 배경을 누르면 설정 선택 화면을 닫는다.
     private void BindSettingsControls()
     {
-        if (_settingsBackdropButton == null)
+        if (bgmSlider != null)
         {
-            return;
+            bgmSlider.onValueChanged.RemoveListener(OnBgmVolumeChanged);
+            bgmSlider.onValueChanged.AddListener(OnBgmVolumeChanged);
         }
 
-        _settingsBackdropButton.onClick.RemoveListener(OnCloseSettingsClicked);
-        _settingsBackdropButton.onClick.AddListener(OnCloseSettingsClicked);
+        if (sfxSlider != null)
+        {
+            sfxSlider.onValueChanged.RemoveListener(OnSfxVolumeChanged);
+            sfxSlider.onValueChanged.AddListener(OnSfxVolumeChanged);
+        }
+
+        if (brightnessSlider != null)
+        {
+            brightnessSlider.onValueChanged.RemoveListener(OnBrightnessChanged);
+            brightnessSlider.onValueChanged.AddListener(OnBrightnessChanged);
+        }
+
+        if (_settingsBackdropButton != null)
+        {
+            _settingsBackdropButton.onClick.RemoveListener(OnCloseSettingsClicked);
+            _settingsBackdropButton.onClick.AddListener(OnCloseSettingsClicked);
+        }
+    }
+
+    private void SyncSettingsControlsFromGlobalValues()
+    {
+        GameSettings.Load();
+
+        if (bgmSlider != null)
+        {
+            bgmSlider.SetValueWithoutNotify(GameSettings.BgmVolume);
+        }
+
+        if (sfxSlider != null)
+        {
+            sfxSlider.SetValueWithoutNotify(GameSettings.SfxVolume);
+        }
+
+        if (brightnessSlider != null)
+        {
+            brightnessSlider.SetValueWithoutNotify(GameSettings.Brightness);
+        }
+    }
+
+    private void OnBgmVolumeChanged(float value)
+    {
+        GameSettings.SetBgmVolume(value);
+        ApplyAudioSettings();
+    }
+
+    private void OnSfxVolumeChanged(float value)
+    {
+        GameSettings.SetSfxVolume(value);
+        ApplyAudioSettings();
+    }
+
+    private void OnBrightnessChanged(float value)
+    {
+        GameSettings.SetBrightness(value);
+        GameSettings.ApplyBrightnessToCurrentScene();
+    }
+
+    private static void ApplyAudioSettings()
+    {
+        AudioManager audioManager = AudioManager.Instance;
+        if (audioManager != null)
+        {
+            audioManager.ApplyFromGlobalSettings();
+        }
     }
 
     // 슬롯 텍스트들을 캐싱해 두면 이후 실제 세이브 데이터 연결 시 갱신만 하면 된다.
@@ -557,6 +703,12 @@ public sealed class TitleSceneUIManager : MonoBehaviour
         }
 
         return null;
+    }
+
+    private static TMP_Text FindRowLabel(Transform modalRootTransform, string rowName)
+    {
+        Transform rowTransform = FindChildTransform(modalRootTransform, rowName);
+        return rowTransform != null ? FindChildComponent<TMP_Text>(rowTransform, "Label") : null;
     }
 
     // 이름으로 찾은 자식에서 원하는 컴포넌트를 꺼낸다.
