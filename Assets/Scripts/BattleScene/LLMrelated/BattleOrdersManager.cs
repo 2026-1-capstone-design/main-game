@@ -747,7 +747,11 @@ public sealed class BattleOrdersManager : MonoBehaviour
             return;
         }
 
-        LogEmergencyFallbackAdvisor(failureStage, failureReason, fallbackResult != null ? fallbackResult.debugLog : fallbackDebugLog);
+        LogEmergencyFallbackAdvisor(
+            failureStage,
+            failureReason,
+            fallbackResult != null ? fallbackResult.debugLog : fallbackDebugLog
+        );
         FinishServerSotPipeline(BattleOrderProcessingResult.Failed());
     }
 

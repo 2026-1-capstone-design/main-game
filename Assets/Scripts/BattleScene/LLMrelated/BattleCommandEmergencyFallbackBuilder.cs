@@ -1,7 +1,7 @@
-// 최후방 폴백 파서 결과를 실행 가능한 후처리 결과로 변환한다.
+// 최후방 폴백 파서 결과를 실행 가능한 후처리 결과 또는 유닛 대사로 변환한다.
 // 일반 postprocessor의 순응/거부 확률은 사용하지 않는다.
-// 성공 결과는 forced obey와 hardcoded dialog를 함께 가진다.
-// 실패 결과는 참모 대사 하나만 가진다.
+// 성공 결과는 forced obey action 또는 행동 없는 hardcoded dialog를 가진다.
+// 참모로 넘길 실패는 참모 대사 하나만 가진다.
 // 이 파일은 실행 발행을 하지 않고 DTO만 만든다.
 
 using System;
@@ -30,6 +30,30 @@ public static class BattleCommandEmergencyFallbackBuilder
             debugLog = parseLog;
             result = BattleCommandEmergencyFallbackBuildResult.Failed(parseLog);
             return false;
+        }
+
+        if (parseResult != null && parseResult.dialogOnly)
+        {
+            BattleCommandPostprocessResult dialogOnlyPostprocessResult = BuildDialogOnlyPostprocessResult(
+                rawCommand,
+                parseResult,
+                parseLog
+            );
+
+            SotDialogLayerResponseDto dialogOnlyResponse =
+                BattleCommandFallbackDialogBuilder.BuildEmergencyFailureDialog(
+                    parseResult.actorUnitId,
+                    parseResult.fallbackDialogKind,
+                    context
+                );
+
+            result = BattleCommandEmergencyFallbackBuildResult.Succeeded(
+                dialogOnlyPostprocessResult,
+                dialogOnlyResponse,
+                parseLog
+            );
+            debugLog = parseLog;
+            return true;
         }
 
         BattleCommandPostprocessResult postprocessResult = new BattleCommandPostprocessResult
@@ -69,6 +93,30 @@ public static class BattleCommandEmergencyFallbackBuilder
         result = BattleCommandEmergencyFallbackBuildResult.Succeeded(postprocessResult, dialogResponse, parseLog);
         debugLog = parseLog;
         return true;
+    }
+
+    private static BattleCommandPostprocessResult BuildDialogOnlyPostprocessResult(
+        string rawCommand,
+        BattleCommandEmergencyFallbackParseResult parseResult,
+        string parseLog
+    )
+    {
+        return new BattleCommandPostprocessResult
+        {
+            originalCommand = rawCommand ?? string.Empty,
+            fallbackToDefaultMlAi = true,
+            advisorLine = string.Empty,
+            actors = Array.Empty<BattleCommandFinalActorDto>(),
+            debug = new BattleCommandPostprocessDebugDto
+            {
+                parserThinking = "emergency fallback dialog-only result",
+                droppedActorSummaries = string.IsNullOrWhiteSpace(parseLog)
+                    ? Array.Empty<string>()
+                    : new[] { parseLog },
+                adjustmentSummaries = Array.Empty<string>(),
+                refusalSummaries = Array.Empty<string>(),
+            },
+        };
     }
 
     private static SotFinalActionDto[] CloneSequence(SotFinalActionDto[] source)

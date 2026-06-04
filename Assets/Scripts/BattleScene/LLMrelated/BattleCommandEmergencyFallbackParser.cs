@@ -1,7 +1,7 @@
 // 원본 한글 명령에서 최후방 단일 행동 폴백을 만든다.
 // keyword와 unitId는 fuzzy 보정 없이 exact match만 사용한다.
-// 단일 actor와 단일 action만 허용하고, 모호하면 실패한다.
 // skill target이 생략되면 스킬 메타데이터와 전장 상태로 기본 target을 고른다.
+// 일부 상태성 실패는 행동 없는 유닛 대사로 변환한다.
 // 이 파일은 전장 상태를 읽기만 하며 실행 명령을 직접 발행하지 않는다.
 
 using System;
@@ -9,12 +9,28 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using UnityEngine;
 
+public static class BattleCommandEmergencyFallbackDialogKind
+{
+    public const string SkillNone = "skill_none";
+    public const string SkillDisabled = "skill_disabled";
+    public const string SkillCooldown = "skill_cooldown";
+    public const string AttackNoTargetableEnemy = "attack_no_targetable_enemy";
+    public const string EscapeNoAnchor = "escape_no_anchor";
+    public const string EnemySkillNoTarget = "enemy_skill_no_target";
+    public const string AllySkillNoTarget = "ally_skill_no_target";
+    public const string ReviveNoDeadAlly = "revive_no_dead_ally";
+    public const string SkillControlNoSkill = "skill_control_no_skill";
+}
+
 public static class BattleCommandEmergencyFallbackParser
 {
     public const string AdvisorLine = "잘 못들었나본데요?";
 
     private static readonly Regex UnitIdRegex = new Regex("[AaEe]_[0-9]{2}", RegexOptions.Compiled);
-    private static readonly Regex IntRegex = new Regex("(?<![0-9A-Za-z_])-?[0-9]+(?![0-9A-Za-z_])", RegexOptions.Compiled);
+    private static readonly Regex IntRegex = new Regex(
+        "(?<![0-9A-Za-z_])-?[0-9]+(?![0-9A-Za-z_])",
+        RegexOptions.Compiled
+    );
     private static readonly Regex StandaloneBingRegex = new Regex(
         "(?<![0-9A-Za-z가-힣_])빙(?![0-9A-Za-z가-힣_])",
         RegexOptions.Compiled
@@ -115,19 +131,84 @@ public static class BattleCommandEmergencyFallbackParser
         if (ContainsOrbitKeyword(command))
             return EmergencyCommandKind.OrbitMove;
 
-        if (ContainsExact(command, "스킬") && !ContainsSkillControlKeyword(command))
+        if (
+            ContainsAny(command, "스킬", "기술", "필살기", "스킬 써", "기술 써", "능력")
+            && !ContainsSkillControlKeyword(command)
+        )
+        {
             return EmergencyCommandKind.Skill;
+        }
 
-        if (ContainsAny(command, "공격", "때려", "쳐", "죽여", "잡아", "처리", "물어"))
+        if (
+            ContainsAny(
+                command,
+                "공격",
+                "공격하",
+                "때려",
+                "때리",
+                "쳐",
+                "죽여",
+                "잡아",
+                "처리",
+                "물어",
+                "처치",
+                "제압",
+                "쓰러뜨려",
+                "조져",
+                "패라",
+                "끝내",
+                "갈겨"
+            )
+        )
+        {
             return EmergencyCommandKind.Attack;
+        }
 
-        if (ContainsAny(command, "도망", "빠져", "후퇴", "빼", "물러나", "물러서"))
+        if (
+            ContainsAny(
+                command,
+                "도망",
+                "도망쳐",
+                "빠져",
+                "후퇴",
+                "퇴각",
+                "빼",
+                "물러나",
+                "물러서",
+                "피해",
+                "벗어나",
+                "거리 벌려",
+                "안전"
+            )
+        )
+        {
             return EmergencyCommandKind.Escape;
+        }
 
-        if (ContainsAny(command, "이동", "이동해", "걸어가", "쪽으로", "붙어", "접근"))
+        if (
+            ContainsAny(
+                command,
+                "이동",
+                "이동해",
+                "걸어가",
+                "쪽으로",
+                "붙어",
+                "접근",
+                "도와",
+                "도와줘",
+                "지원",
+                "커버",
+                "엄호",
+                "합류",
+                "다가가",
+                "쫓아가"
+            )
+        )
+        {
             return EmergencyCommandKind.GenericMove;
+        }
 
-        if (ContainsAny(command, "대기", "기다", "멈춰"))
+        if (ContainsAny(command, "대기", "대기해", "기다", "멈춰", "잠깐", "정지", "가만히"))
             return EmergencyCommandKind.Wait;
 
         if (ContainsSkillControlKeyword(command))
@@ -138,15 +219,22 @@ public static class BattleCommandEmergencyFallbackParser
 
     private static bool ContainsOrbitKeyword(string command)
     {
-        return ContainsExact(command, "돌아") || StandaloneBingRegex.IsMatch(command);
+        return ContainsAny(command, "돌아", "우회", "측면", "뒤에서", "빙 돌아")
+            || StandaloneBingRegex.IsMatch(command);
     }
 
     private static bool ContainsSkillControlKeyword(string command)
     {
         return ContainsExact(command, "스킬 아껴")
+            || ContainsExact(command, "기술 아껴")
             || ContainsExact(command, "스킬 쓰지")
+            || ContainsExact(command, "스킬 쓰지마")
+            || ContainsExact(command, "기술 쓰지마")
             || ContainsExact(command, "금지")
-            || ContainsExact(command, "미뤄");
+            || ContainsExact(command, "미뤄")
+            || ContainsExact(command, "아껴둬")
+            || ContainsExact(command, "보류")
+            || ContainsExact(command, "나중에");
     }
 
     private static bool ContainsExact(string command, string keyword)
@@ -195,6 +283,31 @@ public static class BattleCommandEmergencyFallbackParser
         return result;
     }
 
+    private static bool BuildDialogOnlyResult(
+        BattleRuntimeUnit actor,
+        BattleOrderRuntimeContext context,
+        string fallbackDialogKind,
+        string debugMessage,
+        out BattleCommandEmergencyFallbackParseResult result,
+        out string debugLog
+    )
+    {
+        string actorId = GetUnitId(actor, context);
+
+        result = new BattleCommandEmergencyFallbackParseResult
+        {
+            actorUnitId = actorId,
+            mainActionCategory = "dialog",
+            sourceDialog = string.Empty,
+            finalActionSequence = Array.Empty<SotFinalActionDto>(),
+            dialogOnly = true,
+            fallbackDialogKind = fallbackDialogKind ?? string.Empty,
+        };
+
+        debugLog = debugMessage ?? string.Empty;
+        return true;
+    }
+
     private static bool TryParseAttack(
         BattleOrderRuntimeContext context,
         EmergencyUnitContext unitContext,
@@ -230,8 +343,14 @@ public static class BattleCommandEmergencyFallbackParser
 
         if (target == null)
         {
-            debugLog = "emergency fallback attack failed: no targetable enemy.";
-            return false;
+            return BuildDialogOnlyResult(
+                actor,
+                context,
+                BattleCommandEmergencyFallbackDialogKind.AttackNoTargetableEnemy,
+                "emergency fallback attack dialog: no targetable enemy.",
+                out result,
+                out debugLog
+            );
         }
 
         string actorId = GetUnitId(actor, context);
@@ -285,10 +404,16 @@ public static class BattleCommandEmergencyFallbackParser
         }
 
         BattleSkillRuntimeMetadata metadata = BattleOrderRuntimeQueries.ResolveSkillMetadata(actor);
-        if (!CanActorUseSkill(actor, metadata))
+        if (TryGetSkillUseBlockDialogKind(actor, metadata, out string blockDialogKind))
         {
-            debugLog = "emergency fallback skill failed: actor cannot use skill.";
-            return false;
+            return BuildDialogOnlyResult(
+                actor,
+                context,
+                blockDialogKind,
+                "emergency fallback skill dialog: actor cannot use skill.",
+                out result,
+                out debugLog
+            );
         }
 
         BattleRuntimeUnit target;
@@ -324,8 +449,18 @@ public static class BattleCommandEmergencyFallbackParser
                 target = SelectAllySkillTarget(actor, context, metadata);
                 if (target == null)
                 {
-                    debugLog = "emergency fallback skill failed: no valid ally skill target.";
-                    return false;
+                    string dialogKind = metadata.canSkillTargetDead
+                        ? BattleCommandEmergencyFallbackDialogKind.ReviveNoDeadAlly
+                        : BattleCommandEmergencyFallbackDialogKind.AllySkillNoTarget;
+
+                    return BuildDialogOnlyResult(
+                        actor,
+                        context,
+                        dialogKind,
+                        "emergency fallback skill dialog: no valid ally skill target.",
+                        out result,
+                        out debugLog
+                    );
                 }
             }
         }
@@ -346,7 +481,12 @@ public static class BattleCommandEmergencyFallbackParser
                 }
 
                 target = unitContext.GetEnemyAt(0);
-                if (!BattleCommandPostprocessRuntimeQueries.IsEnemyTargetableForPostprocess(target, context.SimulationManager))
+                if (
+                    !BattleCommandPostprocessRuntimeQueries.IsEnemyTargetableForPostprocess(
+                        target,
+                        context.SimulationManager
+                    )
+                )
                 {
                     debugLog = "emergency fallback skill failed: enemy skill target is not targetable.";
                     return false;
@@ -357,8 +497,14 @@ public static class BattleCommandEmergencyFallbackParser
                 target = SelectEnemySkillTarget(actor, context, metadata);
                 if (target == null)
                 {
-                    debugLog = "emergency fallback skill failed: no targetable enemy for skill.";
-                    return false;
+                    return BuildDialogOnlyResult(
+                        actor,
+                        context,
+                        BattleCommandEmergencyFallbackDialogKind.EnemySkillNoTarget,
+                        "emergency fallback skill dialog: no targetable enemy for skill.",
+                        out result,
+                        out debugLog
+                    );
                 }
             }
         }
@@ -414,15 +560,28 @@ public static class BattleCommandEmergencyFallbackParser
             return false;
         }
 
-        BattleRuntimeUnit target = unitContext.AllyCount == 2 ? unitContext.GetAllyAt(1) : SelectEscapeTarget(actor, context);
-        if (target != null && !BattleCommandPostprocessRuntimeQueries.IsValidOtherAllyTarget(actor, target))
+        BattleRuntimeUnit target =
+            unitContext.AllyCount == 2 ? unitContext.GetAllyAt(1) : SelectEscapeTarget(actor, context);
+        if (target == null)
+        {
+            return BuildDialogOnlyResult(
+                actor,
+                context,
+                BattleCommandEmergencyFallbackDialogKind.EscapeNoAnchor,
+                "emergency fallback escape dialog: no retreat anchor.",
+                out result,
+                out debugLog
+            );
+        }
+
+        if (!BattleCommandPostprocessRuntimeQueries.IsValidOtherAllyTarget(actor, target))
         {
             debugLog = "emergency fallback escape failed: anchor ally is invalid.";
             return false;
         }
 
         string actorId = GetUnitId(actor, context);
-        string targetId = target != null ? GetUnitId(target, context) : null;
+        string targetId = GetUnitId(target, context);
 
         result = new BattleCommandEmergencyFallbackParseResult
         {
@@ -440,9 +599,7 @@ public static class BattleCommandEmergencyFallbackParser
             ),
         };
 
-        debugLog = string.IsNullOrWhiteSpace(targetId)
-            ? $"emergency fallback escape: {actorId} escapes."
-            : $"emergency fallback escape: {actorId} escapes toward {targetId}.";
+        debugLog = $"emergency fallback escape: {actorId} escapes toward {targetId}.";
         return true;
     }
 
@@ -486,7 +643,13 @@ public static class BattleCommandEmergencyFallbackParser
             return false;
         }
 
-        if (targetIsEnemy && !BattleCommandPostprocessRuntimeQueries.IsEnemyTargetableForPostprocess(target, context.SimulationManager))
+        if (
+            targetIsEnemy
+            && !BattleCommandPostprocessRuntimeQueries.IsEnemyTargetableForPostprocess(
+                target,
+                context.SimulationManager
+            )
+        )
         {
             debugLog = "emergency fallback orbit failed: enemy target is not targetable.";
             return false;
@@ -555,7 +718,13 @@ public static class BattleCommandEmergencyFallbackParser
             return false;
         }
 
-        if (targetIsEnemy && !BattleCommandPostprocessRuntimeQueries.IsEnemyTargetableForPostprocess(target, context.SimulationManager))
+        if (
+            targetIsEnemy
+            && !BattleCommandPostprocessRuntimeQueries.IsEnemyTargetableForPostprocess(
+                target,
+                context.SimulationManager
+            )
+        )
         {
             debugLog = "emergency fallback move failed: enemy target is not targetable.";
             return false;
@@ -637,7 +806,8 @@ public static class BattleCommandEmergencyFallbackParser
 
         if (unitContext.AllyCount != 1 || unitContext.EnemyCount != 0)
         {
-            debugLog = "emergency fallback skillControl failed: exactly one ally actor and no enemy target are required.";
+            debugLog =
+                "emergency fallback skillControl failed: exactly one ally actor and no enemy target are required.";
             return false;
         }
 
@@ -651,8 +821,14 @@ public static class BattleCommandEmergencyFallbackParser
         BattleSkillRuntimeMetadata metadata = BattleOrderRuntimeQueries.ResolveSkillMetadata(actor);
         if (metadata.skillId == WeaponSkillId.None)
         {
-            debugLog = "emergency fallback skillControl failed: actor has no skill.";
-            return false;
+            return BuildDialogOnlyResult(
+                actor,
+                context,
+                BattleCommandEmergencyFallbackDialogKind.SkillControlNoSkill,
+                "emergency fallback skillControl dialog: actor has no skill.",
+                out result,
+                out debugLog
+            );
         }
 
         bool defer = ContainsExact(command, "미뤄");
@@ -729,11 +905,7 @@ public static class BattleCommandEmergencyFallbackParser
     )
     {
         if (metadata.canSkillTargetDead)
-        {
-            BattleRuntimeUnit deadAlly = BattleCommandPostprocessRuntimeQueries.FindDeadAllyTarget(actor, context.Allies);
-            if (deadAlly != null)
-                return deadAlly;
-        }
+            return BattleCommandPostprocessRuntimeQueries.FindDeadAllyTarget(actor, context.Allies);
 
         BattleRuntimeUnit target = BattleCommandPostprocessRuntimeQueries.FindLowestHpLivingAlly(actor, context.Allies);
         if (target != null)
@@ -765,10 +937,8 @@ public static class BattleCommandEmergencyFallbackParser
 
     private static BattleRuntimeUnit SelectEscapeTarget(BattleRuntimeUnit actor, BattleOrderRuntimeContext context)
     {
-        Dictionary<BattleRuntimeUnit, BattleOrderFormationInfo> formationMap = BattleOrderRuntimeQueries.BuildFormationInfoMap(
-            context.Allies,
-            context.Enemies
-        );
+        Dictionary<BattleRuntimeUnit, BattleOrderFormationInfo> formationMap =
+            BattleOrderRuntimeQueries.BuildFormationInfoMap(context.Allies, context.Enemies);
 
         BattleRuntimeUnit target = BattleCommandPostprocessRuntimeQueries.FindEligibleBacklineAlly(
             actor,
@@ -782,13 +952,36 @@ public static class BattleCommandEmergencyFallbackParser
         return BattleCommandPostprocessRuntimeQueries.FindFarthestLivingAlly(actor, context.Allies);
     }
 
-    private static bool CanActorUseSkill(BattleRuntimeUnit actor, BattleSkillRuntimeMetadata metadata)
+    private static bool TryGetSkillUseBlockDialogKind(
+        BattleRuntimeUnit actor,
+        BattleSkillRuntimeMetadata metadata,
+        out string dialogKind
+    )
     {
-        return actor != null
-            && actor.State != null
-            && metadata.skillId != WeaponSkillId.None
-            && !actor.State.IsSkillDisabled
-            && actor.State.SkillCooldownRemaining <= 0f;
+        dialogKind = null;
+
+        if (actor == null || actor.State == null)
+            return false;
+
+        if (metadata.skillId == WeaponSkillId.None)
+        {
+            dialogKind = BattleCommandEmergencyFallbackDialogKind.SkillNone;
+            return true;
+        }
+
+        if (actor.State.IsSkillDisabled)
+        {
+            dialogKind = BattleCommandEmergencyFallbackDialogKind.SkillDisabled;
+            return true;
+        }
+
+        if (actor.State.SkillCooldownRemaining > 0f)
+        {
+            dialogKind = BattleCommandEmergencyFallbackDialogKind.SkillCooldown;
+            return true;
+        }
+
+        return false;
     }
 
     private static bool IsValidOtherAllySkillTarget(
@@ -800,7 +993,8 @@ public static class BattleCommandEmergencyFallbackParser
         if (BattleCommandPostprocessRuntimeQueries.IsValidOtherAllyTarget(actor, target))
             return true;
 
-        return metadata.canSkillTargetDead && BattleCommandPostprocessRuntimeQueries.IsValidDeadAllyTarget(actor, target);
+        return metadata.canSkillTargetDead
+            && BattleCommandPostprocessRuntimeQueries.IsValidDeadAllyTarget(actor, target);
     }
 
     private static bool IsValidActor(BattleRuntimeUnit actor)
@@ -859,8 +1053,16 @@ public static class BattleCommandEmergencyFallbackParser
             for (int i = 0; i < unitIds.Count; i++)
             {
                 string unitId = unitIds[i];
-                BattleRuntimeUnit ally = BattleOrderRuntimeQueries.FindUnitById(context.Allies, context.RosterProjection, unitId);
-                BattleRuntimeUnit enemy = BattleOrderRuntimeQueries.FindUnitById(context.Enemies, context.RosterProjection, unitId);
+                BattleRuntimeUnit ally = BattleOrderRuntimeQueries.FindUnitById(
+                    context.Allies,
+                    context.RosterProjection,
+                    unitId
+                );
+                BattleRuntimeUnit enemy = BattleOrderRuntimeQueries.FindUnitById(
+                    context.Enemies,
+                    context.RosterProjection,
+                    unitId
+                );
                 bool isAlly = ally != null;
                 bool isEnemy = enemy != null;
                 BattleRuntimeUnit unit = isAlly ? ally : enemy;
@@ -925,4 +1127,6 @@ public sealed class BattleCommandEmergencyFallbackParseResult
     public string mainActionCategory;
     public string sourceDialog;
     public SotFinalActionDto[] finalActionSequence;
+    public bool dialogOnly;
+    public string fallbackDialogKind;
 }
