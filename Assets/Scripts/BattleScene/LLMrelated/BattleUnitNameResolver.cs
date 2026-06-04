@@ -1,8 +1,8 @@
 // 전투 시작 시점의 BattleRuntimeUnit 이름과 SOT unitId 매핑을 보관한다.
 // 유저 입력의 실제 유닛 이름을 A_01/E_01 형식으로 바꾼다.
 // 유저 입력의 유닛 이름에 작은 오타가 있으면 현재 전투 명단 기준으로 보정한다.
-// 대사 레이어 출력 text 안의 A_01/E_01 토큰을 실제 유닛 이름으로 바꾼다.
-// 비정상 unitId 토큰이 섞인 대사는 fallback 문장으로 대체함. 안 들린다는 컨셉.
+// 대사 text 안의 SOT unitId를 실제 유닛 이름으로 바꾸고 조사를 보정한다.
+// 비정상 unitId 토큰이 섞인 대사는 fallback 문장으로 대체함.
 
 /*
 오타 내성을 위한 수정안
@@ -26,6 +26,11 @@ public sealed class BattleUnitNameResolver
 
     private static readonly Regex SotTokenRegex = new Regex(
         @"(?<![A-Za-z0-9_])([AaEe])_([A-Za-z0-9]*)(?![A-Za-z0-9_])",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant
+    );
+
+    private static readonly Regex DialogSotTokenWithParticleRegex = new Regex(
+        @"(?<![A-Za-z0-9_])([AaEe])_([A-Za-z0-9]*)(은|는|이|가|을|를|으로|로)?(?![A-Za-z0-9_])",
         RegexOptions.Compiled | RegexOptions.CultureInvariant
     );
 
@@ -171,6 +176,7 @@ public sealed class BattleUnitNameResolver
     }
 
     // 대사 레이어 결과 text 안의 SOT unitId를 실제 유닛 이름으로 바꾼다.
+    // SOT unitId 바로 뒤에 붙은 한국어 조사는 실제 이름의 받침 유무에 맞게 교체한다.
     // 비정상 unitId 조각이 있으면 원문을 버리고 fallback 대사를 반환한다.
     public bool TryResolveDialogText(string rawDialogText, out string resolvedDialogText, out string errorReason)
     {
@@ -185,12 +191,12 @@ public sealed class BattleUnitNameResolver
         }
 
         string source = rawDialogText.Trim();
-        MatchCollection matches = SotTokenRegex.Matches(source);
+        MatchCollection matches = DialogSotTokenWithParticleRegex.Matches(source);
 
         for (int i = 0; i < matches.Count; i++)
         {
             Match match = matches[i];
-            string matchedToken = match.Value;
+            string matchedToken = match.Groups[1].Value + "_" + match.Groups[2].Value;
 
             if (!TryNormalizeDialogSotToken(matchedToken, out string canonicalSotId))
             {
@@ -207,16 +213,19 @@ public sealed class BattleUnitNameResolver
             }
         }
 
-        resolvedDialogText = SotTokenRegex.Replace(
+        resolvedDialogText = DialogSotTokenWithParticleRegex.Replace(
             source,
             match =>
             {
-                if (!TryNormalizeDialogSotToken(match.Value, out string canonicalSotId))
+                string matchedToken = match.Groups[1].Value + "_" + match.Groups[2].Value;
+                if (!TryNormalizeDialogSotToken(matchedToken, out string canonicalSotId))
                     return match.Value;
 
-                return _displayNameBySotId.TryGetValue(canonicalSotId, out string displayName)
-                    ? displayName
-                    : match.Value;
+                if (!_displayNameBySotId.TryGetValue(canonicalSotId, out string displayName))
+                    return match.Value;
+
+                string particle = match.Groups[3].Success ? match.Groups[3].Value : string.Empty;
+                return ApplyParticle(displayName, particle);
             }
         );
 
@@ -458,6 +467,80 @@ public sealed class BattleUnitNameResolver
     {
         canonicalSotId = NormalizeSotId(rawToken);
         return canonicalSotId != null;
+    }
+
+    private static string ApplyParticle(string displayName, string particle)
+    {
+        string name = string.IsNullOrWhiteSpace(displayName) ? string.Empty : displayName.Trim();
+        if (string.IsNullOrWhiteSpace(particle))
+            return name;
+
+        switch (particle)
+        {
+            case "은":
+            case "는":
+                return name + SelectParticle(name, "은", "는");
+
+            case "이":
+            case "가":
+                return name + SelectParticle(name, "이", "가");
+
+            case "을":
+            case "를":
+                return name + SelectParticle(name, "을", "를");
+
+            case "으로":
+            case "로":
+                return name + SelectDirectionParticle(name);
+
+            default:
+                return name + particle;
+        }
+    }
+
+    private static string SelectParticle(string text, string withBatchim, string withoutBatchim)
+    {
+        return HasFinalConsonant(text) ? withBatchim : withoutBatchim;
+    }
+
+    private static string SelectDirectionParticle(string text)
+    {
+        if (!TryGetFinalConsonantIndex(text, out int finalConsonantIndex))
+            return "로";
+
+        if (finalConsonantIndex == 0 || finalConsonantIndex == 8)
+            return "로";
+
+        return "으로";
+    }
+
+    private static bool HasFinalConsonant(string text)
+    {
+        return TryGetFinalConsonantIndex(text, out int finalConsonantIndex) && finalConsonantIndex != 0;
+    }
+
+    private static bool TryGetFinalConsonantIndex(string text, out int finalConsonantIndex)
+    {
+        finalConsonantIndex = 0;
+
+        if (string.IsNullOrWhiteSpace(text))
+            return false;
+
+        for (int i = text.Length - 1; i >= 0; i--)
+        {
+            char character = text[i];
+            if (char.IsWhiteSpace(character))
+                continue;
+
+            int code = character - 0xAC00;
+            if (code < 0 || code > 11171)
+                return false;
+
+            finalConsonantIndex = code % 28;
+            return true;
+        }
+
+        return false;
     }
 
     private static bool TryParseAllowedSotNumber(string rawNumber, out int unitNumber)

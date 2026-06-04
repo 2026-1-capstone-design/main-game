@@ -1,6 +1,7 @@
 // SOT mock/Gemini LLM/remote SLM 결과를 로그로 확인하고 실행 진입점에 연결한다.
 // 서버 SOT 처리 중에는 명령 상태를 Processing으로 고정한다.
-// 후처리 완료 action만 SlmUnitCommand로 변환해 BattleSimulationManager에 넘긴다.
+// 서버/파서/후처리 실패 시 최후방 폴백을 시도하고, 성공 시 강제 순응 action을 실행한다.
+// 대사 레이어 실패 시 하드코딩 대사를 사용하고 action 실행은 유지한다.
 // 실제 행동 생성은 SlmCommandUnitPlanner와 실행계층이 처리한다.
 
 using System;
@@ -153,9 +154,6 @@ public sealed class BattleOrdersManager : MonoBehaviour
 
     private SphereCollider _battlefieldCollider;
     private bool _initialized;
-
-    // 구형 BattleLlmResponseDto 기반 요청 sequence라 주석처리함. 나중에 실제 SOT LLM 호출 재연결 시 다시 써야 함.
-    // private int _requestSequence;
     private BattleOrderLayerPipeline _layerPipeline;
 
     // 서버 코루틴 중복 방지용 내부 플래그다. UI/배속/STT 제어는 CurrentCommandState를 기준으로 한다.
@@ -516,7 +514,13 @@ public sealed class BattleOrdersManager : MonoBehaviour
         if (!string.IsNullOrWhiteSpace(parserRequestError))
         {
             LogSotServerFailure("PARSER REQUEST FAILED", parserPrompt, parserRequestError, parserRawResponse);
-            FinishServerSotPipeline(BattleOrderProcessingResult.Failed());
+            TryRunEmergencyFallbackAndFinish(
+                sanitizedRawText,
+                context,
+                "PARSER REQUEST FAILED",
+                parserRequestError,
+                shouldLogPreview
+            );
             yield break;
         }
 
@@ -530,7 +534,13 @@ public sealed class BattleOrdersManager : MonoBehaviour
         )
         {
             LogSotServerFailure("PARSER OUTPUT INVALID", parserPrompt, parserParseError, parserRawResponse);
-            FinishServerSotPipeline(BattleOrderProcessingResult.Failed());
+            TryRunEmergencyFallbackAndFinish(
+                sanitizedRawText,
+                context,
+                "PARSER OUTPUT INVALID",
+                parserParseError,
+                shouldLogPreview
+            );
             yield break;
         }
 
@@ -545,24 +555,36 @@ public sealed class BattleOrdersManager : MonoBehaviour
         )
         {
             LogSotServerFailure("POSTPROCESS FAILED", parserPrompt, postprocessError, parserRawResponse);
-            FinishServerSotPipeline(BattleOrderProcessingResult.Failed());
+            TryRunEmergencyFallbackAndFinish(
+                sanitizedRawText,
+                context,
+                "POSTPROCESS FAILED",
+                postprocessError,
+                shouldLogPreview
+            );
             yield break;
         }
 
         SotDialogLayerRequestDto dialogRequest;
 
-        if (postprocessResult != null && postprocessResult.fallbackToDefaultMlAi)
+        if (postprocessResult == null || postprocessResult.fallbackToDefaultMlAi)
         {
             if (shouldLogPreview)
             {
                 Debug.Log(
-                    "[BattleOrdersManager] Server SOT pipeline ended with fallbackToDefaultMlAi=true. AdvisorLine="
-                        + (postprocessResult.advisorLine ?? string.Empty),
+                    "[BattleOrdersManager] Server SOT postprocess produced fallbackToDefaultMlAi. AdvisorLine="
+                        + (postprocessResult != null ? postprocessResult.advisorLine ?? string.Empty : string.Empty),
                     this
                 );
             }
 
-            FinishServerSotPipeline(BattleOrderProcessingResult.Failed());
+            TryRunEmergencyFallbackAndFinish(
+                sanitizedRawText,
+                context,
+                "POSTPROCESS FALLBACK RESULT",
+                postprocessResult != null ? postprocessResult.advisorLine : "postprocessResult is null.",
+                shouldLogPreview
+            );
             yield break;
         }
 
@@ -572,10 +594,16 @@ public sealed class BattleOrdersManager : MonoBehaviour
         {
             if (shouldLogPreview)
             {
-                Debug.Log("[BattleOrdersManager] Server SOT pipeline ended. Dialog request has no actors.", this);
+                Debug.Log("[BattleOrdersManager] Server SOT pipeline produced empty dialog request.", this);
             }
 
-            FinishServerSotPipeline(BattleOrderProcessingResult.Failed());
+            TryRunEmergencyFallbackAndFinish(
+                sanitizedRawText,
+                context,
+                "DIALOG REQUEST EMPTY",
+                "Dialog request has no actors.",
+                shouldLogPreview
+            );
             yield break;
         }
 
@@ -616,25 +644,27 @@ public sealed class BattleOrdersManager : MonoBehaviour
             error => dialogRequestError = error
         );
 
+        SotDialogLayerResponseDto dialogResponse;
+        bool usedDialogFallback = false;
+
         if (!string.IsNullOrWhiteSpace(dialogRequestError))
         {
             LogSotServerFailure("DIALOG REQUEST FAILED", dialogPrompt, dialogRequestError, dialogRawResponse);
-            FinishServerSotPipeline(BattleOrderProcessingResult.Failed());
-            yield break;
+            dialogResponse = BattleCommandFallbackDialogBuilder.BuildFromPostprocessResult(postprocessResult, context);
+            usedDialogFallback = true;
         }
-
-        if (
+        else if (
             !SotLayerOutputParser.TryParseDialogOutput(
                 dialogRawResponse,
                 dialogRequest,
-                out SotDialogLayerResponseDto dialogResponse,
+                out dialogResponse,
                 out string dialogParseError
             )
         )
         {
             LogSotServerFailure("DIALOG OUTPUT INVALID", dialogPrompt, dialogParseError, dialogRawResponse);
-            FinishServerSotPipeline(BattleOrderProcessingResult.Failed());
-            yield break;
+            dialogResponse = BattleCommandFallbackDialogBuilder.BuildFromPostprocessResult(postprocessResult, context);
+            usedDialogFallback = true;
         }
 
         if (shouldLogPreview)
@@ -649,7 +679,8 @@ public sealed class BattleOrdersManager : MonoBehaviour
             Debug.Log(
                 "<color=#CE93D8><b>[SOT "
                     + routeLabel
-                    + " DIALOG RESPONSE]</b></color>\n"
+                    + (usedDialogFallback ? " HARDCODED DIALOG FALLBACK" : " DIALOG RESPONSE")
+                    + "]</b></color>\n"
                     + FullPromptBuilderForSlmLayers.ToCompactJson(dialogResponse),
                 this
             );
@@ -663,6 +694,76 @@ public sealed class BattleOrdersManager : MonoBehaviour
         BattleRuntimeUnit[] issuedActors = TryIssuePostprocessedSlmCommands(postprocessResult);
 
         FinishServerSotPipeline(BattleOrderProcessingResult.FromIssuedActors(issuedActors));
+    }
+
+    private void TryRunEmergencyFallbackAndFinish(
+        string sanitizedRawText,
+        BattleOrderRuntimeContext context,
+        string failureStage,
+        string failureReason,
+        bool shouldLogPreview
+    )
+    {
+        if (
+            BattleCommandEmergencyFallbackBuilder.TryBuild(
+                sanitizedRawText,
+                context,
+                out BattleCommandEmergencyFallbackBuildResult fallbackResult,
+                out string fallbackDebugLog
+            )
+        )
+        {
+            if (shouldLogPreview)
+            {
+                Debug.Log(
+                    "<color=#FFAB91><b>[SOT EMERGENCY FALLBACK APPLIED]</b></color>\n"
+                        + "Stage="
+                        + (failureStage ?? string.Empty)
+                        + "\nReason="
+                        + (failureReason ?? string.Empty)
+                        + "\n"
+                        + (fallbackDebugLog ?? string.Empty),
+                    this
+                );
+                Debug.Log(
+                    "<color=#FFB74D><b>[SOT EMERGENCY FALLBACK POSTPROCESS RESULT]</b></color>\n"
+                        + FullPromptBuilderForSlmLayers.ToCompactJson(fallbackResult.postprocessResult),
+                    this
+                );
+                Debug.Log(
+                    "<color=#CE93D8><b>[SOT EMERGENCY FALLBACK DIALOG RESPONSE]</b></color>\n"
+                        + FullPromptBuilderForSlmLayers.ToCompactJson(fallbackResult.dialogResponse),
+                    this
+                );
+            }
+
+            if (issuePostprocessedSotCommands)
+            {
+                EmitDialogLayerResponses(fallbackResult.dialogResponse);
+            }
+
+            BattleRuntimeUnit[] issuedActors = TryIssuePostprocessedSlmCommands(fallbackResult.postprocessResult);
+            FinishServerSotPipeline(BattleOrderProcessingResult.FromIssuedActors(issuedActors));
+            return;
+        }
+
+        LogEmergencyFallbackAdvisor(failureStage, failureReason, fallbackResult != null ? fallbackResult.debugLog : fallbackDebugLog);
+        FinishServerSotPipeline(BattleOrderProcessingResult.Failed());
+    }
+
+    private void LogEmergencyFallbackAdvisor(string failureStage, string failureReason, string fallbackDebugLog)
+    {
+        Debug.LogWarning(
+            "<color=#FF8A80><b>[SOT EMERGENCY FALLBACK ADVISOR]</b></color>\n"
+                + BattleCommandEmergencyFallbackParser.AdvisorLine
+                + "\nStage="
+                + (failureStage ?? string.Empty)
+                + "\nReason="
+                + (failureReason ?? string.Empty)
+                + "\nFallback="
+                + (fallbackDebugLog ?? string.Empty),
+            this
+        );
     }
 
     private IEnumerator PostSotLayerRequest(
