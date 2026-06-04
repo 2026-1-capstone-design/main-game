@@ -115,7 +115,7 @@ public static class FullPromptBuilderForSlmLayers
                 originalCommand = dialogRequest.originalCommand ?? string.Empty,
                 actors = dialogRequest.actors ?? Array.Empty<SotDialogActorInputDto>(),
             },
-            task = "각 actor의 finalActionSequence에 맞는 전투 대사 한 줄을 생성한다.",
+            task = "각 actor의 finalActionSequence를 지키면서 originalCommand에 직접 대답하거나 받아치는 전투 대사 한 줄을 생성한다.",
             output = "JSON object 하나를 출력한다. top-level key는 lines 하나만 사용한다.",
         };
 
@@ -322,7 +322,7 @@ Conditional command:
 너는 입력된 최종 행동을 바탕으로 각 actor의 대사 한 줄만 만든다.
 
 입력 필드:
-- originalCommand: 사용자가 처음 입력한 원본 명령이다. 배경 참고용이다.
+- originalCommand: 사용자가 처음 입력한 원본 명령이다. 최종 대사는 이 명령에 직접 대답하거나 받아치는 형태여야 한다.
 - actors: 대사를 생성할 actor 목록이다.
 - unitId: 대사를 말할 유닛 ID다.
 - speechStyle: 대사의 어미와 높임 수준을 정하는 정수다.
@@ -334,16 +334,16 @@ Conditional command:
 - finalActionSequence: 이 actor가 실제로 수행할 최종 행동 sequence다.
 
 정보 우선순위:
-1. finalActionSequence를 최우선으로 따른다.
-2. obedienceState를 따른다.
-3. obeyedActionAdjustment 또는 refusalSummary를 따른다.
-4. personalityDescription과 speechStyle을 반영한다.
-5. sourceDialog는 말투와 요약 힌트로만 참고한다.
-6. originalCommand는 배경으로만 참고한다.
+1. finalActionSequence를 최우선으로 따른다. 행동, 대상, 순서는 여기서 벗어나지 않는다.
+2. originalCommand를 대사의 응답 상황으로 반드시 반영한다. 최종 대사는 사용자의 명령에 직접 대답하거나 받아치는 형태여야 한다.
+3. obedienceState를 따른다.
+4. obeyedActionAdjustment 또는 refusalSummary를 따른다.
+5. personalityDescription과 speechStyle을 반영한다.
+6. sourceDialog는 행동 의미 참고용으로만 사용한다.
 
 sourceDialog나 originalCommand가 finalActionSequence와 충돌하면 finalActionSequence를 따른다.
 sourceDialog의 target을 그대로 유지하려고 하지 마라.
-sourceDialog의 문장을 그대로 복사하지 마라.
+sourceDialog보다 originalCommand의 말투와 상황을 우선한다. sourceDialog는 행동 의미를 확인하는 용도일 뿐, 최종 대사의 문장 구조를 정하지 않는다.
 입력에 없는 이유, target, 행동을 새로 만들지 마라.
 
 speechStyle 규칙:
@@ -377,6 +377,8 @@ action 의미 요약:
 - skillControl: 스킬 사용을 미루거나 금지한다.
 
 대사 스타일 규칙:
+- 모든 대사는 originalCommand에 직접 대답하거나 받아치는 말이어야 한다. 단순히 행동을 보고하는 문장으로 쓰지 않는다.
+- originalCommand의 말투가 특별히 거칠거나 장난스럽거나 비장하면, 그 뉘앙스에 맞춰 받아치되 실제 행동은 finalActionSequence에 맞춘다.
 - 모든 대사는 한국어 한 줄이다.
 - 각 text는 보통 1문장으로 쓴다.
 - 너무 길게 쓰지 않는다. 보통 45자 이내를 우선한다.
