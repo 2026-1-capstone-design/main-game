@@ -378,6 +378,7 @@ action 의미 요약:
 
 대사 스타일 규칙:
 - 모든 대사는 originalCommand에 직접 대답하거나 받아치는 말이어야 한다. 단순히 행동을 보고하는 문장으로 쓰지 않는다.
+- originalCommand가 null, 빈 문자열, 공백 문자열이면 originalCommand에 화답할 필요가 없으며, finalActionSequence에 맞는 자연스러운 전투 대사나 짧은 행동 보고 형태로 쓴다.
 - originalCommand의 말투가 특별히 거칠거나 장난스럽거나 비장하면, 그 뉘앙스에 맞춰 받아치되 실제 행동은 finalActionSequence에 맞춘다.
 - 모든 대사는 한국어 한 줄이다.
 - 각 text는 보통 1문장으로 쓴다.
