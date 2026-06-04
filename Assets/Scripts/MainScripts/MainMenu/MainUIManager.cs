@@ -163,6 +163,9 @@ public sealed class MainUIManager : MonoBehaviour
     private GameObject savePanelRoot;
 
     [SerializeField]
+    private Image savePanelBackground;
+
+    [SerializeField]
     private Button saveCloseButton;
 
     [SerializeField]
@@ -176,16 +179,28 @@ public sealed class MainUIManager : MonoBehaviour
     private GameObject settingsPanelRoot;
 
     [SerializeField]
+    private Image settingsPanelImage;
+
+    [SerializeField]
     private Button settingsCloseButton;
 
     [SerializeField]
     private Dropdown languageDropdown;
 
     [SerializeField]
+    private TMP_Text bgmLabel;
+
+    [SerializeField]
     private Slider bgmVolumeSlider;
 
     [SerializeField]
+    private TMP_Text sfxLabel;
+
+    [SerializeField]
     private Slider sfxVolumeSlider;
+
+    [SerializeField]
+    private TMP_Text brightnessLabel;
 
     [SerializeField]
     private Slider brightnessSlider;
@@ -208,7 +223,9 @@ public sealed class MainUIManager : MonoBehaviour
     private bool _initialized;
     private bool _mainMenuInteractable = true;
     private Button _saveBackdropButton;
+    private OutsidePanelClickCloser _saveOutsideClickCloser;
     private Button _settingsBackdropButton;
+    private OutsidePanelClickCloser _settingsOutsideClickCloser;
     private RectTransform _mainMenuTooltipRectTransform;
     private RectTransform _mainMenuTooltipParentRectTransform;
     private Canvas _mainMenuTooltipCanvas;
@@ -742,6 +759,20 @@ public sealed class MainUIManager : MonoBehaviour
         }
     }
 
+    private GameObject ResolveSettingsPanelRootFromScene()
+    {
+        if (escapeMenuRoot != null)
+        {
+            Transform settingsModalTransform = FindChildTransform(escapeMenuRoot.transform, "SettingsModalRoot");
+            if (settingsModalTransform != null)
+            {
+                return settingsModalTransform.gameObject;
+            }
+        }
+
+        return FindByNameInScene("SettingsModalRoot") ?? FindByNameInScene("SettingsPanel");
+    }
+
     private void CacheSaveModalControls()
     {
         // 인스펙터 미할당 상황을 대비해 모달/닫기/슬롯 참조를 씬에서 캐싱한다.
@@ -756,6 +787,11 @@ public sealed class MainUIManager : MonoBehaviour
         }
 
         Transform modalRootTransform = savePanelRoot.transform;
+
+        if (savePanelBackground == null)
+        {
+            savePanelBackground = FindChildComponent<Image>(modalRootTransform, "SavePanel");
+        }
 
         if (saveCloseButton == null)
         {
@@ -776,6 +812,8 @@ public sealed class MainUIManager : MonoBehaviour
             _saveBackdropButton.transition = Selectable.Transition.None;
             _saveBackdropButton.targetGraphic = backdropImage;
         }
+
+        CacheSaveOutsideClickCloser();
 
         if (saveSlotButtons == null || saveSlotButtons.Length != 5)
         {
@@ -803,11 +841,36 @@ public sealed class MainUIManager : MonoBehaviour
         }
     }
 
+    private void CacheSaveOutsideClickCloser()
+    {
+        if (savePanelRoot == null || savePanelBackground == null)
+        {
+            return;
+        }
+
+        Image rootRaycastImage = savePanelRoot.GetComponent<Image>();
+        if (rootRaycastImage == null)
+        {
+            rootRaycastImage = savePanelRoot.AddComponent<Image>();
+            rootRaycastImage.color = Color.clear;
+        }
+
+        rootRaycastImage.raycastTarget = true;
+
+        _saveOutsideClickCloser = savePanelRoot.GetComponent<OutsidePanelClickCloser>();
+        if (_saveOutsideClickCloser == null)
+        {
+            _saveOutsideClickCloser = savePanelRoot.AddComponent<OutsidePanelClickCloser>();
+        }
+
+        _saveOutsideClickCloser.Initialize(savePanelBackground.rectTransform, OnCloseSaveClicked);
+    }
+
     private void CacheSettingsModalControls()
     {
         if (settingsPanelRoot == null)
         {
-            settingsPanelRoot = FindByNameInScene("SettingsPanel") ?? FindByNameInScene("SettingsModalRoot");
+            settingsPanelRoot = ResolveSettingsPanelRootFromScene();
         }
 
         if (settingsPanelRoot == null)
@@ -816,6 +879,11 @@ public sealed class MainUIManager : MonoBehaviour
         }
 
         Transform settingsRootTransform = settingsPanelRoot.transform;
+
+        if (settingsPanelImage == null)
+        {
+            settingsPanelImage = FindChildComponent<Image>(settingsRootTransform, "SettingsPanel");
+        }
 
         if (settingsCloseButton == null)
         {
@@ -827,14 +895,29 @@ public sealed class MainUIManager : MonoBehaviour
             languageDropdown = FindChildComponent<Dropdown>(settingsRootTransform, "LanguageDropdown");
         }
 
+        if (bgmLabel == null)
+        {
+            bgmLabel = FindRowLabel(settingsRootTransform, "BgmRow");
+        }
+
         if (bgmVolumeSlider == null)
         {
             bgmVolumeSlider = FindChildComponent<Slider>(settingsRootTransform, "BgmSlider");
         }
 
+        if (sfxLabel == null)
+        {
+            sfxLabel = FindRowLabel(settingsRootTransform, "SfxRow");
+        }
+
         if (sfxVolumeSlider == null)
         {
             sfxVolumeSlider = FindChildComponent<Slider>(settingsRootTransform, "SfxSlider");
+        }
+
+        if (brightnessLabel == null)
+        {
+            brightnessLabel = FindRowLabel(settingsRootTransform, "BrightnessRow");
         }
 
         if (brightnessSlider == null)
@@ -856,6 +939,43 @@ public sealed class MainUIManager : MonoBehaviour
             _settingsBackdropButton.transition = Selectable.Transition.None;
             _settingsBackdropButton.targetGraphic = backdropImage;
         }
+
+        CacheSettingsOutsideClickCloser(settingsRootTransform);
+    }
+
+    private void CacheSettingsOutsideClickCloser(Transform settingsRootTransform)
+    {
+        if (settingsPanelRoot == null || settingsRootTransform == null)
+        {
+            return;
+        }
+
+        RectTransform protectedPanelRect =
+            settingsPanelImage != null
+                ? settingsPanelImage.rectTransform
+                : FindChildTransform(settingsRootTransform, "SettingsPanel") as RectTransform;
+
+        if (protectedPanelRect == null)
+        {
+            return;
+        }
+
+        Image rootRaycastImage = settingsPanelRoot.GetComponent<Image>();
+        if (rootRaycastImage == null)
+        {
+            rootRaycastImage = settingsPanelRoot.AddComponent<Image>();
+            rootRaycastImage.color = Color.clear;
+        }
+
+        rootRaycastImage.raycastTarget = true;
+
+        _settingsOutsideClickCloser = settingsPanelRoot.GetComponent<OutsidePanelClickCloser>();
+        if (_settingsOutsideClickCloser == null)
+        {
+            _settingsOutsideClickCloser = settingsPanelRoot.AddComponent<OutsidePanelClickCloser>();
+        }
+
+        _settingsOutsideClickCloser.Initialize(protectedPanelRect, OnCloseSettingsClicked);
     }
 
     private void BindSettingsModalControls()
@@ -895,6 +1015,8 @@ public sealed class MainUIManager : MonoBehaviour
 
     private void SyncSettingsControlsFromGlobalValues()
     {
+        GameSettings.Load();
+
         if (languageDropdown != null)
         {
             languageDropdown.SetValueWithoutNotify((int)GameSettings.Language);
@@ -1362,6 +1484,12 @@ public sealed class MainUIManager : MonoBehaviour
         EventTrigger.Entry triggerEntry = new EventTrigger.Entry { eventID = eventType };
         triggerEntry.callback.AddListener(action);
         trigger.triggers.Add(triggerEntry);
+    }
+
+    private static TMP_Text FindRowLabel(Transform modalRootTransform, string rowName)
+    {
+        Transform rowTransform = FindChildTransform(modalRootTransform, rowName);
+        return rowTransform != null ? FindChildComponent<TMP_Text>(rowTransform, "Label") : null;
     }
 
     private static void BindButton(Button button, UnityEngine.Events.UnityAction action)
