@@ -465,7 +465,7 @@ public sealed class BattleSceneUIManager : MonoBehaviour
         SetGlobalOrderTarget();
         EnsureBattleOrdersManager();
 
-        if (battleOrdersManager != null && !battleOrdersManager.TryBeginUserOrderInput())
+        if (battleOrdersManager == null || !battleOrdersManager.TryBeginUserOrderInput())
         {
             return false;
         }
@@ -556,8 +556,8 @@ public sealed class BattleSceneUIManager : MonoBehaviour
     {
         if (currentOrderInputField != null)
         {
-            currentOrderInputField.ActivateInputField();
             currentOrderInputField.Select();
+            currentOrderInputField.ActivateInputField();
         }
     }
 
@@ -619,14 +619,34 @@ public sealed class BattleSceneUIManager : MonoBehaviour
             return;
         }
 
+        BeginOrderInputMode(focusInput: true);
+    }
+
+    private bool BeginOrderInputMode(bool focusInput)
+    {
         if (!CanUseBattleUiAction("Orders"))
         {
-            return;
+            return false;
         }
 
         EnsureOrderInputVisible();
         SetGlobalOrderTarget();
-        FocusCurrentOrderInput();
+        EnsureBattleOrdersManager();
+
+        if (battleOrdersManager == null || !battleOrdersManager.TryBeginUserOrderInput())
+        {
+            return false;
+        }
+
+        ApplyOrderInputSpeedIfNeeded();
+
+        if (focusInput)
+        {
+            FocusCurrentOrderInput();
+        }
+
+        RefreshButtonStates();
+        return true;
     }
 
     private void RecordPastOrder(string orderText)
@@ -1149,14 +1169,17 @@ public sealed class BattleSceneUIManager : MonoBehaviour
 
     private void HandleOrderInputSelected(string _)
     {
-        EnsureBattleOrdersManager();
-        if (battleOrdersManager != null && !battleOrdersManager.TryBeginUserOrderInput())
+        if (BeginOrderInputMode(focusInput: false))
         {
+            if (currentOrderInputField != null)
+            {
+                currentOrderInputField.ActivateInputField();
+            }
+
             return;
         }
 
-        ApplyOrderInputSpeedIfNeeded();
-        RefreshButtonStates();
+        ClearAndReleaseCurrentOrderInput();
     }
 
     private void HandleOrderInputDeselected(string _)
