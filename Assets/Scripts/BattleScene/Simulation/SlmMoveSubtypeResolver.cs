@@ -45,7 +45,7 @@ public static class SlmMoveSubtypeResolver
                 // target팀에 따라 적군/아군 분기. 알고리즘은 approachOpponent 한 가지를 공유한다.
                 if (cmd.Target == null || cmd.Target.IsCombatDisabled)
                     return Invalid();
-                if (cmd.Target.State.TeamId.Equals(actor.State.TeamId))
+                if (cmd.Target.State.TeamId == actor.State.TeamId)
                     return ResolveApproachTeam(actor, cmd.Target);
                 return ResolveApproachOpponent(actor, cmd.Target);
 
@@ -289,9 +289,9 @@ public static class SlmMoveSubtypeResolver
         for (int i = 0; i < units.Count; i++)
         {
             BattleRuntimeUnit u = units[i];
-            if (u == null || u.IsCombatDisabled)
+            if (u == null || u.State == null || u.IsCombatDisabled)
                 continue;
-            if (u.State.TeamId.Equals(actorTeam))
+            if (u.State.TeamId == actorTeam)
                 continue;
 
             bool isTargetingActor = u.State.PlannedTargetEnemy != null && u.State.PlannedTargetEnemy == actor.State;
@@ -342,7 +342,7 @@ public static class SlmMoveSubtypeResolver
             BattleRuntimeUnit u = units[i];
             if (u == null || u.IsCombatDisabled)
                 continue;
-            if (u.State.TeamId.Equals(allyTeam))
+            if (u.State.TeamId == allyTeam)
                 continue;
             if (u.State.PlannedTargetEnemy != ally.State)
                 continue;
@@ -383,7 +383,7 @@ public static class SlmMoveSubtypeResolver
             BattleRuntimeUnit u = units[i];
             if (u == null || u.State == null || u.IsCombatDisabled)
                 continue;
-            if (u.State.TeamId.Equals(allyTeam))
+            if (u.State.TeamId == allyTeam)
                 continue;
 
             Vector3 diff = u.Position - allyPos;
@@ -422,7 +422,7 @@ public static class SlmMoveSubtypeResolver
             BattleRuntimeUnit u = units[i];
             if (u == null || u.IsCombatDisabled)
                 continue;
-            if (u.State.TeamId.Equals(actorTeam))
+            if (u.State.TeamId == actorTeam)
                 continue;
 
             sum += u.Position;

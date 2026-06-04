@@ -45,21 +45,26 @@ public sealed class BattleDialogLayerInputBuilder
                 finalActor.unitId
             );
 
+            SotFinalActionDto[] dialogFinalActionSequence = BuildDialogFinalActionSequence(
+                finalActor.finalActionSequence
+            );
+            bool hasEscapeAction = HasEscapeAction(dialogFinalActionSequence);
+
             actors.Add(
                 new SotDialogActorInputDto
                 {
                     unitId = finalActor.unitId,
                     speechStyle = ResolveSpeechStyle(actor),
                     personalityDescription = ResolveDialogPersonalityDescription(actor),
-                    sourceDialog = string.IsNullOrWhiteSpace(finalActor.sourceDialog)
-                        ? "명령을 확인했다."
-                        : finalActor.sourceDialog,
+                    sourceDialog = ResolveDialogSourceDialog(finalActor.sourceDialog, hasEscapeAction),
                     obedienceState = string.IsNullOrWhiteSpace(finalActor.obedienceState)
                         ? "obey"
                         : finalActor.obedienceState,
-                    obeyedActionAdjustment = finalActor.obeyedActionAdjustment ?? string.Empty,
-                    refusalSummary = finalActor.refusalSummary ?? string.Empty,
-                    finalActionSequence = BuildDialogFinalActionSequence(finalActor.finalActionSequence),
+                    obeyedActionAdjustment = hasEscapeAction
+                        ? string.Empty
+                        : finalActor.obeyedActionAdjustment ?? string.Empty,
+                    refusalSummary = hasEscapeAction ? string.Empty : finalActor.refusalSummary ?? string.Empty,
+                    finalActionSequence = dialogFinalActionSequence,
                 }
             );
         }
@@ -98,19 +103,25 @@ public sealed class BattleDialogLayerInputBuilder
                 actorSequence.unitId
             );
 
+            SotFinalActionDto[] dialogFinalActionSequence = BuildDialogFinalActionSequence(
+                BattleMockCommandParser.ToFinalActionSequence(actorSequence)
+            );
+            bool hasEscapeAction = HasEscapeAction(dialogFinalActionSequence);
+
             actors.Add(
                 new SotDialogActorInputDto
                 {
                     unitId = actorSequence.unitId,
                     speechStyle = ResolveSpeechStyle(actor),
                     personalityDescription = ResolveDialogPersonalityDescription(actor),
-                    sourceDialog = ResolveSourceDialog(mockParseResult, actorSequence.unitId),
+                    sourceDialog = ResolveDialogSourceDialog(
+                        ResolveSourceDialog(mockParseResult, actorSequence.unitId),
+                        hasEscapeAction
+                    ),
                     obedienceState = "obey",
                     obeyedActionAdjustment = string.Empty,
                     refusalSummary = string.Empty,
-                    finalActionSequence = BuildDialogFinalActionSequence(
-                        BattleMockCommandParser.ToFinalActionSequence(actorSequence)
-                    ),
+                    finalActionSequence = dialogFinalActionSequence,
                 }
             );
         }
@@ -129,6 +140,37 @@ public sealed class BattleDialogLayerInputBuilder
     )
     {
         return BattleOrderRuntimeQueries.FindUnitById(allies, roster, unitId);
+    }
+
+    private static string ResolveDialogSourceDialog(string sourceDialog, bool hasEscapeAction)
+    {
+        if (hasEscapeAction)
+            return "거리를 벌린다.";
+
+        return string.IsNullOrWhiteSpace(sourceDialog) ? "명령을 확인했다." : sourceDialog;
+    }
+
+    private static bool HasEscapeAction(SotFinalActionDto[] sequence)
+    {
+        if (sequence == null)
+            return false;
+
+        for (int i = 0; i < sequence.Length; i++)
+        {
+            SotFinalActionDto action = sequence[i];
+            if (action == null)
+                continue;
+
+            if (
+                string.Equals(action.type, "move", System.StringComparison.OrdinalIgnoreCase)
+                && string.Equals(action.subtype, "escape", System.StringComparison.OrdinalIgnoreCase)
+            )
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static string ResolveSourceDialog(BattleMockCommandParseResult mockParseResult, string unitId)

@@ -11,6 +11,8 @@ using UnityEngine;
 [Serializable]
 public sealed class BattleUnitCombatState
 {
+    private const float AutoSkillUseDelayCooldownRatio = 1f;
+
     // ── 유닛 정체성 ────────────────────────────────────────────────
     public int UnitNumber { get; private set; }
     public BattleTeamId TeamId { get; set; }
@@ -152,10 +154,9 @@ public sealed class BattleUnitCombatState
             return;
         }
 
-        float previousCooldown = SkillCooldownRemaining;
         SkillCooldownRemaining = Mathf.Max(0f, SkillCooldownRemaining - clampedDeltaTime);
 
-        if (previousCooldown > 0f && SkillCooldownRemaining <= 0f)
+        if (SkillCooldownRemaining <= 0f)
         {
             StartAutoSkillUseDelay();
         }
@@ -173,8 +174,8 @@ public sealed class BattleUnitCombatState
         AutoSkillUseDelayRemaining = 0f;
     }
 
-    // 스킬 쿨다운이 끝난 뒤 자동 AI만 스킬 사용을 미루기 위한 내부 타이머를 시작한다.
-    // UI 쿨다운은 SkillCooldownRemaining만 사용하므로 이 값은 화면에 표시되지 않는다.
+    // 스킬 쿨다운 종료 후 자동 AI만 스킬 사용을 추가 지연한다.
+    // 기본 지연 시간은 원본 스킬 쿨타임의 AutoSkillUseDelayCooldownRatio 배율이다.
     private void StartAutoSkillUseDelay()
     {
         if (HaveSkill == WeaponSkillId.None || SkillCooltime <= 0f)
@@ -183,7 +184,7 @@ public sealed class BattleUnitCombatState
             return;
         }
 
-        AutoSkillUseDelayRemaining = Mathf.Max(0f, SkillCooltime);
+        AutoSkillUseDelayRemaining = Mathf.Max(0f, SkillCooltime * AutoSkillUseDelayCooldownRatio);
     }
 
     public WeaponSkillId GetSkill() => HaveSkill;
