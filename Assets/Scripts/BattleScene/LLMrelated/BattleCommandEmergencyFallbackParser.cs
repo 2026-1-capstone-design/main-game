@@ -620,20 +620,33 @@ public static class BattleCommandEmergencyFallbackParser
             return false;
         }
 
-        BattleRuntimeUnit actor = unitContext.GetOriginalUnitAt(0);
-        BattleRuntimeUnit target = unitContext.GetOriginalUnitAt(1);
-        bool targetIsAlly = unitContext.IsOriginalUnitAllyAt(1);
-        bool targetIsEnemy = unitContext.IsOriginalUnitEnemyAt(1);
+        BattleRuntimeUnit actor = null;
+        BattleRuntimeUnit target = null;
+        bool targetIsAlly = false;
+        bool targetIsEnemy = false;
 
-        if (!unitContext.IsOriginalUnitAllyAt(0) || !IsValidActor(actor))
+        if (unitContext.AllyCount == 1 && unitContext.EnemyCount == 1)
         {
-            debugLog = "emergency fallback orbit failed: first unit must be a valid ally actor.";
+            actor = unitContext.GetAllyAt(0);
+            target = unitContext.GetEnemyAt(0);
+            targetIsEnemy = true;
+        }
+        else if (unitContext.AllyCount == 2 && unitContext.EnemyCount == 0)
+        {
+            actor = unitContext.GetAllyAt(0);
+            target = unitContext.GetAllyAt(1);
+            targetIsAlly = true;
+        }
+
+        if (actor == null || !IsValidActor(actor))
+        {
+            debugLog = "emergency fallback orbit failed: no valid ally actor found.";
             return false;
         }
 
-        if (!targetIsAlly && !targetIsEnemy)
+        if (target == null || (!targetIsAlly && !targetIsEnemy))
         {
-            debugLog = "emergency fallback orbit failed: second unit must be ally or enemy.";
+            debugLog = "emergency fallback orbit failed: no valid target found.";
             return false;
         }
 
@@ -695,20 +708,33 @@ public static class BattleCommandEmergencyFallbackParser
             return false;
         }
 
-        BattleRuntimeUnit actor = unitContext.GetOriginalUnitAt(0);
-        BattleRuntimeUnit target = unitContext.GetOriginalUnitAt(1);
-        bool targetIsAlly = unitContext.IsOriginalUnitAllyAt(1);
-        bool targetIsEnemy = unitContext.IsOriginalUnitEnemyAt(1);
+        BattleRuntimeUnit actor = null;
+        BattleRuntimeUnit target = null;
+        bool targetIsAlly = false;
+        bool targetIsEnemy = false;
 
-        if (!unitContext.IsOriginalUnitAllyAt(0) || !IsValidActor(actor))
+        if (unitContext.AllyCount == 1 && unitContext.EnemyCount == 1)
         {
-            debugLog = "emergency fallback move failed: first unit must be a valid ally actor.";
+            actor = unitContext.GetAllyAt(0);
+            target = unitContext.GetEnemyAt(0);
+            targetIsEnemy = true;
+        }
+        else if (unitContext.AllyCount == 2 && unitContext.EnemyCount == 0)
+        {
+            actor = unitContext.GetAllyAt(0);
+            target = unitContext.GetAllyAt(1);
+            targetIsAlly = true;
+        }
+
+        if (actor == null || !IsValidActor(actor))
+        {
+            debugLog = "emergency fallback move failed: no valid ally actor found.";
             return false;
         }
 
-        if (!targetIsAlly && !targetIsEnemy)
+        if (target == null || (!targetIsAlly && !targetIsEnemy))
         {
-            debugLog = "emergency fallback move failed: second unit must be ally or enemy.";
+            debugLog = "emergency fallback move failed: no valid target found.";
             return false;
         }
 
