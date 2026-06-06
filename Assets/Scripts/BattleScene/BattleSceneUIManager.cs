@@ -133,6 +133,25 @@ public sealed class BattleSceneUIManager : MonoBehaviour
     [Min(0f)]
     private float allyResponseVisibleSeconds = 6f;
 
+    [Header("Ally Response Animation")]
+    [SerializeField]
+    private float allyResponseStartX = 1726f;
+
+    [SerializeField]
+    private float allyResponseEndX = 1296f;
+
+    [SerializeField]
+    [Min(0f)]
+    private float allyResponseStartWidth = 0f;
+
+    [SerializeField]
+    [Min(0f)]
+    private float allyResponseEndWidth = 430f;
+
+    [SerializeField]
+    [Min(0.01f)]
+    private float allyResponseOpenSeconds = 1f;
+
     [Header("Scene Navigation")]
     [SerializeField]
     private string mainSceneName = "MainScene";
@@ -169,6 +188,7 @@ public sealed class BattleSceneUIManager : MonoBehaviour
     private BattleStartPayload _headerPayload;
     private IReadOnlyList<BattleRuntimeUnit> _headerRuntimeUnits;
     private readonly Coroutine[] _allyResponseHideCoroutines = new Coroutine[BattleTeamConstants.MaxUnitsPerTeam];
+    private readonly Coroutine[] _allyResponseOpenCoroutines = new Coroutine[BattleTeamConstants.MaxUnitsPerTeam];
     private readonly Queue<string> _pastOrders = new Queue<string>();
     private BattleUnitTooltipUIManager _battleUnitTooltipUIManager;
     private int _lastOrderSubmissionFrame = -1;
@@ -1372,7 +1392,7 @@ public sealed class BattleSceneUIManager : MonoBehaviour
         }
 
         targetText.text = responseText ?? string.Empty;
-        SetAllyResponseVisible(allyIndex, true);
+        StartAllyResponseOpenAnimation(allyIndex, targetText);
 
         if (allyIndex >= 4)
         {
@@ -1414,8 +1434,102 @@ public sealed class BattleSceneUIManager : MonoBehaviour
                 _allyResponseHideCoroutines[i] = null;
             }
 
+            if (_allyResponseOpenCoroutines[i] != null)
+            {
+                StopCoroutine(_allyResponseOpenCoroutines[i]);
+                _allyResponseOpenCoroutines[i] = null;
+            }
+
+            SetAllyResponseTextVisible(i, false);
             SetAllyResponseVisible(i, false);
         }
+    }
+
+    private void StartAllyResponseOpenAnimation(int allyIndex, TMP_Text targetText)
+    {
+        if (allyIndex < 0 || allyIndex >= _allyResponseOpenCoroutines.Length)
+        {
+            SetAllyResponseVisible(allyIndex, true);
+            SetComponentActive(targetText, true);
+            return;
+        }
+
+        if (_allyResponseOpenCoroutines[allyIndex] != null)
+        {
+            StopCoroutine(_allyResponseOpenCoroutines[allyIndex]);
+        }
+
+        _allyResponseOpenCoroutines[allyIndex] = StartCoroutine(OpenAllyResponsePanelRoutine(allyIndex, targetText));
+    }
+
+    private IEnumerator OpenAllyResponsePanelRoutine(int allyIndex, TMP_Text targetText)
+    {
+        RectTransform panelRect = GetAllyResponsePanelRect(allyIndex);
+        SetComponentActive(targetText, false);
+        SetAllyResponseVisible(allyIndex, true);
+
+        if (panelRect == null)
+        {
+            SetComponentActive(targetText, true);
+            _allyResponseOpenCoroutines[allyIndex] = null;
+            yield break;
+        }
+
+        ApplyAllyResponsePanelLayout(panelRect, allyResponseStartX, allyResponseStartWidth);
+
+        float elapsed = 0f;
+        while (elapsed < allyResponseOpenSeconds)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = allyResponseOpenSeconds <= 0f ? 1f : Mathf.Clamp01(elapsed / allyResponseOpenSeconds);
+            float easedT = Mathf.SmoothStep(0f, 1f, t);
+            float currentX = Mathf.Lerp(allyResponseStartX, allyResponseEndX, easedT);
+            float currentWidth = Mathf.Lerp(allyResponseStartWidth, allyResponseEndWidth, easedT);
+            ApplyAllyResponsePanelLayout(panelRect, currentX, currentWidth);
+            yield return null;
+        }
+
+        ApplyAllyResponsePanelLayout(panelRect, allyResponseEndX, allyResponseEndWidth);
+        SetComponentActive(targetText, true);
+        _allyResponseOpenCoroutines[allyIndex] = null;
+    }
+
+    private RectTransform GetAllyResponsePanelRect(int allyIndex)
+    {
+        if (
+            allyOrderResponsePanelRoots == null
+            || allyIndex < 0
+            || allyIndex >= allyOrderResponsePanelRoots.Length
+            || allyOrderResponsePanelRoots[allyIndex] == null
+        )
+        {
+            return null;
+        }
+
+        return allyOrderResponsePanelRoots[allyIndex].GetComponent<RectTransform>();
+    }
+
+    private static void ApplyAllyResponsePanelLayout(RectTransform panelRect, float anchoredX, float width)
+    {
+        if (panelRect == null)
+        {
+            return;
+        }
+
+        Vector2 anchoredPosition = panelRect.anchoredPosition;
+        anchoredPosition.x = anchoredX;
+        panelRect.anchoredPosition = anchoredPosition;
+        panelRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, Mathf.Max(0f, width));
+    }
+
+    private void SetAllyResponseTextVisible(int allyIndex, bool isVisible)
+    {
+        if (!TryGetAllyResponseText(allyIndex, out TMP_Text responseText))
+        {
+            return;
+        }
+
+        SetComponentActive(responseText, isVisible);
     }
 
     private bool TryGetAllyResponseIndex(BattleRuntimeUnit allyUnit, out int allyIndex)
@@ -1484,6 +1598,22 @@ public sealed class BattleSceneUIManager : MonoBehaviour
         )
         {
             return;
+        }
+
+        if (!isVisible)
+        {
+            if (
+                _allyResponseOpenCoroutines != null
+                && allyIndex >= 0
+                && allyIndex < _allyResponseOpenCoroutines.Length
+                && _allyResponseOpenCoroutines[allyIndex] != null
+            )
+            {
+                StopCoroutine(_allyResponseOpenCoroutines[allyIndex]);
+                _allyResponseOpenCoroutines[allyIndex] = null;
+            }
+
+            SetAllyResponseTextVisible(allyIndex, false);
         }
 
         allyOrderResponsePanelRoots[allyIndex].SetActive(isVisible);
