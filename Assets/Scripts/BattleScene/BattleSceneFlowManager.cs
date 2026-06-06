@@ -488,7 +488,9 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
             teamSlotIndicesById,
             source.CurrentDay,
             source.Difficulty,
-            source.PlayerSquadTeamIndex
+            source.PlayerSquadTeamIndex,
+            source.AllyTeamName,
+            source.EnemyTeamName
         );
     }
 
