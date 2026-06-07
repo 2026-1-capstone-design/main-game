@@ -52,6 +52,10 @@ public readonly struct TrainingAgentBindingSettings
 
 public sealed class TrainingAgentBinder
 {
+    private const string BattleFinishedKey = "Combat/BattleFinished";
+    private const string FinalBattleRemainingHealthRatioKey = "Combat/FinalBattleRemainingHealthRatio";
+    private const string WinnerTeamScoreBeforePersonalityKey = "Combat/WinnerTeamScoreBeforePersonality";
+
     private readonly BattleSceneFlowManager _flowManager;
     private readonly IGladiatorCurriculumSource _curriculumSource;
     private readonly Object _logContext;
@@ -131,33 +135,40 @@ public sealed class TrainingAgentBinder
             ForEachControlledAgent(agent => agent.RewardTerminalSurvivalIfAlive());
         }
 
-        ForEachControlledAgent(agent => agent.FlushEpisodeMetrics());
-        RecordEpisodeOutcome(reason, winnerTeamId);
-
-        if (!_settings.UsePocaGroupRewards || _allyGroup == null || _enemyGroup == null)
-        {
-            ForEachControlledAgent(agent => agent.EndEpisode());
-            return;
-        }
-
         if (reason == TrainingEpisodeEndReason.BattleFinished && winnerTeamId.HasValue)
         {
             bool allyWon = winnerTeamId.Value == BattleTeamIds.Player;
             float speedMultiplier = 1f + (_settings.WinSpeedBonus - 1f) * timeRemainingRatio;
             float hpMultiplier = 1f + (_settings.WinHpBonus - 1f) * winnerHpRatio;
             float combinedMultiplier = speedMultiplier * hpMultiplier;
+            float winnerTeamScoreBeforePersonality = _settings.GroupWinReward * combinedMultiplier;
+            float loserTeamScoreBeforePersonality = _settings.GroupLossReward * combinedMultiplier;
+            ForEachControlledAgent(agent => agent.FlushEpisodeMetrics());
+            RecordEpisodeOutcome(reason, winnerTeamId, winnerTeamScoreBeforePersonality);
+
+            if (!_settings.UsePocaGroupRewards || _allyGroup == null || _enemyGroup == null)
+            {
+                ForEachControlledAgent(agent => agent.EndEpisode());
+                return;
+            }
+
             _allyGroup.AddGroupReward(
-                NormalizeTeamOutcomeReward(
-                    (allyWon ? _settings.GroupWinReward : _settings.GroupLossReward) * combinedMultiplier
-                )
+                NormalizeTeamOutcomeReward(allyWon ? winnerTeamScoreBeforePersonality : loserTeamScoreBeforePersonality)
             );
             _enemyGroup.AddGroupReward(
-                NormalizeTeamOutcomeReward(
-                    (allyWon ? _settings.GroupLossReward : _settings.GroupWinReward) * combinedMultiplier
-                )
+                NormalizeTeamOutcomeReward(allyWon ? loserTeamScoreBeforePersonality : winnerTeamScoreBeforePersonality)
             );
             _allyGroup.EndGroupEpisode();
             _enemyGroup.EndGroupEpisode();
+            return;
+        }
+
+        ForEachControlledAgent(agent => agent.FlushEpisodeMetrics());
+        RecordEpisodeOutcome(reason, winnerTeamId, 0f);
+
+        if (!_settings.UsePocaGroupRewards || _allyGroup == null || _enemyGroup == null)
+        {
+            ForEachControlledAgent(agent => agent.EndEpisode());
             return;
         }
 
@@ -177,18 +188,32 @@ public sealed class TrainingAgentBinder
         _enemyGroup.GroupEpisodeInterrupted();
     }
 
-    private void RecordEpisodeOutcome(TrainingEpisodeEndReason reason, BattleTeamId? winnerTeamId)
+    private void RecordEpisodeOutcome(
+        TrainingEpisodeEndReason reason,
+        BattleTeamId? winnerTeamId,
+        float winnerTeamScoreBeforePersonality
+    )
     {
         var recorder = Academy.Instance.StatsRecorder;
         bool battleFinished = reason == TrainingEpisodeEndReason.BattleFinished && winnerTeamId.HasValue;
         // 승패가 정상적으로 확정된 전투 종료인지 여부를 기록한다. timeout이나 강제 중단은 0이다.
-        recorder.Add("Combat/BattleFinished", battleFinished ? 1f : 0f, StatAggregationMethod.Average);
+        recorder.Add(BattleFinishedKey, battleFinished ? 1f : 0f, StatAggregationMethod.Average);
         // 경기 종료 시점에 전장 전체에 남아 있는 체력 총합이, 참가 유닛 전체 최대 체력 총합 대비 어느 정도인지 나타낸다.
         recorder.Add(
-            "Combat/FinalBattleRemainingHealthRatio",
+            FinalBattleRemainingHealthRatioKey,
             ComputeFinalBattleRemainingHealthRatio(),
             StatAggregationMethod.Average
         );
+
+        if (battleFinished)
+        {
+            // MA-POCA group reward 정규화와 agent별 personality mixing이 적용되기 전의 승리 팀 원천 점수다.
+            recorder.Add(
+                WinnerTeamScoreBeforePersonalityKey,
+                winnerTeamScoreBeforePersonality,
+                StatAggregationMethod.Average
+            );
+        }
     }
 
     public void Dispose()

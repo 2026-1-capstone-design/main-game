@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 public readonly struct GladiatorRewardEvaluation
@@ -6,12 +7,19 @@ public readonly struct GladiatorRewardEvaluation
     public readonly float Reward;
     public readonly float SmoothnessReward;
     public readonly float StrategyReward;
+    public readonly float AllyCrowdingReward;
 
-    public GladiatorRewardEvaluation(float reward, float smoothnessReward, float strategyReward)
+    public GladiatorRewardEvaluation(
+        float reward,
+        float smoothnessReward,
+        float strategyReward,
+        float allyCrowdingReward
+    )
     {
         Reward = reward;
         SmoothnessReward = smoothnessReward;
         StrategyReward = strategyReward;
+        AllyCrowdingReward = allyCrowdingReward;
     }
 }
 
@@ -52,13 +60,16 @@ public sealed class GladiatorRewardEvaluator
     public GladiatorRewardEvaluation EvaluateActionStep(
         GladiatorAction action,
         GladiatorTacticalContext context,
-        GladiatorCombatSignalFeatures features
+        GladiatorCombatSignalFeatures features,
+        GladiatorObservationContext observationContext
     )
     {
         float reward = 0f;
         float smoothnessReward = EvaluateSmoothness(action, context);
         reward += smoothnessReward;
 
+        float allyCrowdingReward = EvaluateAllyCrowding(observationContext.Self, observationContext.Teammates);
+        reward += allyCrowdingReward;
         reward += EvaluateCommandSwitch(context);
         reward += EvaluateStrategySwitch(context);
         reward += EvaluateAnchorSwitch(context);
@@ -70,7 +81,7 @@ public sealed class GladiatorRewardEvaluator
         RecordLastActionContext(action, context);
         ApplyReward(reward);
 
-        return new GladiatorRewardEvaluation(reward, smoothnessReward, strategyReward);
+        return new GladiatorRewardEvaluation(reward, smoothnessReward, strategyReward, allyCrowdingReward);
     }
 
     public void RewardDamageTaken(float damage, BattleUnitCombatState selfState)
@@ -107,6 +118,41 @@ public sealed class GladiatorRewardEvaluator
         }
 
         ApplyReward(reward);
+    }
+
+    private float EvaluateAllyCrowding(
+        BattleUnitCombatState self,
+        IReadOnlyList<BattleUnitCombatState> teammates
+    )
+    {
+        float crowdingDistance = Mathf.Max(0f, _config.allyCrowdingDistance);
+        if (self == null || teammates == null || crowdingDistance <= 0f)
+        {
+            return 0f;
+        }
+
+        float reward = 0f;
+        for (int i = 0; i < teammates.Count; i++)
+        {
+            BattleUnitCombatState teammate = teammates[i];
+            if (teammate == null || teammate.IsCombatDisabled)
+            {
+                continue;
+            }
+
+            Vector3 delta = teammate.Position - self.Position;
+            delta.y = 0f;
+            float surfaceDistance = Mathf.Max(0f, delta.magnitude - self.BodyRadius - teammate.BodyRadius);
+            if (surfaceDistance >= crowdingDistance)
+            {
+                continue;
+            }
+
+            float proximity = 1f - surfaceDistance / crowdingDistance;
+            reward += proximity * _config.allyCrowdingPenalty;
+        }
+
+        return reward;
     }
 
     private void ApplyReward(float reward)

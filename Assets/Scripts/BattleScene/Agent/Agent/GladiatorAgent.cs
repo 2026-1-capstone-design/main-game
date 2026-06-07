@@ -187,9 +187,15 @@ public class GladiatorAgent : Agent
             GetStepDurationSeconds()
         );
         GladiatorCombatSignalFeatures features = GladiatorCombatSignalFeatures.Builder.Build(observationContext);
-        GladiatorRewardEvaluation evaluation = _rewardEvaluator.EvaluateActionStep(action, tacticalContext, features);
+        GladiatorRewardEvaluation evaluation = _rewardEvaluator.EvaluateActionStep(
+            action,
+            tacticalContext,
+            features,
+            observationContext
+        );
         _episodeMetrics.RecordStrategyReward(action.Strategy, evaluation.StrategyReward);
         _episodeMetrics.RecordSmoothnessReward(evaluation.SmoothnessReward);
+        _episodeMetrics.RecordAllyCrowdingReward(evaluation.AllyCrowdingReward);
 
         UpdateCommitmentState(action, tacticalContext);
         _previousCommand = action.Command;

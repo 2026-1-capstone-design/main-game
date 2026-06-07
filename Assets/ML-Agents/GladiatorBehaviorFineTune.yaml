@@ -57,7 +57,7 @@ behaviors:
     # Number of recent checkpoints to retain during training.
     keep_checkpoints: 5
     # Maximum number of trainer steps before training stops.
-    max_steps: 10000000
+    max_steps: 30000000
     # Number of agent steps to collect before adding a trajectory segment to the trainer buffer.
     time_horizon: 512
     # Number of trainer steps between writing summary statistics.

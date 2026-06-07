@@ -24616,7 +24616,7 @@ MonoBehaviour:
   autoStepInUpdate: 1
   minSimulationSpeed: 0.05
   maxSimulationSpeed: 8
-  unitBodyRadius: 0.5
+  unitBodyRadius: 1
   aiTuning: {fileID: 11400000, guid: 9460e7500e3182e498f0bc7ab23dd2ef, type: 2}
   slmCommandTuningSO: {fileID: 0}
   desiredPositionStopDistance: 0.5

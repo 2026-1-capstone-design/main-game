@@ -11,19 +11,21 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 80c998aa54db4e1897d08acca359afc5, type: 3}
   m_Name: GladiatorRewardConfig
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   damageDealtRatio: 1
   damageTakenRatio: -1
   attackLanded: 0.05
   kill: 3
   death: -3
   terminalSurvivalBonus: 0
-  personalityCategoryWeightMin: 0.5
-  personalityCategoryWeightMax: 1.5
+  personalityCategoryWeightMin: 0.75
+  personalityCategoryWeightMax: 1.25
   actionDelta: -0.001
+  allyCrowdingDistance: 0.25
+  allyCrowdingPenalty: -0.02
   commandSwitchPenalty: 0
-  strategySwitchPenalty: -0.05
-  anchorSwitchPenalty: -0.05
+  strategySwitchPenalty: -0.075
+  anchorSwitchPenalty: -0.075
   commandCommitmentReward: 0
   strategyCommitmentReward: 0
   anchorCommitmentReward: 0

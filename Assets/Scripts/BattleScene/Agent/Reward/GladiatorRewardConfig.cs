@@ -34,6 +34,13 @@ public sealed class GladiatorRewardConfig : ScriptableObject
     [FieldDescription("직전 스텝 대비 이동 입력 변화량에 비례하는 패널티.")]
     public float actionDelta = -0.001f;
 
+    [Header("Positioning")]
+    [FieldDescription("아군 유닛 표면 사이의 거리가 이 값보다 가까울 때 밀집 패널티를 적용한다.")]
+    public float allyCrowdingDistance = 1f;
+
+    [FieldDescription("밀집 반경 안의 아군 한 명마다 가까운 정도에 비례해 매 행동 스텝에 적용되는 패널티.")]
+    public float allyCrowdingPenalty = -0.002f;
+
     [Header("Action Stability/Switch Penalty")]
     [FieldDescription("공격 command 선택이 바뀔 때 부과되는 패널티.")]
     public float commandSwitchPenalty = -0.02f;

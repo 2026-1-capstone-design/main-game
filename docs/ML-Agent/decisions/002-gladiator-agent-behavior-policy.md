@@ -347,6 +347,7 @@ reportedMetric = metricValueSum / max(metricSampleCount, 1)
 
 - `Combat/BattleFinished`
 - `Combat/FinalBattleRemainingHealthRatio`
+- `Combat/WinnerTeamScoreBeforePersonality`
 - `Combat/DamageDealtRatio`
 - `Combat/AttackOpportunityUseRate`
 - `Combat/CommandSwitch`

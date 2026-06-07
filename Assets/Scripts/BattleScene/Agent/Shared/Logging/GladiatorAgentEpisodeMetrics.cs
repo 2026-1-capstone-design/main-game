@@ -6,6 +6,7 @@ public sealed class GladiatorAgentEpisodeMetrics
 {
     private const int MetricFlushDecisionSteps = 10000;
     private const string SmoothnessPenaltyKey = "Combat/SmoothnessPenalty";
+    private const string AllyCrowdingPenaltyKey = "Combat/AllyCrowdingPenalty";
     private const string DamageDealtRatioKey = "Combat/DamageDealtRatio";
     private const string AttackOpportunityUseRateKey = "Combat/AttackOpportunityUseRate";
     private const string CommandSwitchKey = "Combat/CommandSwitch";
@@ -170,6 +171,12 @@ public sealed class GladiatorAgentEpisodeMetrics
     {
         StatsRecorder recorder = Academy.Instance.StatsRecorder;
         recorder.Add(SmoothnessPenaltyKey, Mathf.Max(0f, -smoothnessReward), StatAggregationMethod.Average);
+    }
+
+    public void RecordAllyCrowdingReward(float allyCrowdingReward)
+    {
+        StatsRecorder recorder = Academy.Instance.StatsRecorder;
+        recorder.Add(AllyCrowdingPenaltyKey, Mathf.Max(0f, -allyCrowdingReward), StatAggregationMethod.Average);
     }
 
     public void Flush()
