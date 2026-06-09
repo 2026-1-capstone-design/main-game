@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: df9d8b62f4a040845a470ef2178797ef, type: 3}
-  m_Name: DrangonSlayer
+  m_Name: DragonSlayer
   m_EditorClassIdentifier: 
   icon: {fileID: 21300000, guid: 20370ee8d36f42f4cab766a930c8692b, type: 3}
-  weaponName: DrangonSlayer
+  weaponName: DragonSlayer
   weaponType: 6
   lore: "\uC6A9\uC744 \uCC14\uB7EC \uC8FD\uC600\uB2E4\uB294 \uC18C\uBB38\uC774 \uC788\uB294
     \uB2E8\uAC80\uC785\uB2C8\uB2E4. \uC18C\uBB38\uC774 \uC9C4\uC2E4\uC778\uC9C0 \uAC70\uC9D3\uC778\uC9C0\uB294

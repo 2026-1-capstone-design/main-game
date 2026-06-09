@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: df9d8b62f4a040845a470ef2178797ef, type: 3}
-  m_Name: ChoosenStaff
+  m_Name: ChosenStaff
   m_EditorClassIdentifier: 
   icon: {fileID: 21300000, guid: cfc7480723e78a240ba0211e9e239c6a, type: 3}
-  weaponName: ChoosenStaff
+  weaponName: ChosenStaff
   weaponType: 10
   lore: "1000\uB144 \uB3D9\uC548 \uC8FC\uC778\uC774 \uC5C6\uC5C8\uC2B5\uB2C8\uB2E4.
     \uC774 \uC2A4\uD0DC\uD504\uB294 \uC120\uD0DD\uBC1B\uC740 \uC790\uB97C \uC704\uD55C

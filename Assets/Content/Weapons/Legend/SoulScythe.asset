@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: df9d8b62f4a040845a470ef2178797ef, type: 3}
-  m_Name: SoulSythe
+  m_Name: SoulScythe
   m_EditorClassIdentifier: 
   icon: {fileID: 21300000, guid: 3a71241be14c1f9468f9cff42bb8a1a3, type: 3}
-  weaponName: SoulSythe
+  weaponName: SoulScythe
   weaponType: 2
   lore: "\uC801\uC758 \uC601\uD63C\uC744 \uC218\uD655\uD558\uB294 \uC0AC\uC2E0\uC758
     \uB300\uB0AB\uC785\uB2C8\uB2E4. \uC0AC\uC6A9\uD558\uB294 \uC790 \uB610\uD55C
