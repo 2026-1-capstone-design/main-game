@@ -15,7 +15,11 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: 7c1ac664bb05a744e95b8dc4ddb875ba, type: 3}
   weaponName: WingBow
   weaponType: 11
-  lore: 
+  lore: "\uB4E4\uAE30\uB9CC \uD574\uB3C4 \uBC1C\uAC78\uC74C\uC774 \uAC00\uBCBC\uC6CC\uC9C0\uB294
+    \uD65C\uC785\uB2C8\uB2E4. \uC5D8\uD504\uC758 \uD65C\uC774\uB77C\uB294 \uC18C\uBB38\uC774
+    \uC788\uC9C0\uB9CC, \uC801\uC5B4\uB3C4 \uB2F9\uC2E0\uC774 \uC774 \uD65C\uC744
+    \uC4F0\uBA74 \uC801\uBCF4\uB2E4 \uBE60\uB974\uAC8C \uC6C0\uC9C1\uC774\uBA70 \uD654\uC0B4\uC744
+    \uC3DF\uC544\uB0BC \uC218 \uC788\uC2B5\uB2C8\uB2E4."
   leftWeaponPrefab: {fileID: 7587338028754604254, guid: 80955e548431eb84f96686fdb9110eb8, type: 3}
   rightWeaponPrefab: {fileID: 26744791562570188, guid: 49e6000adfc1e4947a3d1e139883ac4f, type: 3}
   isRanged: 1

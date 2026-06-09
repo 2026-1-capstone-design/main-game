@@ -15,7 +15,10 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: caa990e8c0f728c4886a390491ca26c0, type: 3}
   weaponName: WaterGOD
   weaponType: 4
-  lore: 
+  lore: "\uC804\uC124\uB85C\uB9CC \uB0A8\uC544\uC788\uB358 \uBB3C\uC758 \uC2E0\uC774
+    \uC4F0\uB358 \uCC3D\uC785\uB2C8\uB2E4. \uC0AC\uC6A9\uD560 \uB54C \uBB3C\uC758
+    \uAE30\uC6B4\uC774 \uB2F9\uC2E0\uC744 \uD718\uAC10\uC544\uC11C \uB354 \uBE60\uB974\uAC8C
+    \uCC3D\uC744 \uD718\uB450\uB97C \uC218 \uC788\uB3C4\uB85D \uB9CC\uB4ED\uB2C8\uB2E4."
   leftWeaponPrefab: {fileID: 26744791562570188, guid: 49e6000adfc1e4947a3d1e139883ac4f, type: 3}
   rightWeaponPrefab: {fileID: 3535751589051643922, guid: db9ea9d4dc652bc49a39cb7c0b6b99e1, type: 3}
   isRanged: 0

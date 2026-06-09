@@ -10,12 +10,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: df9d8b62f4a040845a470ef2178797ef, type: 3}
-  m_Name: FireSythe
+  m_Name: FireScythe
   m_EditorClassIdentifier: 
   icon: {fileID: 21300000, guid: 3feb115215c985c40b18e2beedc9b049, type: 3}
-  weaponName: FireSythe
+  weaponName: FireScythe
   weaponType: 2
-  lore: 
+  lore: "\uB2F4\uAE08\uC9C8\uC744 \uD560 \uB54C \uC9C1\uC811 \uBD88\uC744 \uC9D1\uC5B4\uB123\uC5B4
+    \uB9CC\uB4E4\uC5B4\uB0B8 \uC804\uD22C\uB0AB\uC785\uB2C8\uB2E4. \uC0AC\uAC70\uB9AC\uC640
+    \uAC15\uD55C \uACF5\uACA9\uB825\uC774 \uC7A5\uC810\uC785\uB2C8\uB2E4. "
   leftWeaponPrefab: {fileID: 26744791562570188, guid: 49e6000adfc1e4947a3d1e139883ac4f, type: 3}
   rightWeaponPrefab: {fileID: 8991300548327875090, guid: cbb4acaf3e1a4ea4185066d4629dfc94, type: 3}
   isRanged: 0

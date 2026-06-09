@@ -15,7 +15,9 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: d17d3fa2b29186f45a7ae1d713a6707e, type: 3}
   weaponName: SimpleSpear
   weaponType: 4
-  lore: 
+  lore: "\uB098\uBB34 \uB9C9\uB300\uAE30\uC5D0 \uB0A0\uBD99\uC774\uB97C \uB2EC\uBA74
+    \uC644\uC131\uC785\uB2C8\uB2E4. \uB9AC\uCE58\uC758 \uCC28\uC774\uAC00 \uC2B9\uB9AC\uB97C
+    \uB9CC\uB4ED\uB2C8\uB2E4."
   leftWeaponPrefab: {fileID: 26744791562570188, guid: 49e6000adfc1e4947a3d1e139883ac4f, type: 3}
   rightWeaponPrefab: {fileID: 7007408773054817156, guid: 0c1e14644c5c23e4a995379aed124bca, type: 3}
   isRanged: 0

@@ -15,7 +15,11 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: 1b2cd7f185c02f54ba740e0ac6b087d4, type: 3}
   weaponName: Katana
   weaponType: 1
-  lore: 
+  lore: "\uC77C\uBCF8\uB3C4\uB294 \uADF8\uB9AC \uB2E8\uB2E8\uD558\uC9C0\uB3C4 \uC54A\uACE0,
+    \uC644\uBCBD\uD55C \uAC83\uC740 \uC544\uB2D9\uB2C8\uB2E4. \uB2E4\uB9CC, \uC774
+    \uC77C\uBCF8\uB3C4\uC640 \uAC19\uC774 \uB118\uC5B4\uC628 \uB3D9\uBC29\uC758 \uAC80\uC220\uC740
+    \uC0AC\uC6A9\uC790\uAC00 \uBE60\uB974\uACE0 \uBBFC\uCCA9\uD558\uAC8C \uC6C0\uC9C1\uC774\uAC8C
+    \uB9CC\uB4E4 \uC218 \uC788\uC5C8\uC2B5\uB2C8\uB2E4."
   leftWeaponPrefab: {fileID: 26744791562570188, guid: 49e6000adfc1e4947a3d1e139883ac4f, type: 3}
   rightWeaponPrefab: {fileID: 892616896779339511, guid: 4f3018c8de95a1a4c929ae408784e22c, type: 3}
   isRanged: 0

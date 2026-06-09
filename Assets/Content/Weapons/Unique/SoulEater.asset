@@ -15,7 +15,11 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: 834a5c0e390f65540924a76b6ad1d5c6, type: 3}
   weaponName: SoulEater
   weaponType: 1
-  lore: 
+  lore: "\uC601\uD63C\uC744 \uBA39\uC5B4 \uAC80\uC744 \uAC15\uB825\uD558\uAC8C \uB9CC\uB4E4
+    \uC218 \uC788\uC2B5\uB2C8\uB2E4. \uADE0\uD615\uC7A1\uD78C \uC2A4\uD0EF\uC73C\uB85C
+    \uB4E4\uAE30\uB9CC \uD574\uB3C4 \uB2F9\uC2E0\uC744 \uAC15\uB825\uD55C \uAC80\uC0AC\uB85C
+    \uB9CC\uB4E4\uC5B4\uC8FC\uC9C0\uB9CC, \uC801\uC744 \uBCA0\uC9C0 \uBABB\uD558\uBA74
+    \uB2E4\uC74C \uD76C\uC0DD\uC591\uC740 \uB2F9\uC2E0\uC774 \uB429\uB2C8\uB2E4."
   leftWeaponPrefab: {fileID: 26744791562570188, guid: 49e6000adfc1e4947a3d1e139883ac4f, type: 3}
   rightWeaponPrefab: {fileID: 4912245924238180116, guid: 6bf46e129c2d21c4f9ad6ca7103e8618, type: 3}
   isRanged: 0

@@ -3671,7 +3671,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   projectileRoot: {fileID: 457637514}
   normalArrowPrefab: {fileID: 7974726225172897559, guid: bd604beffa46bad488ba449960bb0586, type: 3}
-  normalMagicPrefab: {fileID: 2811141292315180248, guid: 56484ed32dbab5f42bb6fe42c84be469, type: 3}
+  normalMagicPrefab: {fileID: 8764043878647920493, guid: 866d3e13e95068845af61753c59d4221, type: 3}
   customProjectiles:
   - projectileId: fireball
     prefab: {fileID: 1206498299807332555, guid: 6749e7a8cdf826a4583df5dfe9d6a7d9, type: 3}
@@ -23705,6 +23705,11 @@ MonoBehaviour:
   pauseText: {fileID: 88700055}
   orderInputFixedSpeedMultiplier: 0.1
   allyResponseVisibleSeconds: 6
+  allyResponseStartX: 1726
+  allyResponseEndX: 1296
+  allyResponseStartWidth: 0
+  allyResponseEndWidth: 430
+  allyResponseOpenSeconds: 1
   mainSceneName: MainScene
   verboseLog: 1
 --- !u!1 &1951635543

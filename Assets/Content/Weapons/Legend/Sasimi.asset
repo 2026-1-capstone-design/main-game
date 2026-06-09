@@ -15,7 +15,10 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: e215dc0f988638340b28bd508639101f, type: 3}
   weaponName: Sasimi
   weaponType: 6
-  lore: 
+  lore: "\uC6D0\uB798\uB294 \uC0DD\uC120\uC744 \uB2E4\uB4EC\uAE30 \uC704\uD574\uC11C
+    \uB9CC\uB4E4\uC5B4\uC9C4 \uC2DD\uCE7C\uC785\uB2C8\uB2E4. \uADF8 \uB0A0\uCE74\uB85C\uC6C0\uC774
+    \uACFC\uB2E4\uD560 \uBFD0. \uD3C9\uBC94\uD574\uBCF4\uC774\uC9C0\uB9CC, \uC774
+    \uC2DD\uCE7C\uC740 \uC774\uBBF8 \uC218\uC2ED\uC758 \uBAA9\uC228\uC744 \uC557\uC544\uAC14\uC2B5\uB2C8\uB2E4."
   leftWeaponPrefab: {fileID: 26744791562570188, guid: 49e6000adfc1e4947a3d1e139883ac4f, type: 3}
   rightWeaponPrefab: {fileID: 6993788397291459675, guid: e711602aee24c57428ff92b6b7c8234a, type: 3}
   isRanged: 0
@@ -27,5 +30,5 @@ MonoBehaviour:
   baseAttackSpeedBonus: 2
   baseMoveSpeedBonus: 1
   baseAttackRangeBonus: 0
-  calculatedPrice: 9100
+  calculatedPrice: 9400
   weaponGrade: 4

@@ -15,7 +15,10 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: 00cf8e110bb82164e98610681c4ee8a4, type: 3}
   weaponName: M1911
   weaponType: 7
-  lore: 
+  lore: "\uC5B4\uB290 \uB0A0 \uD558\uB298\uC5D0\uC11C \uB5A8\uC5B4\uC9C4 \uAD8C\uCD1D\uC785\uB2C8\uB2E4.
+    \uAD81\uC218\uBCF4\uB2E4\uB294 \uAC81 \uC5C6\uB294 \uC554\uC0B4\uC790\uAC00 \uBE60\uB974\uAC8C
+    \uC801\uC5D0\uAC8C \uB2E4\uAC00\uAC00\uC11C \uC554\uC0B4\uD558\uB294 \uC6A9\uC73C\uB85C
+    \uB9CE\uC774 \uC0AC\uC6A9\uB418\uC5C8\uC2B5\uB2C8\uB2E4."
   leftWeaponPrefab: {fileID: 26744791562570188, guid: 49e6000adfc1e4947a3d1e139883ac4f, type: 3}
   rightWeaponPrefab: {fileID: 7271300501693721054, guid: 505df26bc58edfe428125ee29d1f231e, type: 3}
   isRanged: 1

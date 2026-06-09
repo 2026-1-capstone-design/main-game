@@ -15,7 +15,11 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: b43fefc455853964b81207280631052a, type: 3}
   weaponName: GodKiller
   weaponType: 2
-  lore: 
+  lore: "\uC2E0\uC744 \uCC0D\uC5B4 \uC8FD\uC778 \uB3C4\uB07C\uC785\uB2C8\uB2E4. \uACFC\uD558\uAC8C
+    \uBB34\uAC81\uACE0 \uC704\uB825\uC801\uC785\uB2C8\uB2E4. \uB354 \uB113\uC740
+    \uAC70\uB9AC\uC758 \uC801\uC744 \uC624\uB7AB\uB3D9\uC548 \uBCA0\uC5B4\uB0BC \uC218
+    \uC788\uC9C0\uB9CC, \uB108\uBB34 \uC2EC\uCDE8\uD558\uBA74 \uADF8 \uB9C8\uC131\uC5D0
+    \uC911\uB3C5\uB420 \uAC83\uC785\uB2C8\uB2E4."
   leftWeaponPrefab: {fileID: 26744791562570188, guid: 49e6000adfc1e4947a3d1e139883ac4f, type: 3}
   rightWeaponPrefab: {fileID: 7272207762823352007, guid: b296f42635ec5984a987887c3043e665, type: 3}
   isRanged: 0
