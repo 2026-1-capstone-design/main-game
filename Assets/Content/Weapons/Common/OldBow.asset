@@ -15,7 +15,8 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: deba2fc45c113ff4782253c557259205, type: 3}
   weaponName: OldBow
   weaponType: 11
-  lore: 
+  lore: "\uC624\uB798\uB41C \uD65C\uC785\uB2C8\uB2E4. \uD65C\uC2DC\uC704\uB97C \uB2F9\uAE30\uAE30\uB9CC
+    \uD574\uB3C4 \uCDA9\uBD84\uD569\uB2C8\uB2E4. "
   leftWeaponPrefab: {fileID: 1242854479534021254, guid: f2ddacf589d1f204da2ace0239fc72f4, type: 3}
   rightWeaponPrefab: {fileID: 26744791562570188, guid: 49e6000adfc1e4947a3d1e139883ac4f, type: 3}
   isRanged: 1

@@ -10,12 +10,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: df9d8b62f4a040845a470ef2178797ef, type: 3}
-  m_Name: SimpleSword
+  m_Name: OldSword
   m_EditorClassIdentifier: 
   icon: {fileID: 21300000, guid: 5cc3ce89c3d56aa45b20271af8062e6b, type: 3}
   weaponName: OldSword
   weaponType: 1
-  lore: 
+  lore: "\uB0A1\uC740 \uCE7C\uC785\uB2C8\uB2E4. \uADF8\uB807\uB2E4\uACE0 \uB0A1\uC740
+    \uC0AC\uB78C\uC5D0\uAC8C\uB9CC \uC798 \uBC15\uD788\uB294 \uAC80\uC740 \uC544\uB2D9\uB2C8\uB2E4.
+    \uADE0\uD615\uC7A1\uD78C \uC2A4\uD0EF\uC744 \uAC00\uC9D1\uB2C8\uB2E4."
   leftWeaponPrefab: {fileID: 26744791562570188, guid: 49e6000adfc1e4947a3d1e139883ac4f, type: 3}
   rightWeaponPrefab: {fileID: 8308761334583457526, guid: 45cd5161c1109d44cbd6c92edc514429, type: 3}
   isRanged: 0

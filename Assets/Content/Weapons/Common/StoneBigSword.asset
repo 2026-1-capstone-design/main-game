@@ -15,7 +15,9 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: 280ad89c5b2d6844192ebe7ef077ee0d, type: 3}
   weaponName: StoneBigSword
   weaponType: 2
-  lore: 
+  lore: "\uC774\uAC74 \uAC80\uC774\uB77C\uAE30\uC5D0\uB294 \uB108\uBB34 \uD06C\uACE0
+    \uBB34\uAC81\uC2B5\uB2C8\uB2E4. \uCCB4\uB825\uACFC \uC0AC\uAC70\uB9AC. \uC55E\uC11C
+    \uB098\uC11C\uC11C \uACF5\uAC04\uC744 \uC9C0\uBC30\uD574\uC904 \uBB34\uAE30\uC785\uB2C8\uB2E4."
   leftWeaponPrefab: {fileID: 26744791562570188, guid: 49e6000adfc1e4947a3d1e139883ac4f, type: 3}
   rightWeaponPrefab: {fileID: 8120443186230435269, guid: 6d000ee025a03dd4ba4120a820e24c18, type: 3}
   isRanged: 0

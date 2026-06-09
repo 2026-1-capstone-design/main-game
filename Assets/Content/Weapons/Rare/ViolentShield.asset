@@ -15,7 +15,11 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: d0c724c5535a8c242b91825e9f335ef6, type: 3}
   weaponName: ViolentShield
   weaponType: 5
-  lore: 
+  lore: "\uBC29\uD328\uC5D0 \uB0A0\uBD99\uC774\uAC00 \uBC15\uD78C \uC704\uD611\uC801\uC778
+    \uBC29\uD328\uC785\uB2C8\uB2E4. \uC544\uAD70\uC744 \uC801\uC5D0\uAC8C \uBCF4\uD638\uD558\uB294
+    \uC5ED\uD560\uC774 \uBC14\uB85C \uBC29\uD328\uC785\uB2C8\uB2E4. \uC801\uC744
+    \uAFF0\uC5B4\uC11C \uC4F0\uB7EC\uB728\uB9AC\uB294 \uAC83\uB3C4 \uC544\uAD70\uC744
+    \uBCF4\uD638\uD558\uB294 \uAC83\uC785\uB2C8\uB2E4."
   leftWeaponPrefab: {fileID: 3764301460640123186, guid: a44811b1ee9a2554fabad1e13d1ddc36, type: 3}
   rightWeaponPrefab: {fileID: 26744791562570188, guid: 49e6000adfc1e4947a3d1e139883ac4f, type: 3}
   isRanged: 0

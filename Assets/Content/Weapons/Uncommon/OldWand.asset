@@ -15,7 +15,10 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: e2ca58c8daa06df4ca567d3764e8dc96, type: 3}
   weaponName: OldWand
   weaponType: 10
-  lore: 
+  lore: "\uC624\uB798\uB41C \uB9C8\uBC95 \uC2A4\uD0DC\uD504\uC785\uB2C8\uB2E4. \uC2A4\uD0DC\uD504\uAC00
+    \uB2E4 \uD574\uC838\uC11C \uB179\uC774 \uC2AC\uAC70\uB098 \uD759\uAC00\uB8E8\uAC00
+    \uBB3B\uC5B4\uB098\uC624\uB354\uB77C\uB3C4 \uADF8 \uC548\uC5D0 \uD488\uAE34 \uB9C8\uB098\uC758
+    \uD798\uC740 \uC27D\uAC8C \uBC14\uB798\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4."
   leftWeaponPrefab: {fileID: 26744791562570188, guid: 49e6000adfc1e4947a3d1e139883ac4f, type: 3}
   rightWeaponPrefab: {fileID: 6074153273637123703, guid: c9a3c9f0250daa344953827390ad49aa, type: 3}
   isRanged: 1

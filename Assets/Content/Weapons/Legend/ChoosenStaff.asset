@@ -15,7 +15,9 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: cfc7480723e78a240ba0211e9e239c6a, type: 3}
   weaponName: ChoosenStaff
   weaponType: 10
-  lore: 
+  lore: "1000\uB144 \uB3D9\uC548 \uC8FC\uC778\uC774 \uC5C6\uC5C8\uC2B5\uB2C8\uB2E4.
+    \uC774 \uC2A4\uD0DC\uD504\uB294 \uC120\uD0DD\uBC1B\uC740 \uC790\uB97C \uC704\uD55C
+    \uC2A4\uD0DC\uD504\uC785\uB2C8\uB2E4."
   leftWeaponPrefab: {fileID: 26744791562570188, guid: 49e6000adfc1e4947a3d1e139883ac4f, type: 3}
   rightWeaponPrefab: {fileID: 5362100920032889580, guid: 3aef13bf5f9057c40b484ea728f2ce54, type: 3}
   isRanged: 1

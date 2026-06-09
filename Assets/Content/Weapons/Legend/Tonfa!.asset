@@ -15,7 +15,11 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: 67206ee3db542ac44b6dbdaa278cd79f, type: 3}
   weaponName: Tonfa!
   weaponType: 3
-  lore: 
+  lore: "\uB2E8\uB828\uD55C \uB098\uBB34\uB85C \uD1A4\uD30C\uB97C \uB9CC\uB4E4\uACE0,
+    \uADF8 \uD1A4\uD30C\uB85C \uB098\uBB34\uB97C \uB2E4\uB4EC\uC5B4\uC11C \uB9CC\uB4ED\uB2C8\uB2E4.
+    \uC218\uC2ED\uBC88\uC744 \uBC18\uBCF5\uD55C \uD1A4\uD30C\uB294 \uB2E8\uB2E8\uD558\uACE0
+    \uAC15\uB825\uD558\uC5EC \uB0A0\uBD99\uC774\uBCF4\uB2E4 \uC704\uD5D8\uD569\uB2C8\uB2E4.
+    \uACF5\uC18D\uACFC \uCCB4\uB825\uC774 \uB192\uC2B5\uB2C8\uB2E4."
   leftWeaponPrefab: {fileID: 1076652393212252396, guid: f3bcfe545851fd34da39d2d1a9b00ce6, type: 3}
   rightWeaponPrefab: {fileID: 2608537532400770027, guid: 04320f32e7105914f99bb958d693d97e, type: 3}
   isRanged: 0

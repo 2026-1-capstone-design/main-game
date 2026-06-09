@@ -15,7 +15,9 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: 93b8ca5d8f951b6469431da37e583062, type: 3}
   weaponName: M249
   weaponType: 9
-  lore: 
+  lore: "\uC5B4\uB290 \uB0A0 \uD558\uB298\uC5D0\uC11C \uB5A8\uC5B4\uC9C4 \uB77C\uC774\uD50C\uC785\uB2C8\uB2E4.
+    \uD55C\uBC1C\uD55C\uBC1C\uC758 \uC704\uB825\uC740 \uAC15\uD558\uC9C0 \uC54A\uC9C0\uB9CC,
+    \uC3DF\uC544\uC9C0\uB294 \uB0A9\uD0C4\uC740 \uBE44\uC640\uB3C4 \uAC19\uC2B5\uB2C8\uB2E4. "
   leftWeaponPrefab: {fileID: 26744791562570188, guid: 49e6000adfc1e4947a3d1e139883ac4f, type: 3}
   rightWeaponPrefab: {fileID: 7860103617456621554, guid: 3f8a1e3f348d3774fb062c6daf69d5ee, type: 3}
   isRanged: 1

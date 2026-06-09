@@ -15,7 +15,9 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: 295554210cd688e45881d8f9e8b9314a, type: 3}
   weaponName: SealedSword
   weaponType: 1
-  lore: 
+  lore: "\uAC80\uC758 \uD798\uC740 \uBD09\uC778\uB418\uC5B4\uC788\uC9C0\uB9CC, \uADF8
+    \uD3B8\uB9B0\uB9CC\uC73C\uB85C\uB3C4 \uCDA9\uBD84\uD569\uB2C8\uB2E4. \uC704\uB825,
+    \uC624\uB85C\uC9C0 \uC704\uB825\uC5D0\uB9CC \uC9D1\uC911\uD55C \uBB34\uAE30\uC785\uB2C8\uB2E4."
   leftWeaponPrefab: {fileID: 26744791562570188, guid: 49e6000adfc1e4947a3d1e139883ac4f, type: 3}
   rightWeaponPrefab: {fileID: 5035211138202176384, guid: c5163d05a3eb2844c8f8deeb37ccbf78, type: 3}
   isRanged: 0

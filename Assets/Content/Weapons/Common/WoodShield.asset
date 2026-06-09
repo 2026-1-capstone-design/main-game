@@ -15,7 +15,9 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: a4034de8b6eb62944912032cfcda706c, type: 3}
   weaponName: WoodShield
   weaponType: 5
-  lore: 
+  lore: "\uBAA9\uC7AC\uB97C \uB300\uCDA9 \uB07C\uC6CC\uC11C \uB9CC\uB4E0 \uBC29\uD328\uC785\uB2C8\uB2E4.
+    \uB2E4\uB9CC, \uC774 \uB2E8\uC21C\uD55C \uBC29\uD328\uB85C\uB3C4 \uB0A0\uBD99\uC774\uB294
+    \uCDA9\uBD84\uD788 \uB9C9\uC544\uB0C5\uB2C8\uB2E4. "
   leftWeaponPrefab: {fileID: 4062663986571808592, guid: 679628bf56bba4d419b1447552f12e65, type: 3}
   rightWeaponPrefab: {fileID: 26744791562570188, guid: 49e6000adfc1e4947a3d1e139883ac4f, type: 3}
   isRanged: 0

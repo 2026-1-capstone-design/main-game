@@ -15,7 +15,10 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: b9becd622f04488479800be734698255, type: 3}
   weaponName: BrutalBow
   weaponType: 11
-  lore: 
+  lore: "\uC720\uC0AC\uC2DC\uC5D0\uB294 \uC801\uC744 \uADF8\uB300\uB85C \uD6C4\uB824\uCE60
+    \uAC83\uC744 \uC0C1\uC815\uD558\uACE0 \uB9CC\uB4E4\uC5B4\uC84C\uC2B5\uB2C8\uB2E4.
+    \uBB34\uAC8C \uC911\uC2EC\uACFC \uD65C\uC758 \uD0C4\uC131\uB9C8\uC800 \uC644\uBCBD\uD558\uAC8C
+    \uAD6C\uD604\uD55C \uADC0\uD55C \uBB34\uAE30\uC785\uB2C8\uB2E4. "
   leftWeaponPrefab: {fileID: 1952491361100801808, guid: 75505386e77b0d944adcb2881f10fcd2, type: 3}
   rightWeaponPrefab: {fileID: 26744791562570188, guid: 49e6000adfc1e4947a3d1e139883ac4f, type: 3}
   isRanged: 1

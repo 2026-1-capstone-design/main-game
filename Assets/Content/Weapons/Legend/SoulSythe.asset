@@ -15,7 +15,10 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: 3a71241be14c1f9468f9cff42bb8a1a3, type: 3}
   weaponName: SoulSythe
   weaponType: 2
-  lore: 
+  lore: "\uC801\uC758 \uC601\uD63C\uC744 \uC218\uD655\uD558\uB294 \uC0AC\uC2E0\uC758
+    \uB300\uB0AB\uC785\uB2C8\uB2E4. \uC0AC\uC6A9\uD558\uB294 \uC790 \uB610\uD55C
+    \uBAA9\uC228\uC744 \uAC78\uACE0 \uC0AC\uC6A9\uD574\uC57C \uD558\uC9C0\uB9CC,
+    \uAC15\uB825\uD55C \uC704\uB825\uC744 \uC790\uB791\uD558\uB294 \uBB34\uAE30\uC785\uB2C8\uB2E4."
   leftWeaponPrefab: {fileID: 26744791562570188, guid: 49e6000adfc1e4947a3d1e139883ac4f, type: 3}
   rightWeaponPrefab: {fileID: 8914225881102619412, guid: 565fc30fff4e26c46b8327ec09d24e7c, type: 3}
   isRanged: 0

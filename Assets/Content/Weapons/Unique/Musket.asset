@@ -15,7 +15,9 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: 52146851dfd66b140966a26dddaac7d5, type: 3}
   weaponName: Musket
   weaponType: 9
-  lore: 
+  lore: "\uD558\uB298\uC5D0\uC11C \uB5A8\uC5B4\uC9C4 \uB77C\uC774\uD50C\uC744 \uBC14\uD0D5\uC73C\uB85C
+    \uC7AC\uC0DD\uC0B0\uB41C \uBB34\uAE30\uC785\uB2C8\uB2E4. \uC704\uB825\uB3C4 \uC18D\uB3C4\uB3C4
+    \uD615\uD3B8\uC5C6\uC9C0\uB9CC, \uADF8 \uC0AC\uAC70\uB9AC\uB9CC\uD07C\uC740 \uC555\uB3C4\uC801\uC785\uB2C8\uB2E4."
   leftWeaponPrefab: {fileID: 26744791562570188, guid: 49e6000adfc1e4947a3d1e139883ac4f, type: 3}
   rightWeaponPrefab: {fileID: 104870942242198648, guid: e2f9bea91a72b3f41a1a3a0245390e4b, type: 3}
   isRanged: 1

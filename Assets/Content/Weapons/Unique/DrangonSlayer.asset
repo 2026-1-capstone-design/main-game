@@ -15,7 +15,10 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: 20370ee8d36f42f4cab766a930c8692b, type: 3}
   weaponName: DrangonSlayer
   weaponType: 6
-  lore: 
+  lore: "\uC6A9\uC744 \uCC14\uB7EC \uC8FD\uC600\uB2E4\uB294 \uC18C\uBB38\uC774 \uC788\uB294
+    \uB2E8\uAC80\uC785\uB2C8\uB2E4. \uC18C\uBB38\uC774 \uC9C4\uC2E4\uC778\uC9C0 \uAC70\uC9D3\uC778\uC9C0\uB294
+    \uC54C \uC218 \uC5C6\uC9C0\uB9CC, \uC801\uC5B4\uB3C4 \uC0AC\uB78C \uD558\uB098
+    \uC7A1\uAE30\uB294 \uCDA9\uBD84\uD569\uB2C8\uB2E4."
   leftWeaponPrefab: {fileID: 26744791562570188, guid: 49e6000adfc1e4947a3d1e139883ac4f, type: 3}
   rightWeaponPrefab: {fileID: 6663608033702205339, guid: 11058a8d2e9a53b45bf3907804a83b14, type: 3}
   isRanged: 0

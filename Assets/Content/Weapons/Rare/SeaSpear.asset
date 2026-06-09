@@ -15,7 +15,11 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: 3a5fd9e17328306459833bab2312fb8f, type: 3}
   weaponName: SeaSpear
   weaponType: 4
-  lore: 
+  lore: "\uAE4A\uC740 \uC218\uC2EC\uC5D0 \uBC15\uD600\uC788\uB358 \uC78A\uD600\uC9C4
+    \uCC3D\uC740 \uD6C4\uC138\uB300\uC758 \uC601\uC6C5\uC5D0 \uC758\uD574\uC11C \uB2E4\uC2DC
+    \uBC1C\uACAC\uB418\uC5C8\uC2B5\uB2C8\uB2E4. \uB0A1\uACE0 \uC0C1\uD588\uC9C0\uB9CC,
+    \uADF8\uB798\uB3C4 \uCDA9\uBD84\uD788 \uC801\uC744 \uAFF0\uB6AB\uC5B4\uBC84\uB9B4
+    \uC218 \uC788\uC2B5\uB2C8\uB2E4."
   leftWeaponPrefab: {fileID: 26744791562570188, guid: 49e6000adfc1e4947a3d1e139883ac4f, type: 3}
   rightWeaponPrefab: {fileID: 8694134327194077011, guid: 6c3479b04013c464da9fc0aeae7bafbe, type: 3}
   isRanged: 0
