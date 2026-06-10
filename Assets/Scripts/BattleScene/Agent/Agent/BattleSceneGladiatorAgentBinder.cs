@@ -106,7 +106,7 @@ public sealed class BattleSceneGladiatorAgentBinder : MonoBehaviour
             }
 
             agent.gameObject.SetActive(true);
-            agent.Initialize(unit, flowManager, null);
+            agent.Initialize(unit, flowManager, flowManager);
             _boundUnits.Add(unit);
             AttachRangeOverlay(unit);
         }

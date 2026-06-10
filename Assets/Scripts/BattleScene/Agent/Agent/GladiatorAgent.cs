@@ -168,6 +168,7 @@ public class GladiatorAgent : Agent
             _selfState,
             _rosterView != null ? _rosterView.Hostiles : null,
             action,
+            resolvedAction,
             target,
             CommitmentWindowSteps,
             _previousCommand,

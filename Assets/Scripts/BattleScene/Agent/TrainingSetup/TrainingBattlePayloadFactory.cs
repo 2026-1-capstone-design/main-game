@@ -75,7 +75,7 @@ public sealed class TrainingBattlePayloadFactory
 
         if (settings.UnitGenerationMode == TrainingBattleUnitGenerationMode.InGameEnemyGeneration)
         {
-            int generationDay = Random.Range(1, 21);
+            int generationDay = Random.Range(1, 2);
             allySnapshots = CreateInGameGeneratedSnapshots(
                 BattleTeamIds.Player,
                 "Ally",

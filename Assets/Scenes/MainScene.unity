@@ -21595,7 +21595,7 @@ MonoBehaviour:
   - "\uCE7C\uAC19\uC740 \uC7A5\uBBF8\uC758 \uAC80\uD22C\uB2E8"
   deploymentPanelRoot: {fileID: 1137461833}
   deploymentBoardArea: {fileID: 1733147223}
-  deploymentBattlefieldRadius: 28
+  deploymentBattlefieldRadius: 20
   deploymentStartButton: {fileID: 108125606}
   deploymentBackButton: {fileID: 1490255908}
   deployEnemyIcons:

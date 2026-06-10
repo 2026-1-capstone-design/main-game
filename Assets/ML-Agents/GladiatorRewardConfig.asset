@@ -20,9 +20,9 @@ MonoBehaviour:
   terminalSurvivalBonus: 0
   personalityCategoryWeightMin: 0.75
   personalityCategoryWeightMax: 1.25
-  actionDelta: -0.001
-  allyCrowdingDistance: 0.25
-  allyCrowdingPenalty: -0.02
+  actionDelta: -0.002
+  allyCrowdingDistance: 0.5
+  allyCrowdingPenalty: -0.01
   commandSwitchPenalty: 0
   strategySwitchPenalty: -0.075
   anchorSwitchPenalty: -0.075

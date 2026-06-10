@@ -8,11 +8,14 @@ using UnityEngine;
 // - Battlefield(Shpereollider) 위 placeholder 기준 배치
 // - BattleSimulationManager 초기화
 // - BattleSceneUIManager / BattleStatusGridUIManager와 연결
+// - Agent observation에서 TrainingScene과 같은 제한시간 비율을 제공
 // - 초기 payload snapshot 보관 및 clone 재사용 (F7 in-place restart)
 // - 기존 runtime unit destroy 후 재생성
 [DisallowMultipleComponent]
-public sealed class BattleSceneFlowManager : MonoBehaviour
+public sealed class BattleSceneFlowManager : MonoBehaviour, IGladiatorCurriculumSource
 {
+    private const int DefaultBattleTimeoutTicks = 1 * 60 * 60;
+
     [Header("Spawn")]
     // RectTransform 대신 3D SphereCollider로 교체된 전장 영역
     public SphereCollider battlefieldCollider;
@@ -48,6 +51,10 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
     [SerializeField]
     private BattleOrdersManager battleOrdersManager;
 
+    [Header("Agent Observation Timeout")]
+    [SerializeField]
+    private int battleTimeoutTicks = DefaultBattleTimeoutTicks;
+
     [Header("Debug")]
     [SerializeField]
     private bool verboseLog = true;
@@ -66,6 +73,19 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
     public BattleSimulationManager BattleSimulationManager => battleSimulationManager;
     public BattleStartPayload CurrentPayload =>
         battleSimulationManager != null ? battleSimulationManager.InitialPayload : _initialPayloadSnapshot;
+    public int BattleTimeoutTickLimit => battleTimeoutTicks;
+    public float BattleTimeoutRemainingRatio
+    {
+        get
+        {
+            if (battleSimulationManager == null || battleTimeoutTicks <= 0)
+            {
+                return 1f;
+            }
+
+            return Mathf.Clamp01((battleTimeoutTicks - battleSimulationManager.BattleTickCount) / (float)battleTimeoutTicks);
+        }
+    }
 
     // 유닛 스폰 및 초기화가 완료됐을 때 발화. 초기 진입과 F7 재시작 모두 호출된다.
     public event Action OnUnitsSpawned;
@@ -74,6 +94,11 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
     {
         if (autoBootstrapFromSessionManager)
             BootstrapScene();
+    }
+
+    public void RequestEpisodeReset()
+    {
+        RestartCurrentBattle();
     }
 
     // BattleScene 진입 시 호출되는 초기 부트스트랩.
@@ -442,6 +467,7 @@ public sealed class BattleSceneFlowManager : MonoBehaviour
             return false;
         if (battleSimulationManager == null)
             return false;
+        battleTimeoutTicks = Mathf.Max(1, battleTimeoutTicks);
         if (battlefieldCollider == null)
         {
             Debug.LogError(

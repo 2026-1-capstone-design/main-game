@@ -120,10 +120,7 @@ public sealed class GladiatorRewardEvaluator
         ApplyReward(reward);
     }
 
-    private float EvaluateAllyCrowding(
-        BattleUnitCombatState self,
-        IReadOnlyList<BattleUnitCombatState> teammates
-    )
+    private float EvaluateAllyCrowding(BattleUnitCombatState self, IReadOnlyList<BattleUnitCombatState> teammates)
     {
         float crowdingDistance = Mathf.Max(0f, _config.allyCrowdingDistance);
         if (self == null || teammates == null || crowdingDistance <= 0f)
@@ -163,8 +160,7 @@ public sealed class GladiatorRewardEvaluator
     private float EvaluateSmoothness(GladiatorAction action, GladiatorTacticalContext context)
     {
         float reward = 0f;
-        bool isMoveCommandContinuation = IsMoveCommandContinuation(context);
-        if (_hasPreviousRawAction && isMoveCommandContinuation)
+        if (_hasPreviousRawAction && context.WasActuallyMovingLastTick && context.WillActuallyMoveThisAction)
         {
             float dotted = Vector2.Dot(_previousRawMove, action.RelativeMove);
             reward += -dotted * _config.actionDelta;
@@ -174,12 +170,6 @@ public sealed class GladiatorRewardEvaluator
         _hasPreviousRawAction = true;
         return reward;
     }
-
-    private static bool IsMoveCommandContinuation(GladiatorTacticalContext context) =>
-        IsMovementCommand(context.PreviousCommand) && IsMovementCommand(context.Command);
-
-    private static bool IsMovementCommand(GladiatorCommand? command) =>
-        command == GladiatorCommand.Move || command == GladiatorCommand.Withdraw;
 
     private float EvaluateCommandSwitch(GladiatorTacticalContext context)
     {

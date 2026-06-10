@@ -30,6 +30,8 @@ public readonly struct GladiatorTacticalContext
     public readonly bool IsTargetOutOfAttackRange;
     public readonly bool IsAttackBlocked;
     public readonly bool AnchorFallbackApplied;
+    public readonly bool WasActuallyMovingLastTick;
+    public readonly bool WillActuallyMoveThisAction;
 
     public readonly bool CompletedCommandWindow;
     public readonly bool CompletedStrategyWindow;
@@ -56,6 +58,8 @@ public readonly struct GladiatorTacticalContext
         bool isTargetOutOfAttackRange,
         bool isAttackBlocked,
         bool anchorFallbackApplied,
+        bool wasActuallyMovingLastTick,
+        bool willActuallyMoveThisAction,
         bool completedCommandWindow,
         bool completedStrategyWindow,
         bool completedAnchorWindow
@@ -81,6 +85,8 @@ public readonly struct GladiatorTacticalContext
         IsTargetOutOfAttackRange = isTargetOutOfAttackRange;
         IsAttackBlocked = isAttackBlocked;
         AnchorFallbackApplied = anchorFallbackApplied;
+        WasActuallyMovingLastTick = wasActuallyMovingLastTick;
+        WillActuallyMoveThisAction = willActuallyMoveThisAction;
         CompletedCommandWindow = completedCommandWindow;
         CompletedStrategyWindow = completedStrategyWindow;
         CompletedAnchorWindow = completedAnchorWindow;
@@ -92,6 +98,7 @@ public readonly struct GladiatorTacticalContext
             BattleUnitCombatState self,
             IReadOnlyList<BattleUnitCombatState> opponents,
             GladiatorAction action,
+            GladiatorAction resolvedAction,
             BattleUnitCombatState target,
             int commitmentWindowSteps,
             GladiatorCommand? previousCommand,
@@ -116,6 +123,14 @@ public readonly struct GladiatorTacticalContext
             int nextAnchorCommitmentSteps =
                 !anchorFallbackApplied && previousTargetSlot == action.AnchorSlot ? anchorCommitmentSteps + 1 : 0;
             int nextStrategyCommitmentSteps = previousStrategy == action.Strategy ? strategyCommitmentSteps + 1 : 0;
+            bool isTargetOutOfAttackRange = !hasValidTarget || targetDistance > targetEffectiveRange;
+            bool wasActuallyMovingLastTick = self != null && self.IsMoving && !self.IsAttacking;
+            bool willActuallyMoveThisAction = WillActuallyMove(
+                self,
+                resolvedAction,
+                hasValidTarget,
+                isTargetOutOfAttackRange
+            );
 
             return new GladiatorTacticalContext(
                 previousCommand,
@@ -135,15 +150,41 @@ public readonly struct GladiatorTacticalContext
                 HasLivingOpponent(opponents),
                 HasAttackableOpponent(self, opponents),
                 hasValidTarget,
-                !hasValidTarget || targetDistance > targetEffectiveRange,
+                isTargetOutOfAttackRange,
                 attackBlocked,
                 anchorFallbackApplied,
+                wasActuallyMovingLastTick,
+                willActuallyMoveThisAction,
                 previousCommand == action.Command && commandCommitmentSteps + 1 >= commitmentWindowSteps,
                 previousStrategy == action.Strategy && strategyCommitmentSteps + 1 >= commitmentWindowSteps,
                 !anchorFallbackApplied
                     && previousTargetSlot == action.AnchorSlot
                     && anchorCommitmentSteps + 1 >= commitmentWindowSteps
             );
+        }
+
+        private static bool WillActuallyMove(
+            BattleUnitCombatState self,
+            GladiatorAction resolvedAction,
+            bool hasValidTarget,
+            bool isTargetOutOfAttackRange
+        )
+        {
+            if (self == null || self.IsCombatDisabled || self.IsStunned || self.IsAttacking || self.MoveSpeed <= 0f)
+            {
+                return false;
+            }
+
+            switch (resolvedAction.Command)
+            {
+                case GladiatorCommand.Attack:
+                    return hasValidTarget && isTargetOutOfAttackRange;
+                case GladiatorCommand.Move:
+                case GladiatorCommand.Withdraw:
+                    return hasValidTarget && resolvedAction.RelativeMove.sqrMagnitude > 0.0001f;
+                default:
+                    return false;
+            }
         }
 
         private static bool HasAttackableOpponent(
