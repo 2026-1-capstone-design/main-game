@@ -460,8 +460,22 @@ public sealed class BattleUnitSnapshot
             duration,
             skillDefaultDur,
             skillDuration,
-            equippedArtifacts: BuildArtifactSOs(source.EquippedArtifacts)
+            ResolvePersonalityBias(source.Personality),
+            BuildArtifactSOs(source.EquippedArtifacts)
         );
+    }
+
+    // PersonalitySO의 altruism/aggression(0~1)을 GladiatorAgent가 쓰는 GladiatorPersonalityBias로 변환한다.
+    // 이 변환이 없으면 메인 씬에서 시작한 전투의 성격이 항상 Neutral로 들어가 ML-Agent 관측/보상에 반영되지 않는다.
+    // Collectivism = altruism(동료를 돕는 경향), Passiveness = 1 - aggression(공격 성향이 높을수록 소극성은 낮음).
+    private static GladiatorPersonalityBias ResolvePersonalityBias(PersonalitySO personality)
+    {
+        if (personality == null)
+        {
+            return GladiatorPersonalityBias.Neutral;
+        }
+
+        return new GladiatorPersonalityBias(personality.altruism, 1f - personality.aggression);
     }
 
     private static IReadOnlyList<ArtifactSO> BuildEquippedArtifacts(

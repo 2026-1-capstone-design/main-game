@@ -3210,6 +3210,7 @@ MonoBehaviour:
   battleUnitTooltipUIManager: {fileID: 469672414}
   battleSceneUIManager: {fileID: 1946387393}
   battleOrdersManager: {fileID: 1233094450}
+  battleTimeoutTicks: 3600
   verboseLog: 1
   autoBootstrapFromSessionManager: 1
 --- !u!4 &235651750
@@ -24611,7 +24612,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 275b977f82b2c3c47a634150e6ddc865, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BattleSimulationManager
-  simulationTickRate: 15
+  simulationTickRate: 60
   simulationSpeedMultiplier: 1
   autoStepInUpdate: 1
   minSimulationSpeed: 0.05
