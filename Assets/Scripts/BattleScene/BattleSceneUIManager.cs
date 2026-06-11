@@ -121,8 +121,9 @@ public sealed class BattleSceneUIManager : MonoBehaviour
     private BattleAutoCameraDirector autoCameraDirector;
 
     [Header("Pause UI")]
+    // 배속 버튼 영역에 배치되는 일시정지/재개 토글 버튼. P 단축키와 동일한 동작을 한다.
     [SerializeField]
-    private GameObject pauseText;
+    private Button pauseButton;
 
     [Header("Command Mode")]
     [SerializeField]
@@ -223,6 +224,7 @@ public sealed class BattleSceneUIManager : MonoBehaviour
         BindButton(victoryConfirmButton, ReturnToMainScene);
         BindButton(defeatConfirmButton, ReturnToMainScene);
         BindSpeedPresetButtons();
+        BindButton(pauseButton, OnPauseButtonClicked);
 
         BindButton(surrenderButton, OnSurrenderClicked);
         BindButton(surrenderYesButton, OnSurrenderYesClicked);
@@ -235,7 +237,6 @@ public sealed class BattleSceneUIManager : MonoBehaviour
         BindAutoCameraToggle();
 
         HideAll();
-        SetActive(pauseText, false);
         ClearAllyOrderResponses();
         RefreshSpeedText();
         RefreshButtonStates();
@@ -1020,6 +1021,12 @@ public sealed class BattleSceneUIManager : MonoBehaviour
             ordersButton.interactable = !blockOrderInput;
         }
 
+        // 일시정지 버튼은 paused 상태에서도 눌러서 재개할 수 있어야 하므로 paused는 차단 조건에서 제외한다.
+        if (pauseButton != null)
+        {
+            pauseButton.interactable = !modalOpen && !IsBattleEndPanelOpen && !_isNavigating;
+        }
+
         if (currentOrderInputField != null)
         {
             currentOrderInputField.interactable = !blockOrderInput;
@@ -1062,6 +1069,17 @@ public sealed class BattleSceneUIManager : MonoBehaviour
             return;
         }
 
+        TogglePause();
+    }
+
+    private void OnPauseButtonClicked()
+    {
+        TogglePause();
+    }
+
+    // 일시정지 버튼과 P 단축키가 공유하는 토글 처리. 전투 종료/패널 오픈/씬 전환 중에는 무시한다.
+    private void TogglePause()
+    {
         EnsureBattleSimulationManager();
 
         if (
@@ -1076,7 +1094,6 @@ public sealed class BattleSceneUIManager : MonoBehaviour
 
         bool nextPaused = !battleSimulationManager.IsTemporarilyPaused;
         battleSimulationManager.SetTemporaryPause(nextPaused);
-        SetActive(pauseText, nextPaused);
         OnPauseStateChanged?.Invoke(nextPaused);
         RefreshButtonStates();
     }
