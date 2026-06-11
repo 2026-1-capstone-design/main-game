@@ -17,9 +17,26 @@ public class CheatGladiator : MonoBehaviour
     [Range(1, 50)]
     public int level = 1;
 
+    private void Awake()
+    {
+        ResolveDependencies();
+    }
+
+    private void OnEnable()
+    {
+        ResolveDependencies();
+    }
+
+    private void Start()
+    {
+        ResolveDependencies();
+    }
+
     [ContextMenu("검투사 강제 영입 (Cheat)")]
     public void GiveCheatGladiator()
     {
+        ResolveDependencies();
+
         if (gladiatorManager == null)
         {
             Debug.LogError("[CheatGladiator] GladiatorManager가 연결되지 않았습니다.", this);
@@ -120,6 +137,15 @@ public class CheatGladiator : MonoBehaviour
         else
         {
             Debug.LogError("[CheatGladiator] 검투사 영입에 실패했습니다.", this);
+        }
+    }
+
+    private void ResolveDependencies()
+    {
+        if (gladiatorManager == null)
+        {
+            gladiatorManager =
+                GladiatorManager.Instance ?? FindFirstObjectByType<GladiatorManager>(FindObjectsInactive.Include);
         }
     }
 }
