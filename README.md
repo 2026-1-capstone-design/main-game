@@ -121,7 +121,7 @@ Main
 ### 설치
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/2026-1-capstone-design/main-game
 cd main-game
 
 git lfs install
