@@ -128,6 +128,8 @@ git lfs install
 dotnet tool restore
 ```
 
+STT 사용 시 https://huggingface.co/ggerganov/whisper.cpp/tree/main 에서 ggml-large-v3-turbo-q8_0.bin 다운로드 후 /Assets/StreamingAssets/Whisper 에 이동.
+
 Unity Hub에서 `main-game` 폴더를 프로젝트로 열면 패키지가 자동으로 복원된다.
 
 ### 실행
