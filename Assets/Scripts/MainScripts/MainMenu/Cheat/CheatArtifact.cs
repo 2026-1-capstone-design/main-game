@@ -10,21 +10,6 @@ public class CheatArtifact : MonoBehaviour
     [Tooltip("인벤토리에 강제로 추가할 장신구 데이터 (ArtifactSO)를 연결하세요.")]
     public ArtifactSO targetArtifact;
 
-    private void Awake()
-    {
-        ResolveDependencies();
-    }
-
-    private void OnEnable()
-    {
-        ResolveDependencies();
-    }
-
-    private void Start()
-    {
-        ResolveDependencies();
-    }
-
     [ContextMenu("지정 장신구 인벤토리에 강제 추가 (Cheat)")]
     public void GiveCheatArtifact()
     {

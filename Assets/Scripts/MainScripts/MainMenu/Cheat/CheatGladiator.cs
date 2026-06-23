@@ -17,21 +17,6 @@ public class CheatGladiator : MonoBehaviour
     [Range(1, 50)]
     public int level = 1;
 
-    private void Awake()
-    {
-        ResolveDependencies();
-    }
-
-    private void OnEnable()
-    {
-        ResolveDependencies();
-    }
-
-    private void Start()
-    {
-        ResolveDependencies();
-    }
-
     [ContextMenu("검투사 강제 영입 (Cheat)")]
     public void GiveCheatGladiator()
     {

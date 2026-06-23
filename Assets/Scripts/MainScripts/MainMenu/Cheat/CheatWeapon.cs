@@ -18,21 +18,6 @@ public class CheatWeapon : MonoBehaviour
     [Tooltip("무기의 레벨 (Day 기준)")]
     public int dayOrLevel = 1;
 
-    private void Awake()
-    {
-        ResolveDependencies();
-    }
-
-    private void OnEnable()
-    {
-        ResolveDependencies();
-    }
-
-    private void Start()
-    {
-        ResolveDependencies();
-    }
-
     [ContextMenu("지정 무기 인벤토리에 강제 추가 (Cheat)")]
     public void GiveCheatWeapon()
     {
