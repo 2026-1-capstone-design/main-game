@@ -21,6 +21,8 @@ public class CheatWeapon : MonoBehaviour
     [ContextMenu("지정 무기 인벤토리에 강제 추가 (Cheat)")]
     public void GiveCheatWeapon()
     {
+        ResolveDependencies();
+
         if (equipmentFactory == null || inventoryManager == null)
         {
             Debug.LogError("[CheatWeapon] EquipmentFactory 또는 InventoryManager가 연결되지 않았습니다.", this);
@@ -62,6 +64,20 @@ public class CheatWeapon : MonoBehaviour
         else
         {
             Debug.LogError("[CheatWeapon] 무기를 인벤토리에 추가하는 데 실패했습니다.", this);
+        }
+    }
+
+    private void ResolveDependencies()
+    {
+        if (equipmentFactory == null)
+        {
+            equipmentFactory = FindFirstObjectByType<EquipmentFactory>(FindObjectsInactive.Include);
+        }
+
+        if (inventoryManager == null)
+        {
+            inventoryManager =
+                InventoryManager.Instance ?? FindFirstObjectByType<InventoryManager>(FindObjectsInactive.Include);
         }
     }
 }

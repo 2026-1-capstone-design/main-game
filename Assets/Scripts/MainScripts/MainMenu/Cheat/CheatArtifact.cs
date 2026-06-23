@@ -13,6 +13,8 @@ public class CheatArtifact : MonoBehaviour
     [ContextMenu("지정 장신구 인벤토리에 강제 추가 (Cheat)")]
     public void GiveCheatArtifact()
     {
+        ResolveDependencies();
+
         if (inventoryManager == null)
         {
             Debug.LogError("[CheatArtifact] InventoryManager가 연결되지 않았습니다.", this);
@@ -35,6 +37,15 @@ public class CheatArtifact : MonoBehaviour
         else
         {
             Debug.LogError("[CheatArtifact] 장신구를 인벤토리에 추가하는 데 실패했습니다.", this);
+        }
+    }
+
+    private void ResolveDependencies()
+    {
+        if (inventoryManager == null)
+        {
+            inventoryManager =
+                InventoryManager.Instance ?? FindFirstObjectByType<InventoryManager>(FindObjectsInactive.Include);
         }
     }
 }
